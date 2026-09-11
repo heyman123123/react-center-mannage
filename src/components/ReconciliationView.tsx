@@ -93,7 +93,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
   if (loading) return <TableSkeleton rows={8} />;
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto font-sans">
+    <div className="p-2 md:p-2 space-y-2 max-w-7xl mx-auto font-sans">
       {/* Toast Alert */}
       {successToast && (
         <div className="bg-emerald-600 text-white px-3 py-2 rounded-xl shadow-lg flex items-center justify-between text-sm animate-in fade-in slide-in-from-top-2">
@@ -111,7 +111,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       )}
 
       {/* Header Banner with Action */}
-      <div className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
             <Scale className="w-5 h-5 text-fg" />
@@ -154,69 +154,69 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       </div>
 
       {/* Three-Way Reconciliation Architecture Visualizer */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
         {/* Node 1: Business Order Side */}
-        <div className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs">
+        <div className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider">
+            <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider whitespace-nowrap">
               1. 业务订单侧 (Internal Orders)
             </span>
             <span className="text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
               实时接入
             </span>
           </div>
-          <div className="mt-3 text-xl font-bold text-fg font-mono">
+          <div className="mt-2 text-xl font-bold text-fg font-mono">
             {formatCurrency(18420650, currentTenant.currency)}
           </div>
           <div className="text-xs text-fg-secondary mt-1 flex items-center justify-between">
             <span>已接入业务单数:</span>
             <span className="font-mono text-fg font-medium">45,678 笔</span>
           </div>
-          <div className="mt-4 pt-3 border-t border-line-subtle text-[11px] text-fg-tertiary">
+          <div className="mt-2 pt-3 border-t border-line-subtle text-[11px] text-fg-tertiary">
             涵盖连锁零售门店、SaaS订阅、跨境订单与医院挂号
           </div>
         </div>
 
         {/* Node 2: Payment Gateway Stream */}
-        <div className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs">
+        <div className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider">
+            <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider whitespace-nowrap">
               2. 聚合支付网关 (Gateway Stream)
             </span>
             <span className="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
               双轨监听
             </span>
           </div>
-          <div className="mt-3 text-xl font-bold text-fg font-mono">
+          <div className="mt-2 text-xl font-bold text-fg font-mono">
             {formatCurrency(18420650, currentTenant.currency)}
           </div>
           <div className="text-xs text-fg-secondary mt-1 flex items-center justify-between">
             <span>网关路由回执:</span>
             <span className="font-mono text-fg font-medium">45,678 笔</span>
           </div>
-          <div className="mt-4 pt-3 border-t border-line-subtle text-[11px] text-fg-tertiary">
+          <div className="mt-2 pt-3 border-t border-line-subtle text-[11px] text-fg-tertiary">
             智能路由至微信、支付宝、银联、数字人民币与SWIFT
           </div>
         </div>
 
         {/* Node 3: Bank & Channel Clearing Files */}
-        <div className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs">
+        <div className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider">
+            <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider whitespace-nowrap">
               3. 银行与渠道对账单 (Channel Bills)
             </span>
             <span className="text-[11px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">
               T+1 自动回盘
             </span>
           </div>
-          <div className="mt-3 text-xl font-bold text-fg font-mono">
+          <div className="mt-2 text-xl font-bold text-fg font-mono">
             {formatCurrency(18410200, currentTenant.currency)}
           </div>
           <div className="text-xs text-fg-secondary mt-1 flex items-center justify-between">
             <span>平账率 (Match Rate):</span>
             <span className="font-mono text-emerald-600 font-semibold">99.85%</span>
           </div>
-          <div className="mt-4 pt-3 border-t border-line-subtle text-[11px] text-red-600 font-medium flex items-center gap-1">
+          <div className="mt-2 pt-3 border-t border-line-subtle text-[11px] text-red-600 font-medium flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
             <span>差错待调账: {discrepancies.length} 笔 (差异 ¥10,450.00)</span>
           </div>
@@ -225,7 +225,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
 
       {/* Discrepancy Workbench (差错账工作台) */}
       <div className="bg-surface border border-line/90 rounded-xl shadow-2xs overflow-hidden">
-        <div className="p-3 border-b border-line/80 flex items-center justify-between">
+        <div className="p-2 border-b border-line/80 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-red-600" />
             <h2 className="text-sm font-semibold text-fg">
@@ -256,7 +256,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             {discrepancies.map((tx) => (
               <div
                 key={tx.id}
-                className="p-3 hover:bg-subtle transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3"
+                className="p-2 hover:bg-subtle transition-colors flex flex-col md:flex-row md:items-center justify-between gap-2"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -275,7 +275,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                   <div className="text-xs text-red-600 bg-red-50/60 border border-red-100 rounded-lg p-2 mt-1">
                     ⚠️ {tx.discrepancyNote}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-fg-secondary pt-1 font-mono">
+                  <div className="flex items-center gap-2 text-xs text-fg-secondary pt-1 font-mono">
                     <span>商户: {tx.merchantName}</span>
                     <span>渠道单号: {tx.channelTradeNo}</span>
                     <span>发生时间: {tx.createdAt}</span>
@@ -306,8 +306,8 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       </div>
 
       {/* Historical Reconciliation Batches Table */}
-      <div className="bg-surface border border-line/90 rounded-xl shadow-2xs p-4">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-surface border border-line/90 rounded-xl shadow-2xs p-2">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-fg">
             近期对账批次记录 (Recent Reconciliation Batches)
           </h3>

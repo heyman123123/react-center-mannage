@@ -21,6 +21,7 @@ import { RbacRole, SystemMenuItem, PaymentApp } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { MenuPermissionTree } from "./MenuPermissionTree";
 import { Popconfirm } from "./ui/Popconfirm";
+import { ContextMenu } from "./ui/ContextMenu";
 
 interface RolesViewProps {
   roles: RbacRole[];
@@ -221,8 +222,19 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
         </div>
         <div className="p-2 space-y-0.5">
           {categories.map((c) => (
-            <button
+            <ContextMenu
               key={c.key}
+              items={[
+                { key: "add", label: "新增角色", onClick: handleOpenAdd },
+                {
+                  key: "refresh", label: "刷新列表", onClick: () => {
+                    setRoleList(roles);
+                    showToast("角色列表已刷新");
+                  },
+                },
+              ]}
+              trigger={
+            <button
               type="button"
               onClick={() => setCategory(c.key)}
               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
@@ -245,6 +257,8 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                 {categoryCounts[c.key]}
               </span>
             </button>
+              }
+            />
           ))}
         </div>
 

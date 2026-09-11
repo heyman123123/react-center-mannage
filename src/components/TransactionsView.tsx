@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import {
@@ -26,6 +26,7 @@ import { formatCurrency } from "../lib/utils";
 import { RBAC_ROLES } from "../data/mockData";
 import { TransactionDetailModal } from "./TransactionDetailModal";
 import { ShadcnSelect } from "./ui/select";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 
 interface TransactionsViewProps {
   currentTenant: Tenant;
@@ -44,6 +45,9 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeTxDetail, setActiveTxDetail] = useState<TransactionRecord | null>(null);
+  const { currentPage, setCurrentPage, reset: resetPage, pageSize } = usePagination(10);
+  // 搜索/筛选变化时回到第 1 页
+  useEffect(() => { resetPage(); }, [selectedChannel, selectedStatus, searchQuery, resetPage]);
 
   const currentRole = (currentUser?.roleKey && RBAC_ROLES[currentUser.roleKey]) || RBAC_ROLES["SUPER_ADMIN"];
 
@@ -204,7 +208,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                   </td>
                 </tr>
               ) : (
-                scopedList.map((tx) => (
+                paginate<TransactionRecord>(scopedList, currentPage, pageSize).map((tx) => (
                   <tr
                     key={tx.id}
                     onClick={() => setActiveTxDetail(tx)}
@@ -303,6 +307,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={scopedList.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
 
       {/* Full Transaction Lifecycle Process and Timestamp Modal */}

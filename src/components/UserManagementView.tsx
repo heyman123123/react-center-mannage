@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   Users,
   Search,
@@ -59,6 +60,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [countryFilter, setCountryFilter] = useState<string>("ALL");
   const [actionCategoryFilter, setActionCategoryFilter] = useState<string>("ALL");
+  const { currentPage, setCurrentPage, reset: resetPage, pageSize } = usePagination(10);
+  useEffect(() => { resetPage(); }, [searchQuery, statusFilter, countryFilter, resetPage]);
   const [actionToast, setActionToast] = useState<string | null>(null);
 
   // Add User Modal State
@@ -425,8 +428,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
       </div>
 
       {/* Filter and Search */}
-      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-nowrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-2 flex-1 min-w-0 flex-nowrap overflow-x-auto">
           <span className="text-fg-tertiary text-xs">订阅状态:</span>
           {["ALL", "ACTIVE", "CANCELED"].map((status) => (
             <button
@@ -457,7 +460,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
           </div>
         </div>
 
-        <div className="relative w-full md:w-72">
+        <div className="relative w-56 min-w-0 shrink-0">
           <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
@@ -487,7 +490,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle">
-              {filteredUsers.map((user) => {
+              {paginate<EndUser>(filteredUsers, currentPage, pageSize).map((user) => {
                 const isSubActive = user.currentSubscription.status === "ACTIVE";
 
                 return (
@@ -574,6 +577,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={filteredUsers.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
 
       {/* User Actions Full Detail SideSheet (右侧滑入) */}

@@ -155,13 +155,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   if (loading) return <DashboardSkeleton />;
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto font-sans">
+    <div className="p-2 md:p-8 space-y-2 max-w-7xl mx-auto font-sans">
       {/* 4 Top KPI Cards (matching the screenshot's exact visual layout and metrics) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         {/* Card 1: Total Revenue */}
         <div
           id="kpi-card-total-revenue"
-          className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs hover:shadow-card transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>Total Revenue</span>
@@ -170,10 +170,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span>+12.5%</span>
             </span>
           </div>
-          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
+          <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
             {formatCurrency(totalRevenue, currentTenant.currency)}
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-fg font-medium">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>Trending up this month</span>
             <ArrowUpRight className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
@@ -185,7 +185,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 2: New Customers / 接入商户 */}
         <div
           id="kpi-card-new-customers"
-          className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs hover:shadow-card transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>New Customers</span>
@@ -194,10 +194,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span>-20%</span>
             </span>
           </div>
-          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
+          <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
             1,234
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-fg font-medium">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>Down 20% this period</span>
             <TrendingDown className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
@@ -209,7 +209,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 3: Active Accounts / 结算账户 */}
         <div
           id="kpi-card-active-accounts"
-          className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs hover:shadow-card transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>Active Accounts</span>
@@ -218,10 +218,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span>+12.5%</span>
             </span>
           </div>
-          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
+          <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
             45,678
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-fg font-medium">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>Strong user retention</span>
             <TrendingUp className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
@@ -233,7 +233,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 4: Growth Rate / 对账平账率 */}
         <div
           id="kpi-card-growth-rate"
-          className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs hover:shadow-card transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>Growth Rate</span>
@@ -242,10 +242,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span>+4.5%</span>
             </span>
           </div>
-          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
+          <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
             4.5%
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-fg font-medium">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>Steady performance increase</span>
             <TrendingUp className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
@@ -268,7 +268,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         className="bg-surface border border-line/90 rounded-xl shadow-2xs overflow-hidden"
       >
         {/* Table Toolbar Header */}
-        <div className="p-3 border-b border-line/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="p-2 border-b border-line/80 flex flex-col md:flex-row md:items-center justify-between gap-2">
           {/* Filter Tabs (mirrors Outline, Past Performance 3, Key Personnel 2, Focus Documents) */}
           <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
             <button

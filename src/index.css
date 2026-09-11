@@ -116,3 +116,10 @@ body {
   animation: skeleton-pulse 1.4s ease-in-out infinite;
   background-color: var(--skeleton-base);
 }
+
+/* 全局表格规范：单元格/表头不换行，长文本由列宽+截断处理 */
+table th,
+table td {
+  white-space: nowrap;
+}
+

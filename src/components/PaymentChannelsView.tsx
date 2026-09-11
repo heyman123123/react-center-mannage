@@ -38,6 +38,24 @@ interface PaymentChannelsViewProps {
   onNavigateToTransactions?: () => void;
 }
 
+// 平台支持的支付渠道候选池（需求7：从池中勾选接入）
+const CHANNEL_POOL: {
+  channelKey: string;
+  name: string;
+  feeRateText: string;
+  supportedCurrencies: string[];
+  description: string;
+}[] = [
+  { channelKey: "stripe", name: "Stripe", feeRateText: "2.9% + $0.30", supportedCurrencies: ["USD", "EUR", "GBP"], description: "全球卡组收单，覆盖欧美主流市场" },
+  { channelKey: "paypal", name: "PayPal", feeRateText: "3.49% + $0.49", supportedCurrencies: ["USD", "EUR", "GBP", "JPY"], description: "全球数字钱包，欧美买家信任度高" },
+  { channelKey: "adyen", name: "Adyen", feeRateText: "Interchange ++", supportedCurrencies: ["USD", "EUR", "GBP", "SGD"], description: "全渠道收单与风控一体平台" },
+  { channelKey: "checkout", name: "Checkout.com", feeRateText: "2.9% + $0.30", supportedCurrencies: ["USD", "EUR", "GBP", "AUD"], description: "为出海企业设计的全球收单" },
+  { channelKey: "apple_pay", name: "Apple Pay", feeRateText: "2.9% + $0.30", supportedCurrencies: ["USD", "EUR", "GBP", "JPY"], description: "Apple 生态一键支付，移动端转化高" },
+  { channelKey: "google_pay", name: "Google Pay", feeRateText: "2.9% + $0.30", supportedCurrencies: ["USD", "EUR", "GBP"], description: "Android 生态一键支付" },
+  { channelKey: "klarna", name: "Klarna", feeRateText: "3.49% + €0.35", supportedCurrencies: ["EUR", "SEK", "DKK"], description: "欧洲 BNPL 先享后付" },
+  { channelKey: "sepa", name: "SEPA Direct Debit", feeRateText: "€0.20 / 笔", supportedCurrencies: ["EUR"], description: "欧元区银行借记代扣，订阅 recurring 优选" },
+];
+
 export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
   channels,
   apps = [],
@@ -53,14 +71,9 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [editingChannel, setEditingChannel] = useState<PaymentChannelConfig | null>(null);
 
-  // 新增渠道表单
+  // 接入新渠道（需求7：从渠道池多选）
   const [isAddChannelOpen, setIsAddChannelOpen] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newChannelKey, setNewChannelKey] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [newMode, setNewMode] = useState<"live" | "sandbox">("live");
-  const [newCurrencies, setNewCurrencies] = useState("USD,EUR,GBP");
-  const [newFeeRate, setNewFeeRate] = useState("2.9% + $0.30");
+  const [selectedPoolKeys, setSelectedPoolKeys] = useState<string[]>([]);
 
   // 应用详情 SideSheet（需求4：点击应用名 chips 查看其绑定渠道）
   const [selectedApp, setSelectedApp] = useState<PaymentApp | null>(null);
@@ -130,34 +143,31 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     setEditingChannel(null);
   };
 
-  // 新增渠道：追加本地列表并同步父级 App 的 paymentChannels
-  const handleSaveNewChannel = (e: React.FormEvent) => {
-    e.preventDefault();
-    const key = (newChannelKey || newName).trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
-    const newChannel: PaymentChannelConfig = {
-      id: `ch_custom_${Date.now()}`,
-      channelKey: key || "custom",
-      name: newName.trim() || "自定义支付渠道",
-      description: newDescription.trim() || "通过后台手动接入的新支付渠道",
+  // 接入新渠道：从渠道池批量创建并同步父级 App 的 paymentChannels
+  const handleConfirmPoolSelection = () => {
+    const poolItems = CHANNEL_POOL.filter((p) => selectedPoolKeys.includes(p.channelKey));
+    const created: PaymentChannelConfig[] = poolItems.map((p, idx) => ({
+      id: `ch_${p.channelKey}_${Date.now()}`,
+      channelKey: p.channelKey as PaymentChannelConfig["channelKey"],
+      name: p.name,
+      description: p.description,
       enabled: true,
-      mode: newMode,
-      apiPublicKey: `pk_${newMode}_${Math.random().toString(36).slice(2, 10)}`,
-      apiSecretKey: `sk_${newMode}_${Math.random().toString(36).slice(2, 12)}`,
+      mode: "live",
+      apiPublicKey: `pk_live_${Math.random().toString(36).slice(2, 10)}`,
+      apiSecretKey: `sk_live_${Math.random().toString(36).slice(2, 12)}`,
       webhookSecret: `whsec_${Math.random().toString(36).slice(2, 12)}`,
-      supportedCurrencies: newCurrencies.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
-      feeRateText: newFeeRate.trim() || "2.9% + $0.30",
-      routingPriority: channelList.length + 1,
+      supportedCurrencies: p.supportedCurrencies,
+      feeRateText: p.feeRateText,
+      routingPriority: channelList.length + idx + 1,
       lastTestedAt: "未测试",
       testStatus: "DEGRADED",
       latencyMs: 0,
-    };
-    setChannelList((prev) => [...prev, newChannel]);
-    if (onSaveChannel) onSaveChannel(newChannel);
+    }));
+    if (created.length === 0) return;
+    setChannelList((prev) => [...prev, ...created]);
+    created.forEach((c) => { if (onSaveChannel) onSaveChannel(c); });
     setIsAddChannelOpen(false);
-    // 重置表单
-    setNewName("");
-    setNewChannelKey("");
-    setNewDescription("");
+    setSelectedPoolKeys([]);
   };
 
   // 打开应用详情 SideSheet
@@ -1135,78 +1145,66 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
         )}
       </SideSheet>
 
-      {/* 新增支付渠道 SideSheet 表单 */}
+      {/* 接入新渠道 SideSheet（需求7：从渠道池勾选） */}
       <SideSheet
         isOpen={isAddChannelOpen}
         onClose={() => setIsAddChannelOpen(false)}
         title="接入新支付渠道"
-        description="填写网关基础信息，保存后追加到渠道列表并同步到中台配置"
+        description="从平台支持的渠道池中勾选要接入的渠道，确认后批量创建并同步到中台配置"
         icon={<Plus className="w-5 h-5 text-fg" />}
         widthClass="max-w-xl"
       >
-        <form onSubmit={handleSaveNewChannel} className="space-y-4 text-xs">
-          <div>
-            <label className="font-semibold text-fg block mb-1.5">渠道名称 *</label>
-            <input
-              required
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="如：Checkout.com 直连收单"
-              className="w-full p-2 bg-input border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="font-semibold text-fg block mb-1.5">渠道标识 channelKey</label>
-              <input
-                value={newChannelKey}
-                onChange={(e) => setNewChannelKey(e.target.value)}
-                placeholder="如 checkout / bluesnap"
-                className="w-full p-2 bg-input border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <div>
-              <label className="font-semibold text-fg block mb-1.5">运行模式</label>
-              <select
-                value={newMode}
-                onChange={(e) => setNewMode(e.target.value as "live" | "sandbox")}
-                className="w-full p-2 bg-input border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+        <div className="space-y-2 text-xs">
+          {CHANNEL_POOL.map((p) => {
+            const integrated = channelList.some((c) => c.channelKey === p.channelKey);
+            const checked = selectedPoolKeys.includes(p.channelKey);
+            return (
+              <label
+                key={p.channelKey}
+                className={`flex items-start gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
+                  integrated
+                    ? "bg-subtle/50 border-line-subtle opacity-60 cursor-not-allowed"
+                    : checked
+                    ? "bg-primary/5 border-primary"
+                    : "bg-surface border-line hover:bg-hover"
+                }`}
               >
-                <option value="live">live（生产）</option>
-                <option value="sandbox">sandbox（沙箱）</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="font-semibold text-fg block mb-1.5">渠道描述</label>
-            <input
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="新添跨境卡组直连收单通道"
-              className="w-full p-2 bg-input border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="font-semibold text-fg block mb-1.5">支持币种（逗号分隔）</label>
-              <input
-                value={newCurrencies}
-                onChange={(e) => setNewCurrencies(e.target.value)}
-                placeholder="USD,EUR,GBP"
-                className="w-full p-2 bg-input border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <div>
-              <label className="font-semibold text-fg block mb-1.5">综合费率</label>
-              <input
-                value={newFeeRate}
-                onChange={(e) => setNewFeeRate(e.target.value)}
-                placeholder="2.9% + $0.30"
-                className="w-full p-2 bg-input border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-          </div>
-          <div className="pt-3 flex items-center justify-end gap-2 border-t border-line">
+                <input
+                  type="checkbox"
+                  disabled={integrated}
+                  checked={integrated ? true : checked}
+                  onChange={() =>
+                    setSelectedPoolKeys((prev) =>
+                      checked ? prev.filter((k) => k !== p.channelKey) : [...prev, p.channelKey]
+                    )
+                  }
+                  className="mt-0.5 rounded text-fg"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-fg">{p.name}</span>
+                    {integrated ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        已接入
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[11px] text-fg-secondary">{p.feeRateText}</span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-fg-secondary mt-0.5">{p.description}</div>
+                  <div className="text-[10px] text-fg-tertiary mt-1">
+                    支持币种：{p.supportedCurrencies.join(" / ")}
+                  </div>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+        <div className="pt-3 flex items-center justify-between gap-2 border-t border-line mt-4">
+          <span className="text-[11px] text-fg-tertiary">
+            已选 <b className="text-fg">{selectedPoolKeys.length}</b> 个待接入
+          </span>
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setIsAddChannelOpen(false)}
@@ -1215,13 +1213,15 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
               取消
             </button>
             <button
-              type="submit"
-              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
+              type="button"
+              disabled={selectedPoolKeys.length === 0}
+              onClick={handleConfirmPoolSelection}
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              保存并接入
+              确认接入（{selectedPoolKeys.length}）
             </button>
           </div>
-        </form>
+        </div>
       </SideSheet>
 
       {/* 应用详情 + 渠道绑定 SideSheet（需求4） */}

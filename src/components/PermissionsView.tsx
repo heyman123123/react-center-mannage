@@ -15,6 +15,7 @@ import {
   Edit2,
   Trash2,
   UserPlus,
+  RefreshCw,
 } from "lucide-react";
 import { RbacRole, SystemMenuItem, PaymentApp } from "../types/payment";
 import { MenuPermissionTree } from "./MenuPermissionTree";
@@ -269,7 +270,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
               新增角色
             </button>
           </div>
-          <div className="divide-y divide-line-subtle max-h-[480px] overflow-y-auto">
+          <div className="divide-y divide-line-subtle">
             {roleList.map((role) => {
               const roleId = role.id || role.key || "";
               const isActive = roleId === selectedRoleId;
@@ -296,6 +297,15 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                       icon: <Trash2 className="w-3.5 h-3.5" />,
                       danger: true,
                       onClick: () => setPendingDeleteRole(role),
+                    },
+                    {
+                      key: "refresh",
+                      label: "刷新列表",
+                      icon: <RefreshCw className="w-3.5 h-3.5" />,
+                      onClick: () => {
+                        setRoleList(roles);
+                        setToastMessage("角色列表已刷新");
+                      },
                     },
                   ]}
                   trigger={

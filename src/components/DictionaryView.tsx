@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import {
@@ -37,6 +37,8 @@ import {
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { Popconfirm } from "./ui/Popconfirm";
+import { ContextMenu } from "./ui/ContextMenu";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 
 interface DictionaryViewProps {
   dictionary: DictionaryEntry[];
@@ -235,6 +237,47 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [treeKeyword, setTreeKeyword] = useState("");
+
+  // ===== 左侧分类：可右键新增/删除/重命名/刷新 =====
+  const [categoryList, setCategoryList] = useState<{ key: string; label: string }[]>(CATEGORY_LABELS);
+  const [renamingKey, setRenamingKey] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [treeRefreshing, setTreeRefreshing] = useState(false);
+  const { currentPage, setCurrentPage, reset: resetPage, pageSize } = usePagination(10);
+
+  const handleAddCategory = () => {
+    const name = window.prompt("请输入新分类名称：");
+    if (!name || !name.trim()) return;
+    const key = `CAT_${Date.now()}`;
+    setCategoryList((prev) => [...prev, { key, label: name.trim() }]);
+    setCategoryFilter(key);
+    showToast(`已新增分类【${name.trim()}】`);
+  };
+  const handleDeleteCategory = (key: string, label: string) => {
+    setCategoryList((prev) => prev.filter((c) => c.key !== key));
+    if (categoryFilter === key) setCategoryFilter("ALL");
+    showToast(`已删除分类【${label}】`);
+  };
+  const startRename = (key: string, label: string) => {
+    setRenamingKey(key);
+    setRenameValue(label);
+  };
+  const commitRename = () => {
+    if (renamingKey && renameValue.trim()) {
+      setCategoryList((prev) => prev.map((c) => (c.key === renamingKey ? { ...c, label: renameValue.trim() } : c)));
+      showToast("分类已重命名");
+    }
+    setRenamingKey(null);
+  };
+  const handleRefreshTree = () => {
+    setTreeRefreshing(true);
+    setTimeout(() => {
+      setCategoryList(CATEGORY_LABELS);
+      setTreeRefreshing(false);
+      showToast("分类列表已刷新");
+    }, 400);
+  };
+  useEffect(() => { resetPage(); }, [categoryFilter, searchQuery, resetPage]);
 
   // ===== 语种配置（字典管理可配置"有哪些多语言"）=====
   const [languages, setLanguages] = useState<
@@ -547,7 +590,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const currentCategoryLabel =
     categoryFilter === "ALL" ? "全部" : CATEGORY_LABELS.find((c) => c.key === categoryFilter)?.label || "全部";
 
-  const visibleCategoryKeys = CATEGORY_LABELS.filter((c) =>
+  const visibleCategoryKeys = categoryList.filter((c) =>
     !treeKeyword ||
     c.label.toLowerCase().includes(treeKeyword.toLowerCase())
   );
@@ -578,6 +621,14 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <ListFilter className="w-3.5 h-3.5 text-fg-secondary" />
             类型
           </span>
+          <button
+            type="button"
+            onClick={handleRefreshTree}
+            title="刷新列表"
+            className="p-1 rounded-md text-fg-tertiary hover:bg-hover hover:text-fg transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${treeRefreshing ? "animate-spin" : ""}`} />
+          </button>
         </div>
 
         <div className="p-2 border-b border-line-subtle">
@@ -593,7 +644,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           </div>
         </div>
 
-        <div className="p-2 space-y-0.5 max-h-[70vh] overflow-y-auto">
+        <div className="p-2 space-y-0.5">
           <button
             type="button"
             onClick={() => setCategoryFilter("ALL")}
@@ -613,19 +664,43 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           {visibleCategoryKeys.map((c) => {
             const count = entryList.filter((e) => e.category === c.key).length;
             return (
-              <button
+              <ContextMenu
                 key={c.key}
-                type="button"
-                onClick={() => setCategoryFilter(c.key)}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-                  categoryFilter === c.key
-                    ? "bg-primary text-primary-foreground font-semibold"
-                    : "text-fg-secondary hover:bg-hover"
-                }`}
-              >
-                <span>{c.label}</span>
-                <span className="text-[10px] font-mono text-fg-tertiary">{count}</span>
-              </button>
+                items={[
+                  { key: "add", label: "新增同级分类", onClick: handleAddCategory },
+                  { key: "rename", label: "重命名", onClick: () => startRename(c.key, c.label) },
+                  { key: "del", label: "删除", danger: true, onClick: () => handleDeleteCategory(c.key, c.label) },
+                  { key: "refresh", label: "刷新列表", onClick: handleRefreshTree },
+                ]}
+                trigger={
+                  renamingKey === c.key ? (
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={commitRename}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitRename();
+                        if (e.key === "Escape") setRenamingKey(null);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-input border border-primary text-fg"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setCategoryFilter(c.key)}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
+                        categoryFilter === c.key
+                          ? "bg-primary text-primary-foreground font-semibold"
+                          : "text-fg-secondary hover:bg-hover"
+                      }`}
+                    >
+                      <span className="truncate">{c.label}</span>
+                      <span className="text-[10px] font-mono text-fg-tertiary shrink-0">{count}</span>
+                    </button>
+                  )
+                }
+              />
             );
           })}
         </div>
@@ -799,7 +874,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredEntries.map((item) => {
+                  paginate<DictionaryEntry>(filteredEntries, currentPage, pageSize).map((item) => {
                     const isCopied = copiedKey === item.id;
                     const isExpanded = !!expandedKeys[item.id];
                     const completedCount = Object.values(item.translations).filter(Boolean).length;
@@ -963,6 +1038,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               </tbody>
             </table>
           </div>
+          <Pagination currentPage={currentPage} totalItems={filteredEntries.length} pageSize={pageSize} onPageChange={setCurrentPage} />
         </div>
       </div>
 

@@ -25,6 +25,7 @@ import { SideSheet } from "./ui/SideSheet";
 import { Popconfirm } from "./ui/Popconfirm";
 import { ShadcnSelect } from "./ui/select";
 import { MultiSelect } from "./ui/MultiSelect";
+import { ContextMenu } from "./ui/ContextMenu";
 
 interface DepartmentManagementViewProps {
   departments: Department[];
@@ -273,6 +274,26 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
     return Array.from(new Set(keys)).map(getRoleName);
   }, [formParentId, deptList]);
 
+  // 部门节点右键菜单项（需求6）
+  const deptNodeMenu = (node: DeptTreeNode) => [
+    { key: "add", label: "新增子部门", onClick: () => handleOpenAdd(node.id) },
+    {
+      key: "rename", label: "重命名", onClick: () => {
+        const name = window.prompt("部门名称：", node.name);
+        if (name && name.trim()) setDeptList((prev) => prev.map((d) => (d.id === node.id ? { ...d, name: name.trim() } : d)));
+      },
+    },
+    {
+      key: "del", label: "删除", danger: true, onClick: () => {
+        if (!window.confirm(`确认删除部门【${node.name}】及其下级？`)) return;
+        setDeptList((prev) => prev.filter((d) => d.id !== node.id));
+        if (selectedDeptId === node.id) setSelectedDeptId("ALL");
+        showToast(`已删除部门【${node.name}】`);
+      },
+    },
+    { key: "refresh", label: "刷新列表", onClick: handleRefresh },
+  ];
+
   // 渲染部门树
   const renderTreeNode = (node: DeptTreeNode) => {
     const hasChildren = node.children.length > 0;
@@ -282,7 +303,10 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
 
     return (
       <div key={node.id} className={isVisible ? "" : "hidden"}>
-        <div
+        <ContextMenu
+          items={deptNodeMenu(node)}
+          trigger={(
+          <div
           className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
             isActive ? "bg-primary text-primary-foreground font-semibold" : "text-fg-secondary hover:bg-hover"
           }`}
@@ -316,7 +340,9 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           <span className={`text-[10px] font-mono ${isActive ? "text-fg-tertiary" : "text-fg-tertiary"}`}>
             {node.memberCount ?? 0}
           </span>
-        </div>
+          </div>
+          )}
+        />
         {hasChildren && isExpanded && (
           <div className="space-y-0.5">{node.children.map((c) => renderTreeNode(c))}</div>
         )}
@@ -366,7 +392,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           </div>
         </div>
 
-        <div className="p-2 max-h-[70vh] overflow-y-auto space-y-0.5">
+        <div className="p-2 space-y-0.5">
           <div
             className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
               selectedDeptId === "ALL" ? "bg-primary text-primary-foreground font-semibold" : "text-fg-secondary hover:bg-hover"
