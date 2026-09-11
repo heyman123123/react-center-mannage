@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   Mail,
   Send,
@@ -34,6 +35,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
   onAddChannel,
 }) => {
   const [channelList, setChannelList] = useState<EmailChannelConfig[]>(channels);
+  const { currentPage, setCurrentPage, reset: _ecr, pageSize } = usePagination(10);
   const [testModalChannel, setTestModalChannel] = useState<EmailChannelConfig | null>(null);
   const [testRecipient, setTestRecipient] = useState("admin@corp-finance.global");
   const [isSendingTest, setIsSendingTest] = useState(false);
@@ -171,7 +173,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
 
       {/* Email Channels Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {channelList.map((channel) => {
+        {paginate<EmailChannelConfig>(channelList, currentPage, pageSize).map((channel) => {
           const quotaPercent = Math.min(
             100,
             Math.round((channel.sentToday / channel.dailyQuota) * 100)
@@ -313,6 +315,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           );
         })}
       </div>
+      <Pagination currentPage={currentPage} totalItems={channelList.length} pageSize={pageSize} onPageChange={setCurrentPage} />
 
       {/* Send Test Email SideSheet (右侧滑入) */}
       <SideSheet

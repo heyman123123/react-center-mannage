@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   Webhook,
   RefreshCw,
@@ -34,6 +35,8 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
   const [filterType, setFilterType] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  useEffect(() => { reset(); }, [filterType, searchQuery, reset]);
 
   const filteredLogs = webhookLogs.filter((log) => {
     const matchesFilter =
@@ -225,7 +228,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle">
-              {filteredLogs.map((log) => {
+              {paginate<PaymentWebhookLog>(filteredLogs, currentPage, pageSize).map((log) => {
                 const isRedelivering = redeliveringId === log.id;
                 return (
                   <tr key={log.id} className="hover:bg-subtle/80 transition-colors group">
@@ -300,6 +303,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={filteredLogs.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
 
       {/* View Payload SideSheet (右侧滑入) */}

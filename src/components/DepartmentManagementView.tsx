@@ -26,6 +26,7 @@ import { Popconfirm } from "./ui/Popconfirm";
 import { ShadcnSelect } from "./ui/select";
 import { MultiSelect } from "./ui/MultiSelect";
 import { ContextMenu } from "./ui/ContextMenu";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 
 interface DepartmentManagementViewProps {
   departments: Department[];
@@ -350,6 +351,9 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
     );
   };
 
+  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  useEffect(() => { reset(); }, [searchQuery, reset]);
+
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={8} />;
 
@@ -543,7 +547,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                       </td>
                     </tr>
                   ) : (
-                    filteredDepts.map((dept) => {
+                    paginate<Department>(filteredDepts, currentPage, pageSize).map((dept) => {
                       const parent = deptList.find((d) => d.id === dept.parentId);
                       const roleKeys = dept.roleKeys || [];
                       return (
@@ -638,6 +642,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                 </tbody>
               </table>
             </div>
+            <Pagination currentPage={currentPage} totalItems={filteredDepts.length} pageSize={pageSize} onPageChange={setCurrentPage} />
           </div>
         ) : (
           /* ===== 部门成员视图 ===== */

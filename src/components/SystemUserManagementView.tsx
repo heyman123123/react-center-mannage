@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   Users,
   Shield,
@@ -45,6 +46,8 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
 }) => {
   const [userList, setUserList] = useState<SystemUser[]>(users);
   const [searchQuery, setSearchQuery] = useState("");
+  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  useEffect(() => { reset(); }, [searchQuery, reset]);
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [appFilter, setAppFilter] = useState("ALL");
   const [deptFilter, setDeptFilter] = useState("ALL");
@@ -370,7 +373,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => {
+                paginate<SystemUser>(filteredUsers, currentPage, pageSize).map((u) => {
                   const isCurrent = currentUser?.id === u.id;
                   const userRoleKeys = u.roleKeys?.length
                     ? u.roleKeys
@@ -557,6 +560,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={filteredUsers.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
 
       {/* SideSheet for Add/Edit User */}

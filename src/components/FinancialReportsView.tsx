@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   FileSpreadsheet,
   Download,
@@ -34,6 +35,8 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
     { channel: "国际信用卡 (Visa/Master)", totalVolume: 184500, count: 940, feeRate: "2.80%", feePaid: 5166.00, status: "T+2 待回盘" },
     { channel: "数字人民币母子钱包 (e-CNY)", totalVolume: 12500, count: 320, feeRate: "0.00%", feePaid: 0.00, status: "D+0 实时到账" },
   ];
+
+  const { currentPage, setCurrentPage, reset: _r, pageSize } = usePagination(10);
 
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={8} />;
@@ -88,7 +91,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle">
-              {channelBreakdown.map((row, idx) => (
+              {paginate(channelBreakdown, currentPage, pageSize).map((row, idx) => (
                 <tr key={idx} className="hover:bg-subtle/80 transition-colors group">
                   <td className="px-3 py-2 w-[220px] font-semibold text-fg">
                     {row.channel}
@@ -123,6 +126,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={channelBreakdown.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   Layers,
   Plus,
@@ -117,6 +118,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { currentPage, setCurrentPage, reset: _ar, pageSize } = usePagination(10);
 
   // Modal / Wizard State
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
@@ -453,7 +455,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
 
       {/* App Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {appList.map((app) => {
+        {paginate<PaymentApp>(appList, currentPage, pageSize).map((app) => {
           const isSecretVisible = showSecretMap[app.id];
           const tenantInfo = tenants.find((t) => t.id === app.tenantId);
 
@@ -664,6 +666,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           );
         })}
       </div>
+      <Pagination currentPage={currentPage} totalItems={appList.length} pageSize={pageSize} onPageChange={setCurrentPage} />
 
       {/* Comprehensive Application Wizard SideSheet */}
       {isConfigModalOpen && (

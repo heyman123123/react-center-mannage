@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { TableSkeleton } from "./ui/Skeletons";
 import {
   Package,
@@ -48,6 +49,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [currencyFilter, setCurrencyFilter] = useState<string>("ALL");
+  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  useEffect(() => { reset(); }, [searchQuery, typeFilter, statusFilter, currencyFilter, reset]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -406,7 +409,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle">
-              {filteredProducts.map((p) => {
+              {paginate<ProductConfig>(filteredProducts, currentPage, pageSize).map((p) => {
                 const currInfo = SUPPORTED_CURRENCIES.find((c) => c.code === (p.currency || "USD"));
                 const currSymbol = currInfo ? currInfo.symbol : "$";
                 const isCopied = copiedCode === p.code;
@@ -587,6 +590,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={filteredProducts.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
 
       {/* Add / Edit Product SideSheet */}

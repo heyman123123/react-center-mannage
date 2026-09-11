@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   Mail,
   Send,
@@ -95,6 +96,8 @@ export const EmailTemplatesView: React.FC<EmailTemplatesViewProps> = ({
   const [langFilter, setLangFilter] = useState<string>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  useEffect(() => { reset(); }, [searchQuery, langFilter, categoryFilter, statusFilter, reset]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Modals state
@@ -544,7 +547,7 @@ The {{app_name}} Team`,
                   </td>
                 </tr>
               ) : (
-                filteredEmails.map((email) => {
+                paginate<EmailTemplate>(filteredEmails, currentPage, pageSize).map((email) => {
                   const langMeta = getLanguageMeta(email.language);
                   const catStyle = CATEGORY_MAP[email.category] || CATEGORY_MAP.SYSTEM;
 
@@ -707,6 +710,7 @@ The {{app_name}} Team`,
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={filteredEmails.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
 
       {/* 1. SideSheet: Edit Standalone Email (独立单一邮件编辑) */}

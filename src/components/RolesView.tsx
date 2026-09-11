@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   ShieldCheck,
   Plus,
@@ -37,6 +38,8 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
   const [roleList, setRoleList] = useState<RbacRole[]>(roles);
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState<RoleCategory>("ALL");
+  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  useEffect(() => { reset(); }, [searchQuery, category, reset]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<RbacRole | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -381,7 +384,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                     </td>
                   </tr>
                 ) : (
-                  filteredRoles.map((role) => {
+                  paginate<RbacRole>(filteredRoles, currentPage, pageSize).map((role) => {
                     const rid = roleIdentifier(role);
                     const menuCount = (role.permissions?.menuPermissionIds || []).length;
                     const appPerms = (role.permissions?.appPermissionIds || []) as string[];
@@ -495,6 +498,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
               </tbody>
             </table>
           </div>
+          <Pagination currentPage={currentPage} totalItems={filteredRoles.length} pageSize={pageSize} onPageChange={setCurrentPage} />
         </div>
       </div>
 

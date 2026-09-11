@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   Megaphone,
   Plus,
@@ -46,6 +47,8 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
   const [campaignList, setCampaignList] = useState<PromoCampaign[]>(campaigns);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  useEffect(() => { reset(); }, [searchQuery, statusFilter, reset]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [previewCampaign, setPreviewCampaign] = useState<PromoCampaign | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -326,7 +329,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle">
-              {filteredCampaigns.map((c) => {
+              {paginate<PromoCampaign>(filteredCampaigns, currentPage, pageSize).map((c) => {
                 const isSending = sendingId === c.id;
                 const estimatedGmv =
                   c.status === "SENT"
@@ -490,6 +493,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={filteredCampaigns.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
 
       {/* Live Email Preview SideSheet */}

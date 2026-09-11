@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   Tag,
   Plus,
@@ -37,6 +38,8 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  useEffect(() => { reset(); }, [searchQuery, typeFilter, statusFilter, reset]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Modal State
@@ -318,7 +321,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle">
-              {filteredDiscounts.map((d) => {
+              {paginate<DiscountConfig>(filteredDiscounts, currentPage, pageSize).map((d) => {
                 const percentUsed = Math.min(100, Math.round((d.usedCount / d.maxUsageLimit) * 100));
                 const isCopied = copiedCode === d.code;
                 return (
@@ -456,6 +459,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={filteredDiscounts.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
 
       {/* Add / Edit Discount SideSheet */}

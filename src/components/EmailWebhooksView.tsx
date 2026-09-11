@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   MailCheck,
   CheckCircle2,
@@ -26,6 +27,8 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
   const [filterType, setFilterType] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedLog, setSelectedLog] = useState<EmailWebhookLog | null>(null);
+  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  useEffect(() => { reset(); }, [filterType, searchQuery, reset]);
 
   const filtered = emailLogs.filter((log) => {
     const matchesFilter =
@@ -131,7 +134,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle">
-              {filtered.map((log) => {
+              {paginate<EmailWebhookLog>(filtered, currentPage, pageSize).map((log) => {
                 return (
                   <tr key={log.id} className="hover:bg-subtle/80 transition-colors group">
                     <td className="py-3.5 px-3 w-[220px]">
@@ -192,6 +195,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
 
       {/* Details SideSheet (右侧滑入) */}

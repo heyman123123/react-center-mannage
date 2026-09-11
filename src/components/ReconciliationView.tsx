@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
   Scale,
   Play,
@@ -89,6 +90,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
     }, 1200);
   };
 
+  const { currentPage, setCurrentPage, reset: _reset, pageSize } = usePagination(10);
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={8} />;
 
@@ -332,7 +334,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle">
-              {INITIAL_RECON_BATCHES.map((batch) => (
+              {paginate(INITIAL_RECON_BATCHES, currentPage, pageSize).map((batch) => (
                 <tr key={batch.batchNo} className="hover:bg-subtle/80 transition-colors group">
                   <td className="px-3 py-2.5 w-[180px] font-mono font-medium text-fg">
                     {batch.batchNo}
@@ -377,6 +379,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalItems={INITIAL_RECON_BATCHES.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
     </div>
   );

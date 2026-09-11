@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useViewLoading } from "./ui/useViewLoading";
+import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { TableSkeleton } from "./ui/Skeletons";
 import {
   CreditCard,
@@ -65,6 +66,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
   onNavigateToTransactions,
 }) => {
   const [channelList, setChannelList] = useState<PaymentChannelConfig[]>(channels);
+  const { currentPage, setCurrentPage, reset: _pcr, pageSize } = usePagination(10);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ id: string; msg: string; success: boolean } | null>(null);
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
@@ -389,7 +391,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
 
       {/* Channel Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {channelList.map((channel) => {
+        {paginate<PaymentChannelConfig>(channelList, currentPage, pageSize).map((channel) => {
           const isSecretVisible = showSecretMap[channel.id];
           const isTesting = testingId === channel.id;
 
@@ -640,6 +642,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
           );
         })}
       </div>
+      <Pagination currentPage={currentPage} totalItems={channelList.length} pageSize={pageSize} onPageChange={setCurrentPage} />
 
       {/* Edit Channel SideSheet (右侧滑入) */}
       <SideSheet
