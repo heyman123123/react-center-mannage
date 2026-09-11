@@ -17,6 +17,7 @@ import {
   Plus,
 } from "lucide-react";
 import { EmailChannelConfig } from "../types/payment";
+import { SideSheet } from "./ui/SideSheet";
 
 interface EmailChannelsViewProps {
   channels: EmailChannelConfig[];
@@ -261,116 +262,132 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         })}
       </div>
 
-      {/* Send Test Email Modal */}
-      {testModalChannel && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-zinc-200 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Send className="w-4 h-4 text-purple-600" />
-                <h3 className="font-bold text-zinc-900 text-sm">
-                  发送连通性测试邮件 - {testModalChannel.name}
-                </h3>
-              </div>
+      {/* Send Test Email SideSheet (右侧滑入) */}
+      <SideSheet
+        id="side-sheet-test-email"
+        isOpen={!!testModalChannel}
+        onClose={() => setTestModalChannel(null)}
+        title={testModalChannel ? `发送连通性测试邮件 - ${testModalChannel.name}` : "发送连通性测试邮件"}
+        description="向指定邮箱即时发出标准海外订阅账单收据测试样本，验证发信通道连通性。"
+        icon={<Send className="w-4 h-4 text-zinc-800" />}
+        widthClass="max-w-md"
+        footer={
+          testModalChannel && !testFeedback ? (
+            <>
               <button
+                type="button"
                 onClick={() => setTestModalChannel(null)}
-                className="text-zinc-400 hover:text-zinc-700 text-sm"
+                className="px-3.5 py-1.5 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 cursor-pointer"
               >
-                ✕
+                取消
               </button>
-            </div>
-
-            {testFeedback ? (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium">
-                {testFeedback}
-              </div>
-            ) : (
-              <form onSubmit={handleSendTestEmail} className="space-y-4 text-xs">
-                <div>
-                  <label className="text-zinc-600 block mb-1 font-medium">
-                    接收测试邮件的邮箱地址
-                  </label>
-                  <input
-                    type="email"
-                    value={testRecipient}
-                    onChange={(e) => setTestRecipient(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
-                    required
-                  />
-                  <p className="text-[11px] text-zinc-400 mt-1">
-                    系统将从 {testModalChannel.senderEmail} 即时发出标准海外订阅账单收据测试样本。
-                  </p>
-                </div>
-
-                <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1 text-zinc-600">
-                  <div className="font-medium text-zinc-900">邮件投递路由预检:</div>
-                  <div className="text-[11px] font-mono text-zinc-500">
-                    Host: {testModalChannel.smtpHost}:{testModalChannel.smtpPort}
-                  </div>
-                  <div className="text-[11px] font-mono text-zinc-500">
-                    Sender: "{testModalChannel.senderName}" &lt;{testModalChannel.senderEmail}&gt;
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setTestModalChannel(null)}
-                    className="px-3.5 py-1.5 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50"
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSendingTest}
-                    className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium flex items-center gap-1.5 shadow-xs"
-                  >
-                    {isSendingTest ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>投递发送中...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-3.5 h-3.5" />
-                        <span>立即发送测试信</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {editingChannel && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-zinc-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h3 className="font-bold text-zinc-900 text-base">
-                配置发信通道 - {editingChannel.name}
-              </h3>
               <button
-                onClick={() => setEditingChannel(null)}
-                className="text-zinc-400 hover:text-zinc-700 text-sm"
+                type="submit"
+                form="form-test-email"
+                disabled={isSendingTest}
+                className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
-                ✕
+                {isSendingTest ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>投递发送中...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>立即发送测试信</span>
+                  </>
+                )}
               </button>
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setChannelList((prev) =>
-                  prev.map((c) => (c.id === editingChannel.id ? editingChannel : c))
-                );
-                onUpdateChannel(editingChannel);
-                setEditingChannel(null);
-              }}
-              className="space-y-3 text-xs"
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setTestModalChannel(null)}
+              className="px-4 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium cursor-pointer"
             >
+              完成
+            </button>
+          )
+        }
+      >
+        {testModalChannel &&
+          (testFeedback ? (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium">
+              {testFeedback}
+            </div>
+          ) : (
+            <form id="form-test-email" onSubmit={handleSendTestEmail} className="space-y-4 text-xs">
+              <div>
+                <label className="text-zinc-600 block mb-1 font-medium">
+                  接收测试邮件的邮箱地址
+                </label>
+                <input
+                  type="email"
+                  value={testRecipient}
+                  onChange={(e) => setTestRecipient(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                  required
+                />
+                <p className="text-[11px] text-zinc-400 mt-1">
+                  系统将从 {testModalChannel.senderEmail} 即时发出标准海外订阅账单收据测试样本。
+                </p>
+              </div>
+
+              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1 text-zinc-600">
+                <div className="font-medium text-zinc-900">邮件投递路由预检:</div>
+                <div className="text-[11px] font-mono text-zinc-500">
+                  Host: {testModalChannel.smtpHost}:{testModalChannel.smtpPort}
+                </div>
+                <div className="text-[11px] font-mono text-zinc-500">
+                  Sender: "{testModalChannel.senderName}" &lt;{testModalChannel.senderEmail}&gt;
+                </div>
+              </div>
+            </form>
+          ))}
+      </SideSheet>
+
+      {/* Edit Channel SideSheet (右侧滑入) */}
+      <SideSheet
+        id="side-sheet-edit-email-channel"
+        isOpen={!!editingChannel}
+        onClose={() => setEditingChannel(null)}
+        title={editingChannel ? `配置发信通道 - ${editingChannel.name}` : "配置发信通道"}
+        description="维护发件人信息、SMTP 服务器与每日投递配额。"
+        icon={<Mail className="w-5 h-5 text-zinc-800" />}
+        widthClass="max-w-lg"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setEditingChannel(null)}
+              className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 cursor-pointer"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              form="form-edit-email-channel"
+              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium shadow-xs cursor-pointer"
+            >
+              保存通道配置
+            </button>
+          </>
+        }
+      >
+        {editingChannel && (
+          <form
+            id="form-edit-email-channel"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setChannelList((prev) =>
+                prev.map((c) => (c.id === editingChannel.id ? editingChannel : c))
+              );
+              onUpdateChannel(editingChannel);
+              setEditingChannel(null);
+            }}
+            className="space-y-3 text-xs"
+          >
               <div>
                 <label className="text-zinc-600 block mb-1 font-medium">发信渠道名称</label>
                 <input
@@ -461,25 +478,9 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 />
               </div>
 
-              <div className="pt-3 border-t border-zinc-100 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingChannel(null)}
-                  className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium shadow-xs"
-                >
-                  保存通道配置
-                </button>
-              </div>
             </form>
-          </div>
-        </div>
-      )}
+        )}
+      </SideSheet>
     </div>
   );
 };

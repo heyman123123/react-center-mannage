@@ -18,6 +18,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { PaymentWebhookLog } from "../types/payment";
+import { SideSheet } from "./ui/SideSheet";
 
 interface PaymentWebhooksViewProps {
   logs: PaymentWebhookLog[];
@@ -296,81 +297,70 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
         </div>
       </div>
 
-      {/* View Payload Modal */}
-      {selectedLog && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-zinc-200 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <div className="space-y-0.5">
-                <h3 className="font-bold text-zinc-900 text-sm">
-                  Webhook 原始报文 - {selectedLog.eventId}
-                </h3>
-                <span className="font-mono text-xs text-sky-700 font-semibold">
-                  {selectedLog.eventType}
-                </span>
+      {/* View Payload SideSheet (右侧滑入) */}
+      <SideSheet
+        id="side-sheet-webhook-payload"
+        isOpen={!!selectedLog}
+        onClose={() => setSelectedLog(null)}
+        title={selectedLog ? `Webhook 原始报文 - ${selectedLog.eventId}` : "Webhook 原始报文"}
+        description={selectedLog ? `${selectedLog.eventType} · ${selectedLog.deliveryStatus}` : ""}
+        icon={<Webhook className="w-5 h-5 text-zinc-800" />}
+        widthClass="max-w-2xl"
+        footer={
+          <button
+            type="button"
+            onClick={() => setSelectedLog(null)}
+            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold cursor-pointer"
+          >
+            关闭
+          </button>
+        }
+      >
+        {selectedLog && (
+          <div className="space-y-3 text-xs">
+            <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
+              <div className="text-zinc-400 text-[11px]">推送目标与签名标头:</div>
+              <div className="font-mono text-zinc-800 break-all">{selectedLog.targetUrl}</div>
+              <div className="font-mono text-[11px] text-zinc-500 pt-1">
+                X-Novas-Signature: t=1789000000,v1=9812039810293810293810293810
               </div>
-              <button
-                onClick={() => setSelectedLog(null)}
-                className="text-zinc-400 hover:text-zinc-700 text-sm"
-              >
-                ✕
-              </button>
             </div>
 
-            <div className="space-y-3 overflow-y-auto flex-1 text-xs">
-              <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
-                <div className="text-zinc-400 text-[11px]">推送目标与签名标头:</div>
-                <div className="font-mono text-zinc-800 break-all">{selectedLog.targetUrl}</div>
-                <div className="font-mono text-[11px] text-zinc-500 pt-1">
-                  X-Novas-Signature: t=1789000000,v1=9812039810293810293810293810
-                </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold text-zinc-700">Request Payload (JSON):</span>
+                <button
+                  onClick={() =>
+                    copyToClipboard(JSON.stringify(selectedLog.payload, null, 2), "payload")
+                  }
+                  className="text-zinc-400 hover:text-zinc-700 flex items-center gap-1 cursor-pointer"
+                >
+                  {copiedKey === "payload" ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                  <span>复制 JSON</span>
+                </button>
               </div>
+              <pre className="p-3 bg-zinc-900 text-emerald-400 rounded-xl font-mono text-[11px] overflow-x-auto">
+                {JSON.stringify(selectedLog.payload, null, 2)}
+              </pre>
+            </div>
 
+            {selectedLog.responseBody && (
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-zinc-700">Request Payload (JSON):</span>
-                  <button
-                    onClick={() =>
-                      copyToClipboard(JSON.stringify(selectedLog.payload, null, 2), "payload")
-                    }
-                    className="text-zinc-400 hover:text-zinc-700 flex items-center gap-1"
-                  >
-                    {copiedKey === "payload" ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                    <span>复制 JSON</span>
-                  </button>
-                </div>
-                <pre className="p-3 bg-zinc-900 text-emerald-400 rounded-xl font-mono text-[11px] overflow-x-auto">
-                  {JSON.stringify(selectedLog.payload, null, 2)}
+                <span className="font-semibold text-zinc-700 block mb-1">
+                  下游客户端 HTTP 响应 (Response Body):
+                </span>
+                <pre className="p-3 bg-zinc-100 text-zinc-800 rounded-xl font-mono text-[11px] overflow-x-auto border border-zinc-200">
+                  {selectedLog.responseBody}
                 </pre>
               </div>
-
-              {selectedLog.responseBody && (
-                <div>
-                  <span className="font-semibold text-zinc-700 block mb-1">
-                    下游客户端 HTTP 响应 (Response Body):
-                  </span>
-                  <pre className="p-3 bg-zinc-100 text-zinc-800 rounded-xl font-mono text-[11px] overflow-x-auto border border-zinc-200">
-                    {selectedLog.responseBody}
-                  </pre>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-3 border-t border-zinc-100 flex items-center justify-end">
-              <button
-                onClick={() => setSelectedLog(null)}
-                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold"
-              >
-                关闭
-              </button>
-            </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </SideSheet>
     </div>
   );
 };

@@ -53,10 +53,10 @@ export const SideSheet: React.FC<SideSheetProps> = ({
         aria-hidden="true"
       />
 
-      {/* Side Panel Sliding from Left to Right */}
+      {/* Side Panel Fixed on the Right (slide in from right edge) */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 h-full w-full bg-white shadow-2xl flex flex-col border-r border-zinc-200 animate-in slide-in-from-left duration-300 ease-out focus:outline-none",
+          "fixed inset-y-0 right-0 z-50 h-full w-full bg-white shadow-2xl flex flex-col border-l border-zinc-200 animate-in slide-in-from-right duration-300 ease-out focus:outline-none",
           widthClass
         )}
       >

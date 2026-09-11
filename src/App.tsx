@@ -11,9 +11,8 @@ import { EmailChannelsView } from "./components/EmailChannelsView";
 import { EmailWebhooksView } from "./components/EmailWebhooksView";
 import { EmailTemplatesView } from "./components/EmailTemplatesView";
 import { UserManagementView } from "./components/UserManagementView";
-import { TenantManagementView } from "./components/TenantManagementView";
 import { SystemUserManagementView } from "./components/SystemUserManagementView";
-import { RbacView } from "./components/RbacView";
+import { PermissionsView } from "./components/PermissionsView";
 import { FinancialReportsView } from "./components/FinancialReportsView";
 import { ProductsView } from "./components/ProductsView";
 import { DiscountsView } from "./components/DiscountsView";
@@ -350,11 +349,13 @@ export default function App() {
       case "users":
         return "海外终端客户与全周期行为大盘";
       case "roles":
-        return "RBAC 角色权限体系与数据隔离矩阵";
+        return "角色管理 (Roles)";
+      case "permissions":
+        return "权限管理 (基于菜单树的角色与权限配置)";
       case "menus":
         return "系统菜单与导航节点管理";
-      case "tenants":
-        return "业务组织隔离与多租户管理";
+      case "system_users":
+        return "用户管理 (角色权限与应用权限)";
       default:
         return "海外聚合支付中台";
     }
@@ -362,13 +363,11 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-zinc-50 font-sans text-zinc-900 antialiased selection:bg-zinc-900 selection:text-white">
-      {/* Left Sidebar */}
+      {/* Left Sidebar (driven by menu management data) */}
       <Sidebar
+        menus={menus}
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
-        tenants={tenants}
-        currentTenant={currentTenant}
-        setCurrentTenant={setCurrentTenant}
         currentUser={currentUser}
         onOpenUserSettings={() => setUserSettingsOpen(true)}
         onOpenQuickCreate={() => setQuickCreateOpen(true)}
@@ -574,7 +573,24 @@ export default function App() {
           {currentTab === "roles" && (
             <RolesView
               roles={rolesList}
-              currentTenant={currentTenant}
+              menus={menus}
+              apps={paymentApps}
+              onSaveRole={(updated) => {
+                setRolesList((prev) => {
+                  const exists = prev.some((r) => r.id === updated.id);
+                  return exists
+                    ? prev.map((r) => (r.id === updated.id ? updated : r))
+                    : [...prev, updated];
+                });
+              }}
+            />
+          )}
+
+          {currentTab === "permissions" && (
+            <PermissionsView
+              roles={rolesList}
+              menus={menus}
+              apps={paymentApps}
               onSaveRole={(updated) => {
                 setRolesList((prev) => {
                   const exists = prev.some((r) => r.id === updated.id);
@@ -601,7 +617,7 @@ export default function App() {
             />
           )}
 
-          {(currentTab === "system_users" || currentTab === "tenants") && (
+          {currentTab === "system_users" && (
             <SystemUserManagementView
               users={systemUsers}
               roles={rolesList}

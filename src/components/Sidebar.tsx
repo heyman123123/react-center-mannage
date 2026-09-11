@@ -1,45 +1,56 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  LayoutDashboard,
-  Receipt,
-  Scale,
-  CreditCard,
-  Webhook,
-  Layers,
-  Mail,
-  MailCheck,
-  Languages,
-  Users,
-  Building2,
-  ShieldCheck,
   ChevronDown,
-  Check,
+  ChevronRight,
   Shield,
-  Sparkles,
-  Search,
-  Globe,
-  ShoppingBag,
-  Tag,
-  Megaphone,
-  BookOpen,
-  FolderTree,
   Settings,
+  Globe,
 } from "lucide-react";
-import { Tenant, SystemUser } from "../types/payment";
+import { SystemUser, SystemMenuItem } from "../types/payment";
 import { RBAC_ROLES } from "../data/mockData";
+import { renderMenuIcon } from "./ui/iconRegistry";
 
 interface SidebarProps {
+  menus: SystemMenuItem[];
   currentTab: string;
   setCurrentTab: (tab: string) => void;
-  tenants?: Tenant[];
-  currentTenant?: Tenant;
-  setCurrentTenant?: (tenant: Tenant) => void;
   currentUser: SystemUser;
   onOpenUserSettings: () => void;
   onOpenQuickCreate?: () => void;
 }
 
+interface MenuTreeNode extends SystemMenuItem {
+  children: MenuTreeNode[];
+  level: number;
+}
+
+/** 由扁平菜单数据构建无限级树 */
+function buildMenuTree(menus: SystemMenuItem[]): MenuTreeNode[] {
+  const itemMap = new Map<string, MenuTreeNode>();
+  menus.forEach((m) => {
+    itemMap.set(m.id, { ...m, children: [], level: 0 });
+  });
+  const roots: MenuTreeNode[] = [];
+  menus.forEach((m) => {
+    const node = itemMap.get(m.id)!;
+    if (m.parentId && itemMap.has(m.parentId)) {
+      const parent = itemMap.get(m.parentId)!;
+      node.level = parent.level + 1;
+      parent.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  const sortNodes = (nodes: MenuTreeNode[]) => {
+    nodes.sort((a, b) => (a.order ?? a.sortOrder ?? 0) - (b.order ?? b.sortOrder ?? 0));
+    nodes.forEach((n) => sortNodes(n.children));
+  };
+  sortNodes(roots);
+  return roots;
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
+  menus,
   currentTab,
   setCurrentTab,
   currentUser,
@@ -49,50 +60,94 @@ export const Sidebar: React.FC<SidebarProps> = ({
     name: currentUser.role,
   };
 
-  const navSections = [
-    {
-      title: "核心业务",
-      items: [
-        { id: "dashboard", path: "/dashboard", label: "概览看板", icon: LayoutDashboard },
-        { id: "transactions", path: "/transactions", label: "交易流水与时间轴", icon: Receipt },
-        { id: "reconciliation", path: "/reconciliation", label: "跨境对账中心", icon: Scale, badge: "1" },
-        { id: "users", path: "/users", label: "终端客户与行为大盘", icon: Users },
-      ],
-    },
-    {
-      title: "商品与促销",
-      items: [
-        { id: "products", path: "/products", label: "商品方案配置", icon: ShoppingBag },
-        { id: "discounts", path: "/discounts", label: "折扣与优惠券配置", icon: Tag },
-        { id: "promo_campaigns", path: "/promo-campaigns", label: "促销邮件配置", icon: Megaphone },
-      ],
-    },
-    {
-      title: "支付与网关",
-      items: [
-        { id: "payment_channels", path: "/payment-channels", label: "支付渠道配置", icon: CreditCard },
-        { id: "payment_webhooks", path: "/payment-webhooks", label: "支付 Webhook 调度", icon: Webhook },
-        { id: "apps", path: "/apps", label: "接入应用管理", icon: Layers },
-      ],
-    },
-    {
-      title: "国际化与邮件",
-      items: [
-        { id: "dictionary", path: "/dictionary", label: "系统字典管理", icon: BookOpen },
-        { id: "email_templates", path: "/email-templates", label: "多语言邮件管理", icon: Languages },
-        { id: "email_channels", path: "/email-channels", label: "邮件渠道配置", icon: Mail },
-        { id: "email_webhooks", path: "/email-webhooks", label: "邮件投递与回执", icon: MailCheck },
-      ],
-    },
-    {
-      title: "系统与权限",
-      items: [
-        { id: "roles", path: "/roles", label: "RBAC 角色管理", icon: ShieldCheck },
-        { id: "menus", path: "/menus", label: "系统菜单管理", icon: FolderTree },
-        { id: "system_users", path: "/system-users", label: "用户管理与权限", icon: Users },
-      ],
-    },
-  ];
+  const tree = useMemo(() => buildMenuTree(menus), [menus]);
+
+  // 默认展开所有一级分组
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(
+    () => new Set(tree.filter((n) => n.children.length > 0).map((n) => n.id))
+  );
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const renderNode = (node: MenuTreeNode): React.ReactNode => {
+    const hasChildren = node.children.length > 0;
+    const isExpanded = expandedIds.has(node.id);
+    const isActive = !hasChildren && currentTab === node.routeKey;
+
+    if (hasChildren) {
+      // 手风琴分组节点：递归渲染子节点，无限层级
+      const visibleChildren = node.children.filter((c) => c.visible !== false);
+      return (
+        <div key={node.id} className="space-y-0.5">
+          <button
+            type="button"
+            onClick={() => toggleExpand(node.id)}
+            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-all text-left group cursor-pointer ${
+              isExpanded
+                ? "bg-zinc-100 text-zinc-950 font-bold"
+                : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 font-semibold"
+            }`}
+            title={node.description || node.title}
+          >
+            <div className="flex items-center gap-2.5 truncate">
+              {renderMenuIcon(node.icon, `w-4 h-4 shrink-0 ${isExpanded ? "text-zinc-950" : "text-zinc-500 group-hover:text-zinc-800"}`)}
+              <span className="truncate">{node.title}</span>
+              {visibleChildren.length > 0 && (
+                <span className="text-[9px] font-mono text-zinc-400 bg-white/70 border border-zinc-200 rounded-full px-1.5">
+                  {visibleChildren.length}
+                </span>
+              )}
+            </div>
+            {isExpanded ? (
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            )}
+          </button>
+
+          {isExpanded && (
+            <div
+              className="ml-2 pl-2.5 border-l border-zinc-100 space-y-0.5"
+              style={{ marginLeft: `${Math.min(node.level + 1, 4) * 8}px` }}
+            >
+              {visibleChildren.map((child) => renderNode(child))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // 叶子节点：直接导航
+    return (
+      <button
+        key={node.id}
+        type="button"
+        onClick={() => node.routeKey && setCurrentTab(node.routeKey)}
+        data-path={node.path}
+        title={`${node.title} (${node.path})`}
+        className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs transition-all text-left group ${
+          isActive
+            ? "bg-zinc-900 text-white font-semibold shadow-2xs"
+            : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 font-medium"
+        }`}
+      >
+        {renderMenuIcon(
+          node.icon,
+          `w-4 h-4 shrink-0 ${
+            isActive ? "text-white" : "text-zinc-400 group-hover:text-zinc-700"
+          }`
+        )}
+        <span className="truncate flex-1">{node.title}</span>
+      </button>
+    );
+  };
 
   return (
     <aside
@@ -101,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     >
       {/* Top Section */}
       <div className="p-3.5 flex flex-col gap-3 overflow-y-auto flex-1">
-        {/* Overseas Platform Identity */}
+        {/* Platform Identity */}
         <div className="flex items-center gap-2.5 p-2 rounded-xl border border-zinc-100 bg-zinc-50/60">
           <div className="w-8 h-8 rounded-lg bg-zinc-950 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
             <Globe className="w-4 h-4 text-blue-400" />
@@ -116,57 +171,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Navigation Sections */}
-        <div className="space-y-4 pt-1">
-          {navSections.map((section) => (
-            <div key={section.title} className="space-y-1">
-              <div className="px-2.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                {section.title}
-              </div>
-              <nav className="flex flex-col gap-0.5">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setCurrentTab(item.id)}
-                      data-path={item.path}
-                      title={`${item.label} (${item.path})`}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-all text-left group ${
-                        isActive
-                          ? "bg-zinc-100 text-zinc-950 font-bold shadow-2xs"
-                          : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 font-medium"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <Icon
-                          className={`w-4 h-4 shrink-0 ${
-                            isActive ? "text-zinc-950" : "text-zinc-400 group-hover:text-zinc-700"
-                          }`}
-                        />
-                        <span className="truncate">{item.label}</span>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {item.badge && (
-                          <span className="text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200 px-1.5 py-0.2 rounded-full">
-                            {item.badge}
-                          </span>
-                        )}
-                        <span className="text-[9px] font-mono text-zinc-400 opacity-0 group-hover:opacity-75 transition-opacity">
-                          {item.path}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-          ))}
-        </div>
+        {/* Navigation Accordion (driven by menu management data) */}
+        <nav className="space-y-0.5 pt-1">
+          {tree
+            .filter((n) => n.visible !== false)
+            .map((node) => renderNode(node))}
+        </nav>
       </div>
 
-      {/* Bottom User Card - Opens User Profile Settings (Avatar, Password, etc.) */}
+      {/* Bottom User Card - Opens User Profile Settings */}
       <div className="p-3 border-t border-zinc-200/80 bg-zinc-50/50">
         <button
           id="user-profile-settings-btn"

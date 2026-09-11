@@ -343,6 +343,10 @@ export interface RbacRole {
     canConfigGateways?: boolean;
     canManageEmails?: boolean;
     canManageRoles?: boolean;
+    /** 基于菜单树配置的可访问菜单节点 ID 列表 */
+    menuPermissionIds?: string[];
+    /** 可访问的应用 ID 列表（"ALL" 表示全部） */
+    appPermissionIds?: string[];
     [key: string]: any;
   };
 }
@@ -439,17 +443,17 @@ export interface DictionaryEntry {
   updatedAt: string;
 }
 
-// 菜单配置 (菜单管理)
+// 菜单配置 (纯菜单管理，与角色权限解耦)
 export interface SystemMenuItem {
   id: string;
   title: string;
   path: string;
   icon: string;
   parentId?: string | null;
-  category?: string;
   order?: number;
   sortOrder?: number;
-  requiredPermission?: string;
+  /** 对应前端渲染的 Tab 路由键（仅叶子菜单需要） */
+  routeKey?: string;
   visible: boolean;
   status?: "ENABLED" | "DISABLED";
   description?: string;

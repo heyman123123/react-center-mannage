@@ -13,6 +13,7 @@ import {
   Info,
 } from "lucide-react";
 import { EmailWebhookLog } from "../types/payment";
+import { SideSheet } from "./ui/SideSheet";
 
 interface EmailWebhooksViewProps {
   logs: EmailWebhookLog[];
@@ -188,65 +189,61 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
         </div>
       </div>
 
-      {/* Details Modal */}
-      {selectedLog && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-zinc-200 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 text-xs">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h3 className="font-bold text-zinc-900 text-sm">邮件投递回执详情</h3>
-              <button
-                onClick={() => setSelectedLog(null)}
-                className="text-zinc-400 hover:text-zinc-700 text-sm"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-2.5">
-              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 space-y-1.5 font-mono">
-                <div>
-                  <span className="text-zinc-400 text-[11px]">Message ID:</span>
-                  <div className="text-zinc-900">{selectedLog.messageId}</div>
-                </div>
-                <div>
-                  <span className="text-zinc-400 text-[11px]">Recipient:</span>
-                  <div className="text-zinc-900">{selectedLog.recipient}</div>
-                </div>
-                {selectedLog.ip && (
-                  <div>
-                    <span className="text-zinc-400 text-[11px]">Client IP:</span>
-                    <div className="text-zinc-900">{selectedLog.ip}</div>
-                  </div>
-                )}
-                {selectedLog.userAgent && (
-                  <div>
-                    <span className="text-zinc-400 text-[11px]">User Agent:</span>
-                    <div className="text-zinc-600 text-[11px] break-all">
-                      {selectedLog.userAgent}
-                    </div>
-                  </div>
-                )}
+      {/* Details SideSheet (右侧滑入) */}
+      <SideSheet
+        id="side-sheet-email-webhook-detail"
+        isOpen={!!selectedLog}
+        onClose={() => setSelectedLog(null)}
+        title="邮件投递回执详情"
+        description={selectedLog ? `事件: ${selectedLog.eventType} · ${selectedLog.timestamp}` : ""}
+        icon={<MailCheck className="w-5 h-5 text-zinc-800" />}
+        widthClass="max-w-md"
+        footer={
+          <button
+            type="button"
+            onClick={() => setSelectedLog(null)}
+            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold cursor-pointer"
+          >
+            关闭
+          </button>
+        }
+      >
+        {selectedLog && (
+          <div className="space-y-2.5 text-xs">
+            <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 space-y-1.5 font-mono">
+              <div>
+                <span className="text-zinc-400 text-[11px]">Message ID:</span>
+                <div className="text-zinc-900">{selectedLog.messageId}</div>
               </div>
-
-              {selectedLog.details && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900">
-                  <span className="font-bold block text-[11px] mb-0.5">网关回执反馈说明:</span>
-                  <p>{selectedLog.details}</p>
+              <div>
+                <span className="text-zinc-400 text-[11px]">Recipient:</span>
+                <div className="text-zinc-900">{selectedLog.recipient}</div>
+              </div>
+              {selectedLog.ip && (
+                <div>
+                  <span className="text-zinc-400 text-[11px]">Client IP:</span>
+                  <div className="text-zinc-900">{selectedLog.ip}</div>
+                </div>
+              )}
+              {selectedLog.userAgent && (
+                <div>
+                  <span className="text-zinc-400 text-[11px]">User Agent:</span>
+                  <div className="text-zinc-600 text-[11px] break-all">
+                    {selectedLog.userAgent}
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-zinc-100 flex items-center justify-end">
-              <button
-                onClick={() => setSelectedLog(null)}
-                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold"
-              >
-                关闭
-              </button>
-            </div>
+            {selectedLog.details && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900">
+                <span className="font-bold block text-[11px] mb-0.5">网关回执反馈说明:</span>
+                <p>{selectedLog.details}</p>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </SideSheet>
     </div>
   );
 };

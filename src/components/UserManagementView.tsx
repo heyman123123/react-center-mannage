@@ -568,50 +568,41 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
         </div>
       </div>
 
-      {/* User Actions Full Detail Drawer / Modal */}
+      {/* User Actions Full Detail SideSheet (右侧滑入) */}
       {selectedUser && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 md:p-6">
-          <div className="bg-white border border-zinc-200 rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95">
-            {/* Header Profile */}
-            <div className="flex items-start justify-between border-b border-zinc-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 font-bold text-lg flex items-center justify-center border border-blue-200">
-                  {(selectedUser.name || "US").slice(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base text-zinc-900">{selectedUser.name || "客户档案"}</h3>
-                    <span className="text-zinc-500 text-xs font-normal">
-                      ({selectedUser.country})
-                    </span>
-                  </div>
-                  <div className="text-xs text-zinc-400 font-mono mt-0.5">
-                    {selectedUser.id} • {selectedUser.email}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleToggleSubscriptionStatus(selectedUser)}
-                  className={`px-3 py-1.5 rounded-xl font-medium text-xs flex items-center gap-1 border transition-colors ${
-                    selectedUser.currentSubscription.status === "ACTIVE"
-                      ? "border-rose-200 text-rose-700 hover:bg-rose-50"
-                      : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                  }`}
-                >
-                  {selectedUser.currentSubscription.status === "ACTIVE"
-                    ? "暂停/取消订阅续订"
-                    : "恢复自动续订"}
-                </button>
-
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="text-zinc-400 hover:text-zinc-700 text-sm font-semibold p-1"
-                >
-                  ✕
-                </button>
-              </div>
+        <SideSheet
+          id="side-sheet-user-detail"
+          isOpen={!!selectedUser}
+          onClose={() => setSelectedUser(null)}
+          title={`${selectedUser.name || "客户档案"} (${selectedUser.country})`}
+          description={`${selectedUser.id} • ${selectedUser.email}`}
+          icon={<Users className="w-5 h-5 text-zinc-800" />}
+          widthClass="max-w-3xl"
+          footer={
+            <button
+              type="button"
+              onClick={() => setSelectedUser(null)}
+              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold cursor-pointer"
+            >
+              关闭面板
+            </button>
+          }
+        >
+          <div className="text-xs space-y-4">
+            {/* Subscription Toggle */}
+            <div className="flex items-center justify-end pb-2 border-b border-zinc-100">
+              <button
+                onClick={() => handleToggleSubscriptionStatus(selectedUser)}
+                className={`px-3 py-1.5 rounded-xl font-medium text-xs flex items-center gap-1 border transition-colors cursor-pointer ${
+                  selectedUser.currentSubscription.status === "ACTIVE"
+                    ? "border-rose-200 text-rose-700 hover:bg-rose-50"
+                    : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                }`}
+              >
+                {selectedUser.currentSubscription.status === "ACTIVE"
+                  ? "暂停/取消订阅续订"
+                  : "恢复自动续订"}
+              </button>
             </div>
 
             {/* Overview Chips */}
@@ -692,7 +683,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
             </div>
 
             {/* Action Timeline List */}
-            <div className="overflow-y-auto flex-1 pr-1 space-y-4 text-xs">
+            <div className="space-y-4 text-xs">
               <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-200">
                 {filteredActions && filteredActions.length > 0 ? (
                   filteredActions.map((action) => (
@@ -745,43 +736,40 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                 )}
               </div>
             </div>
-
-            {/* Footer */}
-            <div className="pt-3 border-t border-zinc-100 flex items-center justify-end">
-              <button
-                onClick={() => setSelectedUser(null)}
-                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold"
-              >
-                关闭面板
-              </button>
-            </div>
           </div>
-        </div>
+        </SideSheet>
       )}
 
-      {/* Manual Add User Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-zinc-200 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 text-xs animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
-                  <Users className="w-4 h-4" />
-                </span>
-                <div>
-                  <h3 className="font-bold text-zinc-900 text-sm">录入新出海客户档案</h3>
-                  <p className="text-[11px] text-zinc-400">手动建档并将客户直接纳入全流程生命周期审计流</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-zinc-400 hover:text-zinc-700 text-sm"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateNewUser} className="space-y-3">
+      {/* Manual Add User SideSheet (右侧滑入) */}
+      <SideSheet
+        id="side-sheet-add-user"
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="录入新出海客户档案"
+        description="手动建档并将客户直接纳入全流程生命周期审计流"
+        icon={<Users className="w-5 h-5 text-zinc-800" />}
+        widthClass="max-w-md"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="px-3.5 py-1.5 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 cursor-pointer"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              form="form-add-end-user"
+              className="px-4 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-semibold cursor-pointer"
+            >
+              确认建档
+            </button>
+          </>
+        }
+      >
+        {isAddModalOpen && (
+          <form id="form-add-end-user" onSubmit={handleCreateNewUser} className="space-y-3 text-xs">
               <div>
                 <label className="text-zinc-700 block mb-1 font-semibold">客户全名 / 姓名 *</label>
                 <input
@@ -809,34 +797,36 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-zinc-700 block mb-1 font-semibold">所在国家/地区</label>
-                  <select
+                  <ShadcnSelect
                     value={formCountry}
-                    onChange={(e) => setFormCountry(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
-                  >
-                    <option value="🇺🇸 United States (US)">🇺🇸 美国 (United States)</option>
-                    <option value="🇬🇧 United Kingdom (UK)">🇬🇧 英国 (United Kingdom)</option>
-                    <option value="🇩🇪 Germany (DE)">🇩🇪 德国 (Germany)</option>
-                    <option value="🇯🇵 Japan (JP)">🇯🇵 日本 (Japan)</option>
-                    <option value="🇫🇷 France (FR)">🇫🇷 法国 (France)</option>
-                    <option value="🇨🇦 Canada (CA)">🇨🇦 加拿大 (Canada)</option>
-                    <option value="🇦🇺 Australia (AU)">🇦🇺 澳大利亚 (Australia)</option>
-                    <option value="🇸🇬 Singapore (SG)">🇸🇬 新加坡 (Singapore)</option>
-                  </select>
+                    onValueChange={setFormCountry}
+                    options={[
+                      { value: "🇺🇸 United States (US)", label: "🇺🇸 美国 (United States)" },
+                      { value: "🇬🇧 United Kingdom (UK)", label: "🇬🇧 英国 (United Kingdom)" },
+                      { value: "🇩🇪 Germany (DE)", label: "🇩🇪 德国 (Germany)" },
+                      { value: "🇯🇵 Japan (JP)", label: "🇯🇵 日本 (Japan)" },
+                      { value: "🇫🇷 France (FR)", label: "🇫🇷 法国 (France)" },
+                      { value: "🇨🇦 Canada (CA)", label: "🇨🇦 加拿大 (Canada)" },
+                      { value: "🇦🇺 Australia (AU)", label: "🇦🇺 澳大利亚 (Australia)" },
+                      { value: "🇸🇬 Singapore (SG)", label: "🇸🇬 新加坡 (Singapore)" },
+                    ]}
+                    placeholder="选择国家/地区"
+                  />
                 </div>
 
                 <div>
                   <label className="text-zinc-700 block mb-1 font-semibold">结算货币</label>
-                  <select
+                  <ShadcnSelect
                     value={formCurrency}
-                    onChange={(e) => setFormCurrency(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
-                  >
-                    <option value="USD">USD ($ 美元)</option>
-                    <option value="EUR">EUR (€ 欧元)</option>
-                    <option value="JPY">JPY (¥ 日元)</option>
-                    <option value="GBP">GBP (£ 英镑)</option>
-                  </select>
+                    onValueChange={setFormCurrency}
+                    options={[
+                      { value: "USD", label: "USD ($ 美元)" },
+                      { value: "EUR", label: "EUR (€ 欧元)" },
+                      { value: "JPY", label: "JPY (¥ 日元)" },
+                      { value: "GBP", label: "GBP (£ 英镑)" },
+                    ]}
+                    placeholder="选择结算货币"
+                  />
                 </div>
               </div>
 
@@ -863,16 +853,17 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                 </div>
                 <div>
                   <label className="text-zinc-700 block mb-1 font-semibold">支付卡品牌</label>
-                  <select
+                  <ShadcnSelect
                     value={formCardBrand}
-                    onChange={(e) => setFormCardBrand(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
-                  >
-                    <option value="Visa">Visa</option>
-                    <option value="Mastercard">Mastercard</option>
-                    <option value="American Express">Amex</option>
-                    <option value="JCB">JCB</option>
-                  </select>
+                    onValueChange={setFormCardBrand}
+                    options={[
+                      { value: "Visa", label: "Visa" },
+                      { value: "Mastercard", label: "Mastercard" },
+                      { value: "American Express", label: "Amex" },
+                      { value: "JCB", label: "JCB" },
+                    ]}
+                    placeholder="选择卡品牌"
+                  />
                 </div>
                 <div>
                   <label className="text-zinc-700 block mb-1 font-semibold">卡号后4位</label>
@@ -886,25 +877,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                 </div>
               </div>
 
-              <div className="pt-3 flex items-center justify-end gap-2 border-t border-zinc-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-3.5 py-1.5 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-semibold"
-                >
-                  确认建档
-                </button>
-              </div>
             </form>
-          </div>
-        </div>
-      )}
+        )}
+      </SideSheet>
     </div>
   );
 };

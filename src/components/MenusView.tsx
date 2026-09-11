@@ -4,73 +4,28 @@ import {
   Plus,
   Search,
   CheckCircle2,
-  Lock,
   Eye,
   EyeOff,
   Edit2,
   Trash2,
   FolderTree,
-  ShieldCheck,
   ChevronDown,
   ChevronRight,
-  Sparkles,
-  LayoutDashboard,
-  Receipt,
-  Scale,
-  Users,
-  Package,
-  Tag,
-  Megaphone,
-  CreditCard,
-  Webhook,
-  Layers,
-  Mail,
-  MailCheck,
-  Languages,
-  BookOpen,
-  Folder,
-  FolderOpen,
   CornerDownRight,
-  ExternalLink,
+  FolderOpen,
+  Folder,
 } from "lucide-react";
-import { SystemMenuItem, Tenant } from "../types/payment";
+import { SystemMenuItem } from "../types/payment";
 import { ShadcnSelect } from "./ui/select";
 import { SideSheet } from "./ui/SideSheet";
+import { IconPicker } from "./ui/IconPicker";
+import { renderMenuIcon } from "./ui/iconRegistry";
 
 interface MenusViewProps {
   menus: SystemMenuItem[];
-  currentTenant?: Tenant;
   onSaveMenu: (menu: SystemMenuItem) => void;
   onDeleteMenu?: (id: string) => void;
 }
-
-const CATEGORY_OPTIONS = [
-  "核心运营",
-  "商品与销售",
-  "支付与网关",
-  "国际化与邮件",
-  "系统与权限",
-];
-
-const ICON_PRESETS = [
-  { name: "LayoutDashboard", label: "概览看板 (LayoutDashboard)" },
-  { name: "Receipt", label: "交易流水 (Receipt)" },
-  { name: "Scale", label: "对账中心 (Scale)" },
-  { name: "Users", label: "用户管理 (Users)" },
-  { name: "Package", label: "商品配置 (Package)" },
-  { name: "Tag", label: "折扣优惠 (Tag)" },
-  { name: "Megaphone", label: "营销推广 (Megaphone)" },
-  { name: "CreditCard", label: "支付渠道 (CreditCard)" },
-  { name: "Webhook", label: "网关回调 (Webhook)" },
-  { name: "Layers", label: "出海应用 (Layers)" },
-  { name: "Mail", label: "邮件通道 (Mail)" },
-  { name: "MailCheck", label: "邮件模版 (MailCheck)" },
-  { name: "Languages", label: "语言配置 (Languages)" },
-  { name: "BookOpen", label: "字典管理 (BookOpen)" },
-  { name: "ShieldCheck", label: "角色权限 (ShieldCheck)" },
-  { name: "FolderTree", label: "菜单目录 (FolderTree)" },
-  { name: "Folder", label: "分类目录 (Folder)" },
-];
 
 export const MenusView: React.FC<MenusViewProps> = ({
   menus,
@@ -80,24 +35,22 @@ export const MenusView: React.FC<MenusViewProps> = ({
   const [menuList, setMenuList] = useState<SystemMenuItem[]>(menus);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMenu, setEditingMenu] = useState<SystemMenuItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Tree expansion state
-  const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
-    new Set(["root_core", "root_commerce", "root_gateway", "root_i18n", "root_system"])
-  );
+  // Tree expansion state（默认展开全部一级节点）
+  const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(() => {
+    const roots = menus.filter((m) => !m.parentId || !menus.some((x) => x.id === m.parentId));
+    return new Set(roots.map((m) => m.id));
+  });
 
-  // Form State
+  // Form State（纯菜单管理字段：标题/路径/上级/图标/排序/显隐/说明）
   const [formTitle, setFormTitle] = useState("");
   const [formPath, setFormPath] = useState("");
   const [formParentId, setFormParentId] = useState<string>("NONE");
   const [formIcon, setFormIcon] = useState("LayoutDashboard");
-  const [formCategory, setFormCategory] = useState("核心运营");
   const [formOrder, setFormOrder] = useState(10);
-  const [formRole, setFormRole] = useState("canViewExecutiveDashboard");
   const [formVisible, setFormVisible] = useState(true);
   const [formDescription, setFormDescription] = useState("");
 
@@ -131,134 +84,60 @@ export const MenusView: React.FC<MenusViewProps> = ({
     showToast("已收起全部树级菜单");
   };
 
-  const renderMenuIcon = (iconName: string) => {
-    switch (iconName) {
-      case "LayoutDashboard":
-        return <LayoutDashboard className="w-4 h-4 text-blue-500" />;
-      case "Receipt":
-        return <Receipt className="w-4 h-4 text-emerald-500" />;
-      case "Scale":
-        return <Scale className="w-4 h-4 text-amber-500" />;
-      case "Users":
-        return <Users className="w-4 h-4 text-indigo-500" />;
-      case "Package":
-        return <Package className="w-4 h-4 text-teal-500" />;
-      case "Tag":
-        return <Tag className="w-4 h-4 text-rose-500" />;
-      case "Megaphone":
-        return <Megaphone className="w-4 h-4 text-amber-600" />;
-      case "CreditCard":
-        return <CreditCard className="w-4 h-4 text-sky-500" />;
-      case "Webhook":
-        return <Webhook className="w-4 h-4 text-purple-500" />;
-      case "Layers":
-        return <Layers className="w-4 h-4 text-blue-600" />;
-      case "Mail":
-        return <Mail className="w-4 h-4 text-pink-500" />;
-      case "MailCheck":
-        return <MailCheck className="w-4 h-4 text-violet-500" />;
-      case "Languages":
-        return <Languages className="w-4 h-4 text-cyan-500" />;
-      case "BookOpen":
-        return <BookOpen className="w-4 h-4 text-amber-500" />;
-      case "ShieldCheck":
-        return <ShieldCheck className="w-4 h-4 text-emerald-600" />;
-      case "FolderTree":
-        return <FolderTree className="w-4 h-4 text-zinc-700" />;
-      case "Folder":
-        return <Folder className="w-4 h-4 text-amber-500" />;
-      default:
-        return <Menu className="w-4 h-4 text-zinc-500" />;
-    }
-  };
-
-  // Build hierarchical tree structure from menuList
+  // 由 parentId 构建无限级树
   interface TreeNode extends SystemMenuItem {
     children?: TreeNode[];
     level: number;
   }
 
   const treeData = useMemo(() => {
-    // Map items by id
     const itemMap = new Map<string, TreeNode>();
+    menuList.forEach((m) => {
+      itemMap.set(m.id, { ...m, level: 0, children: [] });
+    });
+
     const roots: TreeNode[] = [];
-
-    // Grouping by sections if not assigned explicit parent
-    const categoryGroupMap: Record<string, { id: string; title: string; icon: string }> = {
-      "核心运营": { id: "root_core", title: "核心业务导航 (Core Operations)", icon: "Folder" },
-      "商品与销售": { id: "root_commerce", title: "商品与销售体系 (Commerce & Catalog)", icon: "Folder" },
-      "支付与网关": { id: "root_gateway", title: "支付与网关调度 (Payments & Routing)", icon: "Folder" },
-      "国际化与邮件": { id: "root_i18n", title: "国际化与邮件通知 (Localization & Mail)", icon: "Folder" },
-      "系统与权限": { id: "root_system", title: "系统与安全权限 (Security & System)", icon: "Folder" },
-    };
-
-    // Ensure all items are in map
     menuList.forEach((m) => {
-      itemMap.set(m.id, { ...m, level: 1, children: [] });
-    });
-
-    // Check if items have explicit parentId
-    const explicitParents = new Set<string>();
-    menuList.forEach((m) => {
+      const node = itemMap.get(m.id)!;
       if (m.parentId && itemMap.has(m.parentId)) {
-        explicitParents.add(m.parentId);
+        const parentNode = itemMap.get(m.parentId)!;
+        node.level = parentNode.level + 1;
+        parentNode.children = parentNode.children || [];
+        parentNode.children.push(node);
+      } else {
+        roots.push(node);
       }
     });
 
-    if (explicitParents.size > 0) {
-      // Build pure tree from parentId
-      menuList.forEach((m) => {
-        const node = itemMap.get(m.id)!;
-        if (m.parentId && itemMap.has(m.parentId)) {
-          const parentNode = itemMap.get(m.parentId)!;
-          node.level = parentNode.level + 1;
-          parentNode.children = parentNode.children || [];
-          parentNode.children.push(node);
-        } else {
-          roots.push(node);
-        }
-      });
-      return roots;
-    }
-
-    // Default structure: group under Category Root Nodes to provide rich tree hierarchy!
-    Object.entries(categoryGroupMap).forEach(([catName, groupInfo]) => {
-      const itemsInCat = menuList.filter((m) => (m.category || "核心运营") === catName);
-      if (itemsInCat.length > 0) {
-        const rootNode: TreeNode = {
-          id: groupInfo.id,
-          title: groupInfo.title,
-          path: "#",
-          icon: groupInfo.icon,
-          category: catName,
-          order: 0,
-          sortOrder: 0,
-          requiredPermission: "canViewExecutiveDashboard",
-          visible: true,
-          level: 0,
-          children: itemsInCat.map((m) => ({
-            ...m,
-            parentId: groupInfo.id,
-            level: 1,
-            children: [],
-          })),
-        };
-        roots.push(rootNode);
-      }
-    });
-
+    const sortNodes = (nodes: TreeNode[]) => {
+      nodes.sort((a, b) => (a.order ?? a.sortOrder ?? 0) - (b.order ?? b.sortOrder ?? 0));
+      nodes.forEach((n) => n.children && sortNodes(n.children));
+    };
+    sortNodes(roots);
     return roots;
   }, [menuList]);
 
-  const handleOpenAdd = (parentId: string = "NONE", defaultCategory?: string) => {
+  // 扁平化树节点（用于上级节点选择器）
+  const flattenTree = (nodes: TreeNode[], depth = 0): { id: string; label: string; depth: number }[] => {
+    const result: { id: string; label: string; depth: number }[] = [];
+    nodes.forEach((n) => {
+      result.push({ id: n.id, label: n.title, depth });
+      if (n.children && n.children.length > 0) {
+        result.push(...flattenTree(n.children, depth + 1));
+      }
+    });
+    return result;
+  };
+
+  const allNodes = useMemo(() => flattenTree(treeData), [treeData]);
+
+  const handleOpenAdd = (parentId: string = "NONE") => {
     setEditingMenu(null);
     setFormTitle("");
     setFormPath("/new-route");
     setFormParentId(parentId);
     setFormIcon("FolderTree");
-    setFormCategory(defaultCategory || "核心运营");
     setFormOrder((menuList.length + 1) * 10);
-    setFormRole("canViewExecutiveDashboard");
     setFormVisible(true);
     setFormDescription("");
     setIsModalOpen(true);
@@ -270,9 +149,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
     setFormPath(m.path);
     setFormParentId(m.parentId || "NONE");
     setFormIcon(m.icon);
-    setFormCategory(m.category || "核心运营");
     setFormOrder(m.order ?? m.sortOrder ?? 10);
-    setFormRole(m.requiredPermission || "canViewExecutiveDashboard");
     setFormVisible(m.visible);
     setFormDescription(m.description || "");
     setIsModalOpen(true);
@@ -302,10 +179,8 @@ export const MenusView: React.FC<MenusViewProps> = ({
         path: formPath.trim(),
         parentId: finalParent,
         icon: formIcon,
-        category: formCategory,
         order: finalOrder,
         sortOrder: finalOrder,
-        requiredPermission: formRole,
         visible: formVisible,
         description: formDescription.trim(),
       };
@@ -319,10 +194,8 @@ export const MenusView: React.FC<MenusViewProps> = ({
         path: formPath.trim(),
         parentId: finalParent,
         icon: formIcon,
-        category: formCategory,
         order: finalOrder,
         sortOrder: finalOrder,
-        requiredPermission: formRole,
         visible: formVisible,
         description: formDescription.trim(),
       };
@@ -339,7 +212,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
   const handleDelete = (id: string, title: string) => {
     setMenuList((prev) => prev.filter((m) => m.id !== id && m.parentId !== id));
     if (onDeleteMenu) onDeleteMenu(id);
-    showToast(`菜单节点【${title}】已成功删除`);
+    showToast(`菜单节点【${title}】及其子节点已成功删除`);
   };
 
   // Filter evaluation helper
@@ -353,27 +226,24 @@ export const MenusView: React.FC<MenusViewProps> = ({
       statusFilter === "ALL" ||
       (statusFilter === "VISIBLE" ? node.visible : !node.visible);
 
-    const matchesCategory =
-      categoryFilter === "ALL" || node.category === categoryFilter;
-
     const childrenMatch = node.children ? node.children.some(filterMatch) : false;
 
-    return (matchesSearch && matchesStatus && matchesCategory) || childrenMatch;
+    return (matchesSearch && matchesStatus) || childrenMatch;
   };
 
-  // Render tree node recursively
+  // Render tree node recursively（无限层级）
   const renderTreeNode = (node: TreeNode) => {
     if (!filterMatch(node)) return null;
 
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = expandedNodeIds.has(node.id);
-    const isCategoryRoot = node.level === 0;
+    const isRoot = node.level === 0;
 
     return (
       <React.Fragment key={node.id}>
         <div
           className={`flex items-center justify-between py-2.5 px-4 transition-colors group border-b border-zinc-100 ${
-            isCategoryRoot
+            isRoot
               ? "bg-zinc-50/80 font-bold text-zinc-900"
               : "hover:bg-zinc-50/60 text-zinc-800 text-xs"
           }`}
@@ -381,7 +251,6 @@ export const MenusView: React.FC<MenusViewProps> = ({
         >
           {/* Node Left Content */}
           <div className="flex items-center gap-2.5 min-w-0">
-            {/* Expansion Toggle Button */}
             {hasChildren ? (
               <button
                 type="button"
@@ -401,24 +270,22 @@ export const MenusView: React.FC<MenusViewProps> = ({
               </span>
             )}
 
-            {/* Icon */}
             <div className="shrink-0 flex items-center justify-center">
-              {isCategoryRoot ? (
+              {isRoot ? (
                 isExpanded ? (
                   <FolderOpen className="w-4 h-4 text-amber-500" />
                 ) : (
                   <Folder className="w-4 h-4 text-amber-500" />
                 )
               ) : (
-                renderMenuIcon(node.icon)
+                renderMenuIcon(node.icon, "w-4 h-4")
               )}
             </div>
 
-            {/* Title & Path */}
             <div className="min-w-0 flex items-center gap-2">
               <span
                 className={`truncate ${
-                  isCategoryRoot
+                  isRoot
                     ? "text-xs font-bold text-zinc-900"
                     : "text-xs font-medium text-zinc-800"
                 }`}
@@ -426,13 +293,13 @@ export const MenusView: React.FC<MenusViewProps> = ({
                 {node.title}
               </span>
 
-              {!isCategoryRoot && node.path && node.path !== "#" && (
+              {!isRoot && node.path && node.path !== "#" && (
                 <span className="text-[11px] font-mono bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded border border-zinc-200/70 hidden sm:inline-block">
                   {node.path}
                 </span>
               )}
 
-              {isCategoryRoot && (
+              {isRoot && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-200 text-zinc-700 font-medium">
                   {node.children?.length || 0} 个子菜单项
                 </span>
@@ -440,80 +307,54 @@ export const MenusView: React.FC<MenusViewProps> = ({
             </div>
           </div>
 
-          {/* Node Right Content (Category, Role, Visibility, Actions) */}
+          {/* Node Right Content (Visibility + Actions) */}
           <div className="flex items-center gap-3 shrink-0">
-            {!isCategoryRoot && (
-              <>
-                {/* Category Tag */}
-                {node.category && (
-                  <span className="hidden md:inline-block text-[10px] px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 font-medium border border-zinc-200">
-                    {node.category}
-                  </span>
-                )}
-
-                {/* Role Permission */}
-                <span className="hidden lg:inline-flex items-center gap-1 text-[10px] text-zinc-500 font-mono bg-zinc-50 px-2 py-0.5 rounded border border-zinc-200">
-                  <ShieldCheck className="w-3 h-3 text-zinc-400" />
-                  <span>{node.requiredPermission || "canViewExecutiveDashboard"}</span>
-                </span>
-
-                {/* Visible Toggle */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleVisible(node)}
-                  className={`p-1 rounded-md transition-colors cursor-pointer ${
-                    node.visible
-                      ? "text-emerald-600 hover:bg-emerald-50"
-                      : "text-zinc-400 hover:bg-zinc-100"
-                  }`}
-                  title={node.visible ? "当前侧边栏可见 (点击隐藏)" : "当前已隐藏 (点击显示)"}
-                >
-                  {node.visible ? (
-                    <Eye className="w-3.5 h-3.5" />
-                  ) : (
-                    <EyeOff className="w-3.5 h-3.5" />
-                  )}
-                </button>
-              </>
-            )}
+            {/* Visible Toggle */}
+            <button
+              type="button"
+              onClick={() => handleToggleVisible(node)}
+              className={`p-1 rounded-md transition-colors cursor-pointer ${
+                node.visible
+                  ? "text-emerald-600 hover:bg-emerald-50"
+                  : "text-zinc-400 hover:bg-zinc-100"
+              }`}
+              title={node.visible ? "当前侧边栏可见 (点击隐藏)" : "当前已隐藏 (点击显示)"}
+            >
+              {node.visible ? (
+                <Eye className="w-3.5 h-3.5" />
+              ) : (
+                <EyeOff className="w-3.5 h-3.5" />
+              )}
+            </button>
 
             {/* Actions */}
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() =>
-                  handleOpenAdd(
-                    isCategoryRoot ? node.id : node.parentId || node.id,
-                    node.category
-                  )
-                }
+                onClick={() => handleOpenAdd(node.id)}
                 className="p-1 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
                 title="添加子菜单"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
 
-              {!isCategoryRoot && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEdit(node)}
-                    className="p-1 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors cursor-pointer"
-                    title="编辑菜单节点"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
+              <button
+                type="button"
+                onClick={() => handleOpenEdit(node)}
+                className="p-1 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors cursor-pointer"
+                title="编辑菜单节点"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(node.id, node.title)}
-                    className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                    title="删除节点"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={() => handleDelete(node.id, node.title)}
+                className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                title="删除节点（含子节点）"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
@@ -547,10 +388,10 @@ export const MenusView: React.FC<MenusViewProps> = ({
             </div>
             <div>
               <h1 className="text-lg font-bold text-zinc-900">
-                系统菜单树结构管理 (Hierarchical Menu Architecture)
+                系统菜单树结构管理 (Menu Management)
               </h1>
               <p className="text-xs text-zinc-500 mt-0.5">
-                以清晰的多层级树状结构管理系统左侧导航栏、父子菜单挂载、路由路径与权限绑定。
+                以无限级树状结构管理左侧导航菜单（左侧侧边栏与这里保持一致），支持任意层级挂载、图标选择与显隐控制。
               </p>
             </div>
           </div>
@@ -597,18 +438,6 @@ export const MenusView: React.FC<MenusViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 w-full md:w-auto">
-          <div className="w-full md:w-44">
-            <ShadcnSelect
-              value={categoryFilter}
-              onValueChange={setCategoryFilter}
-              options={[
-                { value: "ALL", label: "全部业务分组" },
-                ...CATEGORY_OPTIONS.map((c) => ({ value: c, label: c })),
-              ]}
-              placeholder="按业务分组筛选"
-            />
-          </div>
-
           <div className="w-full md:w-36">
             <ShadcnSelect
               value={statusFilter}
@@ -628,21 +457,26 @@ export const MenusView: React.FC<MenusViewProps> = ({
       <div className="bg-white border border-zinc-200 rounded-2xl shadow-2xs overflow-hidden">
         <div className="px-5 py-3 bg-zinc-50 border-b border-zinc-200 text-xs font-medium text-zinc-500 flex items-center justify-between">
           <span>层级节点名称 / 路由路径</span>
-          <span className="hidden sm:inline">分类 / 权限 / 操作</span>
+          <span className="hidden sm:inline">显隐 / 操作</span>
         </div>
 
         <div className="divide-y divide-zinc-100">
           {treeData.map(renderTreeNode)}
+          {treeData.length === 0 && (
+            <div className="py-14 text-center text-xs text-zinc-400">
+              暂无菜单数据，点击右上角「新增菜单节点」创建第一个菜单
+            </div>
+          )}
         </div>
       </div>
 
-      {/* SideSheet for Add/Edit Menu (Sliding from Left to Right) */}
+      {/* SideSheet for Add/Edit Menu（右侧滑入，与左侧侧边栏一致） */}
       <SideSheet
         id="side-sheet-menu-edit"
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingMenu ? `编辑菜单节点: ${editingMenu.title}` : "新增系统树级菜单"}
-        description="配置菜单名称、挂载的上级父节点、路由路径、图标以及访问所需的权限凭证。"
+        description="配置菜单名称、挂载的上级父节点、路由路径与图标。菜单管理不再绑定角色权限，权限在「权限管理」中按菜单树配置。"
         icon={<FolderTree className="w-5 h-5 text-zinc-800" />}
         widthClass="max-w-xl"
         footer={
@@ -687,22 +521,17 @@ export const MenusView: React.FC<MenusViewProps> = ({
               onValueChange={setFormParentId}
               options={[
                 { value: "NONE", label: "作为顶级根节点 (无上级)" },
-                { value: "root_core", label: "核心业务导航 (Core Operations)" },
-                { value: "root_commerce", label: "商品与销售体系 (Commerce & Catalog)" },
-                { value: "root_gateway", label: "支付与网关调度 (Payments & Routing)" },
-                { value: "root_i18n", label: "国际化与邮件通知 (Localization & Mail)" },
-                { value: "root_system", label: "系统与安全权限 (Security & System)" },
-                ...menuList
-                  .filter((m) => !editingMenu || m.id !== editingMenu.id)
-                  .map((m) => ({
-                    value: m.id,
-                    label: `菜单: ${m.title} (${m.path})`,
+                ...allNodes
+                  .filter((n) => !editingMenu || n.id !== editingMenu.id)
+                  .map((n) => ({
+                    value: n.id,
+                    label: `${"　".repeat(n.depth)}${n.depth > 0 ? "└ " : ""}${n.label} (${n.id})`,
                   })),
               ]}
               placeholder="选择上级菜单节点"
             />
             <p className="text-[11px] text-zinc-400 mt-1">
-              选择上级节点后，该菜单将以树状子节点缩进形式嵌套在其下方展示。
+              选择上级节点后，该菜单将以树状子节点缩进形式嵌套在其下方展示，支持无限层级。
             </p>
           </div>
 
@@ -721,29 +550,6 @@ export const MenusView: React.FC<MenusViewProps> = ({
             </div>
 
             <div>
-              <label className="block text-zinc-600 font-medium mb-1">业务所属分组</label>
-              <ShadcnSelect
-                value={formCategory}
-                onValueChange={setFormCategory}
-                options={CATEGORY_OPTIONS.map((c) => ({ value: c, label: c }))}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-zinc-600 font-medium mb-1">菜单节点图标</label>
-              <ShadcnSelect
-                value={formIcon}
-                onValueChange={setFormIcon}
-                options={ICON_PRESETS.map((ic) => ({
-                  value: ic.name,
-                  label: ic.label,
-                }))}
-              />
-            </div>
-
-            <div>
               <label className="block text-zinc-600 font-medium mb-1">排序权重 (Order)</label>
               <input
                 type="number"
@@ -754,21 +560,8 @@ export const MenusView: React.FC<MenusViewProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-zinc-600 font-medium mb-1">所需角色权限项</label>
-            <ShadcnSelect
-              value={formRole}
-              onValueChange={setFormRole}
-              options={[
-                { value: "canViewExecutiveDashboard", label: "看板查阅权限 (canViewExecutiveDashboard)" },
-                { value: "canTriggerReconciliation", label: "对账中心平账权限 (canTriggerReconciliation)" },
-                { value: "canManageProducts", label: "商品与折扣管理权限 (canManageProducts)" },
-                { value: "canConfigGateways", label: "海外网关配置权限 (canConfigGateways)" },
-                { value: "canManageDictionary", label: "多语言字典配置权限 (canManageDictionary)" },
-                { value: "canManageRbac", label: "系统超级管理特权 (canManageRbac)" },
-              ]}
-            />
-          </div>
+          {/* 图标选择器（替代下拉框） */}
+          <IconPicker value={formIcon} onChange={setFormIcon} />
 
           <div>
             <label className="block text-zinc-600 font-medium mb-1">侧边栏显隐状态</label>

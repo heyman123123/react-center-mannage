@@ -24,6 +24,8 @@ import {
   Layers,
 } from "lucide-react";
 import { PaymentChannelConfig, PaymentChannel, TransactionRecord } from "../types/payment";
+import { SideSheet } from "./ui/SideSheet";
+import { ShadcnSelect } from "./ui/select";
 
 interface PaymentChannelsViewProps {
   channels: PaymentChannelConfig[];
@@ -565,23 +567,36 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
         })}
       </div>
 
-      {/* Edit Modal */}
-      {editingChannel && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-zinc-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h3 className="font-bold text-zinc-900 text-base">
-                编辑支付渠道配置 - {editingChannel.name}
-              </h3>
-              <button
-                onClick={() => setEditingChannel(null)}
-                className="text-zinc-400 hover:text-zinc-700 text-sm"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs">
+      {/* Edit Channel SideSheet (右侧滑入) */}
+      <SideSheet
+        id="side-sheet-edit-channel"
+        isOpen={!!editingChannel}
+        onClose={() => setEditingChannel(null)}
+        title={editingChannel ? `编辑支付渠道配置 - ${editingChannel.name}` : "编辑支付渠道配置"}
+        description="维护渠道密钥、费率与路由优先级；密钥仅保存在本机 Mock 环境。"
+        icon={<CreditCard className="w-5 h-5 text-zinc-800" />}
+        widthClass="max-w-lg"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setEditingChannel(null)}
+              className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 cursor-pointer"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              form="form-edit-channel"
+              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium shadow-xs cursor-pointer"
+            >
+              保存配置
+            </button>
+          </>
+        }
+      >
+        {editingChannel && (
+          <form id="form-edit-channel" onSubmit={handleSaveEdit} className="space-y-3 text-xs">
               <div>
                 <label className="text-zinc-600 block mb-1 font-medium">渠道显示名称</label>
                 <input
@@ -597,19 +612,20 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
 
               <div>
                 <label className="text-zinc-600 block mb-1 font-medium">运行模式</label>
-                <select
+                <ShadcnSelect
                   value={editingChannel.mode}
-                  onChange={(e) =>
+                  onValueChange={(val) =>
                     setEditingChannel({
                       ...editingChannel,
-                      mode: e.target.value as "live" | "sandbox",
+                      mode: val as "live" | "sandbox",
                     })
                   }
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
-                >
-                  <option value="live">Live 生产环境</option>
-                  <option value="sandbox">Sandbox 沙箱环境</option>
-                </select>
+                  options={[
+                    { value: "live", label: "Live 生产环境" },
+                    { value: "sandbox", label: "Sandbox 沙箱环境" },
+                  ]}
+                  placeholder="选择运行模式"
+                />
               </div>
 
               <div>
@@ -679,58 +695,102 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-2">
+            </form>
+        )}
+      </SideSheet>
+
+      {/* Test Transaction Sandbox SideSheet (右侧滑入) */}
+      <SideSheet
+        id="side-sheet-test-tx"
+        isOpen={isTestTxModalOpen}
+        onClose={() => {
+          setIsTestTxModalOpen(false);
+          setLastExecutedTxResult(null);
+        }}
+        title="海外支付渠道沙箱测试 (Payment Gateway Live Test)"
+        description="实时模拟全球网关握手、3D-Secure 协议核身与风控拦截，测试结果将直接入账至交易流水中"
+        icon={<Sparkles className="w-5 h-5 text-zinc-800" />}
+        widthClass="max-w-2xl"
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <div>
+              {lastExecutedTxResult ? (
                 <button
                   type="button"
-                  onClick={() => setEditingChannel(null)}
-                  className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50"
+                  onClick={() => setLastExecutedTxResult(null)}
+                  className="px-3 py-1.5 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 text-xs transition-colors cursor-pointer"
+                >
+                  ← 重新配置测试参数
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTestTxModalOpen(false);
+                    setLastExecutedTxResult(null);
+                  }}
+                  className="px-3 py-1.5 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 text-xs transition-colors cursor-pointer"
                 >
                   取消
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium shadow-xs"
-                >
-                  保存配置
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Test Transaction Sandbox Modal */}
-      {isTestTxModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 font-sans">
-          <div className="bg-white border border-zinc-200 rounded-2xl max-w-2xl w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[92vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <div className="flex items-center gap-2.5">
-                <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                  <Sparkles className="w-5 h-5" />
-                </span>
-                <div>
-                  <h3 className="font-bold text-zinc-900 text-base">
-                    海外支付渠道沙箱测试 (Payment Gateway Live Test)
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    实时模拟全球网关握手、3D-Secure 协议核身与风控拦截，测试结果将直接入账至交易流水中
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setIsTestTxModalOpen(false);
-                  setLastExecutedTxResult(null);
-                }}
-                className="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              )}
             </div>
 
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto py-4 text-xs space-y-4 pr-1">
+            <div className="flex items-center gap-2">
+              {lastExecutedTxResult ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTestTxModalOpen(false);
+                      setLastExecutedTxResult(null);
+                    }}
+                    className="px-4 py-1.5 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 text-xs transition-colors cursor-pointer"
+                  >
+                    完成并退出
+                  </button>
+                  {onNavigateToTransactions && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsTestTxModalOpen(false);
+                        setLastExecutedTxResult(null);
+                        onNavigateToTransactions();
+                      }}
+                      className="px-4 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-xs transition-colors cursor-pointer"
+                    >
+                      <span>在交易流水中查看此记录</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isExecutingTxTest}
+                  onClick={handleExecuteTestTransaction}
+                  className="px-5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-xs transition-colors cursor-pointer"
+                >
+                  {isExecutingTxTest ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>网关握手与扣款中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>立即执行模拟交易测试</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        }
+      >
+        {isTestTxModalOpen && (
+          /* Test Configuration / Result Body */
+          <div className="py-1 text-xs space-y-4 pr-1">
               {lastExecutedTxResult ? (
                 /* Test Execution Result Card */
                 <div className="space-y-4 animate-in fade-in">
@@ -857,36 +917,35 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                       <label className="text-zinc-700 block mb-1 font-semibold text-xs">
                         测试收单渠道 (Channel Gateway) <span className="text-rose-500">*</span>:
                       </label>
-                      <select
+                      <ShadcnSelect
                         value={selectedTestChannel?.id || channelList[0]?.id || ""}
-                        onChange={(e) => {
-                          const found = channelList.find((c) => c.id === e.target.value);
+                        onValueChange={(val) => {
+                          const found = channelList.find((c) => c.id === val);
                           if (found) setSelectedTestChannel(found);
                         }}
-                        className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 text-xs font-medium"
-                      >
-                        {channelList.map((ch) => (
-                          <option key={ch.id} value={ch.id}>
-                            {ch.name} ({ch.channelKey.toUpperCase()} - {ch.mode})
-                          </option>
-                        ))}
-                      </select>
+                        options={channelList.map((ch) => ({
+                          value: ch.id,
+                          label: `${ch.name} (${ch.channelKey.toUpperCase()} - ${ch.mode})`,
+                        }))}
+                        placeholder="选择测试渠道"
+                      />
                     </div>
 
                     <div>
                       <label className="text-zinc-700 block mb-1 font-semibold text-xs">
                         关联出海业务应用 (Client App):
                       </label>
-                      <select
+                      <ShadcnSelect
                         value={testAppName}
-                        onChange={(e) => setTestAppName(e.target.value)}
-                        className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 text-xs"
-                      >
-                        <option value="Novas AI Copilot (出海AI助手)">Novas AI Copilot (出海AI助手)</option>
-                        <option value="Global VPN Shield Pro">Global VPN Shield Pro (隐私工具)</option>
-                        <option value="PixelMagic Studio 创意设计套件">PixelMagic Studio 创意设计套件</option>
-                        <option value="Nordic Living 出海独立站品牌店">Nordic Living 出海独立站品牌店</option>
-                      </select>
+                        onValueChange={setTestAppName}
+                        options={[
+                          { value: "Novas AI Copilot (出海AI助手)", label: "Novas AI Copilot (出海AI助手)" },
+                          { value: "Global VPN Shield Pro", label: "Global VPN Shield Pro (隐私工具)" },
+                          { value: "PixelMagic Studio 创意设计套件", label: "PixelMagic Studio 创意设计套件" },
+                          { value: "Nordic Living 出海独立站品牌店", label: "Nordic Living 出海独立站品牌店" },
+                        ]}
+                        placeholder="选择业务应用"
+                      />
                     </div>
                   </div>
 
@@ -896,18 +955,19 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                       <label className="text-zinc-700 block mb-1 font-semibold text-xs">
                         交易结算货币:
                       </label>
-                      <select
+                      <ShadcnSelect
                         value={testCurrency}
-                        onChange={(e) => setTestCurrency(e.target.value)}
-                        className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 text-xs font-mono font-bold"
-                      >
-                        <option value="USD">USD ($ 美元)</option>
-                        <option value="EUR">EUR (€ 欧元)</option>
-                        <option value="GBP">GBP (£ 英镑)</option>
-                        <option value="JPY">JPY (¥ 日元)</option>
-                        <option value="CAD">CAD (C$ 加元)</option>
-                        <option value="AUD">AUD (A$ 澳元)</option>
-                      </select>
+                        onValueChange={setTestCurrency}
+                        options={[
+                          { value: "USD", label: "USD ($ 美元)" },
+                          { value: "EUR", label: "EUR (€ 欧元)" },
+                          { value: "GBP", label: "GBP (£ 英镑)" },
+                          { value: "JPY", label: "JPY (¥ 日元)" },
+                          { value: "CAD", label: "CAD (C$ 加元)" },
+                          { value: "AUD", label: "AUD (A$ 澳元)" },
+                        ]}
+                        placeholder="选择结算货币"
+                      />
                     </div>
 
                     <div className="col-span-2">
@@ -1008,85 +1068,8 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                 </div>
               )}
             </div>
-
-            {/* Modal Footer Controls */}
-            <div className="pt-3 border-t border-zinc-100 flex items-center justify-between">
-              <div>
-                {lastExecutedTxResult ? (
-                  <button
-                    type="button"
-                    onClick={() => setLastExecutedTxResult(null)}
-                    className="px-3 py-1.5 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 text-xs transition-colors"
-                  >
-                    ← 重新配置测试参数
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsTestTxModalOpen(false);
-                      setLastExecutedTxResult(null);
-                    }}
-                    className="px-3 py-1.5 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 text-xs transition-colors"
-                  >
-                    取消
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {lastExecutedTxResult ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsTestTxModalOpen(false);
-                        setLastExecutedTxResult(null);
-                      }}
-                      className="px-4 py-1.5 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 text-xs transition-colors"
-                    >
-                      完成并退出
-                    </button>
-                    {onNavigateToTransactions && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsTestTxModalOpen(false);
-                          setLastExecutedTxResult(null);
-                          onNavigateToTransactions();
-                        }}
-                        className="px-4 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-xs transition-colors cursor-pointer"
-                      >
-                        <span>在交易流水中查看此记录</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={isExecutingTxTest}
-                    onClick={handleExecuteTestTransaction}
-                    className="px-5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-xs transition-colors cursor-pointer"
-                  >
-                    {isExecutingTxTest ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>网关握手与扣款中...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                        <span>立即执行模拟交易测试</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </SideSheet>
     </div>
   );
 };
