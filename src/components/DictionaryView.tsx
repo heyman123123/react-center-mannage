@@ -61,23 +61,121 @@ export const LANGUAGES: {
   { code: "fr-FR", label: "Français (fr-FR)", flag: "🇫🇷", nativeName: "Français" },
 ];
 
-// 可扩展候选语言池（字典管理 → 语种配置中可添加到全局多语言）
+// 可扩展候选语言池（Google Translate 全量语言，字典管理 → 语种配置中可添加到全局多语言）
 export const AVAILABLE_LANGUAGES: {
   code: string;
   label: string;
   flag: string;
   nativeName: string;
 }[] = [
-  { code: "ko-KR", label: "한국어 (ko-KR)", flag: "🇰🇷", nativeName: "한국어" },
-  { code: "pt-BR", label: "Português (pt-BR)", flag: "🇧🇷", nativeName: "Português" },
-  { code: "it-IT", label: "Italiano (it-IT)", flag: "🇮🇹", nativeName: "Italiano" },
-  { code: "ru-RU", label: "Русский (ru-RU)", flag: "🇷🇺", nativeName: "Русский" },
-  { code: "ar-SA", label: "العربية (ar-SA)", flag: "🇸🇦", nativeName: "العربية" },
-  { code: "hi-IN", label: "हिन्दी (hi-IN)", flag: "🇮🇳", nativeName: "हिन्दी" },
-  { code: "nl-NL", label: "Nederlands (nl-NL)", flag: "🇳🇱", nativeName: "Nederlands" },
-  { code: "sv-SE", label: "Svenska (sv-SE)", flag: "🇸🇪", nativeName: "Svenska" },
-  { code: "pl-PL", label: "Polski (pl-PL)", flag: "🇵🇱", nativeName: "Polski" },
-  { code: "tr-TR", label: "Türkçe (tr-TR)", flag: "🇹🇷", nativeName: "Türkçe" },
+  { code: "af-ZA", label: "南非荷兰语 (af-ZA)", flag: "🌐", nativeName: "南非荷兰语" },
+  { code: "sq-AL", label: "阿尔巴尼亚语 (sq-AL)", flag: "🌐", nativeName: "阿尔巴尼亚语" },
+  { code: "am-ET", label: "阿姆哈拉语 (am-ET)", flag: "🌐", nativeName: "阿姆哈拉语" },
+  { code: "hy-AM", label: "亚美尼亚语 (hy-AM)", flag: "🌐", nativeName: "亚美尼亚语" },
+  { code: "az-AZ", label: "阿塞拜疆语 (az-AZ)", flag: "🌐", nativeName: "阿塞拜疆语" },
+  { code: "eu-ES", label: "巴斯克语 (eu-ES)", flag: "🌐", nativeName: "巴斯克语" },
+  { code: "be-BY", label: "白俄罗斯语 (be-BY)", flag: "🌐", nativeName: "白俄罗斯语" },
+  { code: "bn-BD", label: "孟加拉语 (bn-BD)", flag: "🌐", nativeName: "孟加拉语" },
+  { code: "bs-BA", label: "波斯尼亚语 (bs-BA)", flag: "🌐", nativeName: "波斯尼亚语" },
+  { code: "bg-BG", label: "保加利亚语 (bg-BG)", flag: "🌐", nativeName: "保加利亚语" },
+  { code: "ca-ES", label: "加泰罗尼亚语 (ca-ES)", flag: "🌐", nativeName: "加泰罗尼亚语" },
+  { code: "ceb-PH", label: "宿务语 (ceb-PH)", flag: "🌐", nativeName: "宿务语" },
+  { code: "zh-CN", label: "简体中文 (zh-CN)", flag: "🌐", nativeName: "简体中文" },
+  { code: "zh-TW", label: "中文(繁体) (zh-TW)", flag: "🌐", nativeName: "中文(繁体)" },
+  { code: "co-FR", label: "科西嘉语 (co-FR)", flag: "🌐", nativeName: "科西嘉语" },
+  { code: "hr-HR", label: "克罗地亚语 (hr-HR)", flag: "🌐", nativeName: "克罗地亚语" },
+  { code: "cs-CZ", label: "捷克语 (cs-CZ)", flag: "🌐", nativeName: "捷克语" },
+  { code: "da-DK", label: "丹麦语 (da-DK)", flag: "🌐", nativeName: "丹麦语" },
+  { code: "nl-NL", label: "荷兰语 (nl-NL)", flag: "🌐", nativeName: "荷兰语" },
+  { code: "en-US", label: "英语 (en-US)", flag: "🌐", nativeName: "英语" },
+  { code: "eo-XX", label: "世界语 (eo-XX)", flag: "🌐", nativeName: "世界语" },
+  { code: "et-EE", label: "爱沙尼亚语 (et-EE)", flag: "🌐", nativeName: "爱沙尼亚语" },
+  { code: "fi-FI", label: "芬兰语 (fi-FI)", flag: "🌐", nativeName: "芬兰语" },
+  { code: "fy-NL", label: "弗里斯兰语 (fy-NL)", flag: "🌐", nativeName: "弗里斯兰语" },
+  { code: "gl-ES", label: "加利西亚语 (gl-ES)", flag: "🌐", nativeName: "加利西亚语" },
+  { code: "ka-GE", label: "格鲁吉亚语 (ka-GE)", flag: "🌐", nativeName: "格鲁吉亚语" },
+  { code: "de-DE", label: "德语 (de-DE)", flag: "🌐", nativeName: "德语" },
+  { code: "el-GR", label: "希腊语 (el-GR)", flag: "🌐", nativeName: "希腊语" },
+  { code: "gu-IN", label: "古吉拉特语 (gu-IN)", flag: "🌐", nativeName: "古吉拉特语" },
+  { code: "ht-HT", label: "海地克里奥尔语 (ht-HT)", flag: "🌐", nativeName: "海地克里奥尔语" },
+  { code: "ha-NG", label: "豪萨语 (ha-NG)", flag: "🌐", nativeName: "豪萨语" },
+  { code: "haw-US", label: "夏威夷语 (haw-US)", flag: "🌐", nativeName: "夏威夷语" },
+  { code: "he-IL", label: "希伯来语 (he-IL)", flag: "🌐", nativeName: "希伯来语" },
+  { code: "hi-IN", label: "印地语 (hi-IN)", flag: "🌐", nativeName: "印地语" },
+  { code: "hmn-XX", label: "苗语 (hmn-XX)", flag: "🌐", nativeName: "苗语" },
+  { code: "hu-HU", label: "匈牙利语 (hu-HU)", flag: "🌐", nativeName: "匈牙利语" },
+  { code: "is-IS", label: "冰岛语 (is-IS)", flag: "🌐", nativeName: "冰岛语" },
+  { code: "ig-NG", label: "伊博语 (ig-NG)", flag: "🌐", nativeName: "伊博语" },
+  { code: "id-ID", label: "印尼语 (id-ID)", flag: "🌐", nativeName: "印尼语" },
+  { code: "ga-IE", label: "爱尔兰语 (ga-IE)", flag: "🌐", nativeName: "爱尔兰语" },
+  { code: "it-IT", label: "意大利语 (it-IT)", flag: "🌐", nativeName: "意大利语" },
+  { code: "ja-JP", label: "日语 (ja-JP)", flag: "🌐", nativeName: "日语" },
+  { code: "jv-ID", label: "爪哇语 (jv-ID)", flag: "🌐", nativeName: "爪哇语" },
+  { code: "kn-IN", label: "卡纳达语 (kn-IN)", flag: "🌐", nativeName: "卡纳达语" },
+  { code: "kk-KZ", label: "哈萨克语 (kk-KZ)", flag: "🌐", nativeName: "哈萨克语" },
+  { code: "km-KH", label: "高棉语 (km-KH)", flag: "🌐", nativeName: "高棉语" },
+  { code: "rw-RW", label: "卢旺达语 (rw-RW)", flag: "🌐", nativeName: "卢旺达语" },
+  { code: "ko-KR", label: "韩语 (ko-KR)", flag: "🌐", nativeName: "韩语" },
+  { code: "ku-TR", label: "库尔德语 (ku-TR)", flag: "🌐", nativeName: "库尔德语" },
+  { code: "ky-KG", label: "吉尔吉斯语 (ky-KG)", flag: "🌐", nativeName: "吉尔吉斯语" },
+  { code: "lo-LA", label: "老挝语 (lo-LA)", flag: "🌐", nativeName: "老挝语" },
+  { code: "lv-LV", label: "拉脱维亚语 (lv-LV)", flag: "🌐", nativeName: "拉脱维亚语" },
+  { code: "lt-LT", label: "立陶宛语 (lt-LT)", flag: "🌐", nativeName: "立陶宛语" },
+  { code: "lb-LU", label: "卢森堡语 (lb-LU)", flag: "🌐", nativeName: "卢森堡语" },
+  { code: "mk-MK", label: "马其顿语 (mk-MK)", flag: "🌐", nativeName: "马其顿语" },
+  { code: "mg-MG", label: "马达加斯加语 (mg-MG)", flag: "🌐", nativeName: "马达加斯加语" },
+  { code: "ms-MY", label: "马来语 (ms-MY)", flag: "🌐", nativeName: "马来语" },
+  { code: "ml-IN", label: "马拉雅拉姆语 (ml-IN)", flag: "🌐", nativeName: "马拉雅拉姆语" },
+  { code: "mt-MT", label: "马耳他语 (mt-MT)", flag: "🌐", nativeName: "马耳他语" },
+  { code: "mi-NZ", label: "毛利语 (mi-NZ)", flag: "🌐", nativeName: "毛利语" },
+  { code: "mr-IN", label: "马拉地语 (mr-IN)", flag: "🌐", nativeName: "马拉地语" },
+  { code: "mn-MN", label: "蒙古语 (mn-MN)", flag: "🌐", nativeName: "蒙古语" },
+  { code: "my-MM", label: "缅甸语 (my-MM)", flag: "🌐", nativeName: "缅甸语" },
+  { code: "ne-NP", label: "尼泊尔语 (ne-NP)", flag: "🌐", nativeName: "尼泊尔语" },
+  { code: "no-NO", label: "挪威语 (no-NO)", flag: "🌐", nativeName: "挪威语" },
+  { code: "ny-MW", label: "齐切瓦语 (ny-MW)", flag: "🌐", nativeName: "齐切瓦语" },
+  { code: "or-IN", label: "奥里亚语 (or-IN)", flag: "🌐", nativeName: "奥里亚语" },
+  { code: "ps-AF", label: "普什图语 (ps-AF)", flag: "🌐", nativeName: "普什图语" },
+  { code: "fa-IR", label: "波斯语 (fa-IR)", flag: "🌐", nativeName: "波斯语" },
+  { code: "pl-PL", label: "波兰语 (pl-PL)", flag: "🌐", nativeName: "波兰语" },
+  { code: "pt-BR", label: "葡萄牙语(巴西) (pt-BR)", flag: "🌐", nativeName: "葡萄牙语(巴西)" },
+  { code: "pt-PT", label: "葡萄牙语(欧洲) (pt-PT)", flag: "🌐", nativeName: "葡萄牙语(欧洲)" },
+  { code: "pa-IN", label: "旁遮普语 (pa-IN)", flag: "🌐", nativeName: "旁遮普语" },
+  { code: "ro-RO", label: "罗马尼亚语 (ro-RO)", flag: "🌐", nativeName: "罗马尼亚语" },
+  { code: "ru-RU", label: "俄语 (ru-RU)", flag: "🌐", nativeName: "俄语" },
+  { code: "sm-WS", label: "萨摩亚语 (sm-WS)", flag: "🌐", nativeName: "萨摩亚语" },
+  { code: "gd-GB", label: "苏格兰盖尔语 (gd-GB)", flag: "🌐", nativeName: "苏格兰盖尔语" },
+  { code: "sr-RS", label: "塞尔维亚语 (sr-RS)", flag: "🌐", nativeName: "塞尔维亚语" },
+  { code: "st-LS", label: "塞索托语 (st-LS)", flag: "🌐", nativeName: "塞索托语" },
+  { code: "sn-ZW", label: "绍纳语 (sn-ZW)", flag: "🌐", nativeName: "绍纳语" },
+  { code: "sd-PK", label: "信德语 (sd-PK)", flag: "🌐", nativeName: "信德语" },
+  { code: "si-LK", label: "僧伽罗语 (si-LK)", flag: "🌐", nativeName: "僧伽罗语" },
+  { code: "sk-SK", label: "斯洛伐克语 (sk-SK)", flag: "🌐", nativeName: "斯洛伐克语" },
+  { code: "sl-SI", label: "斯洛文尼亚语 (sl-SI)", flag: "🌐", nativeName: "斯洛文尼亚语" },
+  { code: "so-SO", label: "索马里语 (so-SO)", flag: "🌐", nativeName: "索马里语" },
+  { code: "es-ES", label: "西班牙语 (es-ES)", flag: "🌐", nativeName: "西班牙语" },
+  { code: "es-419", label: "西班牙语(拉美) (es-419)", flag: "🌐", nativeName: "西班牙语(拉美)" },
+  { code: "su-ID", label: "巽他语 (su-ID)", flag: "🌐", nativeName: "巽他语" },
+  { code: "sw-KE", label: "斯瓦希里语 (sw-KE)", flag: "🌐", nativeName: "斯瓦希里语" },
+  { code: "sv-SE", label: "瑞典语 (sv-SE)", flag: "🌐", nativeName: "瑞典语" },
+  { code: "tl-PH", label: "他加禄语 (tl-PH)", flag: "🌐", nativeName: "他加禄语" },
+  { code: "tg-TJ", label: "塔吉克语 (tg-TJ)", flag: "🌐", nativeName: "塔吉克语" },
+  { code: "ta-IN", label: "泰米尔语 (ta-IN)", flag: "🌐", nativeName: "泰米尔语" },
+  { code: "tt-RU", label: "鞑靼语 (tt-RU)", flag: "🌐", nativeName: "鞑靼语" },
+  { code: "te-IN", label: "泰卢固语 (te-IN)", flag: "🌐", nativeName: "泰卢固语" },
+  { code: "th-TH", label: "泰语 (th-TH)", flag: "🌐", nativeName: "泰语" },
+  { code: "tr-TR", label: "土耳其语 (tr-TR)", flag: "🌐", nativeName: "土耳其语" },
+  { code: "tk-TM", label: "土库曼语 (tk-TM)", flag: "🌐", nativeName: "土库曼语" },
+  { code: "uk-UA", label: "乌克兰语 (uk-UA)", flag: "🌐", nativeName: "乌克兰语" },
+  { code: "ur-PK", label: "乌尔都语 (ur-PK)", flag: "🌐", nativeName: "乌尔都语" },
+  { code: "ug-CN", label: "维吾尔语 (ug-CN)", flag: "🌐", nativeName: "维吾尔语" },
+  { code: "uz-UZ", label: "乌兹别克语 (uz-UZ)", flag: "🌐", nativeName: "乌兹别克语" },
+  { code: "vi-VN", label: "越南语 (vi-VN)", flag: "🌐", nativeName: "越南语" },
+  { code: "cy-GB", label: "威尔士语 (cy-GB)", flag: "🌐", nativeName: "威尔士语" },
+  { code: "xh-ZA", label: "科萨语 (xh-ZA)", flag: "🌐", nativeName: "科萨语" },
+  { code: "yi-XX", label: "意第绪语 (yi-XX)", flag: "🌐", nativeName: "意第绪语" },
+  { code: "yo-NG", label: "约鲁巴语 (yo-NG)", flag: "🌐", nativeName: "约鲁巴语" },
+  { code: "zu-ZA", label: "祖鲁语 (zu-ZA)", flag: "🌐", nativeName: "祖鲁语" },
 ];
 
 export const PLATFORM_OPTIONS: {
@@ -197,6 +295,7 @@ const CATEGORY_LABELS: { key: DictionaryCategory; label: string }[] = [
   { key: "PORTAL", label: "商户管理后台" },
   { key: "GATEWAY_ERRORS", label: "网关与错误码" },
   { key: "CURRENCY", label: "结算货币" },
+  { key: "PAYMENT_CHANNEL", label: "支付渠道" },
 ];
 
 // 字典词条 → 关联位置（多语言关联映射：收银台/商户后台/网关/移动端/通知邮件模板）
@@ -285,6 +384,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   >(LANGUAGES);
   const [isLangModalOpen, setIsLangModalOpen] = useState(false);
   const [customLangCode, setCustomLangCode] = useState("");
+  const [langPoolSearch, setLangPoolSearch] = useState("");
   const [customLangName, setCustomLangName] = useState("");
   const [customLangFlag, setCustomLangFlag] = useState("");
 
@@ -1206,9 +1306,21 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <div className="font-bold text-fg mb-2 flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5 text-violet-600" />
               从候选语种添加
+              <span className="text-[10px] text-fg-tertiary font-mono">（{AVAILABLE_LANGUAGES.length}）</span>
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {AVAILABLE_LANGUAGES.map((cand) => {
+            <input
+              type="text"
+              value={langPoolSearch}
+              onChange={(e) => setLangPoolSearch(e.target.value)}
+              placeholder="搜索语言名称 / 代码…"
+              className="w-full px-2.5 py-1.5 mb-2 bg-subtle border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+            />
+            <div className="flex items-center gap-1.5 flex-wrap max-h-64 overflow-y-auto p-1">
+              {AVAILABLE_LANGUAGES.filter((cand) => {
+                const q = langPoolSearch.trim().toLowerCase();
+                if (!q) return true;
+                return cand.nativeName.toLowerCase().includes(q) || cand.code.toLowerCase().includes(q) || cand.label.toLowerCase().includes(q);
+              }).map((cand) => {
                 const added = languages.some((l) => l.code === cand.code);
                 return (
                   <button
@@ -1225,6 +1337,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     <span>{cand.flag}</span>
                     <span>{cand.nativeName}</span>
                     <span className="font-mono text-[9px] opacity-70">{cand.code}</span>
+                    {added && <span className="text-[9px] opacity-60">已添加</span>}
                   </button>
                 );
               })}
@@ -1353,6 +1466,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     { value: "SECURITY", label: "账号安全与风控 (Security)" },
                     { value: "PROMOTION", label: "营销促销 (Promotion)" },
                     { value: "CURRENCY", label: "结算货币 (Currency / 多语言币种配置)" },
+                    { value: "PAYMENT_CHANNEL", label: "支付渠道 (Payment Channel / 可接入渠道)" },
                   ]}
                 />
               </div>

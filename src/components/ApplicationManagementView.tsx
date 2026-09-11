@@ -155,6 +155,22 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
   const [formAssociatedProductCodes, setFormAssociatedProductCodes] = useState<string[]>([]);
   const [formAssociatedDiscountCodes, setFormAssociatedDiscountCodes] = useState<string[]>([]);
 
+  // 按应用已选渠道过滤可关联的商品/折扣（需求6b）：
+  // 未选渠道时显示全部；已选渠道时只显示绑定了对应渠道账号的商品/折扣（未绑定渠道的视为对全部渠道可用）
+  const selectedChannelAccountIds = new Set(
+    paymentChannels.filter((c) => formChannels.includes(c.channelKey)).map((c) => c.id)
+  );
+  const visibleProducts = products.filter((p) => {
+    if (formChannels.length === 0) return true;
+    if (!p.boundChannelIds || p.boundChannelIds.length === 0) return true;
+    return p.boundChannelIds.some((id) => selectedChannelAccountIds.has(id));
+  });
+  const visibleDiscounts = discounts.filter((d) => {
+    if (formChannels.length === 0) return true;
+    if (!d.boundChannelIds || d.boundChannelIds.length === 0) return true;
+    return d.boundChannelIds.some((id) => selectedChannelAccountIds.has(id));
+  });
+
   // Email Configuration
   const [formEmailChannelId, setFormEmailChannelId] = useState<string>("ech_sendgrid_live");
   const [formSenderEmail, setFormSenderEmail] = useState("billing@novaspay.global");
@@ -1094,7 +1110,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   </div>
 
                   <div className="bg-subtle rounded-xl border border-line max-h-64 overflow-y-auto divide-y divide-line">
-                    {products.map((p) => {
+                    {visibleProducts.map((p) => {
                       const isChecked = formAssociatedProductCodes.includes(p.code);
                       return (
                         <label
@@ -1151,7 +1167,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       当前已为该应用勾选 <strong>{formAssociatedProductCodes.length}</strong> 款商品方案
                     </span>
                     <span className="text-fg-tertiary font-mono">
-                      覆盖 {Array.from(new Set(products.filter((p) => formAssociatedProductCodes.includes(p.code)).map((p) => p.currency || "USD"))).length} 种货币
+                      覆盖 {Array.from(new Set(visibleProducts.filter((p) => formAssociatedProductCodes.includes(p.code)).map((p) => p.currency || "USD"))).length} 种货币
                     </span>
                   </div>
                 </div>
@@ -1180,7 +1196,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {discounts.map((d) => {
+                    {visibleDiscounts.map((d) => {
                       const isChecked = formAssociatedDiscountCodes.includes(d.code);
                       return (
                         <label

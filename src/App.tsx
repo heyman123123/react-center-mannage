@@ -459,6 +459,7 @@ export default function App() {
             <ProductsView
               products={products}
               currentTenant={currentTenant}
+              paymentChannels={paymentChannels}
               onSaveProduct={(updated) => {
                 setProducts((prev) => {
                   const exists = prev.some((p) => p.id === updated.id);
@@ -474,6 +475,7 @@ export default function App() {
             <DiscountsView
               discounts={discounts}
               currentTenant={currentTenant}
+              paymentChannels={paymentChannels}
               onSaveDiscount={(updated) => {
                 setDiscounts((prev) => {
                   const exists = prev.some((d) => d.id === updated.id);
@@ -506,6 +508,7 @@ export default function App() {
             <PaymentChannelsView
               channels={paymentChannels}
               apps={paymentApps}
+              dictionary={dictionary}
               onSaveChannel={(updated) => {
                 setPaymentChannels((prev) =>
                   prev.some((c) => c.id === updated.id)

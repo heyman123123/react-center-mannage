@@ -137,12 +137,12 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
   return (
     <div
       id="chart-card-container"
-      className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs hover:shadow-card transition-shadow duration-200"
+      className="bg-surface border border-line/90 rounded-xl p-3 shadow-2xs hover:shadow-card transition-shadow duration-200 flex flex-col"
     >
-      {/* Chart Card Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-        <div>
-          <h2 className="text-base font-semibold text-fg tracking-tight">
+      {/* Chart Card Header（固定一行，不挤压图表） */}
+      <div className="flex flex-row flex-wrap sm:flex-nowrap items-center justify-between gap-2 mb-3 shrink-0">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-fg tracking-tight whitespace-nowrap">
             Total Transaction Volume (聚合交易流水与清算峰值)
           </h2>
           <p className="text-xs text-fg-secondary mt-0.5">
@@ -154,8 +154,8 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
           </p>
         </div>
 
-        {/* Time range switcher (mirrors screenshot's right segmented control) */}
-        <div className="inline-flex p-0.5 bg-hover rounded-lg border border-line text-xs font-medium self-start sm:self-auto">
+        {/* Time range switcher */}
+        <div className="inline-flex p-0.5 bg-hover rounded-lg border border-line text-xs font-medium self-start sm:self-auto shrink-0 whitespace-nowrap">
           <button
             id="timerange-3m"
             onClick={() => setTimeRange("3m")}
@@ -193,10 +193,10 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
       </div>
 
       {/* SVG Canvas with screenshot's exact monochrome dual-layered aesthetic */}
-      <div className="relative w-full overflow-hidden select-none">
+      <div className="relative w-full flex-1 min-h-[300px] overflow-hidden select-none">
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          className="w-full h-56 md:h-64"
+          className="w-full h-full min-h-[300px]"
           preserveAspectRatio="none"
           onMouseLeave={() => setHoveredIndex(null)}
         >

@@ -2215,6 +2215,32 @@ export const INITIAL_DICTIONARY: DictionaryEntry[] = [
     },
     updatedAt: "2026-09-06 10:30:00",
   },
+  // ===== 支付渠道字典（定义可接入的渠道，供渠道配置页"接入新渠道"选择） =====
+  ...[
+    ["stripe", "Stripe", "全球卡组收单"],
+    ["paypal", "PayPal", "全球数字钱包"],
+    ["adyen", "Adyen", "全渠道收单风控"],
+    ["checkout", "Checkout.com", "出海企业全球收单"],
+    ["apple_pay", "Apple Pay", "Apple 一键支付"],
+    ["google_pay", "Google Pay", "Android 一键支付"],
+    ["klarna", "Klarna", "欧洲 BNPL 先享后付"],
+    ["sepa", "SEPA Direct Debit", "欧元区银行借记代扣"],
+  ].map(([slug, name, desc], i) => ({
+    id: `dict_ch_${i + 1}`,
+    key: `channel.${slug}.name`,
+    category: "PAYMENT_CHANNEL" as const,
+    description: `支付渠道：${name}（${desc}）`,
+    referencedTemplatesCount: 0,
+    translations: {
+      "en-US": name,
+      "zh-CN": name,
+      "ja-JP": name,
+      "de-DE": name,
+      "es-ES": name,
+      "fr-FR": name,
+    },
+    updatedAt: "2026-09-07 09:00:00",
+  })),
 ];
 
 // 系统菜单配置列表 (菜单管理) — 纯树结构，与角色权限解耦，左侧侧边栏与该数据保持一致

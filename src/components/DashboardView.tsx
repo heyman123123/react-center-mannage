@@ -155,7 +155,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   if (loading) return <DashboardSkeleton />;
 
   return (
-    <div className="p-2 md:p-8 space-y-2 max-w-7xl mx-auto font-sans">
+    <div className="p-2 md:p-4 space-y-2 max-w-7xl mx-auto font-sans">
       {/* 4 Top KPI Cards (matching the screenshot's exact visual layout and metrics) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         {/* Card 1: Total Revenue */}

@@ -19,14 +19,16 @@ import {
   Sparkles,
   Layers,
 } from "lucide-react";
-import { ProductConfig, ProductType, Tenant } from "../types/payment";
+import { ProductConfig, ProductType, Tenant, PaymentChannelConfig } from "../types/payment";
 import { formatCurrency } from "../lib/utils";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
+import { MultiSelect } from "./ui/MultiSelect";
 
 interface ProductsViewProps {
   products: ProductConfig[];
   currentTenant: Tenant;
+  paymentChannels?: PaymentChannelConfig[];
   onSaveProduct: (product: ProductConfig) => void;
 }
 
@@ -42,6 +44,7 @@ const SUPPORTED_CURRENCIES = [
 export const ProductsView: React.FC<ProductsViewProps> = ({
   products,
   currentTenant,
+  paymentChannels = [],
   onSaveProduct,
 }) => {
   const [productList, setProductList] = useState<ProductConfig[]>(products);
@@ -70,6 +73,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [formTrialDays, setFormTrialDays] = useState<number>(14);
   const [formStripePriceId, setFormStripePriceId] = useState("");
   const [formPaypalPlanId, setFormPaypalPlanId] = useState("");
+  const [formBoundChannels, setFormBoundChannels] = useState<string[]>([]);
+
+  // 渠道账号选项（channelName - accountName）
+  const channelOptions = paymentChannels.map((c) => ({
+    value: c.id,
+    label: `${c.name}${c.description && !c.description.includes("·") ? "" : ""} · ${c.description?.split("·")[1]?.trim() || c.name}`,
+  }));
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -96,6 +106,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     setFormTrialDays(14);
     setFormStripePriceId(`price_stripe_live_${Date.now().toString().slice(-6)}`);
     setFormPaypalPlanId("");
+    setFormBoundChannels([]);
     setIsModalOpen(true);
   };
 
@@ -112,6 +123,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     setFormTrialDays(p.trialDays || 0);
     setFormStripePriceId(p.stripePriceId || "");
     setFormPaypalPlanId(p.paypalPlanId || "");
+    setFormBoundChannels(p.boundChannelIds || []);
     setIsModalOpen(true);
   };
 
@@ -175,6 +187,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         trialDays: formTrialDays,
         stripePriceId: formStripePriceId.trim() || undefined,
         paypalPlanId: formPaypalPlanId.trim() || undefined,
+        boundChannelIds: formBoundChannels,
       };
       setProductList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       onSaveProduct(updated);
@@ -197,6 +210,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         stripePriceId: formStripePriceId.trim() || `price_stripe_${Date.now().toString().slice(-6)}`,
         paypalPlanId: formPaypalPlanId.trim() || undefined,
         subscriberCount: 0,
+        boundChannelIds: formBoundChannels,
         createdAt: new Date().toISOString().slice(0, 10),
       };
       setProductList((prev) => [newProd, ...prev]);
@@ -496,6 +510,21 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                       <div className="text-[10px] text-fg-tertiary truncate">
                         {p.features?.length || 0} 项核心权益
                       </div>
+                      {p.boundChannelIds && p.boundChannelIds.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {p.boundChannelIds.slice(0, 2).map((cid) => {
+                            const ch = paymentChannels.find((c) => c.id === cid);
+                            return ch ? (
+                              <span key={cid} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 whitespace-nowrap">
+                                {ch.name}
+                              </span>
+                            ) : null;
+                          })}
+                          {p.boundChannelIds.length > 2 && (
+                            <span className="text-[9px] text-fg-tertiary">+{p.boundChannelIds.length - 2}</span>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     {/* Gateway ID */}
@@ -802,6 +831,18 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 onChange={(e) => setFormFeatures(e.target.value)}
                 placeholder="无限量代码补全&#10;128k 上下文窗口&#10;7x24 小时 SLA 响应"
                 className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
+              />
+            </div>
+
+            <div>
+              <label className="font-semibold text-fg-secondary block mb-1">
+                绑定渠道账号:
+              </label>
+              <MultiSelect
+                value={formBoundChannels}
+                onValueChange={setFormBoundChannels}
+                options={channelOptions}
+                placeholder="选择该商品可使用的渠道账号（可多选）..."
               />
             </div>
           </form>

@@ -372,6 +372,7 @@ export interface ProductConfig {
   stripePriceId?: string;
   paypalPlanId?: string;
   subscriberCount?: number;
+  boundChannelIds?: string[]; // 绑定的渠道账号 id（来自 paymentChannels）
   createdAt: string;
 }
 
@@ -392,6 +393,7 @@ export interface DiscountConfig {
   applicableScope: "ALL" | "SUBSCRIPTION_ONLY" | "BU_SPECIFIC";
   targetTenantId?: TenantId;
   status: "ACTIVE" | "EXPIRED" | "DISABLED";
+  boundChannelIds?: string[]; // 绑定的渠道账号 id（来自 paymentChannels）
   createdAt: string;
 }
 
@@ -424,7 +426,8 @@ export type DictionaryCategory =
   | "CHECKOUT"
   | "PORTAL"
   | "GATEWAY_ERRORS"
-  | "CURRENCY"; // 结算货币配置（含多语言币种名称与符号）
+  | "CURRENCY" // 结算货币配置（含多语言币种名称与符号）
+  | "PAYMENT_CHANNEL"; // 支付渠道字典（channel.* 词条定义可接入的渠道）
 
 export type ProjectPlatform =
   | "CHECKOUT" // 海外收银台 (Web Checkout / Paywall)

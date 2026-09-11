@@ -19,19 +19,22 @@ import {
   Sparkles,
   TrendingUp,
 } from "lucide-react";
-import { DiscountConfig, DiscountType, Tenant } from "../types/payment";
+import { DiscountConfig, DiscountType, Tenant, PaymentChannelConfig } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
+import { MultiSelect } from "./ui/MultiSelect";
 
 interface DiscountsViewProps {
   discounts: DiscountConfig[];
   currentTenant: Tenant;
+  paymentChannels?: PaymentChannelConfig[];
   onSaveDiscount: (discount: DiscountConfig) => void;
 }
 
 export const DiscountsView: React.FC<DiscountsViewProps> = ({
   discounts,
   currentTenant,
+  paymentChannels = [],
   onSaveDiscount,
 }) => {
   const [discountList, setDiscountList] = useState<DiscountConfig[]>(discounts);
@@ -58,6 +61,12 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
   const [formStartDate, setFormStartDate] = useState("2026-01-01");
   const [formEndDate, setFormEndDate] = useState("2026-12-31");
   const [formScope, setFormScope] = useState<"ALL" | "SUBSCRIPTION_ONLY" | "BU_SPECIFIC">("ALL");
+  const [formBoundChannels, setFormBoundChannels] = useState<string[]>([]);
+
+  const channelOptions = paymentChannels.map((c) => ({
+    value: c.id,
+    label: `${c.name}${c.description?.includes("·") ? ` · ${c.description.split("·")[1].trim()}` : ""}`,
+  }));
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -82,6 +91,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     setFormStartDate(new Date().toISOString().slice(0, 10));
     setFormEndDate("2026-12-31");
     setFormScope("ALL");
+    setFormBoundChannels([]);
     setIsModalOpen(true);
   };
 
@@ -97,6 +107,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     setFormStartDate(d.startDate);
     setFormEndDate(d.endDate);
     setFormScope(d.applicableScope);
+    setFormBoundChannels(d.boundChannelIds || []);
     setIsModalOpen(true);
   };
 
@@ -124,6 +135,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
         startDate: formStartDate,
         endDate: formEndDate,
         applicableScope: formScope,
+        boundChannelIds: formBoundChannels,
       };
       setDiscountList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       onSaveDiscount(updated);
@@ -143,6 +155,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
         endDate: formEndDate,
         applicableScope: formScope,
         status: "ACTIVE",
+        boundChannelIds: formBoundChannels,
         createdAt: new Date().toISOString().slice(0, 10),
       };
       setDiscountList((prev) => [newDiscount, ...prev]);
@@ -354,6 +367,21 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                           ? "仅限周期性订阅方案 (Subscription Only)"
                           : "仅限指定业务单元"}
                       </div>
+                      {d.boundChannelIds && d.boundChannelIds.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {d.boundChannelIds.slice(0, 2).map((cid) => {
+                            const ch = paymentChannels.find((c) => c.id === cid);
+                            return ch ? (
+                              <span key={cid} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 whitespace-nowrap">
+                                {ch.name}
+                              </span>
+                            ) : null;
+                          })}
+                          {d.boundChannelIds.length > 2 && (
+                            <span className="text-[9px] text-fg-tertiary">+{d.boundChannelIds.length - 2}</span>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-3 w-[130px] whitespace-nowrap">
@@ -621,6 +649,18 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                   className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="font-semibold text-fg-secondary block mb-1">
+                绑定渠道账号:
+              </label>
+              <MultiSelect
+                value={formBoundChannels}
+                onValueChange={setFormBoundChannels}
+                options={channelOptions}
+                placeholder="选择该折扣可使用的渠道账号（可多选）..."
+              />
             </div>
           </form>
         </SideSheet>

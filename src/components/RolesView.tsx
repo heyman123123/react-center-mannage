@@ -206,7 +206,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
   if (loading) return <TableSkeleton rows={8} />;
 
   return (
-    <div className="flex gap-3 items-start font-sans">
+    <div className="space-y-3 font-sans">
       {/* Toast */}
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
@@ -215,73 +215,30 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
         </div>
       )}
 
-      {/* ===== 左侧：角色分类 ===== */}
-      <div className="w-48 shrink-0 bg-surface border border-line rounded-xl shadow-card overflow-hidden lg:sticky lg:top-4">
-        <div className="px-3 py-2.5 border-b border-line flex items-center justify-between">
-          <span className="text-xs font-bold text-fg flex items-center gap-1.5">
-            <ListFilter className="w-3.5 h-3.5 text-fg-secondary" />
-            类型
-          </span>
-        </div>
-        <div className="p-2 space-y-0.5">
-          {categories.map((c) => (
-            <ContextMenu
-              key={c.key}
-              items={[
-                { key: "add", label: "新增角色", onClick: handleOpenAdd },
-                {
-                  key: "refresh", label: "刷新列表", onClick: () => {
-                    setRoleList(roles);
-                    showToast("角色列表已刷新");
-                  },
-                },
-              ]}
-              trigger={
-            <button
-              type="button"
-              onClick={() => setCategory(c.key)}
-              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-                category === c.key
-                  ? "bg-primary text-primary-foreground font-semibold"
-                  : "text-fg-secondary hover:bg-hover"
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                {c.key === "BUILTIN" ? (
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                ) : c.key === "CUSTOM" ? (
-                  <KeyRound className="w-3.5 h-3.5" />
-                ) : (
-                  <ListFilter className="w-3.5 h-3.5" />
-                )}
-                <span>{c.label}</span>
-              </span>
-              <span className={`text-[10px] font-mono ${category === c.key ? "text-fg-tertiary" : "text-fg-tertiary"}`}>
-                {categoryCounts[c.key]}
-              </span>
-            </button>
-              }
-            />
-          ))}
-        </div>
-
-        <div className="px-3 py-2.5 border-t border-line-subtle">
-          <div className="text-[11px] text-fg-secondary leading-relaxed">
-            当前共 <b className="text-fg font-mono">{roleList.length}</b> 个角色，
-            分配 <b className="text-fg font-mono">{totalAssignedStaff}</b> 位成员
-          </div>
-        </div>
-      </div>
-
-      {/* ===== 右侧：角色列表 ===== */}
-      <div className="flex-1 min-w-0 space-y-3">
+      {/* ===== 角色列表（全宽） ===== */}
+      <div className="space-y-3">
         {/* 标题与工具栏 */}
-        <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2.5 flex items-center justify-between gap-2">
+        <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2.5 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-bold text-fg">
             <span>角色列表</span>
-            <span className="text-fg-tertiary font-normal text-xs">
-              （{categories.find((c) => c.key === category)?.label}）
-            </span>
+            {/* 分类筛选 tabs */}
+            <div className="flex items-center gap-1 ml-2">
+              {categories.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => setCategory(c.key)}
+                  className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    category === c.key
+                      ? "bg-primary text-primary-foreground"
+                      : "text-fg-secondary hover:bg-hover"
+                  }`}
+                >
+                  {c.label}
+                  <span className="ml-1 opacity-70">{categoryCounts[c.key]}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -399,7 +356,29 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                         : "—";
 
                     return (
-                      <tr key={rid} className="hover:bg-subtle/80 transition-colors">
+                      <ContextMenu
+                        key={rid}
+                        items={[
+                          { key: "add", label: "新增角色", onClick: handleOpenAdd },
+                          {
+                            key: "rename", label: "重命名", onClick: () => {
+                              const name = window.prompt("角色名称：", role.name);
+                              if (name && name.trim()) {
+                                setRoleList((prev) => prev.map((r) => (roleIdentifier(r) === rid ? { ...r, name: name.trim() } : r)));
+                                showToast("角色已重命名");
+                              }
+                            },
+                          },
+                          { key: "del", label: "删除", danger: true, onClick: () => handleDelete(role) },
+                          {
+                            key: "refresh", label: "刷新列表", onClick: () => {
+                              setRoleList(roles);
+                              showToast("角色列表已刷新");
+                            },
+                          },
+                        ]}
+                        trigger={
+                      <tr className="hover:bg-subtle/80 transition-colors">
                         <td className="py-2.5 px-3">
                           <input
                             type="checkbox"
@@ -492,6 +471,8 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                           </div>
                         </td>
                       </tr>
+                        }
+                      />
                     );
                   })
                 )}
