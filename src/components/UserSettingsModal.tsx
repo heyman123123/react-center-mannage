@@ -236,16 +236,6 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               </div>
             </div>
 
-            <div>
-              <label className="font-semibold text-zinc-700 block mb-1">自定义头像图片 URL:</label>
-              <input
-                type="url"
-                value={avatar}
-                onChange={(e) => setAvatar(e.target.value)}
-                className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-zinc-900"
-              />
-            </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="font-semibold text-zinc-700 block mb-1">姓名 / 昵称:</label>

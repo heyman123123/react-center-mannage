@@ -3,7 +3,6 @@ import {
   TrendingUp,
   TrendingDown,
   Columns3,
-  Plus,
   MoreVertical,
   CheckCircle2,
   Clock,
@@ -32,7 +31,6 @@ interface DashboardViewProps {
   currentTenant: Tenant;
   currentUser: SystemUser;
   transactions: TransactionRecord[];
-  onOpenQuickCreate: () => void;
   onOpenDiscrepancy: (tx: TransactionRecord) => void;
   onResolveQuickDone: (txId: string) => void;
 }
@@ -41,7 +39,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   currentTenant,
   currentUser,
   transactions,
-  onOpenQuickCreate,
   onOpenDiscrepancy,
   onResolveQuickDone,
 }) => {
@@ -382,16 +379,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </>
               )}
             </div>
-
-            {/* Add Section Button (mirrors screenshot's + Add Section) */}
-            <button
-              id="add-section-btn"
-              onClick={onOpenQuickCreate}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-900 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-lg transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Section</span>
-            </button>
           </div>
         </div>
 

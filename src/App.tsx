@@ -400,7 +400,6 @@ export default function App() {
               currentTenant={currentTenant}
               currentUser={currentUser}
               transactions={transactions}
-              onOpenQuickCreate={() => setQuickCreateOpen(true)}
               onOpenDiscrepancy={(tx) => setActiveDiscrepancyTx(tx)}
               onResolveQuickDone={handleQuickDone}
             />
