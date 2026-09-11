@@ -18,15 +18,18 @@ import {
 } from "lucide-react";
 import { EmailChannelConfig } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
+import { ShadcnSelect } from "./ui/select";
 
 interface EmailChannelsViewProps {
   channels: EmailChannelConfig[];
   onUpdateChannel: (channel: EmailChannelConfig) => void;
+  onAddChannel?: (channel: EmailChannelConfig) => void;
 }
 
 export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
   channels,
   onUpdateChannel,
+  onAddChannel,
 }) => {
   const [channelList, setChannelList] = useState<EmailChannelConfig[]>(channels);
   const [testModalChannel, setTestModalChannel] = useState<EmailChannelConfig | null>(null);
@@ -35,6 +38,70 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
   const [testFeedback, setTestFeedback] = useState<string | null>(null);
   const [editingChannel, setEditingChannel] = useState<EmailChannelConfig | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // 新增发件渠道表单
+  const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
+  const [newForm, setNewForm] = useState({
+    providerKey: "sendgrid",
+    name: "",
+    description: "",
+    senderName: "",
+    senderEmail: "",
+    apiKey: "",
+    smtpHost: "",
+    smtpPort: 587,
+    dailyQuota: 50000,
+  });
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3200);
+  };
+
+  const openCreateSheet = () => {
+    setNewForm({
+      providerKey: "sendgrid",
+      name: "",
+      description: "",
+      senderName: "",
+      senderEmail: "",
+      apiKey: "",
+      smtpHost: "smtp.sendgrid.net",
+      smtpPort: 587,
+      dailyQuota: 50000,
+    });
+    setIsCreateSheetOpen(true);
+  };
+
+  const handleAddChannel = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newForm.name.trim() || !newForm.senderEmail.trim()) {
+      showToast("请填写渠道名称与发件人邮箱");
+      return;
+    }
+    const newChannel: EmailChannelConfig = {
+      id: `ec_custom_${Date.now()}`,
+      providerKey: newForm.providerKey,
+      name: newForm.name.trim(),
+      description: newForm.description.trim() || "新增海外事务邮件发信通道",
+      enabled: true,
+      isPrimary: channelList.length === 0,
+      senderEmail: newForm.senderEmail.trim(),
+      senderName: newForm.senderName.trim() || "Novas Notifications",
+      apiKey: newForm.apiKey.trim() || "sk_live_placeholder",
+      smtpHost: newForm.smtpHost.trim() || "smtp.example.com",
+      smtpPort: newForm.smtpPort || 587,
+      dailyQuota: newForm.dailyQuota || 50000,
+      sentToday: 0,
+      verifiedDomain: newForm.senderEmail.split("@")[1] || "",
+      spfDkimStatus: "PENDING",
+      lastTestedAt: "未测试",
+    };
+    setChannelList((prev) => [newChannel, ...prev]);
+    if (onAddChannel) onAddChannel(newChannel);
+    setIsCreateSheetOpen(false);
+    showToast(`发件渠道【${newChannel.name}】已成功添加`);
+  };
 
   const handleSendTestEmail = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,27 +155,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              const newChannel: EmailChannelConfig = {
-                id: `ec_custom_${Date.now()}`,
-                providerKey: "mailgun",
-                name: "Mailgun Enterprise",
-                description: "新增海外高可用高吞吐事务邮件通道",
-                enabled: true,
-                isPrimary: false,
-                senderEmail: "billing@novas-mail.com",
-                senderName: "Novas Mail Billing",
-                apiKey: "key-981203981023xxxxxxxxxx",
-                smtpHost: "smtp.mailgun.org",
-                smtpPort: 587,
-                dailyQuota: 80000,
-                sentToday: 0,
-                verifiedDomain: "novas-mail.com",
-                spfDkimStatus: "VERIFIED",
-                lastTestedAt: "刚刚",
-              };
-              setChannelList([...channelList, newChannel]);
-            }}
+            onClick={openCreateSheet}
             className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -345,6 +392,166 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               </div>
             </form>
           ))}
+      </SideSheet>
+
+      {/* Toast */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-[9999] bg-zinc-900 text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Add Channel SideSheet (右侧滑入) */}
+      <SideSheet
+        id="side-sheet-add-email-channel"
+        isOpen={isCreateSheetOpen}
+        onClose={() => setIsCreateSheetOpen(false)}
+        title="添加发件渠道"
+        description="新增海外事务邮件发信通道，配置服务商、发件人与 SMTP 投递参数后即可启用。"
+        icon={<Mail className="w-5 h-5 text-zinc-800" />}
+        widthClass="max-w-lg"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsCreateSheetOpen(false)}
+              className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 cursor-pointer"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              form="form-add-email-channel"
+              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium shadow-xs cursor-pointer"
+            >
+              确认添加渠道
+            </button>
+          </>
+        }
+      >
+        <form
+          id="form-add-email-channel"
+          onSubmit={handleAddChannel}
+          className="space-y-3 text-xs"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-zinc-600 block mb-1 font-medium">
+                服务商 (Provider)
+              </label>
+              <ShadcnSelect
+                value={newForm.providerKey}
+                onValueChange={(val) => setNewForm((f) => ({ ...f, providerKey: val }))}
+                options={[
+                  { value: "sendgrid", label: "Twilio SendGrid" },
+                  { value: "ses", label: "Amazon SES" },
+                  { value: "resend", label: "Resend" },
+                  { value: "postmark", label: "Postmark" },
+                  { value: "mailgun", label: "Mailgun" },
+                ]}
+              />
+            </div>
+            <div>
+              <label className="text-zinc-600 block mb-1 font-medium">
+                渠道名称 <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="如：SendGrid 主通道"
+                value={newForm.name}
+                onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))}
+                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-zinc-600 block mb-1 font-medium">渠道说明</label>
+            <input
+              type="text"
+              placeholder="该通道的用途与适用场景..."
+              value={newForm.description}
+              onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))}
+              className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-zinc-600 block mb-1 font-medium">
+                发件人昵称 (From Name)
+              </label>
+              <input
+                type="text"
+                placeholder="如：Novas Notifications"
+                value={newForm.senderName}
+                onChange={(e) => setNewForm((f) => ({ ...f, senderName: e.target.value }))}
+                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="text-zinc-600 block mb-1 font-medium">
+                发件人邮箱 (From Email) <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="email"
+                required
+                placeholder="billing@yourdomain.com"
+                value={newForm.senderEmail}
+                onChange={(e) => setNewForm((f) => ({ ...f, senderEmail: e.target.value }))}
+                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-zinc-600 block mb-1 font-medium">API Key 凭据密钥</label>
+            <input
+              type="text"
+              placeholder="服务商控制台生成的 API 密钥"
+              value={newForm.apiKey}
+              onChange={(e) => setNewForm((f) => ({ ...f, apiKey: e.target.value }))}
+              className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-zinc-600 block mb-1 font-medium">SMTP 主机地址</label>
+              <input
+                type="text"
+                value={newForm.smtpHost}
+                onChange={(e) => setNewForm((f) => ({ ...f, smtpHost: e.target.value }))}
+                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-zinc-600 block mb-1 font-medium">SMTP 端口</label>
+              <input
+                type="number"
+                value={newForm.smtpPort}
+                onChange={(e) =>
+                  setNewForm((f) => ({ ...f, smtpPort: Number(e.target.value) || 587 }))
+                }
+                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-zinc-600 block mb-1 font-medium">每日投递配额</label>
+            <input
+              type="number"
+              value={newForm.dailyQuota}
+              onChange={(e) =>
+                setNewForm((f) => ({ ...f, dailyQuota: Number(e.target.value) || 50000 }))
+              }
+              className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+            />
+          </div>
+        </form>
       </SideSheet>
 
       {/* Edit Channel SideSheet (右侧滑入) */}

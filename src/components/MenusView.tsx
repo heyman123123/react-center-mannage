@@ -4,8 +4,6 @@ import {
   Plus,
   Search,
   CheckCircle2,
-  Eye,
-  EyeOff,
   Edit2,
   Trash2,
   FolderTree,
@@ -20,6 +18,7 @@ import { ShadcnSelect } from "./ui/select";
 import { SideSheet } from "./ui/SideSheet";
 import { IconPicker } from "./ui/IconPicker";
 import { renderMenuIcon } from "./ui/iconRegistry";
+import { Popconfirm } from "./ui/Popconfirm";
 
 interface MenusViewProps {
   menus: SystemMenuItem[];
@@ -34,7 +33,6 @@ export const MenusView: React.FC<MenusViewProps> = ({
 }) => {
   const [menuList, setMenuList] = useState<SystemMenuItem[]>(menus);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMenu, setEditingMenu] = useState<SystemMenuItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -45,13 +43,12 @@ export const MenusView: React.FC<MenusViewProps> = ({
     return new Set(roots.map((m) => m.id));
   });
 
-  // Form State（纯菜单管理字段：标题/路径/上级/图标/排序/显隐/说明）
+  // Form State（纯菜单管理字段：标题/路径/上级/图标/排序/说明）
   const [formTitle, setFormTitle] = useState("");
   const [formPath, setFormPath] = useState("");
   const [formParentId, setFormParentId] = useState<string>("NONE");
   const [formIcon, setFormIcon] = useState("LayoutDashboard");
   const [formOrder, setFormOrder] = useState(10);
-  const [formVisible, setFormVisible] = useState(true);
   const [formDescription, setFormDescription] = useState("");
 
   const showToast = (msg: string) => {
@@ -138,7 +135,6 @@ export const MenusView: React.FC<MenusViewProps> = ({
     setFormParentId(parentId);
     setFormIcon("FolderTree");
     setFormOrder((menuList.length + 1) * 10);
-    setFormVisible(true);
     setFormDescription("");
     setIsModalOpen(true);
   };
@@ -150,16 +146,8 @@ export const MenusView: React.FC<MenusViewProps> = ({
     setFormParentId(m.parentId || "NONE");
     setFormIcon(m.icon);
     setFormOrder(m.order ?? m.sortOrder ?? 10);
-    setFormVisible(m.visible);
     setFormDescription(m.description || "");
     setIsModalOpen(true);
-  };
-
-  const handleToggleVisible = (m: SystemMenuItem) => {
-    const updated: SystemMenuItem = { ...m, visible: !m.visible };
-    setMenuList((prev) => prev.map((item) => (item.id === m.id ? updated : item)));
-    onSaveMenu(updated);
-    showToast(`菜单【${m.title}】已设置为${updated.visible ? "在侧边栏显示" : "隐藏"}`);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -181,7 +169,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
         icon: formIcon,
         order: finalOrder,
         sortOrder: finalOrder,
-        visible: formVisible,
+        visible: true,
         description: formDescription.trim(),
       };
       setMenuList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
@@ -196,7 +184,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
         icon: formIcon,
         order: finalOrder,
         sortOrder: finalOrder,
-        visible: formVisible,
+        visible: true,
         description: formDescription.trim(),
       };
       setMenuList((prev) => [...prev, newMenu]);
@@ -222,13 +210,9 @@ export const MenusView: React.FC<MenusViewProps> = ({
       node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       node.path.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "ALL" ||
-      (statusFilter === "VISIBLE" ? node.visible : !node.visible);
-
     const childrenMatch = node.children ? node.children.some(filterMatch) : false;
 
-    return (matchesSearch && matchesStatus) || childrenMatch;
+    return matchesSearch || childrenMatch;
   };
 
   // Render tree node recursively（无限层级）
@@ -307,26 +291,8 @@ export const MenusView: React.FC<MenusViewProps> = ({
             </div>
           </div>
 
-          {/* Node Right Content (Visibility + Actions) */}
+          {/* Node Right Content (Actions) */}
           <div className="flex items-center gap-3 shrink-0">
-            {/* Visible Toggle */}
-            <button
-              type="button"
-              onClick={() => handleToggleVisible(node)}
-              className={`p-1 rounded-md transition-colors cursor-pointer ${
-                node.visible
-                  ? "text-emerald-600 hover:bg-emerald-50"
-                  : "text-zinc-400 hover:bg-zinc-100"
-              }`}
-              title={node.visible ? "当前侧边栏可见 (点击隐藏)" : "当前已隐藏 (点击显示)"}
-            >
-              {node.visible ? (
-                <Eye className="w-3.5 h-3.5" />
-              ) : (
-                <EyeOff className="w-3.5 h-3.5" />
-              )}
-            </button>
-
             {/* Actions */}
             <div className="flex items-center gap-1">
               <button
@@ -347,14 +313,19 @@ export const MenusView: React.FC<MenusViewProps> = ({
                 <Edit2 className="w-3.5 h-3.5" />
               </button>
 
-              <button
-                type="button"
-                onClick={() => handleDelete(node.id, node.title)}
-                className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                title="删除节点（含子节点）"
+              <Popconfirm
+                title={`删除菜单节点「${node.title}」？`}
+                description="该节点及其全部子节点将从侧边栏菜单树中移除，且无法恢复。"
+                onConfirm={() => handleDelete(node.id, node.title)}
               >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+                <button
+                  type="button"
+                  className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                  title="删除节点（含子节点）"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </Popconfirm>
             </div>
           </div>
         </div>
@@ -391,7 +362,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
                 系统菜单树结构管理 (Menu Management)
               </h1>
               <p className="text-xs text-zinc-500 mt-0.5">
-                以无限级树状结构管理左侧导航菜单（左侧侧边栏与这里保持一致），支持任意层级挂载、图标选择与显隐控制。
+                以无限级树状结构管理左侧导航菜单（左侧侧边栏与这里保持一致），支持任意层级挂载与图标选择。
               </p>
             </div>
           </div>
@@ -436,28 +407,13 @@ export const MenusView: React.FC<MenusViewProps> = ({
             className="w-full pl-9 pr-4 py-1.5 text-xs bg-zinc-50/80 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white"
           />
         </div>
-
-        <div className="flex items-center gap-2.5 w-full md:w-auto">
-          <div className="w-full md:w-36">
-            <ShadcnSelect
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-              options={[
-                { value: "ALL", label: "全部显示状态" },
-                { value: "VISIBLE", label: "侧边栏显示" },
-                { value: "HIDDEN", label: "隐藏不展示" },
-              ]}
-              placeholder="按显隐筛选"
-            />
-          </div>
-        </div>
       </div>
 
       {/* Tree Structure Card */}
       <div className="bg-white border border-zinc-200 rounded-2xl shadow-2xs overflow-hidden">
         <div className="px-5 py-3 bg-zinc-50 border-b border-zinc-200 text-xs font-medium text-zinc-500 flex items-center justify-between">
           <span>层级节点名称 / 路由路径</span>
-          <span className="hidden sm:inline">显隐 / 操作</span>
+          <span className="hidden sm:inline">操作</span>
         </div>
 
         <div className="divide-y divide-zinc-100">
@@ -562,18 +518,6 @@ export const MenusView: React.FC<MenusViewProps> = ({
 
           {/* 图标选择器（替代下拉框） */}
           <IconPicker value={formIcon} onChange={setFormIcon} />
-
-          <div>
-            <label className="block text-zinc-600 font-medium mb-1">侧边栏显隐状态</label>
-            <ShadcnSelect
-              value={formVisible ? "VISIBLE" : "HIDDEN"}
-              onValueChange={(val) => setFormVisible(val === "VISIBLE")}
-              options={[
-                { value: "VISIBLE", label: "显示在系统导航树中" },
-                { value: "HIDDEN", label: "隐藏不展示 (仅供后台路由解析)" },
-              ]}
-            />
-          </div>
 
           <div>
             <label className="block text-zinc-600 font-medium mb-1">功能用途说明</label>

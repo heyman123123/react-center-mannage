@@ -290,20 +290,6 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
 
         <div className="flex items-center gap-2 shrink-0">
           <button
-            id="test-transaction-banner-btn"
-            onClick={() => {
-              setSelectedTestChannel(channelList[0] || null);
-              setIsTestTxModalOpen(true);
-              setLastExecutedTxResult(null);
-            }}
-            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-            title="在海外支付渠道配置下执行测试交易"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>测试交易</span>
-          </button>
-
-          <button
             onClick={() => {
               const demoNew: PaymentChannelConfig = {
                 id: `ch_custom_${Date.now()}`,

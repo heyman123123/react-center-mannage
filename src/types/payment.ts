@@ -423,7 +423,8 @@ export type DictionaryCategory =
   | "SECURITY"
   | "CHECKOUT"
   | "PORTAL"
-  | "GATEWAY_ERRORS";
+  | "GATEWAY_ERRORS"
+  | "CURRENCY"; // 结算货币配置（含多语言币种名称与符号）
 
 export type ProjectPlatform =
   | "CHECKOUT" // 海外收银台 (Web Checkout / Paywall)

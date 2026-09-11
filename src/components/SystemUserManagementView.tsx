@@ -8,7 +8,6 @@ import {
   Edit2,
   Trash2,
   CheckCircle2,
-  XCircle,
   Mail,
   Building,
   Globe,
@@ -21,6 +20,7 @@ import { RBAC_ROLES } from "../data/mockData";
 import { ShadcnSelect } from "./ui/select";
 import { MultiSelect } from "./ui/MultiSelect";
 import { SideSheet } from "./ui/SideSheet";
+import { Popconfirm } from "./ui/Popconfirm";
 
 interface SystemUserManagementViewProps {
   users: SystemUser[];
@@ -479,19 +479,36 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                         </div>
                       </td>
 
-                      {/* Status */}
+                      {/* Status（点击切换账号状态，Popconfirm 二次确认） */}
                       <td className="px-4 py-3">
-                        {u.status === "DISABLED" ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">
-                            <UserX className="w-3 h-3 text-zinc-400" />
-                            已停用
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <UserCheck className="w-3 h-3 text-emerald-600" />
-                            正常在职
-                          </span>
-                        )}
+                        <Popconfirm
+                          title={u.status === "DISABLED" ? `启用用户「${u.name}」？` : `停用用户「${u.name}」？`}
+                          description={
+                            u.status === "DISABLED"
+                              ? "启用后该用户可恢复登录并正常访问授权范围内功能。"
+                              : "停用后该用户将立即失去登录与访问权限，其历史操作记录仍会保留。"
+                          }
+                          confirmText={u.status === "DISABLED" ? "确认启用" : "确认停用"}
+                          onConfirm={() => handleToggleStatus(u)}
+                        >
+                          <button
+                            type="button"
+                            disabled={isCurrent}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all cursor-pointer ${
+                              u.status === "DISABLED"
+                                ? "bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                            } ${isCurrent ? "opacity-40 cursor-not-allowed" : ""}`}
+                            title={u.status === "DISABLED" ? "点击启用该用户" : "点击停用该用户"}
+                          >
+                            {u.status === "DISABLED" ? (
+                              <UserX className="w-3 h-3 text-zinc-400" />
+                            ) : (
+                              <UserCheck className="w-3 h-3 text-emerald-600" />
+                            )}
+                            {u.status === "DISABLED" ? "已停用" : "正常在职"}
+                          </button>
+                        </Popconfirm>
                       </td>
 
                       {/* Last Login */}
@@ -511,33 +528,20 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleToggleStatus(u)}
-                            disabled={isCurrent}
-                            className={`p-1 rounded-md transition-colors cursor-pointer ${
-                              u.status === "DISABLED"
-                                ? "text-emerald-600 hover:bg-emerald-50"
-                                : "text-amber-600 hover:bg-amber-50"
-                            } ${isCurrent ? "opacity-30 cursor-not-allowed" : ""}`}
-                            title={u.status === "DISABLED" ? "启用该用户" : "停用该用户"}
-                          >
-                            {u.status === "DISABLED" ? (
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                            ) : (
-                              <XCircle className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-
                           {onDeleteUser && !isCurrent && (
-                            <button
-                              type="button"
-                              onClick={() => onDeleteUser(u.id)}
-                              className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
-                              title="删除用户"
+                            <Popconfirm
+                              title={`删除用户「${u.name}」？`}
+                              description="删除后该用户将无法登录系统，历史操作记录保留但账号不可恢复。"
+                              onConfirm={() => onDeleteUser(u.id)}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              <button
+                                type="button"
+                                className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                                title="删除用户"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </Popconfirm>
                           )}
                         </div>
                       </td>

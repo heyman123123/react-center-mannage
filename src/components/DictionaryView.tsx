@@ -22,6 +22,7 @@ import {
   RefreshCw,
   ListFilter,
   Eye,
+  Link2,
 } from "lucide-react";
 import {
   DictionaryEntry,
@@ -32,6 +33,7 @@ import {
 } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
+import { Popconfirm } from "./ui/Popconfirm";
 
 interface DictionaryViewProps {
   dictionary: DictionaryEntry[];
@@ -170,6 +172,25 @@ const CATEGORY_LABELS: { key: DictionaryCategory; label: string }[] = [
   { key: "CHECKOUT", label: "海外收银台" },
   { key: "PORTAL", label: "商户管理后台" },
   { key: "GATEWAY_ERRORS", label: "网关与错误码" },
+  { key: "CURRENCY", label: "结算货币" },
+];
+
+// 字典词条 → 关联位置（多语言关联映射：收银台/商户后台/网关/移动端/通知邮件模板）
+export const DICT_REFERENCE_POINTS: {
+  keyPrefix: string;
+  label: string;
+  scope: string;
+}[] = [
+  { keyPrefix: "checkout.", label: "海外收银台", scope: "收银台按钮/提示文案" },
+  { keyPrefix: "payment.receipt", label: "交易通知邮件", scope: "收据邮件主题与正文" },
+  { keyPrefix: "subscription.", label: "订阅周期邮件", scope: "续费/扣款通知" },
+  { keyPrefix: "security.", label: "安全验证通知", scope: "验证码/风控邮件" },
+  { keyPrefix: "account.", label: "账号安全", scope: "密码重置/登录通知" },
+  { keyPrefix: "email.footer", label: "邮件页脚", scope: "退订与偏好链接" },
+  { keyPrefix: "support.", label: "技术支持", scope: "客服联系链接" },
+  { keyPrefix: "currency.", label: "结算货币", scope: "收银台币种/账单/对账单" },
+  { keyPrefix: "gateway.error", label: "网关错误码", scope: "API 响应与错误提示" },
+  { keyPrefix: "portal.", label: "商户管理后台", scope: "后台导航与指标卡片" },
 ];
 
 export const DictionaryView: React.FC<DictionaryViewProps> = ({
@@ -369,22 +390,18 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   };
 
   const handleDelete = (id: string, key: string) => {
-    if (window.confirm(`确定要从全项目字典中删除词条【${key}】吗？`)) {
-      setEntryList((prev) => prev.filter((item) => item.id !== id));
-      if (onDeleteEntry) onDeleteEntry(id);
-      setSelectedIds((prev) => prev.filter((sid) => sid !== id));
-      showToast(`词条【${key}】已从全项目字典删除`);
-    }
+    setEntryList((prev) => prev.filter((item) => item.id !== id));
+    if (onDeleteEntry) onDeleteEntry(id);
+    setSelectedIds((prev) => prev.filter((sid) => sid !== id));
+    showToast(`词条【${key}】已从全项目字典删除`);
   };
 
   const handleBatchDelete = () => {
     if (selectedIds.length === 0) return;
-    if (window.confirm(`确定删除选中的 ${selectedIds.length} 个词条吗？`)) {
-      setEntryList((prev) => prev.filter((item) => !selectedIds.includes(item.id)));
-      if (onDeleteEntry) selectedIds.forEach((id) => onDeleteEntry(id));
-      setSelectedIds([]);
-      showToast(`已删除 ${selectedIds.length} 个词条`);
-    }
+    setEntryList((prev) => prev.filter((item) => !selectedIds.includes(item.id)));
+    if (onDeleteEntry) selectedIds.forEach((id) => onDeleteEntry(id));
+    setSelectedIds([]);
+    showToast(`已删除 ${selectedIds.length} 个词条`);
   };
 
   const handleBatchAutoComplete = () => {
@@ -457,6 +474,12 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     !treeKeyword ||
     c.label.toLowerCase().includes(treeKeyword.toLowerCase())
   );
+
+  // 计算词条关联位置（映射到多语言关联点：邮件模板 / 收银台 / 网关等）
+  const getReferencePoints = (item: DictionaryEntry) => {
+    const matched = DICT_REFERENCE_POINTS.filter((p) => item.key.startsWith(p.keyPrefix));
+    return matched.length > 0 ? matched : [{ keyPrefix: item.category, label: item.category, scope: item.category }];
+  };
 
   return (
     <div className="flex gap-4 items-start font-sans">
@@ -562,17 +585,30 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               新增
             </button>
 
-            <button
-              type="button"
-              onClick={handleBatchDelete}
-              disabled={selectedIds.length === 0}
-              className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              删除
-            </button>
-
-            <div className="w-px h-5 bg-zinc-200 mx-1" />
+            {selectedIds.length === 0 ? (
+              <button
+                type="button"
+                disabled
+                className="px-2.5 py-1.5 border border-rose-200 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                删除
+              </button>
+            ) : (
+              <Popconfirm
+                title={`删除选中的 ${selectedIds.length} 个词条？`}
+                description="删除后所有关联的多语言位置将回退为键名本身，请谨慎操作。"
+                onConfirm={handleBatchDelete}
+              >
+                <button
+                  type="button"
+                  className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  删除
+                </button>
+              </Popconfirm>
+            )}            <div className="w-px h-5 bg-zinc-200 mx-1" />
 
             <button
               type="button"
@@ -660,6 +696,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     {LANGUAGES.find((l) => l.code === previewLanguage)?.nativeName}）
                   </th>
                   <th className="py-2.5 px-3 min-w-[180px]">备注</th>
+                  <th className="py-2.5 px-3 min-w-[160px]">关联位置</th>
                   <th className="py-2.5 px-3 w-[100px]">创建</th>
                   <th className="py-2.5 px-3 w-[80px] text-center">引用</th>
                   <th className="py-2.5 px-4 w-[150px] text-right">操作</th>
@@ -668,7 +705,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               <tbody className="divide-y divide-zinc-100 text-zinc-700">
                 {filteredEntries.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-zinc-400">
+                    <td colSpan={9} className="py-12 text-center text-zinc-400">
                       暂无字典词条数据
                     </td>
                   </tr>
@@ -721,6 +758,20 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                           <td className="py-2.5 px-3 text-zinc-500">
                             <span className="line-clamp-2" title={item.description}>{item.description}</span>
                           </td>
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {getReferencePoints(item).map((rp) => (
+                                <span
+                                  key={rp.keyPrefix}
+                                  title={rp.scope}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
+                                >
+                                  <Link2 className="w-2.5 h-2.5" />
+                                  {rp.label}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
                           <td className="py-2.5 px-3 whitespace-nowrap text-zinc-400 font-mono text-[11px]">
                             {item.updatedAt.substring(0, 10)}
                           </td>
@@ -766,14 +817,19 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               >
                                 <Edit2 className="w-3 h-3" />
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(item.id, item.key)}
-                                className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-medium cursor-pointer"
-                                title="删除词条"
+                              <Popconfirm
+                                title={`删除词条「${item.key}」？`}
+                                description="该词条将被移出全项目字典，所有关联的多语言位置将回退为键名本身。"
+                                onConfirm={() => handleDelete(item.id, item.key)}
                               >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-medium cursor-pointer"
+                                  title="删除词条"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </Popconfirm>
                             </div>
                           </td>
                         </tr>
@@ -781,7 +837,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                         {/* 展开：6 语言对照 */}
                         {isExpanded && (
                           <tr className="bg-violet-50/40">
-                            <td colSpan={8} className="p-4 border-b border-zinc-200">
+                            <td colSpan={9} className="p-4 border-b border-zinc-200">
                               <div className="bg-white rounded-xl p-4 border border-violet-200 shadow-xs space-y-3">
                                 <div className="flex items-center justify-between text-xs font-bold text-zinc-900 pb-2 border-b border-zinc-100">
                                   <span className="flex items-center gap-1.5">
@@ -1000,6 +1056,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     { value: "COMMON", label: "全项目通用 (Common / Branding)" },
                     { value: "SECURITY", label: "账号安全与风控 (Security)" },
                     { value: "PROMOTION", label: "营销促销 (Promotion)" },
+                    { value: "CURRENCY", label: "结算货币 (Currency / 多语言币种配置)" },
                   ]}
                 />
               </div>

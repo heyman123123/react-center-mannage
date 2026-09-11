@@ -18,17 +18,19 @@ import {
 import { RbacRole, SystemMenuItem, PaymentApp } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { MenuPermissionTree } from "./MenuPermissionTree";
+import { Popconfirm } from "./ui/Popconfirm";
 
 interface RolesViewProps {
   roles: RbacRole[];
   menus: SystemMenuItem[];
   apps: PaymentApp[];
   onSaveRole: (role: RbacRole) => void;
+  onDeleteRole?: (roleId: string) => void;
 }
 
 type RoleCategory = "ALL" | "BUILTIN" | "CUSTOM";
 
-export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSaveRole }) => {
+export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSaveRole, onDeleteRole }) => {
   const [roleList, setRoleList] = useState<RbacRole[]>(roles);
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState<RoleCategory>("ALL");
@@ -87,19 +89,17 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
 
   const handleDelete = (r: RbacRole) => {
     const name = r.name;
-    if (window.confirm(`确定要删除角色【${name}】吗？`)) {
-      setRoleList((prev) => prev.filter((item) => roleIdentifier(item) !== roleIdentifier(r)));
-      showToast(`角色【${name}】已删除`);
-    }
+    setRoleList((prev) => prev.filter((item) => roleIdentifier(item) !== roleIdentifier(r)));
+    if (onDeleteRole) onDeleteRole(roleIdentifier(r));
+    showToast(`角色【${name}】已删除`);
   };
 
   const handleBatchDelete = () => {
     if (selectedIds.length === 0) return;
-    if (window.confirm(`确定删除选中的 ${selectedIds.length} 个角色吗？`)) {
-      setRoleList((prev) => prev.filter((item) => !selectedIds.includes(roleIdentifier(item))));
-      setSelectedIds([]);
-      showToast(`已删除 ${selectedIds.length} 个角色`);
-    }
+    setRoleList((prev) => prev.filter((item) => !selectedIds.includes(roleIdentifier(item))));
+    if (onDeleteRole) selectedIds.forEach((id) => onDeleteRole(id));
+    setSelectedIds([]);
+    showToast(`已删除 ${selectedIds.length} 个角色`);
   };
 
   const toggleAppInForm = (appId: string) => {
@@ -286,15 +286,30 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
               新增
             </button>
 
-            <button
-              type="button"
-              onClick={handleBatchDelete}
-              disabled={selectedIds.length === 0}
-              className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              删除
-            </button>
+            {selectedIds.length === 0 ? (
+              <button
+                type="button"
+                disabled
+                className="px-2.5 py-1.5 border border-rose-200 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                删除
+              </button>
+            ) : (
+              <Popconfirm
+                title={`删除选中的 ${selectedIds.length} 个角色？`}
+                description="删除后这些角色将不再可用，被授权用户将失去对应权限。"
+                onConfirm={handleBatchDelete}
+              >
+                <button
+                  type="button"
+                  className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  删除
+                </button>
+              </Popconfirm>
+            )}
           </div>
         </div>
 
@@ -439,14 +454,19 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                             >
                               <Edit2 className="w-3 h-3" />
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(role)}
-                              className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-medium cursor-pointer"
-                              title="删除角色"
+                            <Popconfirm
+                              title={`删除角色「${role.name}」？`}
+                              description="删除后该角色将不再可用，被该角色授权的用户将失去对应权限。"
+                              onConfirm={() => handleDelete(role)}
                             >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                              <button
+                                type="button"
+                                className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-medium cursor-pointer"
+                                title="删除角色"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </Popconfirm>
                           </div>
                         </td>
                       </tr>

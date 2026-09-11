@@ -524,10 +524,13 @@ export default function App() {
           {currentTab === "email_channels" && (
             <EmailChannelsView
               channels={emailChannels}
-              onSaveChannel={(updated) => {
+              onUpdateChannel={(updated) => {
                 setEmailChannels((prev) =>
                   prev.map((c) => (c.id === updated.id ? updated : c))
                 );
+              }}
+              onAddChannel={(channel) => {
+                setEmailChannels((prev) => [channel, ...prev]);
               }}
             />
           )}
@@ -589,6 +592,9 @@ export default function App() {
                     : [...prev, updated];
                 });
               }}
+              onDeleteRole={(roleId) => {
+                setRolesList((prev) => prev.filter((r) => r.id !== roleId && r.key !== roleId));
+              }}
             />
           )}
 
@@ -604,6 +610,9 @@ export default function App() {
                     ? prev.map((r) => (r.id === updated.id ? updated : r))
                     : [...prev, updated];
                 });
+              }}
+              onDeleteRole={(roleId) => {
+                setRolesList((prev) => prev.filter((r) => r.id !== roleId && r.key !== roleId));
               }}
             />
           )}

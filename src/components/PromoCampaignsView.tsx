@@ -24,6 +24,7 @@ import {
 import { PromoCampaign, DiscountConfig, EmailTemplate, Tenant } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
+import { SearchableSelect } from "./ui/SearchableSelect";
 
 interface PromoCampaignsViewProps {
   campaigns: PromoCampaign[];
@@ -644,13 +645,16 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
               <label className="font-semibold text-zinc-700 block mb-1">
                 选择基础邮件模版:
               </label>
-              <ShadcnSelect
+              <SearchableSelect
                 value={formTemplateId}
                 onValueChange={(val) => setFormTemplateId(val)}
                 options={templates.map((t) => ({
                   value: t.id,
                   label: `${t.name} (${t.id})`,
                 }))}
+                placeholder="输入关键字查找并选择邮件模版..."
+                searchPlaceholder="搜索模版名称 / ID..."
+                emptyText="未找到匹配的邮件模版"
               />
             </div>
 

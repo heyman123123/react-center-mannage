@@ -33,6 +33,7 @@ import { EmailTemplate, SupportedLanguage, DictionaryEntry, EmailCategory } from
 import { INITIAL_DICTIONARY } from "../data/mockData";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
+import { Popconfirm } from "./ui/Popconfirm";
 
 interface EmailTemplatesViewProps {
   templates: EmailTemplate[];
@@ -236,11 +237,9 @@ The {{app_name}} Team`,
 
   // Delete single email
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`确定要彻底删除独立邮件【${name}】吗？删除后对应触发事件将不再投递该语言版本。`)) {
-      setTemplateList((prev) => prev.filter((t) => t.id !== id));
-      if (onDeleteTemplate) onDeleteTemplate(id);
-      showToast(`独立邮件【${name}】已成功移除`);
-    }
+    setTemplateList((prev) => prev.filter((t) => t.id !== id));
+    if (onDeleteTemplate) onDeleteTemplate(id);
+    showToast(`独立邮件【${name}】已成功移除`);
   };
 
   // Execute clone to another language
@@ -681,13 +680,19 @@ The {{app_name}} Team`,
                           </button>
 
                           {/* Delete Button */}
-                          <button
-                            onClick={() => handleDelete(email.id, email.name)}
-                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
-                            title="删除邮件"
+                          <Popconfirm
+                            title={`删除独立邮件「${email.name}」？`}
+                            description="删除后对应触发事件将不再投递该语言版本，且无法恢复。"
+                            onConfirm={() => handleDelete(email.id, email.name)}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                            <button
+                              type="button"
+                              className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                              title="删除邮件"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </Popconfirm>
                         </div>
                       </td>
                     </tr>

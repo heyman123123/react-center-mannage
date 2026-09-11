@@ -20,6 +20,7 @@ import {
 import { Department, SystemUser, RbacRole } from "../types/payment";
 import { RBAC_ROLES } from "../data/mockData";
 import { SideSheet } from "./ui/SideSheet";
+import { Popconfirm } from "./ui/Popconfirm";
 import { ShadcnSelect } from "./ui/select";
 import { MultiSelect } from "./ui/MultiSelect";
 
@@ -237,26 +238,22 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
       showToast(`部门【${name}】下存在子部门，请先删除子部门`);
       return;
     }
-    if (window.confirm(`确定要删除部门【${name}】吗？`)) {
-      setDeptList((prev) => prev.filter((d) => d.id !== id));
-      if (onDeleteDepartment) onDeleteDepartment(id);
-      showToast(`部门【${name}】已删除`);
-    }
+    setDeptList((prev) => prev.filter((d) => d.id !== id));
+    if (onDeleteDepartment) onDeleteDepartment(id);
+    showToast(`部门【${name}】已删除`);
   };
 
   const handleBatchDelete = () => {
     if (selectedIds.length === 0) return;
-    if (window.confirm(`确定删除选中的 ${selectedIds.length} 个部门吗？`)) {
-      const canDelete = selectedIds.every((id) => !deptList.some((d) => d.parentId === id));
-      if (!canDelete) {
-        showToast("存在包含子部门的项，请先处理子部门");
-        return;
-      }
-      setDeptList((prev) => prev.filter((d) => !selectedIds.includes(d.id)));
-      if (onDeleteDepartment) selectedIds.forEach((id) => onDeleteDepartment(id));
-      setSelectedIds([]);
-      showToast(`已删除 ${selectedIds.length} 个部门`);
+    const canDelete = selectedIds.every((id) => !deptList.some((d) => d.parentId === id));
+    if (!canDelete) {
+      showToast("存在包含子部门的项，请先处理子部门");
+      return;
     }
+    setDeptList((prev) => prev.filter((d) => !selectedIds.includes(d.id)));
+    if (onDeleteDepartment) selectedIds.forEach((id) => onDeleteDepartment(id));
+    setSelectedIds([]);
+    showToast(`已删除 ${selectedIds.length} 个部门`);
   };
 
   const handleRefresh = () => {
@@ -411,15 +408,30 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
               新增
             </button>
 
-            <button
-              type="button"
-              onClick={handleBatchDelete}
-              disabled={selectedIds.length === 0}
-              className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              删除
-            </button>
+            {selectedIds.length === 0 ? (
+              <button
+                type="button"
+                disabled
+                className="px-2.5 py-1.5 border border-rose-200 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                删除
+              </button>
+            ) : (
+              <Popconfirm
+                title={`删除选中的 ${selectedIds.length} 个部门？`}
+                description="删除后这些部门及其成员关联关系将一并解除，且无法恢复。"
+                onConfirm={handleBatchDelete}
+              >
+                <button
+                  type="button"
+                  className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  删除
+                </button>
+              </Popconfirm>
+            )}
 
             <div className="w-px h-5 bg-zinc-200 mx-1" />
 
@@ -573,14 +585,19 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               >
                                 <Edit2 className="w-3 h-3" />
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(dept.id, dept.name)}
-                                className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-medium cursor-pointer"
-                                title="删除部门"
+                              <Popconfirm
+                                title={`删除部门「${dept.name}」？`}
+                                description="删除后该部门及其成员关联关系将一并解除，且无法恢复。"
+                                onConfirm={() => handleDelete(dept.id, dept.name)}
                               >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-medium cursor-pointer"
+                                  title="删除部门"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </Popconfirm>
                             </div>
                           </td>
                         </tr>
