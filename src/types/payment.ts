@@ -484,6 +484,8 @@ export interface SystemUser {
   email: string;
   role?: string;
   roleKey: RbacRoleKey | string;
+  /** 多选角色（新逻辑），角色非必选 */
+  roleKeys?: string[];
   tenantId?: TenantId;
   avatar?: string;
   avatarText: string;
@@ -491,7 +493,24 @@ export interface SystemUser {
   status?: "ACTIVE" | "DISABLED";
   allowedAppIds?: string[]; // 允许访问的出海应用ID列表
   department?: string;
+  /** 多选所属部门（新逻辑，继承部门绑定角色的权限） */
+  departmentIds?: string[];
   phone?: string;
+  createdAt?: string;
+}
+
+// 组织部门（树结构）：部门可绑定多个角色，成员继承部门角色的权限
+export interface Department {
+  id: string;
+  name: string;
+  code: string;
+  parentId?: string | null;
+  sortOrder?: number;
+  description?: string;
+  leader?: string;
+  /** 绑定的角色（多选）：该部门成员继承这些角色的权限 */
+  roleKeys: string[];
+  memberCount?: number;
   createdAt?: string;
 }
 

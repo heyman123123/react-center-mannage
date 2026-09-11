@@ -8,24 +8,20 @@ import {
   Edit2,
   CheckCircle2,
   Sparkles,
-  Layers,
-  Tag,
   Languages,
   Trash2,
   Download,
-  ChevronDown,
   ChevronUp,
-  FileSpreadsheet,
   Globe,
-  Info,
-  CheckCircle,
   Code2,
   Smartphone,
   Server,
   LayoutTemplate,
   Monitor,
   Mail,
-  ExternalLink,
+  RefreshCw,
+  ListFilter,
+  Eye,
 } from "lucide-react";
 import {
   DictionaryEntry,
@@ -71,7 +67,7 @@ export const PLATFORM_OPTIONS: {
   { key: "EMAIL_NOTIFY", label: "邮件与消息通知", icon: Mail, color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
 ];
 
-// 出海全项目标准常用词条预设模板 (涵盖收银台、商户平台、网关错误码、移动端、邮件与通知)
+// 出海全项目标准常用词条预设模板
 const PROJECT_PRESET_ENTRIES: {
   key: string;
   category: DictionaryCategory;
@@ -165,6 +161,17 @@ const PROJECT_PRESET_ENTRIES: {
   },
 ];
 
+const CATEGORY_LABELS: { key: DictionaryCategory; label: string }[] = [
+  { key: "COMMON", label: "通用词汇" },
+  { key: "BILLING", label: "交易与账单" },
+  { key: "LIFECYCLE", label: "订阅周期" },
+  { key: "PROMOTION", label: "营销促销" },
+  { key: "SECURITY", label: "账号安全" },
+  { key: "CHECKOUT", label: "海外收银台" },
+  { key: "PORTAL", label: "商户管理后台" },
+  { key: "GATEWAY_ERRORS", label: "网关与错误码" },
+];
+
 export const DictionaryView: React.FC<DictionaryViewProps> = ({
   dictionary,
   currentTenant,
@@ -172,7 +179,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   onDeleteEntry,
 }) => {
   const [entryList, setEntryList] = useState<DictionaryEntry[]>(() => {
-    // 确保每个词条都有 platforms 初始值
     return dictionary.map((item) => ({
       ...item,
       platforms: item.platforms || ["CHECKOUT", "PORTAL", "EMAIL_NOTIFY", "MOBILE_SDK"],
@@ -181,11 +187,11 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
-  const [platformFilter, setPlatformFilter] = useState<string>("ALL");
   const [previewLanguage, setPreviewLanguage] = useState<SupportedLanguage>("en-US");
   const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
-  const [viewMode, setViewMode] = useState<"COMPACT" | "MATRIX">("COMPACT");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [treeKeyword, setTreeKeyword] = useState("");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -194,7 +200,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const [editingEntry, setEditingEntry] = useState<DictionaryEntry | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Form State - Default multi-language with all 6 languages
+  // Form State
   const [formKey, setFormKey] = useState("");
   const [formCategory, setFormCategory] = useState<DictionaryCategory>("COMMON");
   const [formPlatforms, setFormPlatforms] = useState<ProjectPlatform[]>([
@@ -227,11 +233,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setExpandedKeys((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Open Add modal: defaults to adding all 6 languages and standard platforms
-  const handleOpenAdd = () => {
+  const handleOpenAdd = (presetCategory?: DictionaryCategory) => {
     setEditingEntry(null);
     setFormKey("");
-    setFormCategory("COMMON");
+    setFormCategory(presetCategory || "COMMON");
     setFormPlatforms(["CHECKOUT", "PORTAL", "EMAIL_NOTIFY", "MOBILE_SDK"]);
     setFormDescription("");
     setFormTranslations({
@@ -245,7 +250,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setIsModalOpen(true);
   };
 
-  // Open Edit modal
   const handleOpenEdit = (entry: DictionaryEntry) => {
     setEditingEntry(entry);
     setFormKey(entry.key);
@@ -263,19 +267,17 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setIsModalOpen(true);
   };
 
-  // Open Code Integration Helper
   const handleOpenCodeHelper = (entry: DictionaryEntry) => {
     setActiveCodeEntry(entry);
     setIsCodeModalOpen(true);
   };
 
-  // Smart translate/auto-fill all 6 languages based on Chinese or English input
   const handleAutoTranslateAll = () => {
     const baseZh = formTranslations["zh-CN"].trim();
     const baseEn = formTranslations["en-US"].trim();
 
     if (!baseZh && !baseEn) {
-      alert("请先在【简体中文】或【English】输入框中输入文案，系统将自动智能补齐其余所有语言！");
+      showToast("请先输入简体中文或 English 文案，再一键补齐其余语言");
       return;
     }
 
@@ -293,7 +295,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       LANGUAGES.forEach((l) => {
         newTranslations[l.code] = matchedPreset.translations[l.code];
       });
-      showToast("已匹配出海全项目金融标准词典，自动补全 6 国语言！");
+      showToast("已匹配出海全项目标准词典，自动补全 6 国语言！");
     } else {
       if (baseZh) {
         newTranslations["en-US"] = baseEn || `${baseZh} (Official English)`;
@@ -314,7 +316,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setFormTranslations(newTranslations);
   };
 
-  // Quick insert industry preset
   const handleApplyPreset = (preset: (typeof PROJECT_PRESET_ENTRIES)[0]) => {
     setFormKey(preset.key);
     setFormCategory(preset.category);
@@ -324,7 +325,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     showToast(`已应用【${preset.key}】全项目出海预设，已默认填充全部 6 种语言！`);
   };
 
-  // Submit dictionary entry (ensures default multi-language added)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -368,16 +368,25 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setIsModalOpen(false);
   };
 
-  // Delete entry
   const handleDelete = (id: string, key: string) => {
-    if (window.confirm(`确定要从全项目字典中删除词条【${key}】吗？删除后各端调用将回退至键名或默认兜底。`)) {
+    if (window.confirm(`确定要从全项目字典中删除词条【${key}】吗？`)) {
       setEntryList((prev) => prev.filter((item) => item.id !== id));
       if (onDeleteEntry) onDeleteEntry(id);
+      setSelectedIds((prev) => prev.filter((sid) => sid !== id));
       showToast(`词条【${key}】已从全项目字典删除`);
     }
   };
 
-  // Batch auto-complete missing languages for all entries
+  const handleBatchDelete = () => {
+    if (selectedIds.length === 0) return;
+    if (window.confirm(`确定删除选中的 ${selectedIds.length} 个词条吗？`)) {
+      setEntryList((prev) => prev.filter((item) => !selectedIds.includes(item.id)));
+      if (onDeleteEntry) selectedIds.forEach((id) => onDeleteEntry(id));
+      setSelectedIds([]);
+      showToast(`已删除 ${selectedIds.length} 个词条`);
+    }
+  };
+
   const handleBatchAutoComplete = () => {
     let completedCount = 0;
     const updated = entryList.map((entry) => {
@@ -405,7 +414,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     showToast(`已成功为全项目 ${completedCount} 个词条补齐全部 6 国多语言！`);
   };
 
-  // Export dictionary as Web i18n JSON
   const handleExportWebJSON = () => {
     const i18nBundle: Record<string, Record<string, string>> = {};
     LANGUAGES.forEach((l) => {
@@ -425,497 +433,391 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     showToast("全项目前端/API 多语言包 JSON 导出成功！");
   };
 
-  // Toggle platform in form
   const togglePlatform = (p: ProjectPlatform) => {
     setFormPlatforms((prev) =>
       prev.includes(p) ? prev.filter((item) => item !== p) : [...prev, p]
     );
   };
 
-  // Filter
   const filteredEntries = entryList.filter((item) => {
     const matchesCategory = categoryFilter === "ALL" || item.category === categoryFilter;
-    const matchesPlatform =
-      platformFilter === "ALL" ||
-      (item.platforms && item.platforms.includes(platformFilter as ProjectPlatform));
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !query ||
       item.key.toLowerCase().includes(query) ||
       item.description.toLowerCase().includes(query) ||
       Object.values(item.translations).some((t) => typeof t === "string" && t.toLowerCase().includes(query));
-    return matchesCategory && matchesPlatform && matchesSearch;
+    return matchesCategory && matchesSearch;
   });
 
+  const currentCategoryLabel =
+    categoryFilter === "ALL" ? "全部" : CATEGORY_LABELS.find((c) => c.key === categoryFilter)?.label || "全部";
+
+  const visibleCategoryKeys = CATEGORY_LABELS.filter((c) =>
+    !treeKeyword ||
+    c.label.toLowerCase().includes(treeKeyword.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="flex gap-4 items-start font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between shadow-xs animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>{toastMessage}</span>
-          </div>
-          <button onClick={() => setToastMessage(null)} className="font-bold text-emerald-600 hover:text-emerald-900">
-            ✕
-          </button>
+        <div className="fixed top-4 right-4 z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Header - 全项目字典管理全局定位 */}
-      <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="p-2 bg-violet-50 text-violet-600 rounded-xl">
-                <Globe className="w-5 h-5" />
-              </span>
-              <h1 className="text-xl font-bold text-zinc-900 tracking-tight">全项目字典管理</h1>
-              <span className="px-2.5 py-0.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-full text-xs font-semibold flex items-center gap-1">
-                <Layers className="w-3 h-3" />
-                全工程统一国际化中心 (Global I18n Core)
-              </span>
-              <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
-                默认配置全 6 种语言
-              </span>
-            </div>
-            <p className="text-xs text-zinc-500 mt-1 max-w-3xl leading-relaxed">
-              面向出海全工程的统一多语言国际化中心。打通【海外收银台 Checkout】、【商户后台 Portal】、【网关API与错误代码】、【移动端原生SDK】及【全域交易凭据/邮件】，实现全项目 6 国多语言动态同步、统一词条版本与一键出海本地化发布。
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={handleBatchAutoComplete}
-              className="px-3 py-2 border border-zinc-300 hover:bg-zinc-50 text-zinc-700 rounded-xl text-xs font-medium flex items-center gap-1.5 shadow-xs transition-colors"
-              title="智能补全所有词条的 6 种语言"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>智能补全 6 国多语言</span>
-            </button>
-
-            <button
-              onClick={handleExportWebJSON}
-              className="px-3 py-2 border border-zinc-300 hover:bg-zinc-50 text-zinc-700 rounded-xl text-xs font-medium flex items-center gap-1.5 shadow-xs transition-colors"
-              title="导出全项目多语言包 JSON"
-            >
-              <Download className="w-3.5 h-3.5 text-blue-600" />
-              <span>导出多端 i18n 资源</span>
-            </button>
-
-            <button
-              onClick={handleOpenAdd}
-              className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>新增全项目词条 (默认多语言)</span>
-            </button>
-          </div>
+      {/* ===== 左侧：类型分类栏 ===== */}
+      <div className="w-48 shrink-0 bg-white border border-zinc-200 rounded-xl shadow-xs overflow-hidden lg:sticky lg:top-4">
+        <div className="px-3 py-2.5 border-b border-zinc-200 flex items-center justify-between">
+          <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+            <ListFilter className="w-3.5 h-3.5 text-zinc-500" />
+            类型
+          </span>
         </div>
 
-        {/* Global Metric Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-zinc-100">
-          <div className="bg-zinc-50/80 p-3 rounded-xl border border-zinc-200/60">
-            <div className="text-[11px] text-zinc-500 font-medium flex items-center gap-1">
-              <BookOpen className="w-3.5 h-3.5 text-violet-500" />
-              全项目统一词条
-            </div>
-            <div className="text-lg font-bold font-mono text-zinc-900 mt-0.5">
-              {entryList.length} <span className="text-xs font-normal text-zinc-400">个统一标识符 (Keys)</span>
-            </div>
-          </div>
-
-          <div className="bg-zinc-50/80 p-3 rounded-xl border border-zinc-200/60">
-            <div className="text-[11px] text-zinc-500 font-medium flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5 text-blue-500" />
-              全工程覆盖终端
-            </div>
-            <div className="text-xs text-zinc-700 font-medium mt-1 flex items-center gap-1 flex-wrap">
-              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px]">收银台</span>
-              <span className="px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded text-[10px]">商户后台</span>
-              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px]">网关API</span>
-              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px]">移动SDK</span>
-              <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px]">邮件通知</span>
-            </div>
-          </div>
-
-          <div className="bg-zinc-50/80 p-3 rounded-xl border border-zinc-200/60">
-            <div className="text-[11px] text-zinc-500 font-medium flex items-center gap-1">
-              <Globe className="w-3.5 h-3.5 text-indigo-500" />
-              默认多语言覆盖
-            </div>
-            <div className="text-xs text-zinc-700 font-medium mt-1 flex items-center gap-1">
-              {LANGUAGES.map((l) => (
-                <span key={l.code} title={l.label}>
-                  {l.flag}
-                </span>
-              ))}
-              <span className="text-[10px] text-emerald-600 font-bold ml-1">6/6 默认就绪</span>
-            </div>
-          </div>
-
-          <div className="bg-zinc-50/80 p-3 rounded-xl border border-zinc-200/60">
-            <div className="text-[11px] text-zinc-500 font-medium flex items-center gap-1">
-              <Code2 className="w-3.5 h-3.5 text-emerald-500" />
-              调用方式支持
-            </div>
-            <div className="text-xs text-zinc-600 font-mono mt-1">
-              t("key") • API • iOS • Android • {"{{dict}}"}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
-          {/* Categories */}
-          <div className="flex items-center gap-1.5 flex-wrap w-full md:w-auto">
-            <span className="text-zinc-400 text-xs font-semibold">业务分类:</span>
-            {[
-              { key: "ALL", label: "全部业务" },
-              { key: "CHECKOUT", label: "海外收银台" },
-              { key: "GATEWAY_ERRORS", label: "网关与错误码" },
-              { key: "PORTAL", label: "商户管理后台" },
-              { key: "BILLING", label: "交易与账单" },
-              { key: "LIFECYCLE", label: "订阅周期" },
-              { key: "COMMON", label: "通用词汇" },
-              { key: "SECURITY", label: "账号安全" },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setCategoryFilter(tab.key)}
-                className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
-                  categoryFilter === tab.key
-                    ? "bg-violet-600 text-white shadow-xs"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Search Box */}
-          <div className="relative w-full md:w-72">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400" />
+        <div className="p-2 border-b border-zinc-100">
+          <div className="relative">
+            <Search className="w-3 h-3 text-zinc-400 absolute left-2 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="搜索全项目键名 / 描述 / 任意语种译文..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:bg-white focus:outline-hidden focus:border-violet-500 transition-colors"
+              placeholder="搜索关键字"
+              value={treeKeyword}
+              onChange={(e) => setTreeKeyword(e.target.value)}
+              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-900"
             />
           </div>
         </div>
 
-        {/* Platform scope & language selector */}
-        <div className="flex items-center justify-between pt-2 border-t border-zinc-100 text-xs flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-zinc-400 text-[11px] font-semibold">工程终端过滤:</span>
-            <button
-              onClick={() => setPlatformFilter("ALL")}
-              className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                platformFilter === "ALL" ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              全部终端
-            </button>
-            {PLATFORM_OPTIONS.map((p) => {
-              const Icon = p.icon;
-              return (
-                <button
-                  key={p.key}
-                  onClick={() => setPlatformFilter(p.key)}
-                  className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1 ${
-                    platformFilter === p.key
-                      ? "bg-zinc-900 text-white"
-                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                  }`}
-                >
-                  <Icon className="w-3 h-3" />
-                  <span>{p.label.split(" ")[0]}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="p-2 space-y-0.5 max-h-[70vh] overflow-y-auto">
+          <button
+            type="button"
+            onClick={() => setCategoryFilter("ALL")}
+            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
+              categoryFilter === "ALL"
+                ? "bg-zinc-900 text-white font-semibold"
+                : "text-zinc-700 hover:bg-zinc-100"
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" />
+              全部
+            </span>
+            <span className="text-[10px] font-mono text-zinc-400">{entryList.length}</span>
+          </button>
 
-          <div className="flex items-center gap-2">
-            <span className="text-zinc-400 text-[11px]">当前巡检语种:</span>
-            <div className="flex items-center gap-1">
-              {LANGUAGES.map((l) => (
-                <button
-                  key={l.code}
-                  onClick={() => setPreviewLanguage(l.code)}
-                  className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1 ${
-                    previewLanguage === l.code
-                      ? "bg-violet-600 text-white font-bold shadow-xs"
-                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                  }`}
-                >
-                  <span>{l.flag}</span>
-                  <span>{l.nativeName}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center bg-zinc-100 p-0.5 rounded-lg ml-2">
+          {visibleCategoryKeys.map((c) => {
+            const count = entryList.filter((e) => e.category === c.key).length;
+            return (
               <button
-                onClick={() => setViewMode("COMPACT")}
-                className={`px-2 py-1 rounded-md text-xs font-medium transition-all ${
-                  viewMode === "COMPACT" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
+                key={c.key}
+                type="button"
+                onClick={() => setCategoryFilter(c.key)}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
+                  categoryFilter === c.key
+                    ? "bg-zinc-900 text-white font-semibold"
+                    : "text-zinc-700 hover:bg-zinc-100"
                 }`}
               >
-                单列视图
+                <span>{c.label}</span>
+                <span className="text-[10px] font-mono text-zinc-400">{count}</span>
               </button>
-              <button
-                onClick={() => setViewMode("MATRIX")}
-                className={`px-2 py-1 rounded-md text-xs font-medium transition-all ${
-                  viewMode === "MATRIX" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
-                }`}
-              >
-                多国矩阵
-              </button>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Dictionary Table: 宽度规范化，操作列固定在右边 */}
-      <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-[1200px] w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-zinc-50/90 border-b border-zinc-200 text-zinc-500 font-semibold text-[11px]">
-                <th className="py-3.5 px-4 w-[280px]">词条键名 (Key) & 描述</th>
-                <th className="py-3.5 px-3 w-[130px]">业务分类</th>
-                <th className="py-3.5 px-3 w-[200px]">全项目应用终端</th>
-                {viewMode === "COMPACT" ? (
-                  <th className="py-3.5 px-4 min-w-[300px]">
-                    巡检译文 ({LANGUAGES.find((l) => l.code === previewLanguage)?.flag}{" "}
-                    {LANGUAGES.find((l) => l.code === previewLanguage)?.nativeName})
+      {/* ===== 右侧：字典列表 ===== */}
+      <div className="flex-1 min-w-0 space-y-3">
+        {/* 标题与工具栏 */}
+        <div className="bg-white border border-zinc-200 rounded-xl shadow-xs px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
+            <span>字典列表</span>
+            <span className="text-zinc-400 font-normal text-xs">（{currentCategoryLabel}）</span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedIds([]);
+                setEntryList(dictionary.map((item) => ({ ...item, platforms: item.platforms || ["CHECKOUT", "PORTAL", "EMAIL_NOTIFY", "MOBILE_SDK"] })));
+                showToast("字典数据已刷新");
+              }}
+              className="px-2.5 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="刷新字典数据"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              刷新
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleOpenAdd()}
+              className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              新增
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBatchDelete}
+              disabled={selectedIds.length === 0}
+              className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              删除
+            </button>
+
+            <div className="w-px h-5 bg-zinc-200 mx-1" />
+
+            <button
+              type="button"
+              onClick={handleBatchAutoComplete}
+              className="px-2.5 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="智能补全所有词条的 6 种语言"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              智能补全 6 国
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportWebJSON}
+              className="px-2.5 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="导出全项目多语言包 JSON"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-600" />
+              导出 i18n
+            </button>
+          </div>
+        </div>
+
+        {/* 语种切换 */}
+        <div className="bg-white border border-zinc-200 rounded-xl shadow-xs px-4 py-2 flex items-center justify-between gap-2">
+          <span className="text-xs text-zinc-500 flex items-center gap-1.5">
+            <Languages className="w-3.5 h-3.5 text-violet-500" />
+            巡检语种：
+          </span>
+          <div className="flex items-center gap-1 flex-wrap">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                type="button"
+                onClick={() => setPreviewLanguage(l.code)}
+                className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1 cursor-pointer ${
+                  previewLanguage === l.code
+                    ? "bg-zinc-900 text-white font-semibold"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                }`}
+              >
+                <span>{l.flag}</span>
+                <span>{l.nativeName}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 表格 */}
+        <div className="bg-white border border-zinc-200 rounded-xl shadow-xs overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-100">
+            <span className="text-xs text-zinc-500">
+              共 <b className="text-zinc-900 font-mono">{filteredEntries.length}</b> 个词条
+            </span>
+            <div className="relative w-64">
+              <Search className="w-3 h-3 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="搜索名称 / 键名 / 译文..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-2 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-[1080px] w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-zinc-50/90 border-b border-zinc-200 text-zinc-500 font-semibold text-[11px]">
+                  <th className="py-2.5 px-4 w-8">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length > 0 && filteredEntries.every((e) => selectedIds.includes(e.id))}
+                      onChange={(e) =>
+                        setSelectedIds(e.target.checked ? filteredEntries.map((e) => e.id) : [])
+                      }
+                      className="rounded text-zinc-900"
+                    />
                   </th>
+                  <th className="py-2.5 px-3 w-[260px]">名称 (Key)</th>
+                  <th className="py-2.5 px-3 w-[110px]">ID</th>
+                  <th className="py-2.5 px-3 min-w-[240px]">
+                    值（{LANGUAGES.find((l) => l.code === previewLanguage)?.flag}{" "}
+                    {LANGUAGES.find((l) => l.code === previewLanguage)?.nativeName}）
+                  </th>
+                  <th className="py-2.5 px-3 min-w-[180px]">备注</th>
+                  <th className="py-2.5 px-3 w-[100px]">创建</th>
+                  <th className="py-2.5 px-3 w-[80px] text-center">引用</th>
+                  <th className="py-2.5 px-4 w-[150px] text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 text-zinc-700">
+                {filteredEntries.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center text-zinc-400">
+                      暂无字典词条数据
+                    </td>
+                  </tr>
                 ) : (
-                  <>
-                    <th className="py-3.5 px-3 w-[190px]">🇺🇸 英语 (en-US)</th>
-                    <th className="py-3.5 px-3 w-[190px]">🇨🇳 中文 (zh-CN)</th>
-                    <th className="py-3.5 px-3 w-[190px]">🇯🇵 日语 (ja-JP)</th>
-                    <th className="py-3.5 px-3 w-[190px]">🇩🇪 德语 (de-DE)</th>
-                  </>
-                )}
-                <th className="py-3.5 px-3 w-[140px]">多语言状态</th>
-                <th className="py-3.5 px-3 w-[110px]">更新时间</th>
-                {/* 关键：操作列固定在右边 */}
-                <th className="py-3.5 px-4 w-[160px] sticky right-0 z-20 bg-zinc-50/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                  操作
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {filteredEntries.map((item) => {
-                const currentText = item.translations[previewLanguage] || "—";
-                const isCopied = copiedKey === item.id;
-                const isExpanded = !!expandedKeys[item.id];
-                const completedCount = Object.values(item.translations).filter(Boolean).length;
-                const platforms = item.platforms || ["CHECKOUT", "PORTAL", "EMAIL_NOTIFY"];
+                  filteredEntries.map((item) => {
+                    const isCopied = copiedKey === item.id;
+                    const isExpanded = !!expandedKeys[item.id];
+                    const completedCount = Object.values(item.translations).filter(Boolean).length;
 
-                return (
-                  <React.Fragment key={item.id}>
-                    <tr className="hover:bg-zinc-50/80 transition-colors group">
-                      {/* Key & Description */}
-                      <td className="py-3.5 px-4 w-[280px]">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-bold text-xs text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200 truncate max-w-[220px]" title={item.key}>
-                            {item.key}
-                          </span>
-                          <button
-                            onClick={() => handleCopy(item.key, item.id)}
-                            className="p-1 text-zinc-400 hover:text-zinc-700 rounded transition-colors"
-                            title="复制键名"
-                          >
-                            {isCopied ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                        <div className="text-[11px] text-zinc-500 mt-1 line-clamp-1" title={item.description}>
-                          {item.description}
-                        </div>
-                      </td>
-
-                      {/* Category */}
-                      <td className="py-3.5 px-3 w-[130px] whitespace-nowrap">
-                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-violet-50 text-violet-700 border border-violet-200">
-                          {item.category === "CHECKOUT"
-                            ? "海外收银台"
-                            : item.category === "GATEWAY_ERRORS"
-                            ? "网关错误码"
-                            : item.category === "PORTAL"
-                            ? "商户后台"
-                            : item.category === "BILLING"
-                            ? "交易与账单"
-                            : item.category === "LIFECYCLE"
-                            ? "订阅周期"
-                            : item.category === "SECURITY"
-                            ? "账号安全"
-                            : "通用词汇"}
-                        </span>
-                      </td>
-
-                      {/* Platforms Scope */}
-                      <td className="py-3.5 px-3 w-[200px]">
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {platforms.slice(0, 3).map((plat) => {
-                            const opt = PLATFORM_OPTIONS.find((p) => p.key === plat);
-                            return (
-                              <span
-                                key={plat}
-                                className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-700 border border-zinc-200"
+                    return (
+                      <React.Fragment key={item.id}>
+                        <tr className="hover:bg-zinc-50/80 transition-colors group">
+                          <td className="py-2.5 px-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(item.id)}
+                              onChange={(e) =>
+                                setSelectedIds((prev) =>
+                                  e.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id)
+                                )
+                              }
+                              className="rounded text-zinc-900"
+                            />
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono font-bold text-xs text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200 truncate max-w-[200px]" title={item.key}>
+                                {item.key}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(item.key, item.id)}
+                                className="p-0.5 text-zinc-400 hover:text-zinc-700 rounded transition-colors cursor-pointer"
+                                title="复制键名"
                               >
-                                {opt ? opt.label.split(" ")[0] : plat}
-                              </span>
-                            );
-                          })}
-                          {platforms.length > 3 && (
-                            <span className="text-[10px] text-zinc-400 font-mono">
-                              +{platforms.length - 3}
+                                {isCopied ? (
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3 h-3" />
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 font-mono text-zinc-400 text-[11px]">{item.id}</td>
+                          <td className="py-2.5 px-3">
+                            <div className="text-zinc-800 line-clamp-2 leading-relaxed" title={item.translations[previewLanguage]}>
+                              {item.translations[previewLanguage] || "—"}
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 text-zinc-500">
+                            <span className="line-clamp-2" title={item.description}>{item.description}</span>
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap text-zinc-400 font-mono text-[11px]">
+                            {item.updatedAt.substring(0, 10)}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              {completedCount}/6
                             </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Translations */}
-                      {viewMode === "COMPACT" ? (
-                        <td className="py-3.5 px-4 min-w-[300px]">
-                          <div className="text-zinc-900 font-medium line-clamp-2 leading-relaxed">{currentText}</div>
-                        </td>
-                      ) : (
-                        <>
-                          <td className="py-3.5 px-3 w-[190px] text-zinc-800">
-                            <div className="line-clamp-2" title={item.translations["en-US"]}>
-                              {item.translations["en-US"] || "—"}
+                            <div className="text-[9px] text-zinc-400 mt-0.5">
+                              {item.referencedTemplatesCount ?? 0} 模板
                             </div>
                           </td>
-                          <td className="py-3.5 px-3 w-[190px] text-zinc-800">
-                            <div className="line-clamp-2" title={item.translations["zh-CN"]}>
-                              {item.translations["zh-CN"] || "—"}
+                          <td className="py-2.5 px-4">
+                            <div className="flex items-center justify-end gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAdd(item.category)}
+                                className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded-md text-[11px] font-medium cursor-pointer"
+                                title="新增同分类词条"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCodeHelper(item)}
+                                className="px-2 py-1 text-zinc-500 hover:bg-zinc-100 rounded-md text-[11px] font-medium cursor-pointer"
+                                title="查看各端调用示例"
+                              >
+                                <Code2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleExpand(item.id)}
+                                className="px-2 py-1 text-zinc-500 hover:bg-zinc-100 rounded-md text-[11px] font-medium cursor-pointer"
+                                title="展开 6 种语言对照"
+                              >
+                                {isExpanded ? <ChevronUp className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEdit(item)}
+                                className="px-2 py-1 text-zinc-600 hover:bg-zinc-100 rounded-md text-[11px] font-medium cursor-pointer"
+                                title="编辑词条"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(item.id, item.key)}
+                                className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-medium cursor-pointer"
+                                title="删除词条"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
                             </div>
                           </td>
-                          <td className="py-3.5 px-3 w-[190px] text-zinc-800">
-                            <div className="line-clamp-2" title={item.translations["ja-JP"]}>
-                              {item.translations["ja-JP"] || "—"}
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-3 w-[190px] text-zinc-800">
-                            <div className="line-clamp-2" title={item.translations["de-DE"]}>
-                              {item.translations["de-DE"] || "—"}
-                            </div>
-                          </td>
-                        </>
-                      )}
+                        </tr>
 
-                      {/* Completeness */}
-                      <td className="py-3.5 px-3 w-[140px] whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          {completedCount}/6 多语言就绪
-                        </span>
-                      </td>
-
-                      {/* Updated At */}
-                      <td className="py-3.5 px-3 w-[110px] whitespace-nowrap text-zinc-400 font-mono text-[11px]">
-                        {item.updatedAt.substring(0, 10)}
-                      </td>
-
-                      {/* Actions: 固定在最右边 */}
-                      <td className="py-3.5 px-4 w-[160px] sticky right-0 z-10 bg-white group-hover:bg-zinc-50/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => handleOpenCodeHelper(item)}
-                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="查看全项目各端集成代码"
-                          >
-                            <Code2 className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            onClick={() => toggleExpand(item.id)}
-                            className="p-1.5 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 rounded-lg transition-colors"
-                            title="展开 6 种语言详细对照"
-                          >
-                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                          </button>
-
-                          <button
-                            onClick={() => handleOpenEdit(item)}
-                            className="p-1.5 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-lg transition-colors font-semibold"
-                            title="编辑词条多语言"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            onClick={() => handleDelete(item.id, item.key)}
-                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
-                            title="删除词条"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Expandable 6-Language Drawer */}
-                    {isExpanded && (
-                      <tr className="bg-violet-50/40">
-                        <td colSpan={viewMode === "COMPACT" ? 7 : 10} className="p-4 border-b border-zinc-200">
-                          <div className="bg-white rounded-xl p-4 border border-violet-200 shadow-xs space-y-3">
-                            <div className="flex items-center justify-between text-xs font-bold text-zinc-900 pb-2 border-b border-zinc-100">
-                              <span className="flex items-center gap-1.5">
-                                <Languages className="w-4 h-4 text-violet-600" />
-                                【{item.key}】全项目 6 国多语言完整译文对照
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleOpenCodeHelper(item)}
-                                  className="text-violet-600 hover:text-violet-800 text-[11px] font-medium flex items-center gap-1 bg-violet-50 px-2 py-1 rounded"
-                                >
-                                  <Code2 className="w-3 h-3" />
-                                  <span>查看各端调用示例</span>
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {LANGUAGES.map((l) => (
-                                <div key={l.code} className="bg-zinc-50 p-2.5 rounded-lg border border-zinc-200 text-xs space-y-1">
-                                  <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-700">
-                                    <span className="flex items-center gap-1">
-                                      <span>{l.flag}</span>
-                                      <span>{l.nativeName}</span>
-                                    </span>
-                                    <span className="font-mono text-zinc-400 text-[10px]">{l.code}</span>
-                                  </div>
-                                  <div className="text-zinc-900 font-sans text-xs bg-white p-2 rounded border border-zinc-200/80 leading-relaxed min-h-[42px]">
-                                    {item.translations[l.code] || (
-                                      <span className="text-zinc-400 italic">未填</span>
-                                    )}
-                                  </div>
+                        {/* 展开：6 语言对照 */}
+                        {isExpanded && (
+                          <tr className="bg-violet-50/40">
+                            <td colSpan={8} className="p-4 border-b border-zinc-200">
+                              <div className="bg-white rounded-xl p-4 border border-violet-200 shadow-xs space-y-3">
+                                <div className="flex items-center justify-between text-xs font-bold text-zinc-900 pb-2 border-b border-zinc-100">
+                                  <span className="flex items-center gap-1.5">
+                                    <Languages className="w-4 h-4 text-violet-600" />
+                                    【{item.key}】全项目 6 国多语言完整译文对照
+                                  </span>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                  {LANGUAGES.map((l) => (
+                                    <div key={l.code} className="bg-zinc-50 p-2.5 rounded-lg border border-zinc-200 text-xs space-y-1">
+                                      <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-700">
+                                        <span className="flex items-center gap-1">
+                                          <span>{l.flag}</span>
+                                          <span>{l.nativeName}</span>
+                                        </span>
+                                        <span className="font-mono text-zinc-400 text-[10px]">{l.code}</span>
+                                      </div>
+                                      <div className="text-zinc-900 font-sans text-xs bg-white p-2 rounded border border-zinc-200/80 leading-relaxed min-h-[42px]">
+                                        {item.translations[l.code] || (
+                                          <span className="text-zinc-400 italic">未填</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -940,7 +842,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           }
         >
           <div className="space-y-3 text-xs">
-            {/* React / Frontend */}
             <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
               <div className="flex items-center justify-between font-semibold text-zinc-700">
                 <span className="flex items-center gap-1.5">
@@ -961,7 +862,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               </pre>
             </div>
 
-            {/* Backend API & Error Code */}
             <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
               <div className="flex items-center justify-between font-semibold text-zinc-700">
                 <span className="flex items-center gap-1.5">
@@ -984,7 +884,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               </pre>
             </div>
 
-            {/* Mobile SDK */}
             <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
               <div className="flex items-center justify-between font-semibold text-zinc-700">
                 <span className="flex items-center gap-1.5">
@@ -997,7 +896,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               </pre>
             </div>
 
-            {/* Email & Notifications */}
             <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
               <div className="flex items-center justify-between font-semibold text-zinc-700">
                 <span className="flex items-center gap-1.5">
@@ -1021,7 +919,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         </SideSheet>
       )}
 
-      {/* Add / Edit Dictionary SideSheet (全项目维度，默认 6 种语言) */}
+      {/* Add / Edit Dictionary SideSheet */}
       {isModalOpen && (
         <SideSheet
           id="side-sheet-dict-edit"
@@ -1071,7 +969,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               </div>
             </div>
 
-            {/* Key and Category */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="font-semibold text-zinc-700 block mb-1">
@@ -1108,7 +1005,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               </div>
             </div>
 
-            {/* Platforms Selection */}
             <div>
               <label className="font-semibold text-zinc-700 block mb-1.5">
                 全项目适用终端范围 (可多选):
@@ -1150,7 +1046,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               />
             </div>
 
-            {/* 6 Languages Multi-language Configuration Box */}
             <div className="pt-2 border-t border-zinc-100">
               <div className="flex items-center justify-between mb-2">
                 <div className="font-bold text-zinc-900 flex items-center gap-1.5">

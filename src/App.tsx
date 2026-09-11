@@ -20,12 +20,14 @@ import { PromoCampaignsView } from "./components/PromoCampaignsView";
 import { DictionaryView } from "./components/DictionaryView";
 import { MenusView } from "./components/MenusView";
 import { RolesView } from "./components/RolesView";
+import { DepartmentManagementView } from "./components/DepartmentManagementView";
 import { UserSettingsModal } from "./components/UserSettingsModal";
 import { QuickCreateModal } from "./components/QuickCreateModal";
 import { DiscrepancyModal } from "./components/DiscrepancyModal";
 import {
   Tenant,
   SystemUser,
+  Department,
   TransactionRecord,
   AuditLog,
   PaymentChannelConfig,
@@ -46,6 +48,7 @@ import {
 import {
   INITIAL_TENANTS,
   SYSTEM_USERS,
+  DEPARTMENTS,
   INITIAL_TRANSACTIONS,
   INITIAL_AUDIT_LOGS,
   INITIAL_PAYMENT_CHANNELS,
@@ -88,6 +91,7 @@ export default function App() {
   const [menus, setMenus] = useState<SystemMenuItem[]>(INITIAL_MENUS);
   const [rolesList, setRolesList] = useState<RbacRole[]>(Object.values(RBAC_ROLES));
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>(SYSTEM_USERS);
+  const [departments, setDepartments] = useState<Department[]>(DEPARTMENTS);
 
   // Current View & Modals
   const [currentTab, setCurrentTab] = useState<string>("dashboard");
@@ -348,6 +352,8 @@ export default function App() {
         return "字典管理 (全局多语言统一共享字典)";
       case "users":
         return "海外终端客户与全周期行为大盘";
+      case "departments":
+        return "部门管理 (组织部门树结构、成员与绑定角色)";
       case "roles":
         return "角色管理 (Roles)";
       case "permissions":
@@ -617,11 +623,31 @@ export default function App() {
             />
           )}
 
+          {currentTab === "departments" && (
+            <DepartmentManagementView
+              departments={departments}
+              users={systemUsers}
+              roles={rolesList}
+              onSaveDepartment={(updated) => {
+                setDepartments((prev) => {
+                  const exists = prev.some((d) => d.id === updated.id);
+                  return exists
+                    ? prev.map((d) => (d.id === updated.id ? updated : d))
+                    : [...prev, updated];
+                });
+              }}
+              onDeleteDepartment={(deptId) => {
+                setDepartments((prev) => prev.filter((d) => d.id !== deptId));
+              }}
+            />
+          )}
+
           {currentTab === "system_users" && (
             <SystemUserManagementView
               users={systemUsers}
               roles={rolesList}
               apps={paymentApps}
+              departments={departments}
               currentUser={currentUser}
               onSaveUser={(updatedUser) => {
                 setSystemUsers((prev) => {
