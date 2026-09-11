@@ -150,6 +150,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
       id: `ch_${slug}_${Date.now()}`,
       channelKey: slug as PaymentChannelConfig["channelKey"],
       name: channelName,
+      accountName: formAccountName.trim() || undefined,
       description: formAccountName.trim() ? `${channelName} · ${formAccountName.trim()}` : entry?.description || channelName,
       enabled: true,
       mode: formMode,
@@ -499,16 +500,9 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                           ? channel.apiSecretKey
                           : "sk_live_••••••••••••••••••••••••••••••••"}
                       </span>
-                      <button
-                        onClick={() => copyText(channel.apiSecretKey, `${channel.id}_sec`)}
-                        className="text-fg-tertiary hover:text-fg-secondary ml-2 shrink-0"
-                      >
-                        {copiedKey === `${channel.id}_sec` ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                      <span className="text-[9px] text-rose-400 font-sans ml-2 shrink-0" title="API Key 凭据禁止复制">
+                        禁止复制
+                      </span>
                     </div>
                   </div>
 
@@ -523,16 +517,9 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                           ? channel.webhookSecret
                           : "whsec_••••••••••••••••••••••••"}
                       </span>
-                      <button
-                        onClick={() => copyText(channel.webhookSecret, `${channel.id}_wh`)}
-                        className="text-fg-tertiary hover:text-fg-secondary ml-2 shrink-0"
-                      >
-                        {copiedKey === `${channel.id}_wh` ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                      <span className="text-[9px] text-rose-400 font-sans ml-2 shrink-0" title="API Key 凭据禁止复制">
+                        禁止复制
+                      </span>
                     </div>
                   </div>
                 </div>

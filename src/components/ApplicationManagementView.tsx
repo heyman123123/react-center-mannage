@@ -566,17 +566,9 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                           ? app.secretKey
                           : "np_sec_••••••••••••••••••••••••••••••••"}
                       </span>
-                      <button
-                        onClick={() => copyText(app.secretKey, `${app.id}_sec`)}
-                        className="text-fg-tertiary hover:text-fg-secondary ml-2"
-                        title="复制私钥"
-                      >
-                        {copiedKey === `${app.id}_sec` ? (
-                          <Check className="w-3 h-3 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-3 h-3" />
-                        )}
-                      </button>
+                      <span className="text-[9px] text-rose-400 font-sans ml-2 shrink-0" title="API Key 凭据禁止复制">
+                        禁止复制
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1473,20 +1465,64 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
 
             {/* 2. Gateways & Methods */}
             <div className="bg-subtle rounded-xl p-3.5 border border-line space-y-2">
-              <div className="font-bold text-fg flex items-center gap-1.5">
-                <CreditCard className="w-3.5 h-3.5 text-blue-500" />
-                <span>支付通道与路由策略</span>
+              <div className="font-bold text-fg flex items-center justify-between gap-1.5">
+                <span className="flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5 text-blue-500" />
+                  支付通道与渠道账号
+                </span>
+                <span className="text-[10px] font-mono text-fg-tertiary font-normal">
+                  启用 {(viewingDetailApp.enabledChannels || []).length} 个
+                </span>
               </div>
-              <div className="flex flex-wrap gap-1">
-                {viewingDetailApp.enabledChannels?.map((c) => (
-                  <span
-                    key={c}
-                    className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-bold text-[10px] uppercase font-mono"
-                  >
-                    {c}
-                  </span>
-                ))}
-              </div>
+              {viewingDetailApp.enabledChannels && viewingDetailApp.enabledChannels.length > 0 ? (
+                <div className="space-y-1.5">
+                  {viewingDetailApp.enabledChannels.map((c) => {
+                    const cfg = (paymentChannels || []).find((ch) => ch.channelKey === (c as PaymentChannelConfig["channelKey"]));
+                    return (
+                      <div
+                        key={c}
+                        className="bg-surface rounded-lg border border-line/80 px-2.5 py-2 flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-bold text-fg uppercase text-[10px] font-mono leading-tight">
+                            {c}
+                          </div>
+                          <div className="text-[11px] text-fg-secondary truncate">
+                            {cfg ? cfg.name : "渠道未接入账号"}
+                          </div>
+                        </div>
+                        <div className="shrink-0 flex items-center gap-1.5">
+                          {cfg ? (
+                            <>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-bold font-mono ${
+                                  cfg.mode === "live"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-amber-100 text-amber-700"
+                                }`}
+                              >
+                                {cfg.mode === "live" ? "LIVE" : "TEST"}
+                              </span>
+                              <span
+                                className="px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[9px] font-semibold max-w-[120px] truncate"
+                                title={cfg.accountName || cfg.name}
+                              >
+                                {cfg.accountName || "默认账号"}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="px-1.5 py-0.5 bg-zinc-100 text-zinc-500 rounded text-[9px] font-semibold">
+                              未接入
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-[11px] text-fg-tertiary">该应用未启用任何支付渠道</div>
+              )}
               <div className="text-[11px] text-fg-secondary pt-1">
                 路由策略: <strong>{viewingDetailApp.routingStrategy || "HIGHEST_SUCCESS_RATE"}</strong>
               </div>

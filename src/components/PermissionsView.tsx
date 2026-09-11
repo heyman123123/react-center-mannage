@@ -270,7 +270,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
               新增角色
             </button>
           </div>
-          <div className="divide-y divide-line-subtle">
+          <div className="p-2.5 space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
             {roleList.map((role) => {
               const roleId = role.id || role.key || "";
               const isActive = roleId === selectedRoleId;
@@ -312,31 +312,46 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => switchRole(role)}
-                      className={`w-full text-left px-3 py-2 transition-colors cursor-pointer ${
-                        isActive ? "bg-primary text-primary-foreground" : "hover:bg-subtle"
+                      className={`w-full text-left px-3.5 py-3 rounded-xl border transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-primary text-primary-foreground border-primary shadow-card"
+                          : "bg-surface border-line hover:border-primary/40 hover:shadow-card"
                       }`}
                       title="右键可新增 / 编辑 / 删除角色"
                     >
                       <div className="flex items-center gap-2">
-                        <ShieldCheck
-                          className={`w-4 h-4 shrink-0 ${
-                            isActive ? "text-amber-400" : "text-fg-tertiary"
+                        <span
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                            isActive ? "bg-white/15" : "bg-subtle border border-line-subtle"
                           }`}
-                        />
+                        >
+                          <ShieldCheck
+                            className={`w-4 h-4 ${
+                              isActive ? "text-amber-400" : "text-fg-secondary"
+                            }`}
+                          />
+                        </span>
                         <span className="font-semibold text-xs truncate">
                           {role.name}
                         </span>
+                        {isActive && (
+                          <span className="ml-auto text-[9px] font-bold bg-white/15 rounded px-1.5 py-0.5">
+                            当前
+                          </span>
+                        )}
                       </div>
                       <p
-                        className={`text-[11px] mt-1 line-clamp-2 ${
-                          isActive ? "text-fg-tertiary" : "text-fg-secondary"
+                        className={`text-[11px] mt-1.5 line-clamp-2 leading-relaxed ${
+                          isActive ? "text-primary-foreground/75" : "text-fg-secondary"
                         }`}
                       >
                         {role.description}
                       </p>
                       <div
-                        className={`mt-2 flex items-center justify-between text-[10px] font-mono ${
-                          isActive ? "text-fg-tertiary" : "text-fg-tertiary"
+                        className={`mt-2 pt-2 border-t flex items-center justify-between text-[10px] font-mono ${
+                          isActive
+                            ? "border-white/15 text-primary-foreground/70"
+                            : "border-line-subtle text-fg-tertiary"
                         }`}
                       >
                         <span>已授权菜单 {menuCount} 项</span>

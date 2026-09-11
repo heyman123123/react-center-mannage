@@ -100,6 +100,7 @@ export interface PaymentChannelConfig {
   id: string;
   channelKey: PaymentChannel;
   name: string;
+  accountName?: string; // 渠道账号名称（接入渠道账号时填写）
   description: string;
   enabled: boolean;
   mode: "live" | "sandbox";

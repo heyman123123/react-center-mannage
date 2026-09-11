@@ -308,10 +308,12 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           items={deptNodeMenu(node)}
           trigger={(
           <div
-          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-            isActive ? "bg-primary text-primary-foreground font-semibold" : "text-fg-secondary hover:bg-hover"
+          className={`flex items-center gap-1.5 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+            isActive
+              ? "bg-primary text-primary-foreground font-semibold border-primary shadow-card"
+              : "text-fg-secondary hover:bg-hover border-transparent"
           }`}
-          style={{ paddingLeft: `${10 + node.level * 14}px` }}
+          style={{ paddingLeft: `${6 + node.level * 14}px` }}
           onClick={() => {
             setSelectedDeptId(node.id);
             setViewMode("DEPT");
@@ -336,9 +338,15 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           ) : (
             <span className="w-3.5 shrink-0" />
           )}
-          <Building2 className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-blue-300" : "text-fg-tertiary"}`} />
+          <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
+            isActive ? "bg-white/15" : "bg-subtle border border-line-subtle"
+          }`}>
+            <Building2 className={`w-3.5 h-3.5 ${isActive ? "text-blue-300" : "text-fg-tertiary"}`} />
+          </span>
           <span className="truncate flex-1">{node.name}</span>
-          <span className={`text-[10px] font-mono ${isActive ? "text-fg-tertiary" : "text-fg-tertiary"}`}>
+          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+            isActive ? "bg-white/15" : "bg-hover text-fg-tertiary"
+          }`}>
             {node.memberCount ?? 0}
           </span>
           </div>
@@ -520,7 +528,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                    <th className="py-2.5 px-3 w-8">
+                    <th className="py-2 px-3 w-8">
                       <input
                         type="checkbox"
                         checked={selectedIds.length > 0 && filteredDepts.every((d) => selectedIds.includes(d.id))}
@@ -530,13 +538,13 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                         className="rounded text-fg"
                       />
                     </th>
-                    <th className="py-2.5 px-3">部门名称</th>
-                    <th className="py-2.5 px-3">编码</th>
-                    <th className="py-2.5 px-3">上级部门</th>
-                    <th className="py-2.5 px-3">绑定角色（多选）</th>
-                    <th className="py-2.5 px-3 text-center">成员数</th>
-                    <th className="py-2.5 px-3 text-center">排序</th>
-                    <th className="py-2.5 px-3 text-right">操作</th>
+                    <th className="py-2 px-3">部门名称</th>
+                    <th className="py-2 px-3">编码</th>
+                    <th className="py-2 px-3">上级部门</th>
+                    <th className="py-2 px-3">绑定角色（多选）</th>
+                    <th className="py-2 px-3 text-center">成员数</th>
+                    <th className="py-2 px-3 text-center">排序</th>
+                    <th className="py-2 px-3 text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-subtle text-fg-secondary">
@@ -552,7 +560,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                       const roleKeys = dept.roleKeys || [];
                       return (
                         <tr key={dept.id} className="hover:bg-subtle/80 transition-colors">
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <input
                               type="checkbox"
                               checked={selectedIds.includes(dept.id)}
@@ -566,7 +574,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               className="rounded text-fg"
                             />
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <div className="flex items-center gap-2">
                               <span className="p-1 rounded-md bg-hover text-fg-secondary">
                                 <Building2 className="w-3.5 h-3.5" />
@@ -579,9 +587,9 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               </div>
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 font-mono text-fg-secondary">{dept.code}</td>
-                          <td className="py-2.5 px-3 text-fg-secondary">{parent ? parent.name : "—（顶级部门）"}</td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3 font-mono text-fg-secondary">{dept.code}</td>
+                          <td className="py-2 px-3 text-fg-secondary">{parent ? parent.name : "—（顶级部门）"}</td>
+                          <td className="py-2 px-3">
                             <div className="flex flex-wrap gap-1 max-w-[220px]">
                               {roleKeys.length === 0 ? (
                                 <span className="text-[11px] text-fg-tertiary italic">未绑定角色</span>
@@ -598,11 +606,11 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               )}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-center font-mono text-fg-secondary">
+                          <td className="py-2 px-3 text-center font-mono text-fg-secondary">
                             {dept.memberCount ?? 0}
                           </td>
-                          <td className="py-2.5 px-3 text-center font-mono text-fg-secondary">{dept.sortOrder ?? 1}</td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3 text-center font-mono text-fg-secondary">{dept.sortOrder ?? 1}</td>
+                          <td className="py-2 px-3">
                             <div className="flex items-center justify-end gap-0.5">
                               <button
                                 type="button"
@@ -659,11 +667,11 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                    <th className="py-2.5 px-3">用户</th>
-                    <th className="py-2.5 px-3">所属部门</th>
-                    <th className="py-2.5 px-3">角色权限（多选）</th>
-                    <th className="py-2.5 px-3">应用授权范围</th>
-                    <th className="py-2.5 px-3">账号状态</th>
+                    <th className="py-2 px-3">用户</th>
+                    <th className="py-2 px-3">所属部门</th>
+                    <th className="py-2 px-3">角色权限（多选）</th>
+                    <th className="py-2 px-3">应用授权范围</th>
+                    <th className="py-2 px-3">账号状态</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-subtle text-fg-secondary">
@@ -681,7 +689,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                       ).filter(Boolean);
                       return (
                         <tr key={u.id} className="hover:bg-subtle/80 transition-colors">
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <div className="flex items-center gap-2.5">
                               <div className="w-7 h-7 rounded-full bg-hover border border-line text-fg font-bold flex items-center justify-center text-[10px] shrink-0">
                                 {u.avatarText || u.name[0]}
@@ -695,7 +703,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               </div>
                             </div>
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <div className="flex flex-wrap gap-1 max-w-[180px]">
                               {deptNames.length === 0 ? (
                                 <span className="text-fg-tertiary italic">未分配</span>
@@ -708,7 +716,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               )}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <div className="flex flex-wrap gap-1 max-w-[200px]">
                               {roleKeys.length === 0 ? (
                                 <span className="text-fg-tertiary italic">未分配角色</span>
@@ -722,12 +730,12 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               )}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-[11px] text-fg-secondary">
+                          <td className="py-2 px-3 text-[11px] text-fg-secondary">
                             {(u.allowedAppIds || []).includes("ALL")
                               ? "全部应用"
                               : `${(u.allowedAppIds || []).length} 款应用`}
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${u.status === "DISABLED" ? "bg-hover text-fg-secondary" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
                               {u.status === "DISABLED" ? "已停用" : "正常在职"}
                             </span>

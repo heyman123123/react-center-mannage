@@ -26,6 +26,7 @@ import {
   Eye,
   Link2,
   Settings2,
+  FolderTree,
 } from "lucide-react";
 import {
   DictionaryEntry,
@@ -748,17 +749,21 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <button
             type="button"
             onClick={() => setCategoryFilter("ALL")}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
+            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
               categoryFilter === "ALL"
-                ? "bg-primary text-primary-foreground font-semibold"
-                : "text-fg-secondary hover:bg-hover"
+                ? "bg-primary text-primary-foreground font-semibold border-primary shadow-card"
+                : "text-fg-secondary hover:bg-hover border-transparent"
             }`}
           >
-            <span className="flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5" />
-              全部
+            <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
+              categoryFilter === "ALL" ? "bg-white/15" : "bg-subtle border border-line-subtle"
+            }`}>
+              <BookOpen className={`w-3.5 h-3.5 ${categoryFilter === "ALL" ? "text-amber-300" : "text-fg-tertiary"}`} />
             </span>
-            <span className="text-[10px] font-mono text-fg-tertiary">{entryList.length}</span>
+            <span className="flex-1 text-left truncate">全部</span>
+            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+              categoryFilter === "ALL" ? "bg-white/15" : "bg-hover text-fg-tertiary"
+            }`}>{entryList.length}</span>
           </button>
 
           {visibleCategoryKeys.map((c) => {
@@ -789,14 +794,21 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setCategoryFilter(c.key)}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
                         categoryFilter === c.key
-                          ? "bg-primary text-primary-foreground font-semibold"
-                          : "text-fg-secondary hover:bg-hover"
+                          ? "bg-primary text-primary-foreground font-semibold border-primary shadow-card"
+                          : "text-fg-secondary hover:bg-hover border-transparent"
                       }`}
                     >
-                      <span className="truncate">{c.label}</span>
-                      <span className="text-[10px] font-mono text-fg-tertiary shrink-0">{count}</span>
+                      <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
+                        categoryFilter === c.key ? "bg-white/15" : "bg-subtle border border-line-subtle"
+                      }`}>
+                        <FolderTree className={`w-3.5 h-3.5 ${categoryFilter === c.key ? "text-blue-300" : "text-fg-tertiary"}`} />
+                      </span>
+                      <span className="flex-1 text-left truncate">{c.label}</span>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
+                        categoryFilter === c.key ? "bg-white/15" : "bg-hover text-fg-tertiary"
+                      }`}>{count}</span>
                     </button>
                   )
                 }
@@ -943,7 +955,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <table className="min-w-[1080px] w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                  <th className="py-2.5 px-3 w-8">
+                  <th className="py-2 px-3 w-8">
                     <input
                       type="checkbox"
                       checked={selectedIds.length > 0 && filteredEntries.every((e) => selectedIds.includes(e.id))}
@@ -953,17 +965,17 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                       className="rounded text-fg"
                     />
                   </th>
-                  <th className="py-2.5 px-3 w-[260px]">名称 (Key)</th>
-                  <th className="py-2.5 px-3 w-[110px]">ID</th>
-                  <th className="py-2.5 px-3 min-w-[240px]">
+                  <th className="py-2 px-3 w-[260px]">名称 (Key)</th>
+                  <th className="py-2 px-3 w-[110px]">ID</th>
+                  <th className="py-2 px-3 min-w-[240px]">
                     值（{languages.find((l) => l.code === previewLanguage)?.flag}{" "}
                     {languages.find((l) => l.code === previewLanguage)?.nativeName}）
                   </th>
-                  <th className="py-2.5 px-3 min-w-[180px]">备注</th>
-                  <th className="py-2.5 px-3 min-w-[160px]">关联位置</th>
-                  <th className="py-2.5 px-3 w-[100px]">创建</th>
-                  <th className="py-2.5 px-3 w-[80px] text-center">引用</th>
-                  <th className="py-2.5 px-3 w-[150px] text-right">操作</th>
+                  <th className="py-2 px-3 min-w-[180px]">备注</th>
+                  <th className="py-2 px-3 min-w-[160px]">关联位置</th>
+                  <th className="py-2 px-3 w-[100px]">创建</th>
+                  <th className="py-2 px-3 w-[80px] text-center">引用</th>
+                  <th className="py-2 px-3 w-[150px] text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-subtle text-fg-secondary">
@@ -982,7 +994,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     return (
                       <React.Fragment key={item.id}>
                         <tr className="hover:bg-subtle/80 transition-colors group">
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <input
                               type="checkbox"
                               checked={selectedIds.includes(item.id)}
@@ -994,7 +1006,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               className="rounded text-fg"
                             />
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <div className="flex items-center gap-1.5">
                               <span className="font-mono font-bold text-xs text-fg bg-hover px-2 py-0.5 rounded border border-line truncate max-w-[200px]" title={item.key}>
                                 {item.key}
@@ -1013,16 +1025,16 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               </button>
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 font-mono text-fg-tertiary text-[11px]">{item.id}</td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3 font-mono text-fg-tertiary text-[11px]">{item.id}</td>
+                          <td className="py-2 px-3">
                             <div className="text-fg line-clamp-2 leading-relaxed" title={item.translations[previewLanguage]}>
                               {item.translations[previewLanguage] || "—"}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-fg-secondary">
+                          <td className="py-2 px-3 text-fg-secondary">
                             <span className="line-clamp-2" title={item.description}>{item.description}</span>
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <div className="flex items-center gap-1 flex-wrap">
                               {getReferencePoints(item).map((rp) => (
                                 <span
@@ -1036,10 +1048,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               ))}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 whitespace-nowrap text-fg-tertiary font-mono text-[11px]">
+                          <td className="py-2 px-3 whitespace-nowrap text-fg-tertiary font-mono text-[11px]">
                             {item.updatedAt.substring(0, 10)}
                           </td>
-                          <td className="py-2.5 px-3 text-center">
+                          <td className="py-2 px-3 text-center">
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               {completedCount}/{languages.length}
                             </span>
@@ -1047,7 +1059,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               {item.referencedTemplatesCount ?? 0} 模板
                             </div>
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <div className="flex items-center justify-end gap-0.5">
                               <button
                                 type="button"

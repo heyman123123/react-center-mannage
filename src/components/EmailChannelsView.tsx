@@ -252,16 +252,9 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                     <span className="text-fg-tertiary">API Key 凭据:</span>
                     <div className="flex items-center gap-1 font-mono text-fg-secondary">
                       <span>{channel.apiKey.substring(0, 8)}••••••••</span>
-                      <button
-                        onClick={() => copyText(channel.apiKey, channel.id)}
-                        className="text-fg-tertiary hover:text-fg-secondary ml-1"
-                      >
-                        {copiedId === channel.id ? (
-                          <Check className="w-3 h-3 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-3 h-3" />
-                        )}
-                      </button>
+                      <span className="text-[9px] text-rose-400 font-sans ml-1" title="API Key 凭据禁止复制">
+                        禁止复制
+                      </span>
                     </div>
                   </div>
                 </div>
