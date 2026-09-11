@@ -134,14 +134,14 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-xl hover:bg-zinc-100 font-semibold cursor-pointer"
+            className="px-4 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
           >
             取消
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-semibold shadow-xs cursor-pointer"
+            className="px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
           >
             确认生成海外流水
           </button>
@@ -151,7 +151,7 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         {/* Title */}
         <div>
-          <label className="font-semibold text-zinc-700 block mb-1">
+          <label className="font-semibold text-fg-secondary block mb-1">
             海外订单标题 / 订阅服务描述:
           </label>
           <input
@@ -159,13 +159,13 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
             required
             value={orderTitle}
             onChange={(e) => setOrderTitle(e.target.value)}
-            className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-900"
+            className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:bg-surface focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
         {/* Merchant */}
         <div>
-          <label className="font-semibold text-zinc-700 block mb-1">
+          <label className="font-semibold text-fg-secondary block mb-1">
             签约主体商户名:
           </label>
           <input
@@ -173,14 +173,14 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
             required
             value={merchantName}
             onChange={(e) => setMerchantName(e.target.value)}
-            className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-900"
+            className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:bg-surface focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
         {/* Channel & Amount Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="font-semibold text-zinc-700 block mb-1">
+            <label className="font-semibold text-fg-secondary block mb-1">
               海外支付通道 (Gateway):
             </label>
             <ShadcnSelect
@@ -191,7 +191,7 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
           </div>
 
           <div>
-            <label className="font-semibold text-zinc-700 block mb-1">
+            <label className="font-semibold text-fg-secondary block mb-1">
               交易金额 ({currency}):
             </label>
             <input
@@ -200,14 +200,14 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
               required
               value={amount}
               onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-              className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono font-bold focus:bg-surface focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
 
         {/* Initial Status */}
         <div>
-          <label className="font-semibold text-zinc-700 block mb-1.5">
+          <label className="font-semibold text-fg-secondary block mb-1.5">
             初始平账状态:
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -216,8 +216,8 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
               onClick={() => setStatus("in_process")}
               className={`p-2 border rounded-xl text-center transition-colors cursor-pointer ${
                 status === "in_process"
-                  ? "bg-zinc-900 text-white font-semibold border-zinc-900 shadow-2xs"
-                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+                  ? "bg-primary text-primary-foreground font-semibold border-primary shadow-2xs"
+                  : "bg-subtle text-fg-secondary border-line hover:bg-hover"
               }`}
             >
               清算中
@@ -227,8 +227,8 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
               onClick={() => setStatus("done")}
               className={`p-2 border rounded-xl text-center transition-colors cursor-pointer ${
                 status === "done"
-                  ? "bg-zinc-900 text-white font-semibold border-zinc-900 shadow-2xs"
-                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+                  ? "bg-primary text-primary-foreground font-semibold border-primary shadow-2xs"
+                  : "bg-subtle text-fg-secondary border-line hover:bg-hover"
               }`}
             >
               已平账
@@ -239,7 +239,7 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
               className={`p-2 border rounded-xl text-center transition-colors cursor-pointer ${
                 status === "discrepancy"
                   ? "bg-rose-600 text-white font-semibold border-rose-600 shadow-2xs"
-                  : "bg-zinc-50 text-rose-600 border-zinc-200 hover:bg-rose-50"
+                  : "bg-subtle text-rose-600 border-line hover:bg-rose-50"
               }`}
             >
               注入差错

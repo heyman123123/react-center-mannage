@@ -74,7 +74,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           ref={menuRef}
           style={{ left: state.x, top: state.y }}
           className={cn(
-            "fixed z-[9999] w-40 rounded-xl border border-zinc-200 bg-white p-1 shadow-2xl animate-in fade-in zoom-in-95",
+            "fixed z-[9999] w-40 rounded-xl border border-line bg-surface p-1 shadow-2xl animate-in fade-in zoom-in-95",
             className
           )}
         >
@@ -88,7 +88,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 item.onClick();
               }}
               className={cn(
-                "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition-colors cursor-pointer hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed",
+                "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-fg-secondary transition-colors cursor-pointer hover:bg-hover disabled:opacity-40 disabled:cursor-not-allowed",
                 item.danger && "text-rose-600 hover:bg-rose-50 hover:text-rose-700"
               )}
             >

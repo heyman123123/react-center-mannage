@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { TableSkeleton } from "./ui/Skeletons";
 import {
   CreditCard,
   CheckCircle2,
@@ -273,20 +275,23 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     }, 600);
   };
 
+  const loading = useViewLoading();
+  if (loading) return <TableSkeleton rows={6} />;
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
               <CreditCard className="w-5 h-5" />
             </span>
-            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
+            <h1 className="text-xl font-bold text-fg tracking-tight">
               海外支付渠道配置
             </h1>
           </div>
-          <p className="text-xs text-zinc-500 mt-1 max-w-2xl">
+          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
             配置与调优海外收单网关密钥（Stripe、PayPal、Adyen、Klarna、SEPA 等），支持智能抗欺诈路由、动态汇率转换与毫秒级通道连通性探活。
           </p>
         </div>
@@ -313,7 +318,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
               };
               setChannelList([...channelList, demoNew]);
             }}
-            className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
+            className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>接入新渠道</span>
@@ -352,22 +357,22 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
           return (
             <div
               key={channel.id}
-              className={`bg-white border rounded-2xl p-5 shadow-xs transition-all flex flex-col justify-between ${
+              className={`bg-surface border rounded-2xl p-5 shadow-card transition-all flex flex-col justify-between ${
                 channel.enabled
-                  ? "border-zinc-200/80 hover:border-zinc-300"
-                  : "border-zinc-200/50 opacity-70 bg-zinc-50/50"
+                  ? "border-line/80 hover:border-line"
+                  : "border-line/50 opacity-70 bg-subtle/50"
               }`}
             >
               <div className="space-y-4">
                 {/* Card Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center font-bold text-zinc-800 text-sm tracking-tighter uppercase font-mono border border-zinc-200/80">
+                    <div className="w-10 h-10 rounded-xl bg-hover flex items-center justify-center font-bold text-fg text-sm tracking-tighter uppercase font-mono border border-line/80">
                       {channel.channelKey.slice(0, 3)}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-zinc-900 text-sm">
+                        <h3 className="font-bold text-fg text-sm">
                           {channel.name}
                         </h3>
                         <span
@@ -380,7 +385,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                           {channel.mode}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-500 line-clamp-1 mt-0.5">
+                      <p className="text-xs text-fg-secondary line-clamp-1 mt-0.5">
                         {channel.description}
                       </p>
                     </div>
@@ -392,7 +397,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                     className={`p-1.5 rounded-lg border transition-colors ${
                       channel.enabled
                         ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                        : "bg-zinc-100 text-zinc-400 border-zinc-200 hover:bg-zinc-200"
+                        : "bg-hover text-fg-tertiary border-line hover:bg-hover"
                     }`}
                     title={channel.enabled ? "点击停用渠道" : "点击启用渠道"}
                   >
@@ -401,17 +406,17 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                 </div>
 
                 {/* Key Configuration Parameters */}
-                <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-100 space-y-2.5 text-xs font-mono">
+                <div className="bg-subtle rounded-xl p-3 border border-line-subtle space-y-2.5 text-xs font-mono">
                   {/* Public Key */}
                   <div>
-                    <span className="text-[10px] text-zinc-400 block font-sans">
+                    <span className="text-[10px] text-fg-tertiary block font-sans">
                       Publishable Client Key (公钥)
                     </span>
-                    <div className="flex items-center justify-between text-zinc-700 mt-0.5">
+                    <div className="flex items-center justify-between text-fg-secondary mt-0.5">
                       <span className="truncate max-w-[280px]">{channel.apiPublicKey}</span>
                       <button
                         onClick={() => copyText(channel.apiPublicKey, `${channel.id}_pub`)}
-                        className="text-zinc-400 hover:text-zinc-700 ml-2 shrink-0"
+                        className="text-fg-tertiary hover:text-fg-secondary ml-2 shrink-0"
                       >
                         {copiedKey === `${channel.id}_pub` ? (
                           <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -423,14 +428,14 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   </div>
 
                   {/* Secret Key */}
-                  <div className="pt-2 border-t border-zinc-200/60">
+                  <div className="pt-2 border-t border-line/60">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-zinc-400 font-sans">
+                      <span className="text-[10px] text-fg-tertiary font-sans">
                         Secret API Key (私钥)
                       </span>
                       <button
                         onClick={() => toggleShowSecret(channel.id)}
-                        className="text-zinc-400 hover:text-zinc-700 text-[10px] flex items-center gap-1 font-sans"
+                        className="text-fg-tertiary hover:text-fg-secondary text-[10px] flex items-center gap-1 font-sans"
                       >
                         {isSecretVisible ? (
                           <>
@@ -443,7 +448,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                         )}
                       </button>
                     </div>
-                    <div className="flex items-center justify-between text-zinc-700 mt-0.5">
+                    <div className="flex items-center justify-between text-fg-secondary mt-0.5">
                       <span className="truncate max-w-[280px]">
                         {isSecretVisible
                           ? channel.apiSecretKey
@@ -451,7 +456,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                       </span>
                       <button
                         onClick={() => copyText(channel.apiSecretKey, `${channel.id}_sec`)}
-                        className="text-zinc-400 hover:text-zinc-700 ml-2 shrink-0"
+                        className="text-fg-tertiary hover:text-fg-secondary ml-2 shrink-0"
                       >
                         {copiedKey === `${channel.id}_sec` ? (
                           <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -463,11 +468,11 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   </div>
 
                   {/* Webhook Secret */}
-                  <div className="pt-2 border-t border-zinc-200/60">
-                    <span className="text-[10px] text-zinc-400 block font-sans">
+                  <div className="pt-2 border-t border-line/60">
+                    <span className="text-[10px] text-fg-tertiary block font-sans">
                       Webhook Signing Secret (验签密钥)
                     </span>
-                    <div className="flex items-center justify-between text-zinc-700 mt-0.5">
+                    <div className="flex items-center justify-between text-fg-secondary mt-0.5">
                       <span className="truncate max-w-[280px]">
                         {isSecretVisible
                           ? channel.webhookSecret
@@ -475,7 +480,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                       </span>
                       <button
                         onClick={() => copyText(channel.webhookSecret, `${channel.id}_wh`)}
-                        className="text-zinc-400 hover:text-zinc-700 ml-2 shrink-0"
+                        className="text-fg-tertiary hover:text-fg-secondary ml-2 shrink-0"
                       >
                         {copiedKey === `${channel.id}_wh` ? (
                           <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -490,19 +495,19 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                 {/* Attributes badges */}
                 <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] text-zinc-400">支持币种:</span>
+                    <span className="text-[11px] text-fg-tertiary">支持币种:</span>
                     {channel.supportedCurrencies.map((curr) => (
                       <span
                         key={curr}
-                        className="px-1.5 py-0.5 bg-zinc-100 text-zinc-700 rounded text-[10px] font-mono font-bold"
+                        className="px-1.5 py-0.5 bg-hover text-fg-secondary rounded text-[10px] font-mono font-bold"
                       >
                         {curr}
                       </span>
                     ))}
                   </div>
 
-                  <div className="text-zinc-500 text-xs">
-                    综合扣率: <strong className="text-zinc-900 font-mono">{channel.feeRateText}</strong>
+                  <div className="text-fg-secondary text-xs">
+                    综合扣率: <strong className="text-fg font-mono">{channel.feeRateText}</strong>
                   </div>
                 </div>
 
@@ -515,9 +520,9 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   const shown = relatedApps.slice(0, 3);
                   const rest = relatedApps.slice(3);
                   return (
-                    <div className="pt-2 border-t border-zinc-100/80">
-                      <div className="text-[10px] text-zinc-400 font-sans mb-1.5 flex items-center gap-1">
-                        <Layers className="w-3 h-3 text-zinc-400" />
+                    <div className="pt-2 border-t border-line-subtle/80">
+                      <div className="text-[10px] text-fg-tertiary font-sans mb-1.5 flex items-center gap-1">
+                        <Layers className="w-3 h-3 text-fg-tertiary" />
                         已启用该渠道的应用 ({relatedApps.length})
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -535,7 +540,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                             <Popover.Trigger asChild>
                               <button
                                 type="button"
-                                className="px-1.5 py-0.5 bg-zinc-100 text-zinc-600 hover:bg-zinc-200 rounded-md text-[10px] font-medium transition-colors cursor-pointer"
+                                className="px-1.5 py-0.5 bg-hover text-fg-secondary hover:bg-hover rounded-md text-[10px] font-medium transition-colors cursor-pointer"
                               >
                                 +{rest.length} 更多
                               </button>
@@ -545,21 +550,21 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                                 align="start"
                                 side="top"
                                 sideOffset={6}
-                                className="z-[9999] w-64 rounded-xl border border-zinc-200 bg-white p-2 shadow-2xl animate-in fade-in zoom-in-95 outline-none"
+                                className="z-[9999] w-64 rounded-xl border border-line bg-surface p-2 shadow-2xl animate-in fade-in zoom-in-95 outline-none"
                               >
-                                <div className="text-[10px] font-bold text-zinc-400 px-1 pb-1.5 border-b border-zinc-100 mb-1">
+                                <div className="text-[10px] font-bold text-fg-tertiary px-1 pb-1.5 border-b border-line-subtle mb-1">
                                   使用该支付渠道的全部应用
                                 </div>
                                 <div className="space-y-0.5 max-h-52 overflow-y-auto">
                                   {relatedApps.map((app) => (
                                     <div
                                       key={app.id}
-                                      className="flex items-center justify-between px-1.5 py-1 rounded-md hover:bg-zinc-50"
+                                      className="flex items-center justify-between px-1.5 py-1 rounded-md hover:bg-subtle"
                                     >
-                                      <span className="text-xs font-medium text-zinc-700 truncate">
+                                      <span className="text-xs font-medium text-fg-secondary truncate">
                                         {app.name}
                                       </span>
-                                      <span className="text-[9px] text-zinc-400 font-mono shrink-0 ml-2">
+                                      <span className="text-[9px] text-fg-tertiary font-mono shrink-0 ml-2">
                                         {app.code} · {app.environment === "Production" ? "生产" : "测试"}
                                       </span>
                                     </div>
@@ -576,14 +581,14 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
               </div>
 
               {/* Card Footer Actions */}
-              <div className="mt-5 pt-4 border-t border-zinc-100 flex items-center justify-between text-xs">
+              <div className="mt-5 pt-4 border-t border-line-subtle flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <span
                     className={`w-2 h-2 rounded-full ${
                       channel.testStatus === "HEALTHY" ? "bg-emerald-500" : "bg-amber-500"
                     }`}
                   />
-                  <span className="text-zinc-500 font-mono text-[11px]">
+                  <span className="text-fg-secondary font-mono text-[11px]">
                     {channel.latencyMs}ms • 优先级 #{channel.routingPriority}
                   </span>
                 </div>
@@ -605,14 +610,14 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   <button
                     onClick={() => handleTestConnection(channel)}
                     disabled={isTesting}
-                    className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg font-medium flex items-center gap-1 transition-colors text-xs"
+                    className="px-2.5 py-1.5 bg-hover hover:bg-hover text-fg-secondary rounded-lg font-medium flex items-center gap-1 transition-colors text-xs"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? "animate-spin" : ""}`} />
                     <span>{isTesting ? "测试中..." : "测试连通性"}</span>
                   </button>
                   <button
                     onClick={() => setEditingChannel(channel)}
-                    className="px-2.5 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-lg font-medium flex items-center gap-1 transition-colors text-xs"
+                    className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg font-medium flex items-center gap-1 transition-colors text-xs"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                     <span>编辑</span>
@@ -631,21 +636,21 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
         onClose={() => setEditingChannel(null)}
         title={editingChannel ? `编辑支付渠道配置 - ${editingChannel.name}` : "编辑支付渠道配置"}
         description="维护渠道密钥、费率与路由优先级；密钥仅保存在本机 Mock 环境。"
-        icon={<CreditCard className="w-5 h-5 text-zinc-800" />}
+        icon={<CreditCard className="w-5 h-5 text-fg" />}
         widthClass="max-w-lg"
         footer={
           <>
             <button
               type="button"
               onClick={() => setEditingChannel(null)}
-              className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 cursor-pointer"
+              className="px-4 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
               form="form-edit-channel"
-              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium shadow-xs cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
             >
               保存配置
             </button>
@@ -655,20 +660,20 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
         {editingChannel && (
           <form id="form-edit-channel" onSubmit={handleSaveEdit} className="space-y-3 text-xs">
               <div>
-                <label className="text-zinc-600 block mb-1 font-medium">渠道显示名称</label>
+                <label className="text-fg-secondary block mb-1 font-medium">渠道显示名称</label>
                 <input
                   type="text"
                   value={editingChannel.name}
                   onChange={(e) =>
                     setEditingChannel({ ...editingChannel, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-zinc-600 block mb-1 font-medium">运行模式</label>
+                <label className="text-fg-secondary block mb-1 font-medium">运行模式</label>
                 <ShadcnSelect
                   value={editingChannel.mode}
                   onValueChange={(val) =>
@@ -686,58 +691,58 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
               </div>
 
               <div>
-                <label className="text-zinc-600 block mb-1 font-medium">公钥 (Publishable Key)</label>
+                <label className="text-fg-secondary block mb-1 font-medium">公钥 (Publishable Key)</label>
                 <input
                   type="text"
                   value={editingChannel.apiPublicKey}
                   onChange={(e) =>
                     setEditingChannel({ ...editingChannel, apiPublicKey: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-zinc-600 block mb-1 font-medium">私钥 (Secret Key)</label>
+                <label className="text-fg-secondary block mb-1 font-medium">私钥 (Secret Key)</label>
                 <input
                   type="text"
                   value={editingChannel.apiSecretKey}
                   onChange={(e) =>
                     setEditingChannel({ ...editingChannel, apiSecretKey: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-zinc-600 block mb-1 font-medium">Webhook 签名密钥 (Signing Secret)</label>
+                <label className="text-fg-secondary block mb-1 font-medium">Webhook 签名密钥 (Signing Secret)</label>
                 <input
                   type="text"
                   value={editingChannel.webhookSecret}
                   onChange={(e) =>
                     setEditingChannel({ ...editingChannel, webhookSecret: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-zinc-600 block mb-1 font-medium">费率说明</label>
+                  <label className="text-fg-secondary block mb-1 font-medium">费率说明</label>
                   <input
                     type="text"
                     value={editingChannel.feeRateText}
                     onChange={(e) =>
                       setEditingChannel({ ...editingChannel, feeRateText: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+                    className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
                   />
                 </div>
                 <div>
-                  <label className="text-zinc-600 block mb-1 font-medium">路由优先级 (越小越优先)</label>
+                  <label className="text-fg-secondary block mb-1 font-medium">路由优先级 (越小越优先)</label>
                   <input
                     type="number"
                     value={editingChannel.routingPriority}
@@ -747,7 +752,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                         routingPriority: Number(e.target.value),
                       })
                     }
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+                    className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
                   />
                 </div>
               </div>
@@ -766,7 +771,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
         }}
         title="海外支付渠道沙箱测试 (Payment Gateway Live Test)"
         description="实时模拟全球网关握手、3D-Secure 协议核身与风控拦截，测试结果将直接入账至交易流水中"
-        icon={<Sparkles className="w-5 h-5 text-zinc-800" />}
+        icon={<Sparkles className="w-5 h-5 text-fg" />}
         widthClass="max-w-2xl"
         footer={
           <div className="flex items-center justify-between w-full">
@@ -775,7 +780,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setLastExecutedTxResult(null)}
-                  className="px-3 py-1.5 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 text-xs transition-colors cursor-pointer"
+                  className="px-3 py-1.5 border border-line text-fg-secondary rounded-xl font-medium hover:bg-subtle text-xs transition-colors cursor-pointer"
                 >
                   ← 重新配置测试参数
                 </button>
@@ -786,7 +791,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                     setIsTestTxModalOpen(false);
                     setLastExecutedTxResult(null);
                   }}
-                  className="px-3 py-1.5 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 text-xs transition-colors cursor-pointer"
+                  className="px-3 py-1.5 border border-line text-fg-secondary rounded-xl font-medium hover:bg-subtle text-xs transition-colors cursor-pointer"
                 >
                   取消
                 </button>
@@ -802,7 +807,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                       setIsTestTxModalOpen(false);
                       setLastExecutedTxResult(null);
                     }}
-                    className="px-4 py-1.5 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 text-xs transition-colors cursor-pointer"
+                    className="px-4 py-1.5 border border-line text-fg-secondary rounded-xl font-medium hover:bg-subtle text-xs transition-colors cursor-pointer"
                   >
                     完成并退出
                   </button>
@@ -814,7 +819,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                         setLastExecutedTxResult(null);
                         onNavigateToTransactions();
                       }}
-                      className="px-4 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-xs transition-colors cursor-pointer"
+                      className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-card transition-colors cursor-pointer"
                     >
                       <span>在交易流水中查看此记录</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -826,7 +831,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   type="button"
                   disabled={isExecutingTxTest}
                   onClick={handleExecuteTestTransaction}
-                  className="px-5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-xs transition-colors cursor-pointer"
+                  className="px-5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-card transition-colors cursor-pointer"
                 >
                   {isExecutingTxTest ? (
                     <>
@@ -874,35 +879,35 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   </div>
 
                   {/* Transaction Details Overview */}
-                  <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4 space-y-3">
-                    <div className="font-bold text-zinc-800 text-xs border-b border-zinc-200/80 pb-2 flex items-center justify-between">
+                  <div className="bg-subtle border border-line rounded-xl p-4 space-y-3">
+                    <div className="font-bold text-fg text-xs border-b border-line/80 pb-2 flex items-center justify-between">
                       <span>已生成的对账单详情</span>
-                      <span className="font-mono text-zinc-500 font-normal">
+                      <span className="font-mono text-fg-secondary font-normal">
                         单号: {lastExecutedTxResult.tx.id}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                       <div>
-                        <span className="text-zinc-400 block text-[11px]">支付渠道</span>
-                        <span className="font-semibold text-zinc-800 uppercase font-mono">
+                        <span className="text-fg-tertiary block text-[11px]">支付渠道</span>
+                        <span className="font-semibold text-fg uppercase font-mono">
                           {lastExecutedTxResult.tx.channel}
                         </span>
                       </div>
                       <div>
-                        <span className="text-zinc-400 block text-[11px]">扣款金额</span>
-                        <span className="font-bold text-zinc-900 font-mono">
+                        <span className="text-fg-tertiary block text-[11px]">扣款金额</span>
+                        <span className="font-bold text-fg font-mono">
                           {lastExecutedTxResult.tx.currency} {lastExecutedTxResult.tx.orderAmount}
                         </span>
                       </div>
                       <div>
-                        <span className="text-zinc-400 block text-[11px]">网关单号</span>
-                        <span className="font-mono text-zinc-700 truncate block">
+                        <span className="text-fg-tertiary block text-[11px]">网关单号</span>
+                        <span className="font-mono text-fg-secondary truncate block">
                           {lastExecutedTxResult.tx.channelTradeNo}
                         </span>
                       </div>
                       <div>
-                        <span className="text-zinc-400 block text-[11px]">对账状态</span>
+                        <span className="text-fg-tertiary block text-[11px]">对账状态</span>
                         <span
                           className={`font-semibold ${
                             lastExecutedTxResult.tx.status === "done"
@@ -915,7 +920,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-zinc-200/60 text-[11px] text-zinc-600 flex items-center justify-between">
+                    <div className="pt-2 border-t border-line/60 text-[11px] text-fg-secondary flex items-center justify-between">
                       <span>
                         支付方式: <strong>{lastExecutedTxResult.tx.paymentMethod}</strong>
                       </span>
@@ -936,7 +941,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
 
                   {/* Raw API Response Payload */}
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-zinc-600">
+                    <div className="flex items-center justify-between text-fg-secondary">
                       <span className="font-semibold text-xs">
                         海外收单网关实时 JSON 响应报文 (Gateway Response):
                       </span>
@@ -960,7 +965,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                         )}
                       </button>
                     </div>
-                    <pre className="bg-zinc-950 text-zinc-100 p-3 rounded-xl font-mono text-[11px] overflow-x-auto max-h-48 leading-relaxed border border-zinc-800">
+                    <pre className="bg-primary text-primary-foreground p-3 rounded-xl font-mono text-[11px] overflow-x-auto max-h-48 leading-relaxed border border-line">
                       {lastExecutedTxResult.rawJson}
                     </pre>
                   </div>
@@ -971,7 +976,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   {/* Channel & App Selection */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-zinc-700 block mb-1 font-semibold text-xs">
+                      <label className="text-fg-secondary block mb-1 font-semibold text-xs">
                         测试收单渠道 (Channel Gateway) <span className="text-rose-500">*</span>:
                       </label>
                       <ShadcnSelect
@@ -989,7 +994,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                     </div>
 
                     <div>
-                      <label className="text-zinc-700 block mb-1 font-semibold text-xs">
+                      <label className="text-fg-secondary block mb-1 font-semibold text-xs">
                         关联出海业务应用 (Client App):
                       </label>
                       <ShadcnSelect
@@ -1009,7 +1014,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   {/* Currency & Amount */}
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-zinc-700 block mb-1 font-semibold text-xs">
+                      <label className="text-fg-secondary block mb-1 font-semibold text-xs">
                         交易结算货币:
                       </label>
                       <ShadcnSelect
@@ -1028,7 +1033,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                     </div>
 
                     <div className="col-span-2">
-                      <label className="text-zinc-700 block mb-1 font-semibold text-xs">
+                      <label className="text-fg-secondary block mb-1 font-semibold text-xs">
                         模拟扣款金额 (Amount):
                       </label>
                       <div className="relative">
@@ -1037,10 +1042,10 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                           step="0.01"
                           value={testAmount}
                           onChange={(e) => setTestAmount(e.target.value)}
-                          className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 text-xs font-mono font-bold pl-8"
+                          className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg text-xs font-mono font-bold pl-8"
                           placeholder="49.00"
                         />
-                        <span className="absolute left-2.5 top-2 text-zinc-400 font-mono text-xs">
+                        <span className="absolute left-2.5 top-2 text-fg-tertiary font-mono text-xs">
                           {testCurrency === "USD" || testCurrency === "CAD" || testCurrency === "AUD"
                             ? "$"
                             : testCurrency === "EUR"
@@ -1055,7 +1060,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
 
                   {/* Test Scenarios */}
                   <div>
-                    <label className="text-zinc-700 block mb-1.5 font-semibold text-xs">
+                    <label className="text-fg-secondary block mb-1.5 font-semibold text-xs">
                       选择沙箱测试场景 (Simulation Scenario):
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -1097,18 +1102,18 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                             className={`p-3 rounded-xl border cursor-pointer transition-all ${
                               isSelected
                                 ? "bg-indigo-50/50 border-indigo-300 ring-1 ring-indigo-200"
-                                : "bg-white border-zinc-200 hover:border-zinc-300"
+                                : "bg-surface border-line hover:border-line"
                             }`}
                           >
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-bold text-xs text-zinc-900">{sc.title}</span>
+                              <span className="font-bold text-xs text-fg">{sc.title}</span>
                               <span
                                 className={`text-[10px] font-mono px-1.5 py-0.2 rounded border font-semibold ${sc.badgeColor}`}
                               >
                                 {sc.badge}
                               </span>
                             </div>
-                            <p className="text-[11px] text-zinc-500 leading-relaxed">{sc.desc}</p>
+                            <p className="text-[11px] text-fg-secondary leading-relaxed">{sc.desc}</p>
                           </div>
                         );
                       })}
@@ -1116,7 +1121,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   </div>
 
                   {/* Latency & Encryption Notice */}
-                  <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-500 text-[11px] flex items-center gap-2">
+                  <div className="p-3 bg-subtle border border-line rounded-xl text-fg-secondary text-[11px] flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
                     <span>
                       测试请求通过双向 TLS 1.3 链路与海外网关沙箱通信，包含卡组织授权、多币种动态折算及自动对账入库全流程。

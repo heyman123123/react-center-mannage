@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { TableSkeleton } from "./ui/Skeletons";
 import {
   Tag,
   Plus,
@@ -159,6 +161,9 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
   const activeCount = discountList.filter((d) => d.status === "ACTIVE").length;
   const totalRedeemed = discountList.reduce((acc, curr) => acc + curr.usedCount, 0);
 
+  const loading = useViewLoading();
+  if (loading) return <TableSkeleton rows={8} />;
+
   return (
     <div className="space-y-6">
       {/* Toast */}
@@ -175,17 +180,17 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-rose-50 text-rose-600 rounded-lg">
               <Tag className="w-5 h-5" />
             </span>
-            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
+            <h1 className="text-xl font-bold text-fg tracking-tight">
               海外折扣与优惠码配置 (Discounts & Coupons)
             </h1>
           </div>
-          <p className="text-xs text-zinc-500 mt-1 max-w-2xl">
+          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
             配置全场百分比折扣（如 20% OFF）或固定立减优惠券（如 -$50），支持限制使用次数、最低订单门槛与生效期限，全渠道收银台实时校验。
           </p>
         </div>
@@ -193,7 +198,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={handleOpenAdd}
-            className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
+            className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>新建优惠券 / 折扣码</span>
@@ -203,44 +208,44 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>生效中折扣方案</span>
             <Tag className="w-4 h-4 text-rose-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
-            {activeCount} <span className="text-xs font-normal text-zinc-400">/ {discountList.length} 条</span>
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
+            {activeCount} <span className="text-xs font-normal text-fg-tertiary">/ {discountList.length} 条</span>
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">支持独立站结账页实时输入校验</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">支持独立站结账页实时输入校验</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>海外用户累计核销次数</span>
             <TrendingUp className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
-            {totalRedeemed.toLocaleString()} <span className="text-xs font-normal text-zinc-400">次使用</span>
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
+            {totalRedeemed.toLocaleString()} <span className="text-xs font-normal text-fg-tertiary">次使用</span>
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">有效提升海外结账转化率与客单价</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">有效提升海外结账转化率与客单价</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>促销活动结合联动</span>
             <Sparkles className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
-            100% <span className="text-xs font-normal text-zinc-400">支持邮件一键绑定</span>
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
+            100% <span className="text-xs font-normal text-fg-tertiary">支持邮件一键绑定</span>
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">可直接挂载至多语言促销邮件营销推送</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">可直接挂载至多语言促销邮件营销推送</div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+      <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-          <span className="text-zinc-400 text-xs">类型筛选:</span>
+          <span className="text-fg-tertiary text-xs">类型筛选:</span>
           {[
             { key: "ALL", label: "全部折扣" },
             { key: "PERCENTAGE", label: "百分比折扣 (%)" },
@@ -251,8 +256,8 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               onClick={() => setTypeFilter(tab.key)}
               className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                 typeFilter === tab.key
-                  ? "bg-zinc-900 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-hover text-fg-secondary hover:bg-hover"
               }`}
             >
               {tab.label}
@@ -261,7 +266,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
 
           <span className="text-zinc-300 mx-1">|</span>
 
-          <span className="text-zinc-400 text-xs">状态:</span>
+          <span className="text-fg-tertiary text-xs">状态:</span>
           {[
             { key: "ALL", label: "全部" },
             { key: "ACTIVE", label: "进行中" },
@@ -273,8 +278,8 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               onClick={() => setStatusFilter(tab.key)}
               className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
                 statusFilter === tab.key
-                  ? "bg-zinc-800 text-white font-bold"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  ? "bg-primary-hover text-white font-bold"
+                  : "bg-hover text-fg-secondary hover:bg-hover"
               }`}
             >
               {tab.label}
@@ -283,23 +288,23 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
         </div>
 
         <div className="relative w-full md:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
             placeholder="搜索优惠码 / 方案名称..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs"
+            className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
           />
         </div>
       </div>
 
       {/* Discounts Table */}
-      <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-line/80 shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-[1100px] w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-zinc-50/90 border-b border-zinc-200 text-zinc-500 font-semibold text-[11px]">
+              <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
                 <th className="py-3 px-4 w-[220px]">优惠码 (Promo Code)</th>
                 <th className="py-3 px-4 min-w-[200px]">折扣名称 & 适用范围</th>
                 <th className="py-3 px-4 w-[130px]">优惠力度</th>
@@ -307,25 +312,25 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                 <th className="py-3 px-4 w-[160px]">使用进度 (已用 / 限额)</th>
                 <th className="py-3 px-4 w-[170px]">有效期限</th>
                 <th className="py-3 px-4 w-[100px]">状态</th>
-                <th className="py-3 px-4 w-[140px] sticky right-0 z-20 bg-zinc-50/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="py-3 px-4 w-[140px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
+            <tbody className="divide-y divide-line-subtle">
               {filteredDiscounts.map((d) => {
                 const percentUsed = Math.min(100, Math.round((d.usedCount / d.maxUsageLimit) * 100));
                 const isCopied = copiedCode === d.code;
                 return (
-                  <tr key={d.id} className="hover:bg-zinc-50/80 transition-colors group">
+                  <tr key={d.id} className="hover:bg-subtle/80 transition-colors group">
                     <td className="py-3.5 px-4 w-[220px] whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-sm text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+                        <span className="font-mono font-bold text-sm text-fg bg-hover px-2 py-0.5 rounded border border-line">
                           {d.code}
                         </span>
                         <button
                           onClick={() => handleCopyCode(d.code)}
-                          className="p-1 text-zinc-400 hover:text-zinc-700 rounded transition-colors"
+                          className="p-1 text-fg-tertiary hover:text-fg-secondary rounded transition-colors"
                           title="复制优惠码"
                         >
                           {isCopied ? (
@@ -338,8 +343,8 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                     </td>
 
                     <td className="py-3.5 px-4 min-w-[200px]">
-                      <div className="font-semibold text-zinc-900 line-clamp-1">{d.name}</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5 line-clamp-1">
+                      <div className="font-semibold text-fg line-clamp-1">{d.name}</div>
+                      <div className="text-[10px] text-fg-tertiary mt-0.5 line-clamp-1">
                         {d.applicableScope === "ALL"
                           ? "全场所有商品与订阅"
                           : d.applicableScope === "SUBSCRIPTION_ONLY"
@@ -349,7 +354,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                     </td>
 
                     <td className="py-3.5 px-4 w-[130px] whitespace-nowrap">
-                      <div className="font-bold font-mono text-zinc-900">
+                      <div className="font-bold font-mono text-fg">
                         {d.type === "PERCENTAGE" ? (
                           <span className="text-rose-600">{d.value}% 折扣</span>
                         ) : (
@@ -361,22 +366,22 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[120px] whitespace-nowrap text-zinc-600">
+                    <td className="py-3.5 px-4 w-[120px] whitespace-nowrap text-fg-secondary">
                       {d.minOrderAmount > 0 ? (
                         <span>
                           满 ${d.minOrderAmount} 可用
                         </span>
                       ) : (
-                        <span className="text-zinc-400">无门槛</span>
+                        <span className="text-fg-tertiary">无门槛</span>
                       )}
                     </td>
 
                     <td className="py-3.5 px-4 w-[160px]">
                       <div className="flex items-center justify-between text-[11px] font-mono mb-1">
-                        <span className="font-bold text-zinc-800">{d.usedCount}</span>
-                        <span className="text-zinc-400">/ {d.maxUsageLimit}</span>
+                        <span className="font-bold text-fg">{d.usedCount}</span>
+                        <span className="text-fg-tertiary">/ {d.maxUsageLimit}</span>
                       </div>
-                      <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-hover rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
                             percentUsed >= 90
@@ -390,7 +395,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[170px] whitespace-nowrap text-[11px] font-mono text-zinc-500">
+                    <td className="py-3.5 px-4 w-[170px] whitespace-nowrap text-[11px] font-mono text-fg-secondary">
                       <div>{d.startDate} 至</div>
                       <div>{d.endDate}</div>
                     </td>
@@ -402,7 +407,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                             : d.status === "EXPIRED"
                             ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-zinc-100 text-zinc-500 border-zinc-200"
+                            : "bg-hover text-fg-secondary border-line"
                         }`}
                       >
                         <span
@@ -411,7 +416,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                               ? "bg-emerald-500"
                               : d.status === "EXPIRED"
                               ? "bg-amber-500"
-                              : "bg-zinc-400"
+                              : "bg-hover"
                           }`}
                         />
                         {d.status === "ACTIVE"
@@ -423,11 +428,11 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                     </td>
 
                     {/* Actions: Sticky Right */}
-                    <td className="py-3.5 px-4 w-[140px] sticky right-0 z-10 bg-white group-hover:bg-zinc-50/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    <td className="py-3.5 px-4 w-[140px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleOpenEdit(d)}
-                          className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+                          className="p-1.5 text-fg-secondary hover:text-fg hover:bg-hover rounded-lg transition-colors"
                           title="编辑折扣配置"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -436,8 +441,8 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                           onClick={() => handleToggleStatus(d)}
                           className={`p-1.5 rounded-lg transition-colors ${
                             d.status === "ACTIVE"
-                              ? "text-zinc-400 hover:text-rose-600 hover:bg-rose-50"
-                              : "text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50"
+                              ? "text-fg-tertiary hover:text-rose-600 hover:bg-rose-50"
+                              : "text-fg-tertiary hover:text-emerald-600 hover:bg-emerald-50"
                           }`}
                           title={d.status === "ACTIVE" ? "停用该券" : "启用该券"}
                         >
@@ -468,14 +473,14 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-lg hover:bg-zinc-50 font-medium cursor-pointer"
+                className="px-4 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-semibold shadow-xs cursor-pointer"
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
               >
                 {editingDiscount ? "保存更新" : "确认创建"}
               </button>
@@ -485,7 +490,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   优惠兑换码 (Promo Code):
                 </label>
                 <input
@@ -494,11 +499,11 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                   placeholder="如：BLACKFRIDAY30"
                   value={formCode}
                   onChange={(e) => setFormCode(e.target.value.toUpperCase())}
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg font-mono font-bold text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg font-mono font-bold text-xs focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   折扣类型:
                 </label>
                 <ShadcnSelect
@@ -513,7 +518,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
             </div>
 
             <div>
-              <label className="font-semibold text-zinc-700 block mb-1">
+              <label className="font-semibold text-fg-secondary block mb-1">
                 折扣名称 / 活动标题:
               </label>
               <input
@@ -522,13 +527,13 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                 placeholder="如：2026 黑五大促 7 折狂欢"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   {formType === "PERCENTAGE" ? "折扣比例 (%)" : "立减金额 ($)"}:
                 </label>
                 <input
@@ -538,11 +543,11 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                   required
                   value={formValue}
                   onChange={(e) => setFormValue(parseFloat(e.target.value) || 0)}
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono font-bold focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   最低消费门槛 ($):
                 </label>
                 <input
@@ -552,14 +557,14 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                   value={formMinOrder}
                   onChange={(e) => setFormMinOrder(parseFloat(e.target.value) || 0)}
                   placeholder="0 表示无门槛"
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   总限量使用次数:
                 </label>
                 <input
@@ -568,11 +573,11 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                   required
                   value={formMaxUsage}
                   onChange={(e) => setFormMaxUsage(parseInt(e.target.value) || 100)}
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   适用业务范围:
                 </label>
                 <ShadcnSelect
@@ -589,7 +594,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   生效开始时间:
                 </label>
                 <input
@@ -597,11 +602,11 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                   required
                   value={formStartDate}
                   onChange={(e) => setFormStartDate(e.target.value)}
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   失效截止时间:
                 </label>
                 <input
@@ -609,7 +614,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                   required
                   value={formEndDate}
                   onChange={(e) => setFormEndDate(e.target.value)}
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
             </div>

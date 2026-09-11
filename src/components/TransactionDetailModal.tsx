@@ -67,7 +67,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-hover text-fg-secondary border border-line">
             待大额复核 (Pending)
           </span>
         );
@@ -81,12 +81,12 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
       onClose={onClose}
       title={transaction.orderTitle}
       description={`交易流水号: ${transaction.id} • 通道流水: ${transaction.channelTradeNo}`}
-      icon={<Receipt className="w-5 h-5 text-zinc-800" />}
+      icon={<Receipt className="w-5 h-5 text-fg" />}
       widthClass="max-w-2xl"
       footer={
         <div className="w-full flex items-center justify-between">
-          <div className="text-[11px] text-zinc-400">
-            审核经办: <strong className="text-zinc-700">{transaction.reviewer?.name}</strong>
+          <div className="text-[11px] text-fg-tertiary">
+            审核经办: <strong className="text-fg-secondary">{transaction.reviewer?.name}</strong>
           </div>
 
           <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                   onClose();
                   onOpenDiscrepancy(transaction);
                 }}
-                className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
               >
                 调账处理中心
               </button>
@@ -105,7 +105,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
             >
               关闭详情
             </button>
@@ -115,30 +115,30 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     >
       <div className="space-y-4 text-xs">
         {/* Status & Highlights */}
-        <div className="flex items-center justify-between p-3 bg-zinc-50 border border-zinc-200 rounded-xl">
+        <div className="flex items-center justify-between p-3 bg-subtle border border-line rounded-xl">
           <div className="flex items-center gap-2">
-            <span className="text-zinc-500 font-medium">当前清算状态:</span>
+            <span className="text-fg-secondary font-medium">当前清算状态:</span>
             {statusBadge()}
           </div>
           <div className="text-right">
-            <div className="text-lg font-mono font-bold text-zinc-900">
+            <div className="text-lg font-mono font-bold text-fg">
               {formatCurrency(transaction.orderAmount, transaction.currency)}
             </div>
-            <div className="text-[10px] text-zinc-400 font-mono">
+            <div className="text-[10px] text-fg-tertiary font-mono">
               网关费率: {formatCurrency(transaction.channelFee, transaction.currency)}
             </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-zinc-200 pb-2">
+        <div className="flex items-center gap-2 border-b border-line pb-2">
           <button
             type="button"
             onClick={() => setActiveTab("timeline")}
             className={`px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
               activeTab === "timeline"
-                ? "bg-zinc-900 text-white"
-                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                ? "bg-primary text-primary-foreground"
+                : "bg-hover text-fg-secondary hover:bg-hover"
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -149,8 +149,8 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             onClick={() => setActiveTab("raw_payload")}
             className={`px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
               activeTab === "raw_payload"
-                ? "bg-zinc-900 text-white"
-                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                ? "bg-primary text-primary-foreground"
+                : "bg-hover text-fg-secondary hover:bg-hover"
             }`}
           >
             <CreditCard className="w-3.5 h-3.5" />
@@ -161,8 +161,8 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             onClick={() => setActiveTab("risk")}
             className={`px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
               activeTab === "risk"
-                ? "bg-zinc-900 text-white"
-                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                ? "bg-primary text-primary-foreground"
+                : "bg-hover text-fg-secondary hover:bg-hover"
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -175,26 +175,26 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           <div className="space-y-4">
             {/* Meta Information Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl">
-                <div className="text-[10px] text-zinc-400">收单网关通道</div>
-                <div className="font-bold text-zinc-800 uppercase mt-0.5">
+              <div className="p-3 bg-subtle border border-line rounded-xl">
+                <div className="text-[10px] text-fg-tertiary">收单网关通道</div>
+                <div className="font-bold text-fg uppercase mt-0.5">
                   {transaction.channel}
                 </div>
               </div>
-              <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl">
-                <div className="text-[10px] text-zinc-400">支付工具 / 卡号</div>
-                <div className="font-bold text-zinc-800 truncate mt-0.5">
+              <div className="p-3 bg-subtle border border-line rounded-xl">
+                <div className="text-[10px] text-fg-tertiary">支付工具 / 卡号</div>
+                <div className="font-bold text-fg truncate mt-0.5">
                   {transaction.paymentMethod || "Visa (*4242)"}
                 </div>
               </div>
-              <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl">
-                <div className="text-[10px] text-zinc-400">商户签约主体</div>
-                <div className="font-bold text-zinc-800 truncate mt-0.5">
+              <div className="p-3 bg-subtle border border-line rounded-xl">
+                <div className="text-[10px] text-fg-tertiary">商户签约主体</div>
+                <div className="font-bold text-fg truncate mt-0.5">
                   {transaction.merchantName}
                 </div>
               </div>
-              <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl">
-                <div className="text-[10px] text-zinc-400">实际净结算额</div>
+              <div className="p-3 bg-subtle border border-line rounded-xl">
+                <div className="text-[10px] text-fg-tertiary">实际净结算额</div>
                 <div className="font-bold text-emerald-600 mt-0.5 font-mono">
                   {formatCurrency(transaction.settleAmount, transaction.currency)}
                 </div>
@@ -203,16 +203,16 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
             {/* Timeline Steps */}
             <div className="space-y-3 pt-2">
-              <div className="font-bold text-zinc-900 flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-zinc-600" />
+              <div className="font-bold text-fg flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-fg-secondary" />
                 <span>订单全生命周期事件流 (Event Stream):</span>
               </div>
 
-              <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-200">
+              <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-hover">
                 {transaction.flowSteps?.map((step, idx) => (
                   <div key={idx} className="relative group">
                     <div
-                      className={`absolute -left-6 top-1 w-5 h-5 rounded-full border-2 bg-white flex items-center justify-center ${
+                      className={`absolute -left-6 top-1 w-5 h-5 rounded-full border-2 bg-surface flex items-center justify-center ${
                         step.status === "FAILED"
                           ? "border-rose-500 text-rose-500"
                           : "border-emerald-500 text-emerald-500"
@@ -224,16 +224,16 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                         <Check className="w-3 h-3" />
                       )}
                     </div>
-                    <div className="p-3 bg-white border border-zinc-200 rounded-xl shadow-2xs">
+                    <div className="p-3 bg-surface border border-line rounded-xl shadow-2xs">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-zinc-900">
+                        <span className="font-semibold text-fg">
                           {step.stepName}
                         </span>
-                        <span className="text-[10px] font-mono text-zinc-400">
+                        <span className="text-[10px] font-mono text-fg-tertiary">
                           {step.timestamp}
                         </span>
                       </div>
-                      <p className="text-zinc-600 text-[11px] mt-1">{step.details}</p>
+                      <p className="text-fg-secondary text-[11px] mt-1">{step.details}</p>
                     </div>
                   </div>
                 ))}
@@ -258,7 +258,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         {activeTab === "raw_payload" && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-zinc-500 font-medium">海外收单网关原始 JSON 响应报文:</span>
+              <span className="text-fg-secondary font-medium">海外收单网关原始 JSON 响应报文:</span>
               <button
                 type="button"
                 onClick={() =>
@@ -267,7 +267,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                     "raw_json"
                   )
                 }
-                className="flex items-center gap-1 px-2.5 py-1 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-mono text-[11px] cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded bg-hover hover:bg-hover text-fg-secondary font-mono text-[11px] cursor-pointer"
               >
                 {copiedKey === "raw_json" ? (
                   <>
@@ -282,7 +282,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 )}
               </button>
             </div>
-            <pre className="p-4 bg-zinc-900 text-zinc-100 rounded-xl font-mono text-[11px] overflow-x-auto max-h-96">
+            <pre className="p-4 bg-primary text-primary-foreground rounded-xl font-mono text-[11px] overflow-x-auto max-h-96">
               {JSON.stringify(
                 {
                   id: transaction.id,
@@ -322,9 +322,9 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         {/* Content Tab 3: Risk & Compliance */}
         {activeTab === "risk" && (
           <div className="space-y-3">
-            <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl space-y-3">
+            <div className="p-4 bg-subtle border border-line rounded-xl space-y-3">
               <div className="flex items-center justify-between">
-                <div className="font-bold text-zinc-900 flex items-center gap-2">
+                <div className="font-bold text-fg flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   <span>Stripe Radar 评分与欺诈风险分析</span>
                 </div>
@@ -334,21 +334,21 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-[11px]">
-                <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
-                  <span className="text-zinc-400 block">3D Secure 2.0 验证:</span>
-                  <strong className="text-zinc-800">免密通过 (Frictionless Authentication)</strong>
+                <div className="p-2.5 bg-surface border border-line rounded-lg">
+                  <span className="text-fg-tertiary block">3D Secure 2.0 验证:</span>
+                  <strong className="text-fg">免密通过 (Frictionless Authentication)</strong>
                 </div>
-                <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
-                  <span className="text-zinc-400 block">CVC / AVS 账单地址验证:</span>
-                  <strong className="text-zinc-800">全部通过 (Matched)</strong>
+                <div className="p-2.5 bg-surface border border-line rounded-lg">
+                  <span className="text-fg-tertiary block">CVC / AVS 账单地址验证:</span>
+                  <strong className="text-fg">全部通过 (Matched)</strong>
                 </div>
-                <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
-                  <span className="text-zinc-400 block">客户端 IP 属地:</span>
-                  <strong className="text-zinc-800">美国加利福尼亚州 (US - CA)</strong>
+                <div className="p-2.5 bg-surface border border-line rounded-lg">
+                  <span className="text-fg-tertiary block">客户端 IP 属地:</span>
+                  <strong className="text-fg">美国加利福尼亚州 (US - CA)</strong>
                 </div>
-                <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
-                  <span className="text-zinc-400 block">发卡行国家:</span>
-                  <strong className="text-zinc-800">美国 Chase 摩根大通 (US)</strong>
+                <div className="p-2.5 bg-surface border border-line rounded-lg">
+                  <span className="text-fg-tertiary block">发卡行国家:</span>
+                  <strong className="text-fg">美国 Chase 摩根大通 (US)</strong>
                 </div>
               </div>
             </div>

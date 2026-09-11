@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { TableSkeleton } from "./ui/Skeletons";
 import {
   Users,
   Search,
@@ -139,7 +141,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
         );
       case "DOWNLOAD_INVOICE":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200 flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-hover text-fg-secondary border border-line flex items-center gap-1">
             <Download className="w-2.5 h-2.5" />
             下载发票 (Invoice)
           </span>
@@ -153,7 +155,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
         );
       default:
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 text-zinc-700">
+          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-hover text-fg-secondary">
             {type}
           </span>
         );
@@ -310,6 +312,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
   const totalSpendSum = userList.reduce((acc, u) => acc + (u.totalSpend || 0), 0);
   const totalSubscribersActive = userList.filter((u) => u.currentSubscription.status === "ACTIVE").length;
 
+  const loading = useViewLoading();
+  if (loading) return <TableSkeleton rows={9} />;
+
   return (
     <div className="space-y-6 font-sans">
       {/* Action Toast */}
@@ -326,17 +331,17 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
       )}
 
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
               <Users className="w-5 h-5" />
             </span>
-            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
+            <h1 className="text-xl font-bold text-fg tracking-tight">
               海外终端客户与行为大盘 (End Users & Lifecycle)
             </h1>
           </div>
-          <p className="text-xs text-zinc-500 mt-1 max-w-2xl">
+          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
             跨出海应用实时跟踪海外终端付费客户，深度穿透所有行为轨迹（登录时间与设备、密码重置变更、订阅流转、支付卡绑定与发票下载等）。
           </p>
         </div>
@@ -344,9 +349,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={handleExportCsv}
-            className="px-3 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            className="px-3 py-2 border border-line hover:bg-subtle text-fg-secondary rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-zinc-500" />
+            <Download className="w-3.5 h-3.5 text-fg-secondary" />
             <span>导出客户列表 (CSV)</span>
           </button>
 
@@ -362,7 +367,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
               setFormCardLast4("4242");
               setIsAddModalOpen(true);
             }}
-            className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
+            className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>录入新出海客户档案</span>
@@ -372,65 +377,65 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>海外客户建档总数</span>
             <Users className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
-            {userList.length} <span className="text-xs font-normal text-zinc-400">位独立用户</span>
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
+            {userList.length} <span className="text-xs font-normal text-fg-tertiary">位独立用户</span>
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">跨北美、西欧及亚太全球受众</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">跨北美、西欧及亚太全球受众</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>有效订阅率 (Active)</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
             {Math.round((totalSubscribersActive / (userList.length || 1)) * 100)}%
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">
+          <div className="text-[11px] text-fg-secondary mt-0.5">
             {totalSubscribersActive} 位订户自动续费运转中
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>累计客户贡献总值 (LTV)</span>
             <DollarSign className="w-4 h-4 text-indigo-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
             {formatCurrency(totalSpendSum, "USD")}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">平均客单值: ${(totalSpendSum / (userList.length || 1)).toFixed(0)}</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">平均客单值: ${(totalSpendSum / (userList.length || 1)).toFixed(0)}</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>行为事件穿透采集</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
-            {userList.reduce((acc, u) => acc + u.actions.length, 0)} <span className="text-xs font-normal text-zinc-400">条记录</span>
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
+            {userList.reduce((acc, u) => acc + u.actions.length, 0)} <span className="text-xs font-normal text-fg-tertiary">条记录</span>
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">端到端涵盖登录/改密/扣费/升级</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">端到端涵盖登录/改密/扣费/升级</div>
         </div>
       </div>
 
       {/* Filter and Search */}
-      <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+      <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-zinc-400 text-xs">订阅状态:</span>
+          <span className="text-fg-tertiary text-xs">订阅状态:</span>
           {["ALL", "ACTIVE", "CANCELED"].map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
               className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                 statusFilter === status
-                  ? "bg-zinc-900 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-hover text-fg-secondary hover:bg-hover"
               }`}
             >
               {status === "ALL" ? "全部客户" : status === "ACTIVE" ? "生效中订阅 (Active)" : "已取消订阅 (Canceled)"}
@@ -439,7 +444,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
 
           <span className="text-zinc-300 ml-2">|</span>
 
-          <span className="text-zinc-400 text-xs ml-1 whitespace-nowrap">地区:</span>
+          <span className="text-fg-tertiary text-xs ml-1 whitespace-nowrap">地区:</span>
           <div className="w-40">
             <ShadcnSelect
               value={countryFilter}
@@ -453,35 +458,35 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
         </div>
 
         <div className="relative w-full md:w-72">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
             placeholder="按客户姓名 / 邮箱 / ID / 方案搜索..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs"
+            className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
           />
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-line/80 shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-[1100px] w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-zinc-50/90 border-b border-zinc-200 text-zinc-500 font-semibold text-[11px]">
+              <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
                 <th className="py-3 px-4 min-w-[220px]">客户 ID & 姓名</th>
                 <th className="py-3 px-4 w-[130px]">国家 / 地区</th>
                 <th className="py-3 px-4 w-[200px]">当前订阅方案 & 状态</th>
                 <th className="py-3 px-4 w-[160px]">绑定扣款方式</th>
                 <th className="py-3 px-4 w-[140px]">终生价值 (LTV)</th>
                 <th className="py-3 px-4 w-[180px]">最近登录时间 & IP</th>
-                <th className="py-3 px-4 w-[150px] sticky right-0 z-20 bg-zinc-50/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="py-3 px-4 w-[150px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
+            <tbody className="divide-y divide-line-subtle">
               {filteredUsers.map((user) => {
                 const isSubActive = user.currentSubscription.status === "ACTIVE";
 
@@ -489,19 +494,19 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                   <tr
                     key={user.id}
                     onClick={() => setSelectedUser(user)}
-                    className="hover:bg-zinc-50/80 transition-colors cursor-pointer group"
+                    className="hover:bg-subtle/80 transition-colors cursor-pointer group"
                   >
                     <td className="py-3.5 px-4 min-w-[220px]">
-                      <div className="font-semibold text-zinc-900 group-hover:text-blue-600 flex items-center gap-1.5 line-clamp-1">
+                      <div className="font-semibold text-fg group-hover:text-blue-600 flex items-center gap-1.5 line-clamp-1">
                         <span>{user.name}</span>
                         <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                      <div className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate" title={`${user.id} • ${user.email}`}>
+                      <div className="text-[11px] text-fg-tertiary font-mono mt-0.5 truncate" title={`${user.id} • ${user.email}`}>
                         {user.id} • {user.email}
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[130px] font-medium text-zinc-700 whitespace-nowrap">
+                    <td className="py-3.5 px-4 w-[130px] font-medium text-fg-secondary whitespace-nowrap">
                       {user.country}
                     </td>
 
@@ -521,40 +526,40 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                           )}
                           {user.currentSubscription.planName}
                         </span>
-                        <span className="text-[10px] text-zinc-400 font-mono">
+                        <span className="text-[10px] text-fg-tertiary font-mono">
                           下次到期: {user.currentSubscription.nextBillingDate}
                         </span>
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[160px] font-mono text-zinc-700 whitespace-nowrap">
-                      <span className="px-1.5 py-0.5 bg-zinc-100 rounded text-[11px] border border-zinc-200">
+                    <td className="py-3.5 px-4 w-[160px] font-mono text-fg-secondary whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 bg-hover rounded text-[11px] border border-line">
                         {user.defaultPaymentMethod.brand} •••• {user.defaultPaymentMethod.last4}
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[140px] font-mono font-bold text-zinc-900 whitespace-nowrap">
+                    <td className="py-3.5 px-4 w-[140px] font-mono font-bold text-fg whitespace-nowrap">
                       {formatCurrency(user.totalSpend, user.currentSubscription.currency)}
-                      <span className="text-[10px] text-zinc-400 font-normal block">
+                      <span className="text-[10px] text-fg-tertiary font-normal block">
                         共 {user.totalOrdersCount} 笔交易
                       </span>
                     </td>
 
                     <td className="py-3.5 px-4 w-[180px]">
-                      <div className="font-mono text-zinc-700 whitespace-nowrap">{user.lastLoginAt}</div>
-                      <div className="font-mono text-[10px] text-zinc-400 truncate max-w-[160px]" title={user.lastLoginIp}>
+                      <div className="font-mono text-fg-secondary whitespace-nowrap">{user.lastLoginAt}</div>
+                      <div className="font-mono text-[10px] text-fg-tertiary truncate max-w-[160px]" title={user.lastLoginIp}>
                         {user.lastLoginIp}
                       </div>
                     </td>
 
                     {/* Actions: Sticky Right */}
-                    <td className="py-3.5 px-4 w-[150px] sticky right-0 z-10 bg-white group-hover:bg-zinc-50/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    <td className="py-3.5 px-4 w-[150px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedUser(user);
                         }}
-                        className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg font-medium text-xs flex items-center gap-1 ml-auto transition-colors"
+                        className="px-2.5 py-1.5 bg-hover hover:bg-hover text-fg-secondary rounded-lg font-medium text-xs flex items-center gap-1 ml-auto transition-colors"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>查看轨迹 ({user.actions.length})</span>
@@ -576,13 +581,13 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
           onClose={() => setSelectedUser(null)}
           title={`${selectedUser.name || "客户档案"} (${selectedUser.country})`}
           description={`${selectedUser.id} • ${selectedUser.email}`}
-          icon={<Users className="w-5 h-5 text-zinc-800" />}
+          icon={<Users className="w-5 h-5 text-fg" />}
           widthClass="max-w-3xl"
           footer={
             <button
               type="button"
               onClick={() => setSelectedUser(null)}
-              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
             >
               关闭面板
             </button>
@@ -590,7 +595,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
         >
           <div className="text-xs space-y-4">
             {/* Subscription Toggle */}
-            <div className="flex items-center justify-end pb-2 border-b border-zinc-100">
+            <div className="flex items-center justify-end pb-2 border-b border-line-subtle">
               <button
                 onClick={() => handleToggleSubscriptionStatus(selectedUser)}
                 className={`px-3 py-1.5 rounded-xl font-medium text-xs flex items-center gap-1 border transition-colors cursor-pointer ${
@@ -607,9 +612,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
 
             {/* Overview Chips */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-100">
-                <span className="text-[10px] text-zinc-400 block font-medium">当前订阅套餐</span>
-                <span className="font-bold text-xs text-zinc-900 block truncate mt-0.5">
+              <div className="bg-subtle rounded-xl p-3 border border-line-subtle">
+                <span className="text-[10px] text-fg-tertiary block font-medium">当前订阅套餐</span>
+                <span className="font-bold text-xs text-fg block truncate mt-0.5">
                   {selectedUser.currentSubscription.planName}
                 </span>
                 <span className="text-[10px] text-emerald-600 font-medium">
@@ -617,39 +622,39 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                 </span>
               </div>
 
-              <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-100">
-                <span className="text-[10px] text-zinc-400 block font-medium">默认扣款卡</span>
-                <span className="font-bold text-xs text-zinc-900 block mt-0.5">
+              <div className="bg-subtle rounded-xl p-3 border border-line-subtle">
+                <span className="text-[10px] text-fg-tertiary block font-medium">默认扣款卡</span>
+                <span className="font-bold text-xs text-fg block mt-0.5">
                   {selectedUser.defaultPaymentMethod.brand} •••• {selectedUser.defaultPaymentMethod.last4}
                 </span>
-                <span className="text-[10px] text-zinc-400 font-mono">
+                <span className="text-[10px] text-fg-tertiary font-mono">
                   有效期: {selectedUser.defaultPaymentMethod.expiry || "09/28"}
                 </span>
               </div>
 
-              <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-100">
-                <span className="text-[10px] text-zinc-400 block font-medium">累计终生消费 (LTV)</span>
-                <span className="font-bold text-xs font-mono text-zinc-900 block mt-0.5">
+              <div className="bg-subtle rounded-xl p-3 border border-line-subtle">
+                <span className="text-[10px] text-fg-tertiary block font-medium">累计终生消费 (LTV)</span>
+                <span className="font-bold text-xs font-mono text-fg block mt-0.5">
                   {formatCurrency(selectedUser.totalSpend, selectedUser.currentSubscription.currency)}
                 </span>
-                <span className="text-[10px] text-zinc-400 font-mono">
+                <span className="text-[10px] text-fg-tertiary font-mono">
                   共 {selectedUser.totalOrdersCount} 笔扣费订单
                 </span>
               </div>
 
-              <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-100">
-                <span className="text-[10px] text-zinc-400 block font-medium">快捷操作</span>
+              <div className="bg-subtle rounded-xl p-3 border border-line-subtle">
+                <span className="text-[10px] text-fg-tertiary block font-medium">快捷操作</span>
                 <div className="flex items-center gap-1.5 mt-1">
                   <button
                     onClick={() => handleAdminResetPassword(selectedUser)}
-                    className="p-1 bg-white border border-zinc-200 hover:bg-zinc-100 rounded text-zinc-700 text-[10px] flex items-center gap-1 font-medium"
+                    className="p-1 bg-surface border border-line hover:bg-hover rounded text-fg-secondary text-[10px] flex items-center gap-1 font-medium"
                     title="发送重置密码邮件"
                   >
                     <Key className="w-2.5 h-2.5" /> 密码重置
                   </button>
                   <button
                     onClick={() => handleAdminResendReceipt(selectedUser)}
-                    className="p-1 bg-white border border-zinc-200 hover:bg-zinc-100 rounded text-zinc-700 text-[10px] flex items-center gap-1 font-medium"
+                    className="p-1 bg-surface border border-line hover:bg-hover rounded text-fg-secondary text-[10px] flex items-center gap-1 font-medium"
                     title="重新发送电子发票"
                   >
                     <Send className="w-2.5 h-2.5" /> 补发发票
@@ -659,8 +664,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
             </div>
 
             {/* Filter Tabs for Actions */}
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-2 pt-2">
-              <span className="font-bold text-zinc-900 text-xs flex items-center gap-1.5">
+            <div className="flex items-center justify-between border-b border-line-subtle pb-2 pt-2">
+              <span className="font-bold text-fg text-xs flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-blue-500" />
                 <span>用户全生命周期动作流水 ({filteredActions?.length || 0})</span>
               </span>
@@ -672,8 +677,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                     onClick={() => setActionCategoryFilter(cat)}
                     className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                       actionCategoryFilter === cat
-                        ? "bg-zinc-900 text-white"
-                        : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-hover text-fg-secondary hover:bg-hover"
                     }`}
                   >
                     {cat === "ALL" ? "全部动作" : cat === "BILLING" ? "订阅与扣费" : "安全与登录"}
@@ -684,42 +689,42 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
 
             {/* Action Timeline List */}
             <div className="space-y-4 text-xs">
-              <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-200">
+              <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-hover">
                 {filteredActions && filteredActions.length > 0 ? (
                   filteredActions.map((action) => (
                     <div key={action.id} className="relative group">
-                      <div className="absolute -left-6 top-1 w-4 h-4 rounded-full border-2 border-white bg-blue-600 shadow-xs" />
+                      <div className="absolute -left-6 top-1 w-4 h-4 rounded-full border-2 border-white bg-blue-600 shadow-card" />
 
-                      <div className="bg-zinc-50 border border-zinc-200/80 rounded-xl p-3.5 space-y-2 hover:bg-white transition-colors">
+                      <div className="bg-subtle border border-line/80 rounded-xl p-3.5 space-y-2 hover:bg-surface transition-colors">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-zinc-900 text-xs">
+                            <span className="font-bold text-fg text-xs">
                               {action.title}
                             </span>
                             {getActionBadge(action.actionType)}
                           </div>
-                          <span className="font-mono text-[11px] text-zinc-400">
+                          <span className="font-mono text-[11px] text-fg-tertiary">
                             {action.timestamp}
                           </span>
                         </div>
 
-                        <p className="text-zinc-600 text-xs leading-relaxed">
+                        <p className="text-fg-secondary text-xs leading-relaxed">
                           {action.description}
                         </p>
 
-                        <div className="pt-2 border-t border-zinc-200/60 flex flex-wrap items-center gap-3 text-[10px] text-zinc-500 font-mono">
+                        <div className="pt-2 border-t border-line/60 flex flex-wrap items-center gap-3 text-[10px] text-fg-secondary font-mono">
                           <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-zinc-400" />
+                            <MapPin className="w-3 h-3 text-fg-tertiary" />
                             {action.location}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Laptop className="w-3 h-3 text-zinc-400" />
+                            <Laptop className="w-3 h-3 text-fg-tertiary" />
                             {action.device}
                           </span>
                           <span>IP: {action.ip}</span>
 
                           {action.metadata && (
-                            <div className="w-full mt-1 bg-white p-2 rounded border border-zinc-200 text-zinc-600">
+                            <div className="w-full mt-1 bg-surface p-2 rounded border border-line text-fg-secondary">
                               {Object.entries(action.metadata).map(([k, v]) => (
                                 <div key={k}>
                                   <strong>{k}:</strong> {String(v)}
@@ -732,7 +737,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-zinc-400">暂无该分类的动作记录</div>
+                  <div className="text-center py-8 text-fg-tertiary">暂无该分类的动作记录</div>
                 )}
               </div>
             </div>
@@ -747,21 +752,21 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
         onClose={() => setIsAddModalOpen(false)}
         title="录入新出海客户档案"
         description="手动建档并将客户直接纳入全流程生命周期审计流"
-        icon={<Users className="w-5 h-5 text-zinc-800" />}
+        icon={<Users className="w-5 h-5 text-fg" />}
         widthClass="max-w-md"
         footer={
           <>
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
-              className="px-3.5 py-1.5 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 cursor-pointer"
+              className="px-3.5 py-1.5 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
               form="form-add-end-user"
-              className="px-4 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-semibold cursor-pointer"
+              className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold cursor-pointer"
             >
               确认建档
             </button>
@@ -771,32 +776,32 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
         {isAddModalOpen && (
           <form id="form-add-end-user" onSubmit={handleCreateNewUser} className="space-y-3 text-xs">
               <div>
-                <label className="text-zinc-700 block mb-1 font-semibold">客户全名 / 姓名 *</label>
+                <label className="text-fg-secondary block mb-1 font-semibold">客户全名 / 姓名 *</label>
                 <input
                   type="text"
                   required
                   placeholder="例如: Jonathan Vance"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
                 />
               </div>
 
               <div>
-                <label className="text-zinc-700 block mb-1 font-semibold">客户邮箱 (Email) *</label>
+                <label className="text-fg-secondary block mb-1 font-semibold">客户邮箱 (Email) *</label>
                 <input
                   type="email"
                   required
                   placeholder="例如: j.vance@techventures.io"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-zinc-700 block mb-1 font-semibold">所在国家/地区</label>
+                  <label className="text-fg-secondary block mb-1 font-semibold">所在国家/地区</label>
                   <ShadcnSelect
                     value={formCountry}
                     onValueChange={setFormCountry}
@@ -815,7 +820,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                 </div>
 
                 <div>
-                  <label className="text-zinc-700 block mb-1 font-semibold">结算货币</label>
+                  <label className="text-fg-secondary block mb-1 font-semibold">结算货币</label>
                   <ShadcnSelect
                     value={formCurrency}
                     onValueChange={setFormCurrency}
@@ -831,28 +836,28 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
               </div>
 
               <div>
-                <label className="text-zinc-700 block mb-1 font-semibold">开通订阅方案</label>
+                <label className="text-fg-secondary block mb-1 font-semibold">开通订阅方案</label>
                 <input
                   type="text"
                   placeholder="例如: Novas AI 商业专业版 (年付)"
                   value={formPlan}
                   onChange={(e) => setFormPlan(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-zinc-700 block mb-1 font-semibold">首期金额</label>
+                  <label className="text-fg-secondary block mb-1 font-semibold">首期金额</label>
                   <input
                     type="number"
                     value={formPrice}
                     onChange={(e) => setFormPrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                    className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-zinc-700 block mb-1 font-semibold">支付卡品牌</label>
+                  <label className="text-fg-secondary block mb-1 font-semibold">支付卡品牌</label>
                   <ShadcnSelect
                     value={formCardBrand}
                     onValueChange={setFormCardBrand}
@@ -866,13 +871,13 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                   />
                 </div>
                 <div>
-                  <label className="text-zinc-700 block mb-1 font-semibold">卡号后4位</label>
+                  <label className="text-fg-secondary block mb-1 font-semibold">卡号后4位</label>
                   <input
                     type="text"
                     maxLength={4}
                     value={formCardLast4}
                     onChange={(e) => setFormCardLast4(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                    className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                   />
                 </div>
               </div>

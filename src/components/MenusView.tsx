@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { TableSkeleton } from "./ui/Skeletons";
 import {
   Menu,
   Plus,
@@ -226,10 +228,10 @@ export const MenusView: React.FC<MenusViewProps> = ({
     return (
       <React.Fragment key={node.id}>
         <div
-          className={`flex items-center justify-between py-2.5 px-4 transition-colors group border-b border-zinc-100 ${
+          className={`flex items-center justify-between py-2.5 px-4 transition-colors group border-b border-line-subtle ${
             isRoot
-              ? "bg-zinc-50/80 font-bold text-zinc-900"
-              : "hover:bg-zinc-50/60 text-zinc-800 text-xs"
+              ? "bg-subtle/80 font-bold text-fg"
+              : "hover:bg-subtle/60 text-fg text-xs"
           }`}
           style={{ paddingLeft: `${Math.max(16, node.level * 28 + 16)}px` }}
         >
@@ -239,13 +241,13 @@ export const MenusView: React.FC<MenusViewProps> = ({
               <button
                 type="button"
                 onClick={() => toggleNodeExpand(node.id)}
-                className="p-1 text-zinc-400 hover:text-zinc-800 hover:bg-zinc-200/60 rounded transition-colors cursor-pointer"
+                className="p-1 text-fg-tertiary hover:text-fg hover:bg-hover/60 rounded transition-colors cursor-pointer"
                 title={isExpanded ? "收起子节点" : "展开子节点"}
               >
                 {isExpanded ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-zinc-600" />
+                  <ChevronDown className="w-3.5 h-3.5 text-fg-secondary" />
                 ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+                  <ChevronRight className="w-3.5 h-3.5 text-fg-secondary" />
                 )}
               </button>
             ) : (
@@ -270,21 +272,21 @@ export const MenusView: React.FC<MenusViewProps> = ({
               <span
                 className={`truncate ${
                   isRoot
-                    ? "text-xs font-bold text-zinc-900"
-                    : "text-xs font-medium text-zinc-800"
+                    ? "text-xs font-bold text-fg"
+                    : "text-xs font-medium text-fg"
                 }`}
               >
                 {node.title}
               </span>
 
               {!isRoot && node.path && node.path !== "#" && (
-                <span className="text-[11px] font-mono bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded border border-zinc-200/70 hidden sm:inline-block">
+                <span className="text-[11px] font-mono bg-hover text-fg-secondary px-1.5 py-0.5 rounded border border-line/70 hidden sm:inline-block">
                   {node.path}
                 </span>
               )}
 
               {isRoot && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-200 text-zinc-700 font-medium">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-hover text-fg-secondary font-medium">
                   {node.children?.length || 0} 个子菜单项
                 </span>
               )}
@@ -298,7 +300,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleOpenAdd(node.id)}
-                className="p-1 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                className="p-1 text-fg-secondary hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
                 title="添加子菜单"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -307,7 +309,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleOpenEdit(node)}
-                className="p-1 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors cursor-pointer"
+                className="p-1 text-fg-secondary hover:text-fg hover:bg-hover rounded transition-colors cursor-pointer"
                 title="编辑菜单节点"
               >
                 <Edit2 className="w-3.5 h-3.5" />
@@ -320,7 +322,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
               >
                 <button
                   type="button"
-                  className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                  className="p-1 text-fg-tertiary hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
                   title="删除节点（含子节点）"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -332,7 +334,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
 
         {/* Recursive Children Rendering */}
         {hasChildren && isExpanded && (
-          <div className="divide-y divide-zinc-100/60">
+          <div className="divide-y divide-line-subtle/60">
             {node.children!.map(renderTreeNode)}
           </div>
         )}
@@ -340,28 +342,31 @@ export const MenusView: React.FC<MenusViewProps> = ({
     );
   };
 
+  const loading = useViewLoading();
+  if (loading) return <TableSkeleton rows={8} />;
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto font-sans p-6 md:p-8">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Header Banner */}
-      <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface border border-line rounded-2xl p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-zinc-900 text-white flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold">
               <FolderTree className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-zinc-900">
+              <h1 className="text-lg font-bold text-fg">
                 系统菜单树结构管理 (Menu Management)
               </h1>
-              <p className="text-xs text-zinc-500 mt-0.5">
+              <p className="text-xs text-fg-secondary mt-0.5">
                 以无限级树状结构管理左侧导航菜单（左侧侧边栏与这里保持一致），支持任意层级挂载与图标选择。
               </p>
             </div>
@@ -372,14 +377,14 @@ export const MenusView: React.FC<MenusViewProps> = ({
           <button
             type="button"
             onClick={expandAll}
-            className="px-3 py-1.5 border border-zinc-200 hover:bg-zinc-100 text-zinc-700 rounded-xl text-xs font-medium transition-colors cursor-pointer"
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded-xl text-xs font-medium transition-colors cursor-pointer"
           >
             全部展开
           </button>
           <button
             type="button"
             onClick={collapseAll}
-            className="px-3 py-1.5 border border-zinc-200 hover:bg-zinc-100 text-zinc-700 rounded-xl text-xs font-medium transition-colors cursor-pointer"
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded-xl text-xs font-medium transition-colors cursor-pointer"
           >
             全部收起
           </button>
@@ -387,7 +392,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
             id="btn-add-menu-root"
             type="button"
             onClick={() => handleOpenAdd("NONE")}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>新增菜单节点</span>
@@ -396,30 +401,30 @@ export const MenusView: React.FC<MenusViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-2xs flex flex-col md:flex-row gap-3 items-center justify-between">
+      <div className="bg-surface border border-line rounded-2xl p-4 shadow-2xs flex flex-col md:flex-row gap-3 items-center justify-between">
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-fg-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="搜索菜单名称、路由路径..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 text-xs bg-zinc-50/80 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white"
+            className="w-full pl-9 pr-4 py-1.5 text-xs bg-subtle/80 border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:bg-surface"
           />
         </div>
       </div>
 
       {/* Tree Structure Card */}
-      <div className="bg-white border border-zinc-200 rounded-2xl shadow-2xs overflow-hidden">
-        <div className="px-5 py-3 bg-zinc-50 border-b border-zinc-200 text-xs font-medium text-zinc-500 flex items-center justify-between">
+      <div className="bg-surface border border-line rounded-2xl shadow-2xs overflow-hidden">
+        <div className="px-5 py-3 bg-subtle border-b border-line text-xs font-medium text-fg-secondary flex items-center justify-between">
           <span>层级节点名称 / 路由路径</span>
           <span className="hidden sm:inline">操作</span>
         </div>
 
-        <div className="divide-y divide-zinc-100">
+        <div className="divide-y divide-line-subtle">
           {treeData.map(renderTreeNode)}
           {treeData.length === 0 && (
-            <div className="py-14 text-center text-xs text-zinc-400">
+            <div className="py-14 text-center text-xs text-fg-tertiary">
               暂无菜单数据，点击右上角「新增菜单节点」创建第一个菜单
             </div>
           )}
@@ -433,21 +438,21 @@ export const MenusView: React.FC<MenusViewProps> = ({
         onClose={() => setIsModalOpen(false)}
         title={editingMenu ? `编辑菜单节点: ${editingMenu.title}` : "新增系统树级菜单"}
         description="配置菜单名称、挂载的上级父节点、路由路径与图标。菜单管理不再绑定角色权限，权限在「权限管理」中按菜单树配置。"
-        icon={<FolderTree className="w-5 h-5 text-zinc-800" />}
+        icon={<FolderTree className="w-5 h-5 text-fg" />}
         widthClass="max-w-xl"
         footer={
           <>
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 border border-zinc-200 text-zinc-700 hover:bg-zinc-100 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              className="px-4 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSubmit}
-              className="px-5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              className="px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
             >
               {editingMenu ? "保存菜单变更" : "创建并挂载节点"}
             </button>
@@ -456,7 +461,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
       >
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block text-zinc-600 font-medium mb-1">
+            <label className="block text-fg-secondary font-medium mb-1">
               菜单标题 <span className="text-rose-500">*</span>
             </label>
             <input
@@ -464,12 +469,12 @@ export const MenusView: React.FC<MenusViewProps> = ({
               placeholder="例如: 财务分析报表"
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
           <div>
-            <label className="block text-zinc-600 font-medium mb-1">
+            <label className="block text-fg-secondary font-medium mb-1">
               挂载上级节点 (Parent Node)
             </label>
             <ShadcnSelect
@@ -486,14 +491,14 @@ export const MenusView: React.FC<MenusViewProps> = ({
               ]}
               placeholder="选择上级菜单节点"
             />
-            <p className="text-[11px] text-zinc-400 mt-1">
+            <p className="text-[11px] text-fg-tertiary mt-1">
               选择上级节点后，该菜单将以树状子节点缩进形式嵌套在其下方展示，支持无限层级。
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-zinc-600 font-medium mb-1">
+              <label className="block text-fg-secondary font-medium mb-1">
                 路由路径 (Route Path) <span className="text-rose-500">*</span>
               </label>
               <input
@@ -501,17 +506,17 @@ export const MenusView: React.FC<MenusViewProps> = ({
                 placeholder="/financial-reports"
                 value={formPath}
                 onChange={(e) => setFormPath(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <div>
-              <label className="block text-zinc-600 font-medium mb-1">排序权重 (Order)</label>
+              <label className="block text-fg-secondary font-medium mb-1">排序权重 (Order)</label>
               <input
                 type="number"
                 value={formOrder}
                 onChange={(e) => setFormOrder(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
@@ -520,13 +525,13 @@ export const MenusView: React.FC<MenusViewProps> = ({
           <IconPicker value={formIcon} onChange={setFormIcon} />
 
           <div>
-            <label className="block text-zinc-600 font-medium mb-1">功能用途说明</label>
+            <label className="block text-fg-secondary font-medium mb-1">功能用途说明</label>
             <textarea
               rows={3}
               placeholder="简要阐述此菜单节点的职责边界与涉及的海外支付能力..."
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </form>

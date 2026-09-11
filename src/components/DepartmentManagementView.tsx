@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { TableSkeleton } from "./ui/Skeletons";
 import {
   Building2,
   Plus,
@@ -282,7 +284,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
       <div key={node.id} className={isVisible ? "" : "hidden"}>
         <div
           className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-            isActive ? "bg-zinc-900 text-white font-semibold" : "text-zinc-700 hover:bg-zinc-100"
+            isActive ? "bg-primary text-primary-foreground font-semibold" : "text-fg-secondary hover:bg-hover"
           }`}
           style={{ paddingLeft: `${10 + node.level * 14}px` }}
           onClick={() => {
@@ -309,9 +311,9 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           ) : (
             <span className="w-3.5 shrink-0" />
           )}
-          <Building2 className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-blue-300" : "text-zinc-400"}`} />
+          <Building2 className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-blue-300" : "text-fg-tertiary"}`} />
           <span className="truncate flex-1">{node.name}</span>
-          <span className={`text-[10px] font-mono ${isActive ? "text-zinc-400" : "text-zinc-400"}`}>
+          <span className={`text-[10px] font-mono ${isActive ? "text-fg-tertiary" : "text-fg-tertiary"}`}>
             {node.memberCount ?? 0}
           </span>
         </div>
@@ -322,21 +324,24 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
     );
   };
 
+  const loading = useViewLoading();
+  if (loading) return <TableSkeleton rows={8} />;
+
   return (
     <div className="flex gap-4 items-start font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* ===== 左侧：类型 / 部门树 ===== */}
-      <div className="w-52 shrink-0 bg-white border border-zinc-200 rounded-xl shadow-xs overflow-hidden lg:sticky lg:top-4">
-        <div className="px-3 py-2.5 border-b border-zinc-200 flex items-center justify-between">
-          <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
-            <ListTree className="w-3.5 h-3.5 text-zinc-500" />
+      <div className="w-52 shrink-0 bg-surface border border-line rounded-xl shadow-card overflow-hidden lg:sticky lg:top-4">
+        <div className="px-3 py-2.5 border-b border-line flex items-center justify-between">
+          <span className="text-xs font-bold text-fg flex items-center gap-1.5">
+            <ListTree className="w-3.5 h-3.5 text-fg-secondary" />
             组织架构
           </span>
           <button
@@ -348,15 +353,15 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           </button>
         </div>
 
-        <div className="p-2 border-b border-zinc-100">
+        <div className="p-2 border-b border-line-subtle">
           <div className="relative">
-            <Search className="w-3 h-3 text-zinc-400 absolute left-2 top-1/2 -translate-y-1/2" />
+            <Search className="w-3 h-3 text-fg-tertiary absolute left-2 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="搜索部门名称..."
               value={treeKeyword}
               onChange={(e) => setTreeKeyword(e.target.value)}
-              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
@@ -364,16 +369,16 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
         <div className="p-2 max-h-[70vh] overflow-y-auto space-y-0.5">
           <div
             className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-              selectedDeptId === "ALL" ? "bg-zinc-900 text-white font-semibold" : "text-zinc-700 hover:bg-zinc-100"
+              selectedDeptId === "ALL" ? "bg-primary text-primary-foreground font-semibold" : "text-fg-secondary hover:bg-hover"
             }`}
             onClick={() => {
               setSelectedDeptId("ALL");
               setViewMode("DEPT");
             }}
           >
-            <FolderTree className="w-3.5 h-3.5 text-zinc-400" />
+            <FolderTree className="w-3.5 h-3.5 text-fg-tertiary" />
             <span className="truncate flex-1">全部部门</span>
-            <span className="text-[10px] font-mono text-zinc-400">{deptList.length}</span>
+            <span className="text-[10px] font-mono text-fg-tertiary">{deptList.length}</span>
           </div>
           {tree.map((node) => renderTreeNode(node))}
         </div>
@@ -382,17 +387,17 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
       {/* ===== 右侧：列表 / 成员 ===== */}
       <div className="flex-1 min-w-0 space-y-3">
         {/* 标题与工具栏 */}
-        <div className="bg-white border border-zinc-200 rounded-xl shadow-xs px-4 py-2.5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
+        <div className="bg-surface border border-line rounded-xl shadow-card px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-fg">
             <span>{viewMode === "DEPT" ? "部门列表" : "部门成员"}</span>
-            <span className="text-zinc-400 font-normal text-xs">（{selectedDeptName}）</span>
+            <span className="text-fg-tertiary font-normal text-xs">（{selectedDeptName}）</span>
           </div>
 
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={handleRefresh}
-              className="px-2.5 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               title="刷新部门数据"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -402,7 +407,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             <button
               type="button"
               onClick={() => handleOpenAdd()}
-              className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               新增
@@ -433,14 +438,14 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
               </Popconfirm>
             )}
 
-            <div className="w-px h-5 bg-zinc-200 mx-1" />
+            <div className="w-px h-5 bg-hover mx-1" />
 
-            <div className="flex items-center bg-zinc-100 p-0.5 rounded-lg">
+            <div className="flex items-center bg-hover p-0.5 rounded-lg">
               <button
                 type="button"
                 onClick={() => setViewMode("DEPT")}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                  viewMode === "DEPT" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
+                  viewMode === "DEPT" ? "bg-surface text-fg shadow-card" : "text-fg-secondary hover:text-fg"
                 }`}
               >
                 <span className="flex items-center gap-1">
@@ -451,7 +456,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                 type="button"
                 onClick={() => setViewMode("MEMBER")}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                  viewMode === "MEMBER" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
+                  viewMode === "MEMBER" ? "bg-surface text-fg shadow-card" : "text-fg-secondary hover:text-fg"
                 }`}
               >
                 <span className="flex items-center gap-1">
@@ -464,19 +469,19 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
 
         {viewMode === "DEPT" ? (
           /* ===== 部门列表表格 ===== */
-          <div className="bg-white border border-zinc-200 rounded-xl shadow-xs overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-100">
-              <span className="text-xs text-zinc-500">
-                共 <b className="text-zinc-900 font-mono">{filteredDepts.length}</b> 个部门
+          <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-line-subtle">
+              <span className="text-xs text-fg-secondary">
+                共 <b className="text-fg font-mono">{filteredDepts.length}</b> 个部门
               </span>
               <div className="relative w-56">
-                <Search className="w-3 h-3 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="搜索名称"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-2 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                  className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>
@@ -484,7 +489,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-zinc-50/90 border-b border-zinc-200 text-zinc-500 font-semibold text-[11px]">
+                  <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
                     <th className="py-2.5 px-4 w-8">
                       <input
                         type="checkbox"
@@ -492,7 +497,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                         onChange={(e) =>
                           setSelectedIds(e.target.checked ? filteredDepts.map((d) => d.id) : [])
                         }
-                        className="rounded text-zinc-900"
+                        className="rounded text-fg"
                       />
                     </th>
                     <th className="py-2.5 px-3">部门名称</th>
@@ -504,10 +509,10 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                     <th className="py-2.5 px-4 text-right">操作</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100 text-zinc-700">
+                <tbody className="divide-y divide-line-subtle text-fg-secondary">
                   {filteredDepts.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-zinc-400">
+                      <td colSpan={8} className="py-12 text-center text-fg-tertiary">
                         暂无部门数据
                       </td>
                     </tr>
@@ -516,7 +521,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                       const parent = deptList.find((d) => d.id === dept.parentId);
                       const roleKeys = dept.roleKeys || [];
                       return (
-                        <tr key={dept.id} className="hover:bg-zinc-50/80 transition-colors">
+                        <tr key={dept.id} className="hover:bg-subtle/80 transition-colors">
                           <td className="py-2.5 px-4">
                             <input
                               type="checkbox"
@@ -528,28 +533,28 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                                     : prev.filter((id) => id !== dept.id)
                                 )
                               }
-                              className="rounded text-zinc-900"
+                              className="rounded text-fg"
                             />
                           </td>
                           <td className="py-2.5 px-3">
                             <div className="flex items-center gap-2">
-                              <span className="p-1 rounded-md bg-zinc-100 text-zinc-600">
+                              <span className="p-1 rounded-md bg-hover text-fg-secondary">
                                 <Building2 className="w-3.5 h-3.5" />
                               </span>
                               <div>
-                                <div className="font-semibold text-zinc-900">{dept.name}</div>
+                                <div className="font-semibold text-fg">{dept.name}</div>
                                 {dept.leader && (
-                                  <div className="text-[10px] text-zinc-400">负责人：{dept.leader}</div>
+                                  <div className="text-[10px] text-fg-tertiary">负责人：{dept.leader}</div>
                                 )}
                               </div>
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 font-mono text-zinc-500">{dept.code}</td>
-                          <td className="py-2.5 px-3 text-zinc-500">{parent ? parent.name : "—（顶级部门）"}</td>
+                          <td className="py-2.5 px-3 font-mono text-fg-secondary">{dept.code}</td>
+                          <td className="py-2.5 px-3 text-fg-secondary">{parent ? parent.name : "—（顶级部门）"}</td>
                           <td className="py-2.5 px-3">
                             <div className="flex flex-wrap gap-1 max-w-[220px]">
                               {roleKeys.length === 0 ? (
-                                <span className="text-[11px] text-zinc-400 italic">未绑定角色</span>
+                                <span className="text-[11px] text-fg-tertiary italic">未绑定角色</span>
                               ) : (
                                 roleKeys.map((key) => (
                                   <span
@@ -563,10 +568,10 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               )}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-center font-mono text-zinc-700">
+                          <td className="py-2.5 px-3 text-center font-mono text-fg-secondary">
                             {dept.memberCount ?? 0}
                           </td>
-                          <td className="py-2.5 px-3 text-center font-mono text-zinc-500">{dept.sortOrder ?? 1}</td>
+                          <td className="py-2.5 px-3 text-center font-mono text-fg-secondary">{dept.sortOrder ?? 1}</td>
                           <td className="py-2.5 px-4">
                             <div className="flex items-center justify-end gap-0.5">
                               <button
@@ -580,7 +585,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               <button
                                 type="button"
                                 onClick={() => handleOpenEdit(dept)}
-                                className="px-2 py-1 text-zinc-600 hover:bg-zinc-100 rounded-md text-[11px] font-medium cursor-pointer"
+                                className="px-2 py-1 text-fg-secondary hover:bg-hover rounded-md text-[11px] font-medium cursor-pointer"
                                 title="编辑部门"
                               >
                                 <Edit2 className="w-3 h-3" />
@@ -610,19 +615,19 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           </div>
         ) : (
           /* ===== 部门成员视图 ===== */
-          <div className="bg-white border border-zinc-200 rounded-xl shadow-xs overflow-hidden">
-            <div className="px-4 py-2 border-b border-zinc-100 flex items-center justify-between">
-              <span className="text-xs text-zinc-500">
+          <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+            <div className="px-4 py-2 border-b border-line-subtle flex items-center justify-between">
+              <span className="text-xs text-fg-secondary">
                 <Eye className="w-3.5 h-3.5 inline mr-1 text-blue-500" />
-                部门「{selectedDeptName}」及其子部门共 <b className="text-zinc-900 font-mono">{scopeMembers.length}</b> 名成员
+                部门「{selectedDeptName}」及其子部门共 <b className="text-fg font-mono">{scopeMembers.length}</b> 名成员
               </span>
-              <span className="text-[11px] text-zinc-400">成员角色继承自部门绑定角色与个人角色</span>
+              <span className="text-[11px] text-fg-tertiary">成员角色继承自部门绑定角色与个人角色</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-zinc-50/90 border-b border-zinc-200 text-zinc-500 font-semibold text-[11px]">
+                  <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
                     <th className="py-2.5 px-4">用户</th>
                     <th className="py-2.5 px-3">所属部门</th>
                     <th className="py-2.5 px-3">角色权限（多选）</th>
@@ -630,10 +635,10 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                     <th className="py-2.5 px-3">账号状态</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100 text-zinc-700">
+                <tbody className="divide-y divide-line-subtle text-fg-secondary">
                   {scopeMembers.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-12 text-center text-zinc-400">
+                      <td colSpan={5} className="py-12 text-center text-fg-tertiary">
                         该部门暂无成员
                       </td>
                     </tr>
@@ -644,15 +649,15 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                         (id) => deptList.find((d) => d.id === id)?.name
                       ).filter(Boolean);
                       return (
-                        <tr key={u.id} className="hover:bg-zinc-50/80 transition-colors">
+                        <tr key={u.id} className="hover:bg-subtle/80 transition-colors">
                           <td className="py-2.5 px-4">
                             <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-800 font-bold flex items-center justify-center text-[10px] shrink-0">
+                              <div className="w-7 h-7 rounded-full bg-hover border border-line text-fg font-bold flex items-center justify-center text-[10px] shrink-0">
                                 {u.avatarText || u.name[0]}
                               </div>
                               <div>
-                                <div className="font-semibold text-zinc-900">{u.name}</div>
-                                <div className="text-[10px] text-zinc-400 flex items-center gap-1">
+                                <div className="font-semibold text-fg">{u.name}</div>
+                                <div className="text-[10px] text-fg-tertiary flex items-center gap-1">
                                   <Mail className="w-2.5 h-2.5" />
                                   {u.email}
                                 </div>
@@ -662,10 +667,10 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                           <td className="py-2.5 px-3">
                             <div className="flex flex-wrap gap-1 max-w-[180px]">
                               {deptNames.length === 0 ? (
-                                <span className="text-zinc-400 italic">未分配</span>
+                                <span className="text-fg-tertiary italic">未分配</span>
                               ) : (
                                 deptNames.map((name) => (
-                                  <span key={name} className="px-1.5 py-0.5 bg-zinc-100 text-zinc-600 border border-zinc-200 rounded text-[10px]">
+                                  <span key={name} className="px-1.5 py-0.5 bg-hover text-fg-secondary border border-line rounded text-[10px]">
                                     {name}
                                   </span>
                                 ))
@@ -675,7 +680,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                           <td className="py-2.5 px-3">
                             <div className="flex flex-wrap gap-1 max-w-[200px]">
                               {roleKeys.length === 0 ? (
-                                <span className="text-zinc-400 italic">未分配角色</span>
+                                <span className="text-fg-tertiary italic">未分配角色</span>
                               ) : (
                                 roleKeys.map((key) => (
                                   <span key={key} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${getRoleBadgeStyle(key)}`}>
@@ -686,13 +691,13 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               )}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-[11px] text-zinc-500">
+                          <td className="py-2.5 px-3 text-[11px] text-fg-secondary">
                             {(u.allowedAppIds || []).includes("ALL")
                               ? "全部应用"
                               : `${(u.allowedAppIds || []).length} 款应用`}
                           </td>
                           <td className="py-2.5 px-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${u.status === "DISABLED" ? "bg-zinc-100 text-zinc-500" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${u.status === "DISABLED" ? "bg-hover text-fg-secondary" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
                               {u.status === "DISABLED" ? "已停用" : "正常在职"}
                             </span>
                           </td>
@@ -714,21 +719,21 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
         onClose={() => setIsSheetOpen(false)}
         title={editingDept ? `编辑部门: ${editingDept.name}` : "新增部门"}
         description="配置部门基本信息并绑定角色（多选）；部门成员将继承该部门绑定角色的权限。"
-        icon={<Building2 className="w-5 h-5 text-zinc-800" />}
+        icon={<Building2 className="w-5 h-5 text-fg" />}
         widthClass="max-w-xl"
         footer={
           <>
             <button
               type="button"
               onClick={() => setIsSheetOpen(false)}
-              className="px-4 py-2 border border-zinc-200 text-zinc-700 hover:bg-zinc-100 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              className="px-4 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              className="px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
             >
               {editingDept ? "保存部门" : "创建部门"}
             </button>
@@ -738,7 +743,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
         <div className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-zinc-600 font-medium mb-1">
+              <label className="block text-fg-secondary font-medium mb-1">
                 部门名称 <span className="text-rose-500">*</span>
               </label>
               <input
@@ -746,25 +751,25 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                 placeholder="例如: 出海运营中心"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <div>
-              <label className="block text-zinc-600 font-medium mb-1">部门编码</label>
+              <label className="block text-fg-secondary font-medium mb-1">部门编码</label>
               <input
                 type="text"
                 placeholder="例如: OPS-NA"
                 value={formCode}
                 onChange={(e) => setFormCode(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-zinc-600 font-medium mb-1">上级部门</label>
+              <label className="block text-fg-secondary font-medium mb-1">上级部门</label>
               <ShadcnSelect
                 value={formParentId}
                 onValueChange={setFormParentId}
@@ -778,44 +783,44 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             </div>
 
             <div>
-              <label className="block text-zinc-600 font-medium mb-1">排序权重</label>
+              <label className="block text-fg-secondary font-medium mb-1">排序权重</label>
               <input
                 type="number"
                 value={formSort}
                 onChange={(e) => setFormSort(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-zinc-600 font-medium mb-1">负责人</label>
+            <label className="block text-fg-secondary font-medium mb-1">负责人</label>
             <input
               type="text"
               placeholder="部门负责人姓名"
               value={formLeader}
               onChange={(e) => setFormLeader(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
           <div>
-            <label className="block text-zinc-600 font-medium mb-1">部门描述</label>
+            <label className="block text-fg-secondary font-medium mb-1">部门描述</label>
             <textarea
               rows={2}
               placeholder="部门职责说明"
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-zinc-600 font-medium">
+              <label className="block text-fg-secondary font-medium">
                 绑定角色（多选）
               </label>
-              <span className="text-[11px] text-zinc-400">部门成员将继承所选角色的权限</span>
+              <span className="text-[11px] text-fg-tertiary">部门成员将继承所选角色的权限</span>
             </div>
             <MultiSelect
               value={formRoleKeys}

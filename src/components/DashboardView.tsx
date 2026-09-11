@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { DashboardSkeleton } from "./ui/Skeletons";
 import {
   TrendingUp,
   TrendingDown,
@@ -143,11 +145,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     paypal: { label: "PayPal 钱包", bg: "bg-blue-50 text-blue-700 border-blue-200" },
     adyen: { label: "Adyen 欧洲清算", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     checkout: { label: "Checkout.com", bg: "bg-purple-50 text-purple-700 border-purple-200" },
-    apple_pay: { label: "Apple Pay", bg: "bg-zinc-100 text-zinc-900 border-zinc-300" },
+    apple_pay: { label: "Apple Pay", bg: "bg-hover text-fg border-line" },
     google_pay: { label: "Google Pay", bg: "bg-amber-50 text-amber-800 border-amber-200" },
     klarna: { label: "Klarna 先买后付", bg: "bg-pink-50 text-pink-700 border-pink-200" },
     sepa: { label: "SEPA 欧洲借记", bg: "bg-sky-50 text-sky-700 border-sky-200" },
   };
+
+  const loading = useViewLoading();
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto font-sans">
@@ -156,23 +161,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 1: Total Revenue */}
         <div
           id="kpi-card-total-revenue"
-          className="bg-white border border-zinc-200/90 rounded-xl p-5 shadow-2xs hover:shadow-xs transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs hover:shadow-card transition-all"
         >
-          <div className="flex items-center justify-between text-zinc-500 text-xs font-medium">
+          <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>Total Revenue</span>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-zinc-100 text-zinc-900 border border-zinc-200">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
               <TrendingUp className="w-3 h-3" />
               <span>+12.5%</span>
             </span>
           </div>
-          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-zinc-950 font-mono">
+          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
             {formatCurrency(totalRevenue, currentTenant.currency)}
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-900 font-medium">
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>Trending up this month</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-zinc-700" />
+            <ArrowUpRight className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
-          <div className="text-[11px] text-zinc-400 mt-0.5">
+          <div className="text-[11px] text-fg-tertiary mt-0.5">
             Visitors & transactions for the last 6 months
           </div>
         </div>
@@ -180,23 +185,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 2: New Customers / 接入商户 */}
         <div
           id="kpi-card-new-customers"
-          className="bg-white border border-zinc-200/90 rounded-xl p-5 shadow-2xs hover:shadow-xs transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs hover:shadow-card transition-all"
         >
-          <div className="flex items-center justify-between text-zinc-500 text-xs font-medium">
+          <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>New Customers</span>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-zinc-100 text-zinc-900 border border-zinc-200">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
               <TrendingDown className="w-3 h-3" />
               <span>-20%</span>
             </span>
           </div>
-          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-zinc-950 font-mono">
+          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
             1,234
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-900 font-medium">
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>Down 20% this period</span>
-            <TrendingDown className="w-3.5 h-3.5 text-zinc-500" />
+            <TrendingDown className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
-          <div className="text-[11px] text-zinc-400 mt-0.5">
+          <div className="text-[11px] text-fg-tertiary mt-0.5">
             Acquisition needs attention
           </div>
         </div>
@@ -204,23 +209,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 3: Active Accounts / 结算账户 */}
         <div
           id="kpi-card-active-accounts"
-          className="bg-white border border-zinc-200/90 rounded-xl p-5 shadow-2xs hover:shadow-xs transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs hover:shadow-card transition-all"
         >
-          <div className="flex items-center justify-between text-zinc-500 text-xs font-medium">
+          <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>Active Accounts</span>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-zinc-100 text-zinc-900 border border-zinc-200">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
               <TrendingUp className="w-3 h-3" />
               <span>+12.5%</span>
             </span>
           </div>
-          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-zinc-950 font-mono">
+          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
             45,678
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-900 font-medium">
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>Strong user retention</span>
-            <TrendingUp className="w-3.5 h-3.5 text-zinc-700" />
+            <TrendingUp className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
-          <div className="text-[11px] text-zinc-400 mt-0.5">
+          <div className="text-[11px] text-fg-tertiary mt-0.5">
             Engagement exceed targets
           </div>
         </div>
@@ -228,23 +233,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 4: Growth Rate / 对账平账率 */}
         <div
           id="kpi-card-growth-rate"
-          className="bg-white border border-zinc-200/90 rounded-xl p-5 shadow-2xs hover:shadow-xs transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs hover:shadow-card transition-all"
         >
-          <div className="flex items-center justify-between text-zinc-500 text-xs font-medium">
+          <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>Growth Rate</span>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-zinc-100 text-zinc-900 border border-zinc-200">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
               <TrendingUp className="w-3 h-3" />
               <span>+4.5%</span>
             </span>
           </div>
-          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-zinc-950 font-mono">
+          <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
             4.5%
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-900 font-medium">
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>Steady performance increase</span>
-            <TrendingUp className="w-3.5 h-3.5 text-zinc-700" />
+            <TrendingUp className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
-          <div className="text-[11px] text-zinc-400 mt-0.5">
+          <div className="text-[11px] text-fg-tertiary mt-0.5">
             Meets growth projections
           </div>
         </div>
@@ -260,10 +265,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Table Section (matching screenshot's tabbed toolbar, filters, and row design) */}
       <div
         id="dashboard-table-container"
-        className="bg-white border border-zinc-200/90 rounded-xl shadow-2xs overflow-hidden"
+        className="bg-surface border border-line/90 rounded-xl shadow-2xs overflow-hidden"
       >
         {/* Table Toolbar Header */}
-        <div className="p-4 border-b border-zinc-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 border-b border-line/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Filter Tabs (mirrors Outline, Past Performance 3, Key Personnel 2, Focus Documents) */}
           <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
             <button
@@ -271,8 +276,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               onClick={() => setActiveTableTab("all")}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                 activeTableTab === "all"
-                  ? "bg-zinc-100 text-zinc-950 font-semibold"
-                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                  ? "bg-hover text-fg font-semibold"
+                  : "text-fg-secondary hover:text-fg hover:bg-subtle"
               }`}
             >
               Outline
@@ -282,12 +287,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               onClick={() => setActiveTableTab("in_process")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                 activeTableTab === "in_process"
-                  ? "bg-zinc-100 text-zinc-950 font-semibold"
-                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                  ? "bg-hover text-fg font-semibold"
+                  : "text-fg-secondary hover:text-fg hover:bg-subtle"
               }`}
             >
               <span>Past Performance</span>
-              <span className="w-4 h-4 rounded-full bg-zinc-200 text-zinc-800 text-[10px] font-semibold flex items-center justify-center">
+              <span className="w-4 h-4 rounded-full bg-hover text-fg text-[10px] font-semibold flex items-center justify-center">
                 {pendingCount || 3}
               </span>
             </button>
@@ -297,7 +302,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                 activeTableTab === "discrepancy"
                   ? "bg-red-50 text-red-900 font-semibold border border-red-200"
-                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                  : "text-fg-secondary hover:text-fg hover:bg-subtle"
               }`}
             >
               <span>Key Personnel</span>
@@ -310,8 +315,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               onClick={() => setActiveTableTab("done")}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                 activeTableTab === "done"
-                  ? "bg-zinc-100 text-zinc-950 font-semibold"
-                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                  ? "bg-hover text-fg font-semibold"
+                  : "text-fg-secondary hover:text-fg hover:bg-subtle"
               }`}
             >
               Focus Documents
@@ -321,14 +326,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* Right Action buttons: Search, Customize Columns, Add Section */}
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-tertiary" />
               <input
                 id="search-transactions-input"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="搜索单号/商户..."
-                className="pl-8 pr-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs w-36 sm:w-44 focus:outline-hidden focus:bg-white focus:ring-1 focus:ring-zinc-400 transition-all"
+                className="pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs w-36 sm:w-44 focus:outline-hidden focus:bg-surface focus:ring-1 focus:ring-line transition-all"
               />
             </div>
 
@@ -337,9 +342,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 id="customize-columns-btn"
                 onClick={() => setCustomColsOpen(!customColsOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-fg-secondary hover:text-fg bg-surface hover:bg-subtle border border-line rounded-lg transition-colors"
               >
-                <Columns3 className="w-3.5 h-3.5 text-zinc-500" />
+                <Columns3 className="w-3.5 h-3.5 text-fg-secondary" />
                 <span>Customize Columns</span>
               </button>
 
@@ -351,15 +356,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   />
                   <div
                     id="customize-columns-popover"
-                    className="absolute right-0 mt-1.5 w-48 bg-white border border-zinc-200 rounded-xl shadow-lg p-2 z-40 text-xs text-zinc-700 animate-in fade-in zoom-in-95"
+                    className="absolute right-0 mt-1.5 w-48 bg-surface border border-line rounded-xl shadow-lg p-2 z-40 text-xs text-fg-secondary animate-in fade-in zoom-in-95"
                   >
-                    <div className="font-semibold text-zinc-900 pb-1.5 border-b border-zinc-100 mb-1">
+                    <div className="font-semibold text-fg pb-1.5 border-b border-line-subtle mb-1">
                       选择显示字段
                     </div>
                     {Object.entries(visibleColumns).map(([col, isVisible]) => (
                       <label
                         key={col}
-                        className="flex items-center justify-between p-1.5 hover:bg-zinc-50 rounded cursor-pointer"
+                        className="flex items-center justify-between p-1.5 hover:bg-subtle rounded cursor-pointer"
                       >
                         <span className="capitalize">{col}</span>
                         <input
@@ -371,7 +376,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                               [col as keyof typeof visibleColumns]: !isVisible,
                             }))
                           }
-                          className="rounded text-zinc-900 focus:ring-zinc-400"
+                          className="rounded text-fg focus:ring-line"
                         />
                       </label>
                     ))}
@@ -384,47 +389,47 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Interactive Data Table (mirrors screenshot's Header, Section Type, Status, Target, Limit, Reviewer) */}
         <div className="overflow-x-auto">
-          <table className="min-w-[1050px] w-full text-left text-xs text-zinc-600 border-collapse">
-            <thead className="bg-zinc-50/90 text-zinc-500 font-medium border-b border-zinc-200/80 select-none text-[11px]">
+          <table className="min-w-[1050px] w-full text-left text-xs text-fg-secondary border-collapse">
+            <thead className="bg-subtle/90 text-fg-secondary font-medium border-b border-line/80 select-none text-[11px]">
               <tr>
                 <th className="w-10 px-3 py-3 text-center">
                   <input
                     type="checkbox"
                     checked={isAllSelected}
                     onChange={toggleSelectAll}
-                    className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400"
+                    className="rounded border-line text-fg focus:ring-line"
                   />
                 </th>
                 <th className="w-8 px-1 py-3 text-center"></th>
                 {visibleColumns.header && (
-                  <th className="px-4 py-3 min-w-[200px] font-semibold text-zinc-700">Header</th>
+                  <th className="px-4 py-3 min-w-[200px] font-semibold text-fg-secondary">Header</th>
                 )}
                 {visibleColumns.sectionType && (
-                  <th className="px-4 py-3 w-[140px] font-semibold text-zinc-700">Section Type</th>
+                  <th className="px-4 py-3 w-[140px] font-semibold text-fg-secondary">Section Type</th>
                 )}
                 {visibleColumns.status && (
-                  <th className="px-4 py-3 w-[130px] font-semibold text-zinc-700">Status</th>
+                  <th className="px-4 py-3 w-[130px] font-semibold text-fg-secondary">Status</th>
                 )}
                 {visibleColumns.target && (
-                  <th className="px-4 py-3 w-[100px] font-semibold text-zinc-700">Target</th>
+                  <th className="px-4 py-3 w-[100px] font-semibold text-fg-secondary">Target</th>
                 )}
                 {visibleColumns.limit && (
-                  <th className="px-4 py-3 w-[100px] font-semibold text-zinc-700">Limit</th>
+                  <th className="px-4 py-3 w-[100px] font-semibold text-fg-secondary">Limit</th>
                 )}
                 {visibleColumns.reviewer && (
-                  <th className="px-4 py-3 w-[150px] font-semibold text-zinc-700">Reviewer</th>
+                  <th className="px-4 py-3 w-[150px] font-semibold text-fg-secondary">Reviewer</th>
                 )}
                 {visibleColumns.actions && (
-                  <th className="w-[90px] px-3 py-3 sticky right-0 z-20 bg-zinc-50/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                  <th className="w-[90px] px-3 py-3 sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                     操作
                   </th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-200/70 bg-white">
+            <tbody className="divide-y divide-line/70 bg-surface">
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-zinc-400 text-sm">
+                  <td colSpan={9} className="py-12 text-center text-fg-tertiary text-sm">
                     未找到匹配的流水记录
                   </td>
                 </tr>
@@ -434,15 +439,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   const channelInfo =
                     channelBadges[tx.channel] || {
                       label: tx.channel,
-                      bg: "bg-zinc-100 text-zinc-700",
+                      bg: "bg-hover text-fg-secondary",
                     };
 
                   return (
                     <tr
                       key={tx.id}
                       onClick={() => setActiveTxDetail(tx)}
-                      className={`hover:bg-zinc-50/80 transition-colors group cursor-pointer ${
-                        isSelected ? "bg-zinc-50" : ""
+                      className={`hover:bg-subtle/80 transition-colors group cursor-pointer ${
+                        isSelected ? "bg-subtle" : ""
                       }`}
                     >
                       {/* Checkbox */}
@@ -454,22 +459,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelectRow(tx.id)}
-                          className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400"
+                          className="rounded border-line text-fg focus:ring-line"
                         />
                       </td>
 
                       {/* Drag Grip Handle */}
-                      <td className="w-8 px-1 py-3 text-center text-zinc-300 group-hover:text-zinc-500 cursor-grab">
+                      <td className="w-8 px-1 py-3 text-center text-zinc-300 group-hover:text-fg-secondary cursor-grab">
                         <GripVertical className="w-3.5 h-3.5 mx-auto" />
                       </td>
 
                       {/* Header (Title & Code) */}
                       {visibleColumns.header && (
                         <td className="px-4 py-3 min-w-[200px]">
-                          <div className="font-semibold text-zinc-900 line-clamp-1">
+                          <div className="font-semibold text-fg line-clamp-1">
                             {tx.orderTitle}
                           </div>
-                          <div className="text-[11px] text-zinc-400 font-mono mt-0.5 flex items-center gap-2 truncate">
+                          <div className="text-[11px] text-fg-tertiary font-mono mt-0.5 flex items-center gap-2 truncate">
                             <span>{tx.id}</span>
                             <span>•</span>
                             <span>{tx.merchantName}</span>
@@ -517,8 +522,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             </button>
                           )}
                           {tx.status === "pending_check" && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 text-zinc-700 border border-zinc-200">
-                              <Clock className="w-3 h-3 text-zinc-500" />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-hover text-fg-secondary border border-line">
+                              <Clock className="w-3 h-3 text-fg-secondary" />
                               <span>Pending</span>
                             </span>
                           )}
@@ -527,14 +532,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                       {/* Target (Amount / Target Ratio) */}
                       {visibleColumns.target && (
-                        <td className="px-4 py-3 w-[100px] font-mono font-medium text-zinc-900 whitespace-nowrap">
+                        <td className="px-4 py-3 w-[100px] font-mono font-medium text-fg whitespace-nowrap">
                           {tx.targetQuotaRatio ?? (tx.orderAmount > 1000 ? Math.round(tx.orderAmount / 100) : 18)}
                         </td>
                       )}
 
                       {/* Limit (Channel Fee / Limit Ratio) */}
                       {visibleColumns.limit && (
-                        <td className="px-4 py-3 w-[100px] font-mono text-zinc-500 whitespace-nowrap">
+                        <td className="px-4 py-3 w-[100px] font-mono text-fg-secondary whitespace-nowrap">
                           {tx.limitRatio ?? (tx.channelFee > 0 ? Math.round(tx.channelFee * 2) : 5)}
                         </td>
                       )}
@@ -543,10 +548,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       {visibleColumns.reviewer && (
                         <td className="px-4 py-3 w-[150px] whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full bg-zinc-200 text-zinc-700 flex items-center justify-center text-[10px] font-bold">
+                            <div className="w-5 h-5 rounded-full bg-hover text-fg-secondary flex items-center justify-center text-[10px] font-bold">
                               {tx.reviewer?.name ? tx.reviewer.name.slice(0, 1) : "平"}
                             </div>
-                            <span className="text-zinc-800 font-medium truncate max-w-[100px]">
+                            <span className="text-fg font-medium truncate max-w-[100px]">
                               {tx.reviewer?.name || "系统自动平账"}
                             </span>
                           </div>
@@ -555,7 +560,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                       {/* Actions: Sticky Right */}
                       {visibleColumns.actions && (
-                        <td className="w-[90px] px-3 py-3 sticky right-0 z-10 bg-white group-hover:bg-zinc-50/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                        <td className="w-[90px] px-3 py-3 sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                           <div className="flex items-center justify-end gap-1">
                             {tx.status === "discrepancy" ? (
                               <button
@@ -573,7 +578,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                   e.stopPropagation();
                                   onResolveQuickDone(tx.id);
                                 }}
-                                className="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 text-white rounded text-[11px] font-medium transition-colors"
+                                className="px-2 py-1 bg-primary hover:bg-primary-hover text-primary-foreground rounded text-[11px] font-medium transition-colors"
                               >
                                 平账
                               </button>
@@ -583,7 +588,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                   e.stopPropagation();
                                   onOpenDiscrepancy(tx);
                                 }}
-                                className="p-1 text-zinc-400 hover:text-zinc-700 rounded hover:bg-zinc-100 transition-colors"
+                                className="p-1 text-fg-tertiary hover:text-fg-secondary rounded hover:bg-hover transition-colors"
                               >
                                 <MoreVertical className="w-3.5 h-3.5" />
                               </button>
@@ -600,16 +605,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Table Bottom Footer Pagination Info */}
-        <div className="px-4 py-3 border-t border-zinc-200/80 bg-zinc-50/50 flex items-center justify-between text-xs text-zinc-500">
+        <div className="px-4 py-3 border-t border-line/80 bg-subtle/50 flex items-center justify-between text-xs text-fg-secondary">
           <div>
-            已选 <span className="font-semibold text-zinc-900">{selectedTxIds.length}</span> 条流水 / 共{" "}
-            <span className="font-semibold text-zinc-900">
+            已选 <span className="font-semibold text-fg">{selectedTxIds.length}</span> 条流水 / 共{" "}
+            <span className="font-semibold text-fg">
               {filteredTransactions.length}
             </span>{" "}
             条记录 (租户: {currentTenant?.name || "当前业务单元"})
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-zinc-400">
+            <span className="text-[11px] text-fg-tertiary">
               RBAC数据保护已开启 • T+1三方自动对账
             </span>
           </div>

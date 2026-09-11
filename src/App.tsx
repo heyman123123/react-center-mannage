@@ -45,6 +45,7 @@ import {
   UserProfileSettings,
   RbacRole,
 } from "./types/payment";
+import { getStoredTheme, applyTheme } from "./lib/theme";
 import {
   INITIAL_TENANTS,
   SYSTEM_USERS,
@@ -99,6 +100,11 @@ export default function App() {
   const [quickCreateOpen, setQuickCreateOpen] = useState<boolean>(false);
   const [activeDiscrepancyTx, setActiveDiscrepancyTx] = useState<TransactionRecord | null>(null);
   const [userSettingsOpen, setUserSettingsOpen] = useState<boolean>(false);
+
+  // 初始化：读取持久化主题并挂载到根节点
+  useEffect(() => {
+    applyTheme(getStoredTheme());
+  }, []);
 
   // Global Keyboard Shortcut: ⌘K or Ctrl+K opens Quick Create
   useEffect(() => {
@@ -368,7 +374,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-zinc-50 font-sans text-zinc-900 antialiased selection:bg-zinc-900 selection:text-white">
+    <div className="flex h-screen w-screen overflow-hidden bg-page font-sans text-fg antialiased selection:bg-primary selection:text-primary-foreground">
       {/* Left Sidebar (driven by menu management data) */}
       <Sidebar
         menus={menus}

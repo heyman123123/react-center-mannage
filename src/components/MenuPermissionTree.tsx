@@ -69,39 +69,39 @@ export const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
     return (
       <div key={node.id} className="select-none">
         <div
-          className="flex items-center gap-2 py-1.5 px-1 rounded-lg hover:bg-zinc-50 transition-colors cursor-pointer"
+          className="flex items-center gap-2 py-1.5 px-1 rounded-lg hover:bg-subtle transition-colors cursor-pointer"
           style={{ paddingLeft: `${8 + level * 22}px` }}
           onClick={() => toggleNode(node, !isChecked)}
         >
           <span
             className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
               isChecked
-                ? "bg-zinc-900 border-zinc-900 text-white"
+                ? "bg-primary border-primary text-primary-foreground"
                 : isIndeterminate
-                ? "bg-zinc-900 border-zinc-900 text-white"
-                : "border-zinc-300 bg-white"
+                ? "bg-primary border-primary text-primary-foreground"
+                : "border-line bg-surface"
             }`}
           >
             {isChecked ? (
               <Check className="w-3 h-3 stroke-[3]" />
             ) : isIndeterminate ? (
-              <span className="w-1.5 h-1.5 bg-white rounded-sm" />
+              <span className="w-1.5 h-1.5 bg-surface rounded-sm" />
             ) : null}
           </span>
 
-          {renderMenuIcon(node.icon, "w-4 h-4 text-zinc-500 shrink-0")}
+          {renderMenuIcon(node.icon, "w-4 h-4 text-fg-secondary shrink-0")}
 
-          <span className={`text-xs ${isChecked ? "font-semibold text-zinc-900" : "text-zinc-700"}`}>
+          <span className={`text-xs ${isChecked ? "font-semibold text-fg" : "text-fg-secondary"}`}>
             {node.title}
           </span>
 
           {hasChildren && (
-            <span className="text-[10px] text-zinc-400 font-mono ml-auto shrink-0">
+            <span className="text-[10px] text-fg-tertiary font-mono ml-auto shrink-0">
               {checkedCount}/{subtreeIds.length}
             </span>
           )}
           {!hasChildren && node.path && (
-            <span className="text-[10px] font-mono text-zinc-400 ml-auto shrink-0 truncate max-w-[140px]">
+            <span className="text-[10px] font-mono text-fg-tertiary ml-auto shrink-0 truncate max-w-[140px]">
               {node.path}
             </span>
           )}
@@ -119,9 +119,9 @@ export const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
   };
 
   return (
-    <div className="border border-zinc-200 rounded-xl bg-white divide-y divide-zinc-100 max-h-96 overflow-y-auto p-1">
+    <div className="border border-line rounded-xl bg-surface divide-y divide-line-subtle max-h-96 overflow-y-auto p-1">
       {tree.length === 0 && (
-        <div className="py-8 text-center text-xs text-zinc-400">暂无菜单数据，请先在菜单管理中创建菜单</div>
+        <div className="py-8 text-center text-xs text-fg-tertiary">暂无菜单数据，请先在菜单管理中创建菜单</div>
       )}
       {tree.map((node) => renderNode(node, 0))}
     </div>

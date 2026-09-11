@@ -56,26 +56,26 @@ export const SideSheet: React.FC<SideSheetProps> = ({
       {/* Side Panel Fixed on the Right (slide in from right edge) */}
       <div
         className={cn(
-          "fixed inset-y-0 right-0 z-50 h-full w-full bg-white shadow-2xl flex flex-col border-l border-zinc-200 animate-in slide-in-from-right duration-300 ease-out focus:outline-none",
+          "fixed inset-y-0 right-0 z-50 h-full w-full bg-surface shadow-2xl flex flex-col border-l border-line animate-in slide-in-from-right duration-300 ease-out focus:outline-none",
           widthClass
         )}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between shrink-0 bg-white">
+        <div className="px-6 py-4 border-b border-line-subtle flex items-center justify-between shrink-0 bg-surface">
           <div className="flex items-center gap-3 pr-4">
             {icon && (
-              <div className="p-2 rounded-xl bg-zinc-100 text-zinc-800 shrink-0">
+              <div className="p-2 rounded-xl bg-hover text-fg shrink-0">
                 {icon}
               </div>
             )}
             <div>
               {title && (
-                <h2 className="text-base font-bold text-zinc-900 leading-tight">
+                <h2 className="text-base font-bold text-fg leading-tight">
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
+                <p className="text-xs text-fg-secondary mt-0.5 leading-relaxed">
                   {description}
                 </p>
               )}
@@ -88,7 +88,7 @@ export const SideSheet: React.FC<SideSheetProps> = ({
               type="button"
               onClick={onClose}
               title="关闭 (Esc)"
-              className="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-fg-tertiary hover:text-fg-secondary hover:bg-hover rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -100,7 +100,7 @@ export const SideSheet: React.FC<SideSheetProps> = ({
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-3.5 border-t border-zinc-100 bg-zinc-50/80 shrink-0 flex items-center justify-end gap-2.5">
+          <div className="px-6 py-3.5 border-t border-line-subtle bg-subtle/80 shrink-0 flex items-center justify-end gap-2.5">
             {footer}
           </div>
         )}

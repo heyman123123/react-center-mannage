@@ -1,1 +1,118 @@
 @import "tailwindcss";
+
+/* ============================================================
+   设计 Token 层 — CREEM 风格浅色商务后台 + 深色模式
+   切换机制：根节点 <html data-theme="light|dark">
+   不使用 Tailwind dark: 前缀，全部通过 CSS 变量覆盖实现
+   ============================================================ */
+
+:root {
+  /* 表面层级 */
+  --bg-page: #f5f1ed; /* 暖米色页面背景 */
+  --bg-surface: #ffffff; /* 卡片 / 面板 / 侧边栏 */
+  --bg-subtle: #f3eee8; /* 次级表面：表头、输入底、信息块 */
+  --bg-hover: #eae1d7; /* hover / 选中行填充 */
+  --bg-input: #f7f3ee; /* 输入框背景 */
+
+  /* 边框 */
+  --border-default: #e2dbd1;
+  --border-subtle: #ece5dc;
+
+  /* 文字 */
+  --text-primary: #1c1917; /* 一级文字 */
+  --text-secondary: #57534e; /* 二级文字 */
+  --text-tertiary: #a8a29e; /* 三级文字 / 占位 / 禁用 */
+
+  /* 主色（主按钮 / 链接 / 选中态） */
+  --brand: #1c1917; /* 浅色下为深色按钮 */
+  --brand-hover: #2b2724;
+  --brand-fg: #ffffff; /* 主色上的文字 */
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* 阴影 */
+  --shadow-card: 0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 3px rgba(28, 25, 23, 0.05);
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.03);
+
+  /* 骨架屏 */
+  --skeleton-base: #e9e1d7;
+  --skeleton-highlight: #f3eee8;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg-page: #14110d; /* 近黑暖棕背景 */
+  --bg-surface: #1e1a15; /* 稍亮卡片 */
+  --bg-subtle: #262119;
+  --bg-hover: #332c23;
+  --bg-input: #221e17;
+
+  --border-default: #3a332a;
+  --border-subtle: #2c2720;
+
+  --text-primary: #f5efe6;
+  --text-secondary: #b3a998;
+  --text-tertiary: #7c7365;
+
+  --brand: #f5efe6; /* 深色下主按钮反转为浅色 */
+  --brand-hover: #ffffff;
+  --brand-fg: #1c1917;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+
+  --skeleton-base: #2c271f;
+  --skeleton-highlight: #3a332a;
+
+  color-scheme: dark;
+}
+
+/* 注册为 Tailwind 工具类：inline 引用上面的变量，随 data-theme 动态解析 */
+@theme inline {
+  --color-page: var(--bg-page);
+  --color-surface: var(--bg-surface);
+  --color-subtle: var(--bg-subtle);
+  --color-hover: var(--bg-hover);
+  --color-input: var(--bg-input);
+  --color-line: var(--border-default);
+  --color-line-subtle: var(--border-subtle);
+  --color-fg: var(--text-primary);
+  --color-fg-secondary: var(--text-secondary);
+  --color-fg-tertiary: var(--text-tertiary);
+  --color-primary: var(--brand);
+  --color-primary-hover: var(--brand-hover);
+  --color-primary-foreground: var(--brand-fg);
+  --shadow-card: var(--shadow-card);
+  --shadow-sm: var(--shadow-sm);
+}
+
+/* 根节点背景兜底，避免首屏未挂载时白闪 */
+html,
+body,
+#root {
+  background-color: var(--bg-page);
+}
+body {
+  color: var(--text-primary);
+}
+
+/* 骨架屏 pulse 动画 */
+@keyframes skeleton-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.skeleton-pulse {
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  background-color: var(--skeleton-base);
+}

@@ -137,15 +137,15 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
   return (
     <div
       id="chart-card-container"
-      className="bg-white border border-zinc-200/90 rounded-xl p-5 shadow-2xs hover:shadow-xs transition-shadow duration-200"
+      className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs hover:shadow-card transition-shadow duration-200"
     >
       {/* Chart Card Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-base font-semibold text-zinc-900 tracking-tight">
+          <h2 className="text-base font-semibold text-fg tracking-tight">
             Total Transaction Volume (聚合交易流水与清算峰值)
           </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">
+          <p className="text-xs text-fg-secondary mt-0.5">
             {timeRange === "3m"
               ? "Total for the last 3 months (双轨比对: 业务订单流 vs 渠道平账实收)"
               : timeRange === "30d"
@@ -155,14 +155,14 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
         </div>
 
         {/* Time range switcher (mirrors screenshot's right segmented control) */}
-        <div className="inline-flex p-0.5 bg-zinc-100 rounded-lg border border-zinc-200 text-xs font-medium self-start sm:self-auto">
+        <div className="inline-flex p-0.5 bg-hover rounded-lg border border-line text-xs font-medium self-start sm:self-auto">
           <button
             id="timerange-3m"
             onClick={() => setTimeRange("3m")}
             className={`px-3 py-1 rounded-md transition-all ${
               timeRange === "3m"
-                ? "bg-white text-zinc-900 shadow-xs font-semibold"
-                : "text-zinc-600 hover:text-zinc-900"
+                ? "bg-surface text-fg shadow-card font-semibold"
+                : "text-fg-secondary hover:text-fg"
             }`}
           >
             Last 3 months
@@ -172,8 +172,8 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
             onClick={() => setTimeRange("30d")}
             className={`px-3 py-1 rounded-md transition-all ${
               timeRange === "30d"
-                ? "bg-white text-zinc-900 shadow-xs font-semibold"
-                : "text-zinc-600 hover:text-zinc-900"
+                ? "bg-surface text-fg shadow-card font-semibold"
+                : "text-fg-secondary hover:text-fg"
             }`}
           >
             Last 30 days
@@ -183,8 +183,8 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
             onClick={() => setTimeRange("7d")}
             className={`px-3 py-1 rounded-md transition-all ${
               timeRange === "7d"
-                ? "bg-white text-zinc-900 shadow-xs font-semibold"
-                : "text-zinc-600 hover:text-zinc-900"
+                ? "bg-surface text-fg shadow-card font-semibold"
+                : "text-fg-secondary hover:text-fg"
             }`}
           >
             Last 7 days
@@ -312,7 +312,7 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
         {/* Hover Tooltip Overlay */}
         {activePoint && activeCoord1 && (
           <div
-            className="absolute top-2 pointer-events-none bg-zinc-900 text-white rounded-lg px-3 py-2 text-xs shadow-xl z-20 border border-zinc-700 transition-all duration-75"
+            className="absolute top-2 pointer-events-none bg-primary text-primary-foreground rounded-lg px-3 py-2 text-xs shadow-xl z-20 border border-line transition-all duration-75"
             style={{
               left: `${Math.min(
                 Math.max(activeCoord1.x - 75, 10),
@@ -320,12 +320,12 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
               )}px`,
             }}
           >
-            <div className="font-semibold text-zinc-200 border-b border-zinc-800 pb-1 mb-1">
+            <div className="font-semibold text-zinc-200 border-b border-line pb-1 mb-1">
               {activePoint.date} (实时对账详情)
             </div>
             <div className="flex items-center justify-between gap-3 text-zinc-300">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-white inline-block" />
+                <span className="w-2 h-2 rounded-full bg-surface inline-block" />
                 业务应收:
               </span>
               <span className="font-mono font-medium text-white">
@@ -334,14 +334,14 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
             </div>
             <div className="flex items-center justify-between gap-3 text-zinc-300">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" />
+                <span className="w-2 h-2 rounded-full bg-hover inline-block" />
                 渠道实收:
               </span>
               <span className="font-mono font-medium text-white">
                 ¥{activePoint.net.toLocaleString()}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-3 text-emerald-400 text-[11px] pt-1 mt-1 border-t border-zinc-800 font-mono">
+            <div className="flex items-center justify-between gap-3 text-emerald-400 text-[11px] pt-1 mt-1 border-t border-line font-mono">
               <span>自动平账率:</span>
               <span>
                 {((activePoint.net / activePoint.gross) * 100).toFixed(2)}%
@@ -352,12 +352,12 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
       </div>
 
       {/* X Axis Date labels (exact match to screenshot's dates: Apr 3 ... Jun 30) */}
-      <div className="flex items-center justify-between px-4 mt-2 text-[11px] text-zinc-400 font-mono overflow-x-auto">
+      <div className="flex items-center justify-between px-4 mt-2 text-[11px] text-fg-tertiary font-mono overflow-x-auto">
         {dataPoints.map((d, i) => (
           <span
             key={i}
             className={`${
-              hoveredIndex === i ? "text-zinc-900 font-semibold" : ""
+              hoveredIndex === i ? "text-fg font-semibold" : ""
             } transition-colors`}
           >
             {d.date}

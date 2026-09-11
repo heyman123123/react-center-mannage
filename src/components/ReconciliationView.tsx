@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { TableSkeleton } from "./ui/Skeletons";
 import {
   Scale,
   Play,
@@ -87,6 +89,9 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
     }, 1200);
   };
 
+  const loading = useViewLoading();
+  if (loading) return <TableSkeleton rows={8} />;
+
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto font-sans">
       {/* Toast Alert */}
@@ -106,15 +111,15 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       )}
 
       {/* Header Banner with Action */}
-      <div className="bg-white border border-zinc-200/90 rounded-xl p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface border border-line/90 rounded-xl p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Scale className="w-5 h-5 text-zinc-900" />
-            <h1 className="text-lg font-bold text-zinc-900">
+            <Scale className="w-5 h-5 text-fg" />
+            <h1 className="text-lg font-bold text-fg">
               企业级实时交易对账中心 (Automated Reconciliation Engine)
             </h1>
           </div>
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-fg-secondary mt-1">
             支持业务订单流、聚合支付路由流水与银行/渠道清算账单（三方对账模型），实现T+0差错拦截与T+1自动扎帐。
           </p>
         </div>
@@ -124,12 +129,12 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             id="run-recon-engine-btn"
             disabled={isRunningEngine || !canReconcile}
             onClick={handleRunReconciliation}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold shadow-xs transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold shadow-card transition-all ${
               !canReconcile
-                ? "bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200"
+                ? "bg-hover text-fg-tertiary cursor-not-allowed border border-line"
                 : isRunningEngine
-                ? "bg-zinc-800 text-white"
-                : "bg-black hover:bg-zinc-800 text-white active:scale-95"
+                ? "bg-primary-hover text-white"
+                : "bg-black hover:bg-primary-hover text-primary-foreground active:scale-95"
             }`}
             title={!canReconcile ? "RBAC权限受限：需要对账专员或财务总监角色" : ""}
           >
@@ -151,67 +156,67 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       {/* Three-Way Reconciliation Architecture Visualizer */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Node 1: Business Order Side */}
-        <div className="bg-white border border-zinc-200/90 rounded-xl p-5 shadow-2xs">
+        <div className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider">
               1. 业务订单侧 (Internal Orders)
             </span>
             <span className="text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
               实时接入
             </span>
           </div>
-          <div className="mt-3 text-xl font-bold text-zinc-900 font-mono">
+          <div className="mt-3 text-xl font-bold text-fg font-mono">
             {formatCurrency(18420650, currentTenant.currency)}
           </div>
-          <div className="text-xs text-zinc-500 mt-1 flex items-center justify-between">
+          <div className="text-xs text-fg-secondary mt-1 flex items-center justify-between">
             <span>已接入业务单数:</span>
-            <span className="font-mono text-zinc-800 font-medium">45,678 笔</span>
+            <span className="font-mono text-fg font-medium">45,678 笔</span>
           </div>
-          <div className="mt-4 pt-3 border-t border-zinc-100 text-[11px] text-zinc-400">
+          <div className="mt-4 pt-3 border-t border-line-subtle text-[11px] text-fg-tertiary">
             涵盖连锁零售门店、SaaS订阅、跨境订单与医院挂号
           </div>
         </div>
 
         {/* Node 2: Payment Gateway Stream */}
-        <div className="bg-white border border-zinc-200/90 rounded-xl p-5 shadow-2xs">
+        <div className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider">
               2. 聚合支付网关 (Gateway Stream)
             </span>
             <span className="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
               双轨监听
             </span>
           </div>
-          <div className="mt-3 text-xl font-bold text-zinc-900 font-mono">
+          <div className="mt-3 text-xl font-bold text-fg font-mono">
             {formatCurrency(18420650, currentTenant.currency)}
           </div>
-          <div className="text-xs text-zinc-500 mt-1 flex items-center justify-between">
+          <div className="text-xs text-fg-secondary mt-1 flex items-center justify-between">
             <span>网关路由回执:</span>
-            <span className="font-mono text-zinc-800 font-medium">45,678 笔</span>
+            <span className="font-mono text-fg font-medium">45,678 笔</span>
           </div>
-          <div className="mt-4 pt-3 border-t border-zinc-100 text-[11px] text-zinc-400">
+          <div className="mt-4 pt-3 border-t border-line-subtle text-[11px] text-fg-tertiary">
             智能路由至微信、支付宝、银联、数字人民币与SWIFT
           </div>
         </div>
 
         {/* Node 3: Bank & Channel Clearing Files */}
-        <div className="bg-white border border-zinc-200/90 rounded-xl p-5 shadow-2xs">
+        <div className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider">
               3. 银行与渠道对账单 (Channel Bills)
             </span>
             <span className="text-[11px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">
               T+1 自动回盘
             </span>
           </div>
-          <div className="mt-3 text-xl font-bold text-zinc-900 font-mono">
+          <div className="mt-3 text-xl font-bold text-fg font-mono">
             {formatCurrency(18410200, currentTenant.currency)}
           </div>
-          <div className="text-xs text-zinc-500 mt-1 flex items-center justify-between">
+          <div className="text-xs text-fg-secondary mt-1 flex items-center justify-between">
             <span>平账率 (Match Rate):</span>
             <span className="font-mono text-emerald-600 font-semibold">99.85%</span>
           </div>
-          <div className="mt-4 pt-3 border-t border-zinc-100 text-[11px] text-red-600 font-medium flex items-center gap-1">
+          <div className="mt-4 pt-3 border-t border-line-subtle text-[11px] text-red-600 font-medium flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
             <span>差错待调账: {discrepancies.length} 笔 (差异 ¥10,450.00)</span>
           </div>
@@ -219,11 +224,11 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       </div>
 
       {/* Discrepancy Workbench (差错账工作台) */}
-      <div className="bg-white border border-zinc-200/90 rounded-xl shadow-2xs overflow-hidden">
-        <div className="p-4 border-b border-zinc-200/80 flex items-center justify-between">
+      <div className="bg-surface border border-line/90 rounded-xl shadow-2xs overflow-hidden">
+        <div className="p-4 border-b border-line/80 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-red-600" />
-            <h2 className="text-sm font-semibold text-zinc-900">
+            <h2 className="text-sm font-semibold text-fg">
               差错账协同工作台 (Discrepancy Resolution Workbench)
             </h2>
             <span className="text-xs bg-red-100 text-red-700 px-2 py-0.2 rounded-full font-semibold">
@@ -231,34 +236,34 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             </span>
           </div>
 
-          <div className="text-xs text-zinc-500">
-            RBAC审核人: <span className="font-medium text-zinc-800">{currentUser.name}</span>
+          <div className="text-xs text-fg-secondary">
+            RBAC审核人: <span className="font-medium text-fg">{currentUser.name}</span>
           </div>
         </div>
 
         {discrepancies.length === 0 ? (
           <div className="p-12 text-center">
             <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-            <div className="text-sm font-semibold text-zinc-800">
+            <div className="text-sm font-semibold text-fg">
               全渠道流水平账完毕，无待决差错！
             </div>
-            <div className="text-xs text-zinc-400 mt-1">
+            <div className="text-xs text-fg-tertiary mt-1">
               所有业务订单与银行清算账单金额、手续费及到账状态均 100% 吻合。
             </div>
           </div>
         ) : (
-          <div className="divide-y divide-zinc-200/80">
+          <div className="divide-y divide-line/80">
             {discrepancies.map((tx) => (
               <div
                 key={tx.id}
-                className="p-4 hover:bg-zinc-50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+                className="p-4 hover:bg-subtle transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm text-zinc-900">
+                    <span className="font-semibold text-sm text-fg">
                       {tx.orderTitle}
                     </span>
-                    <span className="text-xs font-mono text-zinc-400">
+                    <span className="text-xs font-mono text-fg-tertiary">
                       [{tx.id}]
                     </span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-red-50 text-red-700 border border-red-200">
@@ -270,7 +275,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                   <div className="text-xs text-red-600 bg-red-50/60 border border-red-100 rounded-lg p-2 mt-1">
                     ⚠️ {tx.discrepancyNote}
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-zinc-500 pt-1 font-mono">
+                  <div className="flex items-center gap-4 text-xs text-fg-secondary pt-1 font-mono">
                     <span>商户: {tx.merchantName}</span>
                     <span>渠道单号: {tx.channelTradeNo}</span>
                     <span>发生时间: {tx.createdAt}</span>
@@ -279,17 +284,17 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
 
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right">
-                    <div className="font-bold text-sm text-zinc-900 font-mono">
+                    <div className="font-bold text-sm text-fg font-mono">
                       {formatCurrency(tx.orderAmount, tx.currency)}
                     </div>
-                    <div className="text-[11px] text-zinc-400">
+                    <div className="text-[11px] text-fg-tertiary">
                       手续费: {formatCurrency(tx.channelFee, tx.currency)}
                     </div>
                   </div>
 
                   <button
                     onClick={() => onOpenDiscrepancy(tx)}
-                    className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs"
+                    className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold transition-colors shadow-card"
                   >
                     处理调账
                   </button>
@@ -301,17 +306,17 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       </div>
 
       {/* Historical Reconciliation Batches Table */}
-      <div className="bg-white border border-zinc-200/90 rounded-xl shadow-2xs p-5">
+      <div className="bg-surface border border-line/90 rounded-xl shadow-2xs p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-zinc-900">
+          <h3 className="text-sm font-semibold text-fg">
             近期对账批次记录 (Recent Reconciliation Batches)
           </h3>
-          <span className="text-xs text-zinc-400">自动对账任务每日 02:00 定时归集</span>
+          <span className="text-xs text-fg-tertiary">自动对账任务每日 02:00 定时归集</span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-[1050px] w-full text-left text-xs text-zinc-600 border-collapse">
-            <thead className="bg-zinc-50/90 text-zinc-500 font-semibold text-[11px] border-b border-zinc-200">
+          <table className="min-w-[1050px] w-full text-left text-xs text-fg-secondary border-collapse">
+            <thead className="bg-subtle/90 text-fg-secondary font-semibold text-[11px] border-b border-line">
               <tr>
                 <th className="px-3 py-2.5 w-[180px]">批次编号</th>
                 <th className="px-3 py-2.5 w-[160px]">归属业务单元</th>
@@ -321,18 +326,18 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                 <th className="px-3 py-2.5 w-[100px]">差错笔数</th>
                 <th className="px-3 py-2.5 w-[140px]">总清算金额</th>
                 <th className="px-3 py-2.5 w-[110px]">状态</th>
-                <th className="px-3 py-2.5 w-[110px] sticky right-0 z-20 bg-zinc-50/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="px-3 py-2.5 w-[110px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
+            <tbody className="divide-y divide-line-subtle">
               {INITIAL_RECON_BATCHES.map((batch) => (
-                <tr key={batch.batchNo} className="hover:bg-zinc-50/80 transition-colors group">
-                  <td className="px-3 py-2.5 w-[180px] font-mono font-medium text-zinc-900">
+                <tr key={batch.batchNo} className="hover:bg-subtle/80 transition-colors group">
+                  <td className="px-3 py-2.5 w-[180px] font-mono font-medium text-fg">
                     {batch.batchNo}
                   </td>
-                  <td className="px-3 py-2.5 w-[160px] text-zinc-700">
+                  <td className="px-3 py-2.5 w-[160px] text-fg-secondary">
                     {batch.tenantId === "group_hq" ? "集团全渠道汇总" : batch.tenantId}
                   </td>
                   <td className="px-3 py-2.5 w-[120px] uppercase font-mono">{batch.channel}</td>
@@ -345,7 +350,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                   <td className="px-3 py-2.5 w-[100px] font-mono text-red-600">
                     {batch.discrepancyCount}
                   </td>
-                  <td className="px-3 py-2.5 w-[140px] font-mono font-semibold text-zinc-900">
+                  <td className="px-3 py-2.5 w-[140px] font-mono font-semibold text-fg">
                     {formatCurrency(batch.totalAmount)}
                   </td>
                   <td className="px-3 py-2.5 w-[110px]">
@@ -359,10 +364,10 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2.5 w-[110px] sticky right-0 z-10 bg-white group-hover:bg-zinc-50/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                  <td className="px-3 py-2.5 w-[110px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                     <button
                       onClick={() => alert(`批次 [${batch.batchNo}] 对账凭证核验通过，轧差吻合！`)}
-                      className="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded text-[11px] font-medium transition-colors"
+                      className="px-2 py-1 bg-hover hover:bg-hover text-fg-secondary rounded text-[11px] font-medium transition-colors"
                     >
                       核验凭证
                     </button>

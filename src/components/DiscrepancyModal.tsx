@@ -70,7 +70,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-zinc-200 text-zinc-700 hover:bg-zinc-100 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            className="px-4 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
           >
             取消
           </button>
@@ -78,7 +78,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
             type="button"
             onClick={handleSubmit}
             disabled={isProcessing}
-            className="flex items-center gap-1.5 px-5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer disabled:opacity-50"
           >
             {isProcessing ? (
               <>
@@ -116,14 +116,14 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
 
         {/* Amount Comparison */}
         <div className="grid grid-cols-3 gap-2.5 text-center">
-          <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl">
-            <span className="text-zinc-500 text-[11px]">业务系统应收</span>
-            <div className="font-mono font-bold text-sm text-zinc-900 mt-1">
+          <div className="p-3 bg-subtle border border-line rounded-xl">
+            <span className="text-fg-secondary text-[11px]">业务系统应收</span>
+            <div className="font-mono font-bold text-sm text-fg mt-1">
               {formatCurrency(transaction.orderAmount, transaction.currency)}
             </div>
           </div>
-          <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl">
-            <span className="text-zinc-500 text-[11px]">支付渠道实收</span>
+          <div className="p-3 bg-subtle border border-line rounded-xl">
+            <span className="text-fg-secondary text-[11px]">支付渠道实收</span>
             <div className="font-mono font-bold text-sm text-amber-700 mt-1">
               {formatCurrency(transaction.orderAmount - 0.5, transaction.currency)}
             </div>
@@ -138,7 +138,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
 
         {/* Action Choice */}
         <div>
-          <label className="font-semibold text-zinc-800 block mb-2">
+          <label className="font-semibold text-fg block mb-2">
             选择调账解决方案 (Action Type):
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -147,14 +147,14 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
               onClick={() => setSelectedAction("balance")}
               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                 selectedAction === "balance"
-                  ? "border-zinc-900 bg-zinc-900 text-white shadow-xs"
-                  : "border-zinc-200 hover:border-zinc-300 text-zinc-700 bg-white"
+                  ? "border-primary bg-primary text-primary-foreground shadow-card"
+                  : "border-line hover:border-line text-fg-secondary bg-surface"
               }`}
             >
               <div className="font-semibold text-xs">自动抹平入账</div>
               <div
                 className={`text-[10px] mt-1 ${
-                  selectedAction === "balance" ? "text-zinc-300" : "text-zinc-400"
+                  selectedAction === "balance" ? "text-zinc-300" : "text-fg-tertiary"
                 }`}
               >
                 补入平台营销补差池，完成Done平账
@@ -166,14 +166,14 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
               onClick={() => setSelectedAction("refund")}
               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                 selectedAction === "refund"
-                  ? "border-zinc-900 bg-zinc-900 text-white shadow-xs"
-                  : "border-zinc-200 hover:border-zinc-300 text-zinc-700 bg-white"
+                  ? "border-primary bg-primary text-primary-foreground shadow-card"
+                  : "border-line hover:border-line text-fg-secondary bg-surface"
               }`}
             >
               <div className="font-semibold text-xs">渠道冲正退款</div>
               <div
                 className={`text-[10px] mt-1 ${
-                  selectedAction === "refund" ? "text-zinc-300" : "text-zinc-400"
+                  selectedAction === "refund" ? "text-zinc-300" : "text-fg-tertiary"
                 }`}
               >
                 向支付网关下发退款冲正指令 (需总监权限)
@@ -185,14 +185,14 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
               onClick={() => setSelectedAction("escrow")}
               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                 selectedAction === "escrow"
-                  ? "border-zinc-900 bg-zinc-900 text-white shadow-xs"
-                  : "border-zinc-200 hover:border-zinc-300 text-zinc-700 bg-white"
+                  ? "border-primary bg-primary text-primary-foreground shadow-card"
+                  : "border-line hover:border-line text-fg-secondary bg-surface"
               }`}
             >
               <div className="font-semibold text-xs">单边挂账待核</div>
               <div
                 className={`text-[10px] mt-1 ${
-                  selectedAction === "escrow" ? "text-zinc-300" : "text-zinc-400"
+                  selectedAction === "escrow" ? "text-zinc-300" : "text-fg-tertiary"
                 }`}
               >
                 暂挂至集团待清算暂收款科目
@@ -203,22 +203,22 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
 
         {/* Review Note */}
         <div>
-          <label className="font-semibold text-zinc-800 block mb-1">
+          <label className="font-semibold text-fg block mb-1">
             调账审批凭证备注 (Audit Approval Note):
           </label>
           <textarea
             rows={2}
             value={resolveNote}
             onChange={(e) => setResolveNote(e.target.value)}
-            className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-900"
+            className="w-full p-2.5 bg-subtle border border-line rounded-lg text-xs focus:bg-surface focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
         {/* RBAC notice */}
-        <div className="flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
+        <div className="flex items-center justify-between text-[11px] text-fg-secondary bg-subtle p-2.5 rounded-xl border border-line">
           <span className="flex items-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-blue-600" />
-            当前操作人: <strong className="text-zinc-800">{currentUser?.name || "操作人"}</strong> ({currentRole?.name || "系统审核员"})
+            当前操作人: <strong className="text-fg">{currentUser?.name || "操作人"}</strong> ({currentRole?.name || "系统审核员"})
           </span>
           <span>
             审批效力:{" "}

@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { TableSkeleton } from "./ui/Skeletons";
 import {
   BookOpen,
   Plus,
@@ -556,34 +558,37 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     return matched.length > 0 ? matched : [{ keyPrefix: item.category, label: item.category, scope: item.category }];
   };
 
+  const loading = useViewLoading();
+  if (loading) return <TableSkeleton rows={9} />;
+
   return (
     <div className="flex gap-4 items-start font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* ===== 左侧：类型分类栏 ===== */}
-      <div className="w-48 shrink-0 bg-white border border-zinc-200 rounded-xl shadow-xs overflow-hidden lg:sticky lg:top-4">
-        <div className="px-3 py-2.5 border-b border-zinc-200 flex items-center justify-between">
-          <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
-            <ListFilter className="w-3.5 h-3.5 text-zinc-500" />
+      <div className="w-48 shrink-0 bg-surface border border-line rounded-xl shadow-card overflow-hidden lg:sticky lg:top-4">
+        <div className="px-3 py-2.5 border-b border-line flex items-center justify-between">
+          <span className="text-xs font-bold text-fg flex items-center gap-1.5">
+            <ListFilter className="w-3.5 h-3.5 text-fg-secondary" />
             类型
           </span>
         </div>
 
-        <div className="p-2 border-b border-zinc-100">
+        <div className="p-2 border-b border-line-subtle">
           <div className="relative">
-            <Search className="w-3 h-3 text-zinc-400 absolute left-2 top-1/2 -translate-y-1/2" />
+            <Search className="w-3 h-3 text-fg-tertiary absolute left-2 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="搜索关键字"
               value={treeKeyword}
               onChange={(e) => setTreeKeyword(e.target.value)}
-              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
@@ -594,15 +599,15 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             onClick={() => setCategoryFilter("ALL")}
             className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
               categoryFilter === "ALL"
-                ? "bg-zinc-900 text-white font-semibold"
-                : "text-zinc-700 hover:bg-zinc-100"
+                ? "bg-primary text-primary-foreground font-semibold"
+                : "text-fg-secondary hover:bg-hover"
             }`}
           >
             <span className="flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" />
               全部
             </span>
-            <span className="text-[10px] font-mono text-zinc-400">{entryList.length}</span>
+            <span className="text-[10px] font-mono text-fg-tertiary">{entryList.length}</span>
           </button>
 
           {visibleCategoryKeys.map((c) => {
@@ -614,12 +619,12 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 onClick={() => setCategoryFilter(c.key)}
                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
                   categoryFilter === c.key
-                    ? "bg-zinc-900 text-white font-semibold"
-                    : "text-zinc-700 hover:bg-zinc-100"
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "text-fg-secondary hover:bg-hover"
                 }`}
               >
                 <span>{c.label}</span>
-                <span className="text-[10px] font-mono text-zinc-400">{count}</span>
+                <span className="text-[10px] font-mono text-fg-tertiary">{count}</span>
               </button>
             );
           })}
@@ -629,10 +634,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       {/* ===== 右侧：字典列表 ===== */}
       <div className="flex-1 min-w-0 space-y-3">
         {/* 标题与工具栏 */}
-        <div className="bg-white border border-zinc-200 rounded-xl shadow-xs px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
+        <div className="bg-surface border border-line rounded-xl shadow-card px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 text-sm font-bold text-fg">
             <span>字典列表</span>
-            <span className="text-zinc-400 font-normal text-xs">（{currentCategoryLabel}）</span>
+            <span className="text-fg-tertiary font-normal text-xs">（{currentCategoryLabel}）</span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -644,7 +649,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 setEntryList(dictionary.map((item) => ({ ...item, platforms: item.platforms || ["CHECKOUT", "PORTAL", "EMAIL_NOTIFY", "MOBILE_SDK"] })));
                 showToast("字典数据已刷新");
               }}
-              className="px-2.5 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               title="刷新字典数据"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -654,7 +659,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <button
               type="button"
               onClick={() => handleOpenAdd()}
-              className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               新增
@@ -683,12 +688,12 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   删除
                 </button>
               </Popconfirm>
-            )}            <div className="w-px h-5 bg-zinc-200 mx-1" />
+            )}            <div className="w-px h-5 bg-hover mx-1" />
 
             <button
               type="button"
               onClick={handleBatchAutoComplete}
-              className="px-2.5 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               title="智能补全所有词条的当前配置语种"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
@@ -698,7 +703,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <button
               type="button"
               onClick={handleExportWebJSON}
-              className="px-2.5 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               title="导出全项目多语言包 JSON"
             >
               <Download className="w-3.5 h-3.5 text-blue-600" />
@@ -708,8 +713,8 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         </div>
 
         {/* 语种切换 */}
-        <div className="bg-white border border-zinc-200 rounded-xl shadow-xs px-4 py-2 flex items-center justify-between gap-2">
-          <span className="text-xs text-zinc-500 flex items-center gap-1.5">
+        <div className="bg-surface border border-line rounded-xl shadow-card px-4 py-2 flex items-center justify-between gap-2">
+          <span className="text-xs text-fg-secondary flex items-center gap-1.5">
             <Languages className="w-3.5 h-3.5 text-violet-500" />
             巡检语种：
           </span>
@@ -721,8 +726,8 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 onClick={() => setPreviewLanguage(l.code)}
                 className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1 cursor-pointer ${
                   previewLanguage === l.code
-                    ? "bg-zinc-900 text-white font-semibold"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "bg-hover text-fg-secondary hover:bg-hover"
                 }`}
               >
                 <span>{l.flag}</span>
@@ -742,19 +747,19 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         </div>
 
         {/* 表格 */}
-        <div className="bg-white border border-zinc-200 rounded-xl shadow-xs overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-100">
-            <span className="text-xs text-zinc-500">
-              共 <b className="text-zinc-900 font-mono">{filteredEntries.length}</b> 个词条
+        <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-line-subtle">
+            <span className="text-xs text-fg-secondary">
+              共 <b className="text-fg font-mono">{filteredEntries.length}</b> 个词条
             </span>
             <div className="relative w-64">
-              <Search className="w-3 h-3 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="搜索名称 / 键名 / 译文..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-2 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
@@ -762,7 +767,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <div className="overflow-x-auto">
             <table className="min-w-[1080px] w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-zinc-50/90 border-b border-zinc-200 text-zinc-500 font-semibold text-[11px]">
+                <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
                   <th className="py-2.5 px-4 w-8">
                     <input
                       type="checkbox"
@@ -770,7 +775,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                       onChange={(e) =>
                         setSelectedIds(e.target.checked ? filteredEntries.map((e) => e.id) : [])
                       }
-                      className="rounded text-zinc-900"
+                      className="rounded text-fg"
                     />
                   </th>
                   <th className="py-2.5 px-3 w-[260px]">名称 (Key)</th>
@@ -786,10 +791,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   <th className="py-2.5 px-4 w-[150px] text-right">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100 text-zinc-700">
+              <tbody className="divide-y divide-line-subtle text-fg-secondary">
                 {filteredEntries.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-zinc-400">
+                    <td colSpan={9} className="py-12 text-center text-fg-tertiary">
                       暂无字典词条数据
                     </td>
                   </tr>
@@ -801,7 +806,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
                     return (
                       <React.Fragment key={item.id}>
-                        <tr className="hover:bg-zinc-50/80 transition-colors group">
+                        <tr className="hover:bg-subtle/80 transition-colors group">
                           <td className="py-2.5 px-4">
                             <input
                               type="checkbox"
@@ -811,18 +816,18 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                                   e.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id)
                                 )
                               }
-                              className="rounded text-zinc-900"
+                              className="rounded text-fg"
                             />
                           </td>
                           <td className="py-2.5 px-3">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-bold text-xs text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200 truncate max-w-[200px]" title={item.key}>
+                              <span className="font-mono font-bold text-xs text-fg bg-hover px-2 py-0.5 rounded border border-line truncate max-w-[200px]" title={item.key}>
                                 {item.key}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => handleCopy(item.key, item.id)}
-                                className="p-0.5 text-zinc-400 hover:text-zinc-700 rounded transition-colors cursor-pointer"
+                                className="p-0.5 text-fg-tertiary hover:text-fg-secondary rounded transition-colors cursor-pointer"
                                 title="复制键名"
                               >
                                 {isCopied ? (
@@ -833,13 +838,13 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               </button>
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 font-mono text-zinc-400 text-[11px]">{item.id}</td>
+                          <td className="py-2.5 px-3 font-mono text-fg-tertiary text-[11px]">{item.id}</td>
                           <td className="py-2.5 px-3">
-                            <div className="text-zinc-800 line-clamp-2 leading-relaxed" title={item.translations[previewLanguage]}>
+                            <div className="text-fg line-clamp-2 leading-relaxed" title={item.translations[previewLanguage]}>
                               {item.translations[previewLanguage] || "—"}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-zinc-500">
+                          <td className="py-2.5 px-3 text-fg-secondary">
                             <span className="line-clamp-2" title={item.description}>{item.description}</span>
                           </td>
                           <td className="py-2.5 px-3">
@@ -856,14 +861,14 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               ))}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 whitespace-nowrap text-zinc-400 font-mono text-[11px]">
+                          <td className="py-2.5 px-3 whitespace-nowrap text-fg-tertiary font-mono text-[11px]">
                             {item.updatedAt.substring(0, 10)}
                           </td>
                           <td className="py-2.5 px-3 text-center">
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               {completedCount}/{languages.length}
                             </span>
-                            <div className="text-[9px] text-zinc-400 mt-0.5">
+                            <div className="text-[9px] text-fg-tertiary mt-0.5">
                               {item.referencedTemplatesCount ?? 0} 模板
                             </div>
                           </td>
@@ -880,7 +885,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleOpenCodeHelper(item)}
-                                className="px-2 py-1 text-zinc-500 hover:bg-zinc-100 rounded-md text-[11px] font-medium cursor-pointer"
+                                className="px-2 py-1 text-fg-secondary hover:bg-hover rounded-md text-[11px] font-medium cursor-pointer"
                                 title="查看各端调用示例"
                               >
                                 <Code2 className="w-3 h-3" />
@@ -888,7 +893,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => toggleExpand(item.id)}
-                                className="px-2 py-1 text-zinc-500 hover:bg-zinc-100 rounded-md text-[11px] font-medium cursor-pointer"
+                                className="px-2 py-1 text-fg-secondary hover:bg-hover rounded-md text-[11px] font-medium cursor-pointer"
                                 title="展开全部语种对照"
                               >
                                 {isExpanded ? <ChevronUp className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
@@ -896,7 +901,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleOpenEdit(item)}
-                                className="px-2 py-1 text-zinc-600 hover:bg-zinc-100 rounded-md text-[11px] font-medium cursor-pointer"
+                                className="px-2 py-1 text-fg-secondary hover:bg-hover rounded-md text-[11px] font-medium cursor-pointer"
                                 title="编辑词条"
                               >
                                 <Edit2 className="w-3 h-3" />
@@ -921,9 +926,9 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                         {/* 展开：全部语种对照 */}
                         {isExpanded && (
                           <tr className="bg-violet-50/40">
-                            <td colSpan={9} className="p-4 border-b border-zinc-200">
-                              <div className="bg-white rounded-xl p-4 border border-violet-200 shadow-xs space-y-3">
-                                <div className="flex items-center justify-between text-xs font-bold text-zinc-900 pb-2 border-b border-zinc-100">
+                            <td colSpan={9} className="p-4 border-b border-line">
+                              <div className="bg-surface rounded-xl p-4 border border-violet-200 shadow-card space-y-3">
+                                <div className="flex items-center justify-between text-xs font-bold text-fg pb-2 border-b border-line-subtle">
                                   <span className="flex items-center gap-1.5">
                                     <Languages className="w-4 h-4 text-violet-600" />
                                     【{item.key}】全项目 {languages.length} 种多语言完整译文对照
@@ -931,17 +936,17 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                   {languages.map((l) => (
-                                    <div key={l.code} className="bg-zinc-50 p-2.5 rounded-lg border border-zinc-200 text-xs space-y-1">
-                                      <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-700">
+                                    <div key={l.code} className="bg-subtle p-2.5 rounded-lg border border-line text-xs space-y-1">
+                                      <div className="flex items-center justify-between text-[11px] font-semibold text-fg-secondary">
                                         <span className="flex items-center gap-1">
                                           <span>{l.flag}</span>
                                           <span>{l.nativeName}</span>
                                         </span>
-                                        <span className="font-mono text-zinc-400 text-[10px]">{l.code}</span>
+                                        <span className="font-mono text-fg-tertiary text-[10px]">{l.code}</span>
                                       </div>
-                                      <div className="text-zinc-900 font-sans text-xs bg-white p-2 rounded border border-zinc-200/80 leading-relaxed min-h-[42px]">
+                                      <div className="text-fg font-sans text-xs bg-surface p-2 rounded border border-line/80 leading-relaxed min-h-[42px]">
                                         {item.translations[l.code] || (
-                                          <span className="text-zinc-400 italic">未填</span>
+                                          <span className="text-fg-tertiary italic">未填</span>
                                         )}
                                       </div>
                                     </div>
@@ -975,15 +980,15 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <button
               type="button"
               onClick={() => setIsCodeModalOpen(false)}
-              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold cursor-pointer"
             >
               关闭
             </button>
           }
         >
           <div className="space-y-3 text-xs">
-            <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
-              <div className="flex items-center justify-between font-semibold text-zinc-700">
+            <div className="bg-subtle p-3 rounded-xl border border-line space-y-1">
+              <div className="flex items-center justify-between font-semibold text-fg-secondary">
                 <span className="flex items-center gap-1.5">
                   <LayoutTemplate className="w-3.5 h-3.5 text-blue-600" />
                   Web 前端 (React / Vue / Next.js / 收银台组件)
@@ -997,13 +1002,13 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   <span>复制</span>
                 </button>
               </div>
-              <pre className="bg-zinc-900 text-zinc-100 p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
+              <pre className="bg-primary text-primary-foreground p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
                 {`import { useTranslation } from "react-i18next";\nconst { t } = useTranslation();\n\n// 渲染国际化文本\n<Button>{t("${activeCodeEntry.key}")}</Button>`}
               </pre>
             </div>
 
-            <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
-              <div className="flex items-center justify-between font-semibold text-zinc-700">
+            <div className="bg-subtle p-3 rounded-xl border border-line space-y-1">
+              <div className="flex items-center justify-between font-semibold text-fg-secondary">
                 <span className="flex items-center gap-1.5">
                   <Server className="w-3.5 h-3.5 text-amber-600" />
                   后端 API 网关响应与错误码 (Node.js / Java / Go)
@@ -1019,25 +1024,25 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   <span>复制</span>
                 </button>
               </div>
-              <pre className="bg-zinc-900 text-zinc-100 p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
+              <pre className="bg-primary text-primary-foreground p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
                 {`// 根据请求头 Accept-Language 或客户端参数自动本地化\nconst message = i18n.resolve(req.locale, "${activeCodeEntry.key}");\nres.status(400).json({ code: "${activeCodeEntry.key}", error: message });`}
               </pre>
             </div>
 
-            <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
-              <div className="flex items-center justify-between font-semibold text-zinc-700">
+            <div className="bg-subtle p-3 rounded-xl border border-line space-y-1">
+              <div className="flex items-center justify-between font-semibold text-fg-secondary">
                 <span className="flex items-center gap-1.5">
                   <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
                   移动端原生 SDK (iOS Swift & Android Kotlin)
                 </span>
               </div>
-              <pre className="bg-zinc-900 text-zinc-100 p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
+              <pre className="bg-primary text-primary-foreground p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
                 {`// iOS Swift:\nlet title = NSLocalizedString("${activeCodeEntry.key}", comment: "")\n\n// Android Kotlin:\nval title = getString(R.string.${activeCodeEntry.key.replace(/\./g, "_")})`}
               </pre>
             </div>
 
-            <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
-              <div className="flex items-center justify-between font-semibold text-zinc-700">
+            <div className="bg-subtle p-3 rounded-xl border border-line space-y-1">
+              <div className="flex items-center justify-between font-semibold text-fg-secondary">
                 <span className="flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-indigo-600" />
                   交易凭据与通知邮件模版插值
@@ -1051,7 +1056,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   <span>复制</span>
                 </button>
               </div>
-              <pre className="bg-zinc-900 text-zinc-100 p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
+              <pre className="bg-primary text-primary-foreground p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
                 {`<h1>{{dict.${activeCodeEntry.key}}}</h1>`}
               </pre>
             </div>
@@ -1072,7 +1077,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <button
             type="button"
             onClick={() => setIsLangModalOpen(false)}
-            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold cursor-pointer"
+            className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold cursor-pointer"
           >
             完成
           </button>
@@ -1082,23 +1087,23 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           {/* 当前已配置语言 */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-zinc-900 flex items-center gap-1.5">
+              <span className="font-bold text-fg flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 已配置语种
-                <span className="text-[10px] text-zinc-400 font-mono">({languages.length})</span>
+                <span className="text-[10px] text-fg-tertiary font-mono">({languages.length})</span>
               </span>
             </div>
             <div className="space-y-1.5">
               {languages.map((l) => (
                 <div
                   key={l.code}
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-zinc-200 bg-white"
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-line bg-surface"
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="text-base leading-none">{l.flag}</span>
                     <div>
-                      <div className="font-semibold text-zinc-900">{l.nativeName}</div>
-                      <div className="text-[10px] text-zinc-400 font-mono">{l.code} · {l.label}</div>
+                      <div className="font-semibold text-fg">{l.nativeName}</div>
+                      <div className="text-[10px] text-fg-tertiary font-mono">{l.code} · {l.label}</div>
                     </div>
                   </div>
                   <Popconfirm
@@ -1121,8 +1126,8 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           </div>
 
           {/* 候选语言池 */}
-          <div className="border-t border-zinc-100 pt-4">
-            <div className="font-bold text-zinc-900 mb-2 flex items-center gap-1.5">
+          <div className="border-t border-line-subtle pt-4">
+            <div className="font-bold text-fg mb-2 flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5 text-violet-600" />
               从候选语种添加
             </div>
@@ -1137,7 +1142,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     onClick={() => handleAddLanguage(cand)}
                     className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
                       added
-                        ? "bg-zinc-50 text-zinc-300 border-zinc-100 cursor-not-allowed"
+                        ? "bg-subtle text-zinc-300 border-line-subtle cursor-not-allowed"
                         : "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100"
                     }`}
                   >
@@ -1151,8 +1156,8 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           </div>
 
           {/* 自定义语种 */}
-          <div className="border-t border-zinc-100 pt-4">
-            <div className="font-bold text-zinc-900 mb-2 flex items-center gap-1.5">
+          <div className="border-t border-line-subtle pt-4">
+            <div className="font-bold text-fg mb-2 flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-violet-600" />
               自定义添加语种
             </div>
@@ -1162,21 +1167,21 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 placeholder="语言代码，如 ko-KR"
                 value={customLangCode}
                 onChange={(e) => setCustomLangCode(e.target.value)}
-                className="px-2.5 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-white"
+                className="px-2.5 py-1.5 bg-subtle border border-line rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-surface"
               />
               <input
                 type="text"
                 placeholder="语言名称，如 한국어"
                 value={customLangName}
                 onChange={(e) => setCustomLangName(e.target.value)}
-                className="px-2.5 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-white"
+                className="px-2.5 py-1.5 bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-surface"
               />
               <input
                 type="text"
                 placeholder="国旗 Emoji（可选）"
                 value={customLangFlag}
                 onChange={(e) => setCustomLangFlag(e.target.value)}
-                className="px-2.5 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-white"
+                className="px-2.5 py-1.5 bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-surface"
               />
             </div>
             <button
@@ -1205,14 +1210,14 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-xl hover:bg-zinc-100 font-semibold cursor-pointer"
+                className="px-4 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold shadow-xs cursor-pointer"
+                className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold shadow-card cursor-pointer"
               >
                 {editingEntry ? "保存全项目词条更改" : "确认添加词条 (默认 6 语种生效)"}
               </button>
@@ -1232,7 +1237,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     key={preset.key}
                     type="button"
                     onClick={() => handleApplyPreset(preset)}
-                    className="px-2 py-1 bg-white hover:bg-violet-100 text-violet-700 rounded-lg text-[10px] font-mono border border-violet-200 transition-colors shadow-2xs cursor-pointer"
+                    className="px-2 py-1 bg-surface hover:bg-violet-100 text-violet-700 rounded-lg text-[10px] font-mono border border-violet-200 transition-colors shadow-2xs cursor-pointer"
                   >
                     +{preset.key}
                   </button>
@@ -1242,7 +1247,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   统一词条键名 (Key Identifier) <span className="text-rose-500">*</span>:
                 </label>
                 <input
@@ -1251,12 +1256,12 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   placeholder="如：checkout.pay_now_cta 或 gateway.error.card_declined"
                   value={formKey}
                   onChange={(e) => setFormKey(e.target.value)}
-                  className="w-full p-2 bg-white border border-zinc-200 rounded-xl font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  className="w-full p-2 bg-surface border border-line rounded-xl font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   所属业务场景分类 <span className="text-rose-500">*</span>:
                 </label>
                 <ShadcnSelect
@@ -1278,7 +1283,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             </div>
 
             <div>
-              <label className="font-semibold text-zinc-700 block mb-1.5">
+              <label className="font-semibold text-fg-secondary block mb-1.5">
                 全项目适用终端范围 (可多选):
               </label>
               <div className="flex items-center gap-2 flex-wrap">
@@ -1293,7 +1298,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                       className={`px-2.5 py-1.5 rounded-xl text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
                         isSelected
                           ? "bg-violet-600 text-white border-violet-600"
-                          : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+                          : "bg-subtle text-fg-secondary border-line hover:bg-hover"
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
@@ -1305,7 +1310,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             </div>
 
             <div>
-              <label className="font-semibold text-zinc-700 block mb-1">
+              <label className="font-semibold text-fg-secondary block mb-1">
                 用途说明 (业务含义与开发指引):
               </label>
               <input
@@ -1314,13 +1319,13 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 placeholder="如：展示在全球收银台付款按钮上的文案，支持多货币与通道"
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
-                className="w-full p-2 bg-white border border-zinc-200 rounded-xl text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                className="w-full p-2 bg-surface border border-line rounded-xl text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               />
             </div>
 
-            <div className="pt-2 border-t border-zinc-100">
+            <div className="pt-2 border-t border-line-subtle">
               <div className="flex items-center justify-between mb-2">
-                <div className="font-bold text-zinc-900 flex items-center gap-1.5">
+                <div className="font-bold text-fg flex items-center gap-1.5">
                   <Languages className="w-4 h-4 text-indigo-600" />
                   <span>默认多语言配置 (当前 {languages.length} 种支持语种):</span>
                 </div>
@@ -1337,19 +1342,19 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {languages.map((l) => (
-                  <div key={l.code} className="bg-zinc-50 p-3 rounded-xl border border-zinc-200/90 space-y-1">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-zinc-800">
+                  <div key={l.code} className="bg-subtle p-3 rounded-xl border border-line/90 space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-fg">
                       <span className="flex items-center gap-1.5">
                         <span>{l.flag}</span>
                         <span>{l.nativeName}</span>
-                        <span className="font-mono text-zinc-400 font-normal">({l.code})</span>
+                        <span className="font-mono text-fg-tertiary font-normal">({l.code})</span>
                       </span>
                       {formTranslations[l.code] ? (
                         <span className="text-[10px] text-emerald-600 font-normal flex items-center gap-0.5">
                           <Check className="w-3 h-3" /> 已配置
                         </span>
                       ) : (
-                        <span className="text-[10px] text-zinc-400 font-normal">待输入</span>
+                        <span className="text-[10px] text-fg-tertiary font-normal">待输入</span>
                       )}
                     </div>
                     <textarea
@@ -1362,7 +1367,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                           [l.code]: e.target.value,
                         }))
                       }
-                      className="w-full p-2 bg-white border border-zinc-200 rounded-lg text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      className="w-full p-2 bg-surface border border-line rounded-lg text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                     />
                   </div>
                 ))}

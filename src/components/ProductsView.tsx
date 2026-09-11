@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { TableSkeleton } from "./ui/Skeletons";
 import {
   Package,
   Plus,
@@ -217,6 +219,9 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const uniqueCurrencies = Array.from(new Set(productList.map((p) => p.currency || "USD")));
   const totalSubscribers = productList.reduce((acc, curr) => acc + (curr.subscriberCount || 0), 0);
 
+  const loading = useViewLoading();
+  if (loading) return <TableSkeleton rows={8} />;
+
   return (
     <div className="space-y-6">
       {/* Toast */}
@@ -233,17 +238,17 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
               <Package className="w-5 h-5" />
             </span>
-            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
+            <h1 className="text-xl font-bold text-fg tracking-tight">
               海外商品与独立币种 SKU 配置 (Products & Multi-Currency SKUs)
             </h1>
           </div>
-          <p className="text-xs text-zinc-500 mt-1 max-w-2xl">
+          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
             每个商品的不同货币具有独立的唯一编号 (Code / SKU)，分别对应 USD、EUR、JPY、GBP 等独立清算价格与网关 Plan ID，支持一键派生克隆。
           </p>
         </div>
@@ -251,7 +256,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={handleOpenAdd}
-            className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
+            className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>创建新商品 SKU</span>
@@ -261,65 +266,65 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>在售独立 SKU 数</span>
             <Package className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
-            {activeCount} <span className="text-xs font-normal text-zinc-400">/ {productList.length} 款</span>
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
+            {activeCount} <span className="text-xs font-normal text-fg-tertiary">/ {productList.length} 款</span>
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">每条对应特定币种与唯一 Code</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">每条对应特定币种与唯一 Code</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>覆盖结算币种</span>
             <Coins className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
-            {uniqueCurrencies.length} <span className="text-xs font-normal text-zinc-400">种主要货币</span>
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
+            {uniqueCurrencies.length} <span className="text-xs font-normal text-fg-tertiary">种主要货币</span>
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">
+          <div className="text-[11px] text-fg-secondary mt-0.5">
             {uniqueCurrencies.join(" · ")}
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>周期性订阅方案 (Recurring)</span>
             <Zap className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
-            {subscriptionCount} <span className="text-xs font-normal text-zinc-400">个方案</span>
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
+            {subscriptionCount} <span className="text-xs font-normal text-fg-tertiary">个方案</span>
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">月付/年付海外自动扣款</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">月付/年付海外自动扣款</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
+        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+          <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>全球活跃订阅用户</span>
             <Globe className="w-4 h-4 text-indigo-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-zinc-900 mt-1">
-            {totalSubscribers.toLocaleString()} <span className="text-xs font-normal text-zinc-400">位海外客户</span>
+          <div className="text-2xl font-bold font-mono text-fg mt-1">
+            {totalSubscribers.toLocaleString()} <span className="text-xs font-normal text-fg-tertiary">位海外客户</span>
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">跨美欧亚多地区收单</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">跨美欧亚多地区收单</div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-zinc-200/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+      <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
           {/* Currency Filter */}
-          <span className="text-zinc-400 text-xs font-medium">货币筛选:</span>
-          <div className="flex items-center gap-1 bg-zinc-100 p-0.5 rounded-lg">
+          <span className="text-fg-tertiary text-xs font-medium">货币筛选:</span>
+          <div className="flex items-center gap-1 bg-hover p-0.5 rounded-lg">
             <button
               onClick={() => setCurrencyFilter("ALL")}
               className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
                 currencyFilter === "ALL"
-                  ? "bg-white text-zinc-900 shadow-xs font-bold"
-                  : "text-zinc-600 hover:text-zinc-900"
+                  ? "bg-surface text-fg shadow-card font-bold"
+                  : "text-fg-secondary hover:text-fg"
               }`}
             >
               全部货币 ({productList.length})
@@ -333,13 +338,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   onClick={() => setCurrencyFilter(curr.code)}
                   className={`px-2 py-1 rounded-md text-[11px] font-mono transition-colors flex items-center gap-1 ${
                     currencyFilter === curr.code
-                      ? "bg-white text-zinc-900 shadow-xs font-bold"
-                      : "text-zinc-600 hover:text-zinc-900"
+                      ? "bg-surface text-fg shadow-card font-bold"
+                      : "text-fg-secondary hover:text-fg"
                   }`}
                 >
                   <span>{curr.flag}</span>
                   <span>{curr.code}</span>
-                  <span className="text-[10px] text-zinc-400">({count})</span>
+                  <span className="text-[10px] text-fg-tertiary">({count})</span>
                 </button>
               );
             })}
@@ -348,7 +353,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <span className="text-zinc-300 mx-1">|</span>
 
           {/* Type Filter */}
-          <span className="text-zinc-400 text-xs font-medium">类型:</span>
+          <span className="text-fg-tertiary text-xs font-medium">类型:</span>
           {[
             { key: "ALL", label: "全部" },
             { key: "SUBSCRIPTION", label: "订阅型 (SaaS)" },
@@ -360,8 +365,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               onClick={() => setTypeFilter(tab.key)}
               className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
                 typeFilter === tab.key
-                  ? "bg-zinc-900 text-white"
-                  : "bg-zinc-50 text-zinc-600 hover:bg-zinc-100 border border-zinc-200"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-subtle text-fg-secondary hover:bg-hover border border-line"
               }`}
             >
               {tab.label}
@@ -370,23 +375,23 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         </div>
 
         <div className="relative w-full md:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
             placeholder="搜索商品名称 / 唯一 Code / 描述..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs"
+            className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
           />
         </div>
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-line/80 shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-[1200px] w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-zinc-50/90 border-b border-zinc-200 text-zinc-500 font-semibold text-[11px]">
+              <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
                 <th className="py-3 px-4 w-[240px]">商品唯一编号 (Code / SKU)</th>
                 <th className="py-3 px-4 min-w-[200px]">商品方案名称</th>
                 <th className="py-3 px-4 w-[140px]">结算货币 & 单价</th>
@@ -395,28 +400,28 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 <th className="py-3 px-4 w-[140px]">Stripe / PayPal 映射</th>
                 <th className="py-3 px-4 w-[100px]">海外订阅数</th>
                 <th className="py-3 px-4 w-[100px]">状态</th>
-                <th className="py-3 px-4 w-[150px] sticky right-0 z-20 bg-zinc-50/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="py-3 px-4 w-[150px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
+            <tbody className="divide-y divide-line-subtle">
               {filteredProducts.map((p) => {
                 const currInfo = SUPPORTED_CURRENCIES.find((c) => c.code === (p.currency || "USD"));
                 const currSymbol = currInfo ? currInfo.symbol : "$";
                 const isCopied = copiedCode === p.code;
 
                 return (
-                  <tr key={p.id} className="hover:bg-zinc-50/80 transition-colors group">
+                  <tr key={p.id} className="hover:bg-subtle/80 transition-colors group">
                     {/* Code */}
                     <td className="py-3.5 px-4 w-[240px] whitespace-nowrap font-mono">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200 text-[11px] truncate max-w-[170px]" title={p.code}>
+                        <span className="font-bold text-fg bg-hover px-2 py-0.5 rounded border border-line text-[11px] truncate max-w-[170px]" title={p.code}>
                           {p.code}
                         </span>
                         <button
                           onClick={() => copyCode(p.code)}
-                          className="text-zinc-400 hover:text-zinc-700 p-1 rounded"
+                          className="text-fg-tertiary hover:text-fg-secondary p-1 rounded"
                           title="复制商品编号 Code"
                         >
                           {isCopied ? (
@@ -430,8 +435,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
                     {/* Name & Desc */}
                     <td className="py-3.5 px-4 min-w-[200px]">
-                      <div className="font-semibold text-zinc-900 text-xs line-clamp-1">{p.name}</div>
-                      <div className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">
+                      <div className="font-semibold text-fg text-xs line-clamp-1">{p.name}</div>
+                      <div className="text-[11px] text-fg-tertiary line-clamp-1 mt-0.5">
                         {p.description}
                       </div>
                     </td>
@@ -442,7 +447,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         <span className="px-1.5 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 font-mono text-[10px] font-bold rounded">
                           {currInfo?.flag} {p.currency || "USD"}
                         </span>
-                        <div className="font-mono font-bold text-sm text-zinc-900">
+                        <div className="font-mono font-bold text-sm text-fg">
                           {formatCurrency(p.price, p.currency || "USD")}
                         </div>
                       </div>
@@ -465,7 +470,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                           ? "单次买断"
                           : "增值服务"}
                       </span>
-                      <div className="text-[10px] text-zinc-400 mt-1">
+                      <div className="text-[10px] text-fg-tertiary mt-1">
                         {p.billingInterval === "MONTHLY"
                           ? "按月续费 (Monthly)"
                           : p.billingInterval === "YEARLY"
@@ -477,23 +482,23 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
 
                     {/* Trial / Features */}
-                    <td className="py-3.5 px-4 w-[150px] text-[11px] text-zinc-600">
+                    <td className="py-3.5 px-4 w-[150px] text-[11px] text-fg-secondary">
                       {p.trialDays ? (
                         <div className="font-semibold text-emerald-600">
                           {p.trialDays} 天免费试用
                         </div>
                       ) : (
-                        <div className="text-zinc-400">无免费试用</div>
+                        <div className="text-fg-tertiary">无免费试用</div>
                       )}
-                      <div className="text-[10px] text-zinc-400 truncate">
+                      <div className="text-[10px] text-fg-tertiary truncate">
                         {p.features?.length || 0} 项核心权益
                       </div>
                     </td>
 
                     {/* Gateway ID */}
-                    <td className="py-3.5 px-4 w-[140px] whitespace-nowrap font-mono text-[11px] text-zinc-500">
+                    <td className="py-3.5 px-4 w-[140px] whitespace-nowrap font-mono text-[11px] text-fg-secondary">
                       {p.stripePriceId ? (
-                        <span className="bg-zinc-50 border border-zinc-200 px-1.5 py-0.5 rounded text-[10px] block max-w-[120px] truncate" title={p.stripePriceId}>
+                        <span className="bg-subtle border border-line px-1.5 py-0.5 rounded text-[10px] block max-w-[120px] truncate" title={p.stripePriceId}>
                           {p.stripePriceId}
                         </span>
                       ) : (
@@ -502,7 +507,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
 
                     {/* Subscribers */}
-                    <td className="py-3.5 px-4 w-[100px] whitespace-nowrap font-mono text-zinc-800">
+                    <td className="py-3.5 px-4 w-[100px] whitespace-nowrap font-mono text-fg">
                       {p.subscriberCount?.toLocaleString() || 0}
                     </td>
 
@@ -512,12 +517,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                           p.status === "ACTIVE"
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : "bg-zinc-100 text-zinc-500 border-zinc-200"
+                            : "bg-hover text-fg-secondary border-line"
                         }`}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
-                            p.status === "ACTIVE" ? "bg-emerald-500" : "bg-zinc-400"
+                            p.status === "ACTIVE" ? "bg-emerald-500" : "bg-hover"
                           }`}
                         />
                         {p.status === "ACTIVE" ? "在售" : "已归档"}
@@ -525,25 +530,25 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
 
                     {/* Actions: Sticky Right */}
-                    <td className="py-3.5 px-4 w-[150px] sticky right-0 z-10 bg-white group-hover:bg-zinc-50/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    <td className="py-3.5 px-4 w-[150px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                       <div className="flex items-center justify-end gap-1">
                         {/* Clone to other currency */}
                         <div className="relative group">
                           <button
-                            className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1 text-[11px]"
+                            className="p-1.5 text-fg-secondary hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1 text-[11px]"
                             title="以此为蓝本派生其他货币的独立商品编号"
                           >
                             <ArrowRightLeft className="w-3.5 h-3.5" />
                           </button>
-                          <div className="absolute right-0 top-full mt-1 hidden group-hover:flex flex-col bg-white border border-zinc-200 rounded-xl shadow-lg p-1.5 z-20 w-36 text-left">
-                            <div className="text-[10px] text-zinc-400 font-bold px-2 py-1">
+                          <div className="absolute right-0 top-full mt-1 hidden group-hover:flex flex-col bg-surface border border-line rounded-xl shadow-lg p-1.5 z-20 w-36 text-left">
+                            <div className="text-[10px] text-fg-tertiary font-bold px-2 py-1">
                               派生独立货币 Code:
                             </div>
                             {SUPPORTED_CURRENCIES.filter((c) => c.code !== (p.currency || "USD")).map((c) => (
                               <button
                                 key={c.code}
                                 onClick={() => handleCloneToNewCurrency(p, c.code)}
-                                className="px-2 py-1 hover:bg-zinc-50 rounded text-[11px] text-zinc-700 flex items-center gap-1.5 w-full text-left"
+                                className="px-2 py-1 hover:bg-subtle rounded text-[11px] text-fg-secondary flex items-center gap-1.5 w-full text-left"
                               >
                                 <span>{c.flag}</span>
                                 <span>生成 {c.code} SKU</span>
@@ -554,7 +559,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
                         <button
                           onClick={() => handleOpenEdit(p)}
-                          className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+                          className="p-1.5 text-fg-secondary hover:text-fg hover:bg-hover rounded-lg transition-colors"
                           title="编辑配置"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -563,8 +568,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                           onClick={() => handleToggleStatus(p)}
                           className={`p-1.5 rounded-lg transition-colors ${
                             p.status === "ACTIVE"
-                              ? "text-zinc-400 hover:text-rose-600 hover:bg-rose-50"
-                              : "text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50"
+                              ? "text-fg-tertiary hover:text-rose-600 hover:bg-rose-50"
+                              : "text-fg-tertiary hover:text-emerald-600 hover:bg-emerald-50"
                           }`}
                           title={p.status === "ACTIVE" ? "归档下架" : "重新上架"}
                         >
@@ -599,14 +604,14 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-lg hover:bg-zinc-50 font-medium cursor-pointer"
+                className="px-4 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-semibold shadow-xs cursor-pointer"
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
               >
                 {editingProduct ? "保存更改" : "确认创建独立 SKU"}
               </button>
@@ -617,7 +622,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             {/* Currency & Code */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   指定计费货币 (Currency):
                 </label>
                 <ShadcnSelect
@@ -643,7 +648,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               </div>
 
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   商品唯一编号 (Code / SKU):
                 </label>
                 <input
@@ -652,9 +657,9 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   placeholder="如：PROD-COPILOT-USD-M"
                   value={formCode}
                   onChange={(e) => setFormCode(e.target.value)}
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg font-mono text-xs focus:bg-white font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg font-mono text-xs focus:bg-surface font-bold text-fg focus:outline-none focus:ring-1 focus:ring-line"
                 />
-                <span className="text-[10px] text-zinc-400 mt-0.5 block">
+                <span className="text-[10px] text-fg-tertiary mt-0.5 block">
                   不同货币 code 独立互不冲突，便于收银台精准定位
                 </span>
               </div>
@@ -663,7 +668,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             {/* Name & Price */}
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2">
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   商品 / 方案名称:
                 </label>
                 <input
@@ -672,16 +677,16 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   placeholder="如：Novas AI Copilot Pro (USD)"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs focus:bg-white font-medium focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:bg-surface font-medium focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   当前货币单价 ({formCurrency}):
                 </label>
                 <div className="relative">
-                  <span className="absolute left-2.5 top-2 font-mono text-zinc-400 font-bold">
+                  <span className="absolute left-2.5 top-2 font-mono text-fg-tertiary font-bold">
                     {SUPPORTED_CURRENCIES.find((c) => c.code === formCurrency)?.symbol || "$"}
                   </span>
                   <input
@@ -690,7 +695,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     required
                     value={formPrice}
                     onChange={(e) => setFormPrice(parseFloat(e.target.value) || 0)}
-                    className="w-full pl-7 pr-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                    className="w-full pl-7 pr-3 py-2 bg-subtle border border-line rounded-lg text-xs font-mono font-bold focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                   />
                 </div>
               </div>
@@ -699,7 +704,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             {/* Type & Interval */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   业务类型:
                 </label>
                 <ShadcnSelect
@@ -714,7 +719,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               </div>
 
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   计费周期 (Billing Interval):
                 </label>
                 <ShadcnSelect
@@ -733,7 +738,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             {/* Trial & Gateway IDs */}
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   免费试用天数 (Trial Days):
                 </label>
                 <input
@@ -741,11 +746,11 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   min="0"
                   value={formTrialDays}
                   onChange={(e) => setFormTrialDays(parseInt(e.target.value) || 0)}
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   Stripe 价格 ID:
                 </label>
                 <input
@@ -753,11 +758,11 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   value={formStripePriceId}
                   onChange={(e) => setFormStripePriceId(e.target.value)}
                   placeholder="price_1Nxxx"
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
               <div>
-                <label className="font-semibold text-zinc-700 block mb-1">
+                <label className="font-semibold text-fg-secondary block mb-1">
                   PayPal 计划 ID:
                 </label>
                 <input
@@ -765,13 +770,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   value={formPaypalPlanId}
                   onChange={(e) => setFormPaypalPlanId(e.target.value)}
                   placeholder="P-123456"
-                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
             </div>
 
             <div>
-              <label className="font-semibold text-zinc-700 block mb-1">
+              <label className="font-semibold text-fg-secondary block mb-1">
                 详细描述:
               </label>
               <textarea
@@ -779,12 +784,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="说明该商品针对当前币种客户群体的方案亮点..."
-                className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
               />
             </div>
 
             <div>
-              <label className="font-semibold text-zinc-700 block mb-1">
+              <label className="font-semibold text-fg-secondary block mb-1">
                 包含核心权益清单 (每行一项):
               </label>
               <textarea
@@ -792,7 +797,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 value={formFeatures}
                 onChange={(e) => setFormFeatures(e.target.value)}
                 placeholder="无限量代码补全&#10;128k 上下文窗口&#10;7x24 小时 SLA 响应"
-                className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
               />
             </div>
           </form>

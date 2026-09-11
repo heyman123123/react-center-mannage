@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { TableSkeleton } from "./ui/Skeletons";
 import {
   Mail,
   Send,
@@ -135,20 +137,23 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const loading = useViewLoading();
+  if (loading) return <TableSkeleton rows={6} />;
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-purple-50 text-purple-600 rounded-lg">
               <Mail className="w-5 h-5" />
             </span>
-            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
+            <h1 className="text-xl font-bold text-fg tracking-tight">
               海外邮件发信渠道配置
             </h1>
           </div>
-          <p className="text-xs text-zinc-500 mt-1 max-w-2xl">
+          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
             维护出海交易类通知邮件基建（SendGrid、AWS SES、Resend、Postmark），保障订阅开通确认单、催付告警、电子发票收据与验证码 99.9% 进箱率。
           </p>
         </div>
@@ -156,7 +161,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={openCreateSheet}
-            className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
+            className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>添加发件渠道</span>
@@ -175,10 +180,10 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           return (
             <div
               key={channel.id}
-              className={`bg-white border rounded-2xl p-5 shadow-xs flex flex-col justify-between transition-all ${
+              className={`bg-surface border rounded-2xl p-5 shadow-card flex flex-col justify-between transition-all ${
                 channel.enabled
-                  ? "border-zinc-200/80 hover:border-zinc-300"
-                  : "border-zinc-200/50 opacity-60 bg-zinc-50/50"
+                  ? "border-line/80 hover:border-line"
+                  : "border-line/50 opacity-60 bg-subtle/50"
               }`}
             >
               <div className="space-y-4">
@@ -190,7 +195,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-zinc-900 text-sm">
+                        <h3 className="font-bold text-fg text-sm">
                           {channel.name}
                         </h3>
                         {channel.isPrimary && (
@@ -199,7 +204,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-500 line-clamp-1 mt-0.5">
+                      <p className="text-xs text-fg-secondary line-clamp-1 mt-0.5">
                         {channel.description}
                       </p>
                     </div>
@@ -209,7 +214,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                     {!channel.isPrimary && channel.enabled && (
                       <button
                         onClick={() => handleTogglePrimary(channel.id)}
-                        className="text-[11px] text-zinc-500 hover:text-zinc-900 underline px-1"
+                        className="text-[11px] text-fg-secondary hover:text-fg underline px-1"
                       >
                         设为主力
                       </button>
@@ -218,23 +223,23 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 </div>
 
                 {/* Configuration details */}
-                <div className="bg-zinc-50 rounded-xl p-3.5 border border-zinc-100 space-y-2 text-xs">
+                <div className="bg-subtle rounded-xl p-3.5 border border-line-subtle space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">发件人地址:</span>
-                    <span className="font-mono text-zinc-800 font-medium">
+                    <span className="text-fg-tertiary">发件人地址:</span>
+                    <span className="font-mono text-fg font-medium">
                       "{channel.senderName}" &lt;{channel.senderEmail}&gt;
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">SMTP 服务器:</span>
-                    <span className="font-mono text-zinc-700">
+                    <span className="text-fg-tertiary">SMTP 服务器:</span>
+                    <span className="font-mono text-fg-secondary">
                       {channel.smtpHost}:{channel.smtpPort}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">SPF / DKIM 域名认证:</span>
+                    <span className="text-fg-tertiary">SPF / DKIM 域名认证:</span>
                     <span className="inline-flex items-center gap-1 font-semibold text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                       <ShieldCheck className="w-3 h-3 text-emerald-600" />
                       {channel.verifiedDomain} (已通过校验)
@@ -242,12 +247,12 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-zinc-400">API Key 凭据:</span>
-                    <div className="flex items-center gap-1 font-mono text-zinc-600">
+                    <span className="text-fg-tertiary">API Key 凭据:</span>
+                    <div className="flex items-center gap-1 font-mono text-fg-secondary">
                       <span>{channel.apiKey.substring(0, 8)}••••••••</span>
                       <button
                         onClick={() => copyText(channel.apiKey, channel.id)}
-                        className="text-zinc-400 hover:text-zinc-700 ml-1"
+                        className="text-fg-tertiary hover:text-fg-secondary ml-1"
                       >
                         {copiedId === channel.id ? (
                           <Check className="w-3 h-3 text-emerald-600" />
@@ -262,12 +267,12 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 {/* Quota Progress */}
                 <div className="space-y-1 text-xs">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-zinc-500">今日发信配额使用率</span>
-                    <span className="font-mono font-medium text-zinc-700">
+                    <span className="text-fg-secondary">今日发信配额使用率</span>
+                    <span className="font-mono font-medium text-fg-secondary">
                       {channel.sentToday.toLocaleString()} / {channel.dailyQuota.toLocaleString()} 封 ({quotaPercent}%)
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-hover rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
                         quotaPercent > 85 ? "bg-rose-500" : "bg-purple-600"
@@ -279,8 +284,8 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               </div>
 
               {/* Actions Footer */}
-              <div className="mt-5 pt-3.5 border-t border-zinc-100 flex items-center justify-between text-xs">
-                <span className="text-zinc-400 font-mono text-[11px]">
+              <div className="mt-5 pt-3.5 border-t border-line-subtle flex items-center justify-between text-xs">
+                <span className="text-fg-tertiary font-mono text-[11px]">
                   最近测试: {channel.lastTestedAt}
                 </span>
 
@@ -297,7 +302,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                   </button>
                   <button
                     onClick={() => setEditingChannel(channel)}
-                    className="px-2.5 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-lg font-medium flex items-center gap-1 transition-colors"
+                    className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg font-medium flex items-center gap-1 transition-colors"
                   >
                     <Edit2 className="w-3 h-3" />
                     <span>配置</span>
@@ -316,7 +321,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         onClose={() => setTestModalChannel(null)}
         title={testModalChannel ? `发送连通性测试邮件 - ${testModalChannel.name}` : "发送连通性测试邮件"}
         description="向指定邮箱即时发出标准海外订阅账单收据测试样本，验证发信通道连通性。"
-        icon={<Send className="w-4 h-4 text-zinc-800" />}
+        icon={<Send className="w-4 h-4 text-fg" />}
         widthClass="max-w-md"
         footer={
           testModalChannel && !testFeedback ? (
@@ -324,7 +329,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setTestModalChannel(null)}
-                className="px-3.5 py-1.5 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 cursor-pointer"
+                className="px-3.5 py-1.5 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
               >
                 取消
               </button>
@@ -332,7 +337,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 type="submit"
                 form="form-test-email"
                 disabled={isSendingTest}
-                className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium flex items-center gap-1.5 shadow-card cursor-pointer"
               >
                 {isSendingTest ? (
                   <>
@@ -351,7 +356,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             <button
               type="button"
               onClick={() => setTestModalChannel(null)}
-              className="px-4 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium cursor-pointer"
+              className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium cursor-pointer"
             >
               完成
             </button>
@@ -366,27 +371,27 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           ) : (
             <form id="form-test-email" onSubmit={handleSendTestEmail} className="space-y-4 text-xs">
               <div>
-                <label className="text-zinc-600 block mb-1 font-medium">
+                <label className="text-fg-secondary block mb-1 font-medium">
                   接收测试邮件的邮箱地址
                 </label>
                 <input
                   type="email"
                   value={testRecipient}
                   onChange={(e) => setTestRecipient(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                   required
                 />
-                <p className="text-[11px] text-zinc-400 mt-1">
+                <p className="text-[11px] text-fg-tertiary mt-1">
                   系统将从 {testModalChannel.senderEmail} 即时发出标准海外订阅账单收据测试样本。
                 </p>
               </div>
 
-              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1 text-zinc-600">
-                <div className="font-medium text-zinc-900">邮件投递路由预检:</div>
-                <div className="text-[11px] font-mono text-zinc-500">
+              <div className="p-3 bg-subtle rounded-xl border border-line/80 space-y-1 text-fg-secondary">
+                <div className="font-medium text-fg">邮件投递路由预检:</div>
+                <div className="text-[11px] font-mono text-fg-secondary">
                   Host: {testModalChannel.smtpHost}:{testModalChannel.smtpPort}
                 </div>
-                <div className="text-[11px] font-mono text-zinc-500">
+                <div className="text-[11px] font-mono text-fg-secondary">
                   Sender: "{testModalChannel.senderName}" &lt;{testModalChannel.senderEmail}&gt;
                 </div>
               </div>
@@ -396,7 +401,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
 
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-[9999] bg-zinc-900 text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-[9999] bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -409,21 +414,21 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         onClose={() => setIsCreateSheetOpen(false)}
         title="添加发件渠道"
         description="新增海外事务邮件发信通道，配置服务商、发件人与 SMTP 投递参数后即可启用。"
-        icon={<Mail className="w-5 h-5 text-zinc-800" />}
+        icon={<Mail className="w-5 h-5 text-fg" />}
         widthClass="max-w-lg"
         footer={
           <>
             <button
               type="button"
               onClick={() => setIsCreateSheetOpen(false)}
-              className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 cursor-pointer"
+              className="px-4 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
               form="form-add-email-channel"
-              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium shadow-xs cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
             >
               确认添加渠道
             </button>
@@ -437,7 +442,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         >
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-zinc-600 block mb-1 font-medium">
+              <label className="text-fg-secondary block mb-1 font-medium">
                 服务商 (Provider)
               </label>
               <ShadcnSelect
@@ -453,7 +458,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               />
             </div>
             <div>
-              <label className="text-zinc-600 block mb-1 font-medium">
+              <label className="text-fg-secondary block mb-1 font-medium">
                 渠道名称 <span className="text-rose-500">*</span>
               </label>
               <input
@@ -462,25 +467,25 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 placeholder="如：SendGrid 主通道"
                 value={newForm.name}
                 onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+                className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-zinc-600 block mb-1 font-medium">渠道说明</label>
+            <label className="text-fg-secondary block mb-1 font-medium">渠道说明</label>
             <input
               type="text"
               placeholder="该通道的用途与适用场景..."
               value={newForm.description}
               onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))}
-              className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+              className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-zinc-600 block mb-1 font-medium">
+              <label className="text-fg-secondary block mb-1 font-medium">
                 发件人昵称 (From Name)
               </label>
               <input
@@ -488,11 +493,11 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 placeholder="如：Novas Notifications"
                 value={newForm.senderName}
                 onChange={(e) => setNewForm((f) => ({ ...f, senderName: e.target.value }))}
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+                className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
               />
             </div>
             <div>
-              <label className="text-zinc-600 block mb-1 font-medium">
+              <label className="text-fg-secondary block mb-1 font-medium">
                 发件人邮箱 (From Email) <span className="text-rose-500">*</span>
               </label>
               <input
@@ -501,54 +506,54 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 placeholder="billing@yourdomain.com"
                 value={newForm.senderEmail}
                 onChange={(e) => setNewForm((f) => ({ ...f, senderEmail: e.target.value }))}
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-zinc-600 block mb-1 font-medium">API Key 凭据密钥</label>
+            <label className="text-fg-secondary block mb-1 font-medium">API Key 凭据密钥</label>
             <input
               type="text"
               placeholder="服务商控制台生成的 API 密钥"
               value={newForm.apiKey}
               onChange={(e) => setNewForm((f) => ({ ...f, apiKey: e.target.value }))}
-              className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+              className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-zinc-600 block mb-1 font-medium">SMTP 主机地址</label>
+              <label className="text-fg-secondary block mb-1 font-medium">SMTP 主机地址</label>
               <input
                 type="text"
                 value={newForm.smtpHost}
                 onChange={(e) => setNewForm((f) => ({ ...f, smtpHost: e.target.value }))}
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
               />
             </div>
             <div>
-              <label className="text-zinc-600 block mb-1 font-medium">SMTP 端口</label>
+              <label className="text-fg-secondary block mb-1 font-medium">SMTP 端口</label>
               <input
                 type="number"
                 value={newForm.smtpPort}
                 onChange={(e) =>
                   setNewForm((f) => ({ ...f, smtpPort: Number(e.target.value) || 587 }))
                 }
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-zinc-600 block mb-1 font-medium">每日投递配额</label>
+            <label className="text-fg-secondary block mb-1 font-medium">每日投递配额</label>
             <input
               type="number"
               value={newForm.dailyQuota}
               onChange={(e) =>
                 setNewForm((f) => ({ ...f, dailyQuota: Number(e.target.value) || 50000 }))
               }
-              className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+              className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
             />
           </div>
         </form>
@@ -561,21 +566,21 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         onClose={() => setEditingChannel(null)}
         title={editingChannel ? `配置发信通道 - ${editingChannel.name}` : "配置发信通道"}
         description="维护发件人信息、SMTP 服务器与每日投递配额。"
-        icon={<Mail className="w-5 h-5 text-zinc-800" />}
+        icon={<Mail className="w-5 h-5 text-fg" />}
         widthClass="max-w-lg"
         footer={
           <>
             <button
               type="button"
               onClick={() => setEditingChannel(null)}
-              className="px-4 py-2 border border-zinc-200 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 cursor-pointer"
+              className="px-4 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
               form="form-edit-email-channel"
-              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium shadow-xs cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
             >
               保存通道配置
             </button>
@@ -596,92 +601,92 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             className="space-y-3 text-xs"
           >
               <div>
-                <label className="text-zinc-600 block mb-1 font-medium">发信渠道名称</label>
+                <label className="text-fg-secondary block mb-1 font-medium">发信渠道名称</label>
                 <input
                   type="text"
                   value={editingChannel.name}
                   onChange={(e) =>
                     setEditingChannel({ ...editingChannel, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-zinc-600 block mb-1 font-medium">发件人昵称 (From Name)</label>
+                  <label className="text-fg-secondary block mb-1 font-medium">发件人昵称 (From Name)</label>
                   <input
                     type="text"
                     value={editingChannel.senderName}
                     onChange={(e) =>
                       setEditingChannel({ ...editingChannel, senderName: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900"
+                    className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-zinc-600 block mb-1 font-medium">发件人邮箱 (From Email)</label>
+                  <label className="text-fg-secondary block mb-1 font-medium">发件人邮箱 (From Email)</label>
                   <input
                     type="email"
                     value={editingChannel.senderEmail}
                     onChange={(e) =>
                       setEditingChannel({ ...editingChannel, senderEmail: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                    className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-zinc-600 block mb-1 font-medium">API Key 凭据密钥</label>
+                <label className="text-fg-secondary block mb-1 font-medium">API Key 凭据密钥</label>
                 <input
                   type="text"
                   value={editingChannel.apiKey}
                   onChange={(e) =>
                     setEditingChannel({ ...editingChannel, apiKey: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-zinc-600 block mb-1 font-medium">SMTP 主机地址</label>
+                  <label className="text-fg-secondary block mb-1 font-medium">SMTP 主机地址</label>
                   <input
                     type="text"
                     value={editingChannel.smtpHost}
                     onChange={(e) =>
                       setEditingChannel({ ...editingChannel, smtpHost: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                    className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-zinc-600 block mb-1 font-medium">SMTP 端口</label>
+                  <label className="text-fg-secondary block mb-1 font-medium">SMTP 端口</label>
                   <input
                     type="number"
                     value={editingChannel.smtpPort}
                     onChange={(e) =>
                       setEditingChannel({ ...editingChannel, smtpPort: Number(e.target.value) })
                     }
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                    className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-zinc-600 block mb-1 font-medium">每日最大投递配额 (Quota)</label>
+                <label className="text-fg-secondary block mb-1 font-medium">每日最大投递配额 (Quota)</label>
                 <input
                   type="number"
                   value={editingChannel.dailyQuota}
                   onChange={(e) =>
                     setEditingChannel({ ...editingChannel, dailyQuota: Number(e.target.value) })
                   }
-                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 font-mono"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
                 />
               </div>
 

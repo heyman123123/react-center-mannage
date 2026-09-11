@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useViewLoading } from "./ui/useViewLoading";
+import { TableSkeleton } from "./ui/Skeletons";
 import {
   Users,
   Shield,
@@ -228,27 +230,30 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
   const getDeptName = (id: string) =>
     departments.find((d) => d.id === id)?.name || id;
 
+  const loading = useViewLoading();
+  if (loading) return <TableSkeleton rows={9} />;
+
   return (
     <div className="space-y-5 font-sans">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Page Header */}
-      <div className="bg-white border border-zinc-200 rounded-xl shadow-xs px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-surface border border-line rounded-xl shadow-card px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <span className="p-2 rounded-lg bg-zinc-100 text-zinc-900">
+          <span className="p-2 rounded-lg bg-hover text-fg">
             <Users className="w-5 h-5" />
           </span>
           <div>
-            <h1 className="text-lg font-bold text-zinc-900">
+            <h1 className="text-lg font-bold text-fg">
               用户管理 (User & Access Control)
             </h1>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-fg-secondary mt-0.5">
               管理系统内控账户：角色（多选，非必选）、所属部门（多选，继承部门角色权限）与出海应用授权范围。
             </p>
           </div>
@@ -257,7 +262,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         <button
           id="btn-add-system-user"
           onClick={handleOpenAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start md:self-auto"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors cursor-pointer self-start md:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>新增系统用户</span>
@@ -265,15 +270,15 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white border border-zinc-200 rounded-xl shadow-xs px-4 py-3 flex flex-col lg:flex-row gap-3 items-center justify-between">
+      <div className="bg-surface border border-line rounded-xl shadow-card px-4 py-3 flex flex-col lg:flex-row gap-3 items-center justify-between">
         <div className="relative w-full lg:w-72">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-fg-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="搜索用户名、企业邮箱、部门..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 text-xs bg-zinc-50/80 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white"
+            className="w-full pl-9 pr-4 py-1.5 text-xs bg-subtle/80 border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:bg-surface"
           />
         </div>
 
@@ -343,10 +348,10 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
       </div>
 
       {/* Users Table */}
-      <div className="bg-white border border-zinc-200 rounded-xl shadow-xs overflow-hidden">
+      <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-500 font-medium">
+            <thead className="bg-subtle border-b border-line text-fg-secondary font-medium">
               <tr>
                 <th className="px-4 py-3">用户与联系方式</th>
                 <th className="px-4 py-3">所属部门（多选）</th>
@@ -357,10 +362,10 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                 <th className="px-4 py-3 text-right">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100 text-zinc-700">
+            <tbody className="divide-y divide-line-subtle text-fg-secondary">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-zinc-400">
+                  <td colSpan={7} className="py-12 text-center text-fg-tertiary">
                     未查找到符合条件的系统用户记录
                   </td>
                 </tr>
@@ -381,18 +386,18 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                   return (
                     <tr
                       key={u.id}
-                      className={`hover:bg-zinc-50/80 transition-colors ${
-                        u.status === "DISABLED" ? "opacity-60 bg-zinc-50/40" : ""
+                      className={`hover:bg-subtle/80 transition-colors ${
+                        u.status === "DISABLED" ? "opacity-60 bg-subtle/40" : ""
                       }`}
                     >
                       {/* Name & Email */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-800 font-bold flex items-center justify-center shrink-0 text-xs">
+                          <div className="w-8 h-8 rounded-full bg-hover border border-line text-fg font-bold flex items-center justify-center shrink-0 text-xs">
                             {u.avatarText || u.name[0]}
                           </div>
                           <div>
-                            <div className="font-semibold text-zinc-900 flex items-center gap-1.5">
+                            <div className="font-semibold text-fg flex items-center gap-1.5">
                               <span>{u.name}</span>
                               {isCurrent && (
                                 <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded-full font-medium">
@@ -400,8 +405,8 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                              <Mail className="w-3 h-3 text-zinc-400" />
+                            <div className="text-[11px] text-fg-tertiary flex items-center gap-1 mt-0.5">
+                              <Mail className="w-3 h-3 text-fg-tertiary" />
                               <span>{u.email}</span>
                             </div>
                           </div>
@@ -412,16 +417,16 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1 max-w-[200px]">
                           {deptIds.length === 0 ? (
-                            <span className="text-[11px] text-zinc-400 italic">
+                            <span className="text-[11px] text-fg-tertiary italic">
                               未分配部门
                             </span>
                           ) : (
                             deptIds.map((id) => (
                               <span
                                 key={id}
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-zinc-100 text-zinc-700 border border-zinc-200 rounded text-[10px] font-medium"
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-hover text-fg-secondary border border-line rounded text-[10px] font-medium"
                               >
-                                <Building className="w-2.5 h-2.5 text-zinc-500" />
+                                <Building className="w-2.5 h-2.5 text-fg-secondary" />
                                 {getDeptName(id)}
                               </span>
                             ))
@@ -433,7 +438,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1 max-w-[220px]">
                           {userRoleKeys.length === 0 ? (
-                            <span className="text-[11px] text-zinc-400 italic">
+                            <span className="text-[11px] text-fg-tertiary italic">
                               未分配角色
                             </span>
                           ) : (
@@ -459,7 +464,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                               全部出海应用 ({apps.length} 款)
                             </span>
                           ) : userAppIds.length === 0 ? (
-                            <span className="text-[11px] text-zinc-400 italic">
+                            <span className="text-[11px] text-fg-tertiary italic">
                               未分配任何应用
                             </span>
                           ) : (
@@ -468,9 +473,9 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                               return (
                                 <span
                                   key={appId}
-                                  className="px-1.5 py-0.5 bg-zinc-100 text-zinc-700 border border-zinc-200 rounded text-[10px] font-medium flex items-center gap-1"
+                                  className="px-1.5 py-0.5 bg-hover text-fg-secondary border border-line rounded text-[10px] font-medium flex items-center gap-1"
                                 >
-                                  <Layers className="w-2.5 h-2.5 text-zinc-500" />
+                                  <Layers className="w-2.5 h-2.5 text-fg-secondary" />
                                   <span>{found ? found.name.split(" ")[0] : appId}</span>
                                 </span>
                               );
@@ -496,13 +501,13 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                             disabled={isCurrent}
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all cursor-pointer ${
                               u.status === "DISABLED"
-                                ? "bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200"
+                                ? "bg-hover text-fg-secondary border-line hover:bg-hover"
                                 : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
                             } ${isCurrent ? "opacity-40 cursor-not-allowed" : ""}`}
                             title={u.status === "DISABLED" ? "点击启用该用户" : "点击停用该用户"}
                           >
                             {u.status === "DISABLED" ? (
-                              <UserX className="w-3 h-3 text-zinc-400" />
+                              <UserX className="w-3 h-3 text-fg-tertiary" />
                             ) : (
                               <UserCheck className="w-3 h-3 text-emerald-600" />
                             )}
@@ -512,7 +517,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                       </td>
 
                       {/* Last Login */}
-                      <td className="px-4 py-3 text-[11px] text-zinc-500">
+                      <td className="px-4 py-3 text-[11px] text-fg-secondary">
                         {u.lastLogin || "暂未登录记录"}
                       </td>
 
@@ -522,7 +527,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(u)}
-                            className="p-1 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors cursor-pointer"
+                            className="p-1 text-fg-secondary hover:text-fg hover:bg-hover rounded-md transition-colors cursor-pointer"
                             title="配置角色 / 部门 / 应用权限"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -536,7 +541,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                             >
                               <button
                                 type="button"
-                                className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                                className="p-1 text-fg-tertiary hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                                 title="删除用户"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -561,21 +566,21 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         onClose={() => setIsSheetOpen(false)}
         title={editingUser ? `配置用户权限: ${editingUser.name}` : "新增系统用户与权限授权"}
         description="角色可多选且非必选；所属部门可多选，成员将继承部门绑定角色的权限；应用授权范围支持多选。"
-        icon={<Shield className="w-5 h-5 text-zinc-800" />}
+        icon={<Shield className="w-5 h-5 text-fg" />}
         widthClass="max-w-2xl"
         footer={
           <>
             <button
               type="button"
               onClick={() => setIsSheetOpen(false)}
-              className="px-4 py-2 border border-zinc-200 text-zinc-700 hover:bg-zinc-100 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              className="px-4 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              className="px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
             >
               {editingUser ? "保存用户权限" : "创建并授权用户"}
             </button>
@@ -585,14 +590,14 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         <div className="space-y-5 text-xs">
           {/* Basic Info Section */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-100 pb-2">
-              <Users className="w-3.5 h-3.5 text-zinc-500" />
+            <h3 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5 border-b border-line-subtle pb-2">
+              <Users className="w-3.5 h-3.5 text-fg-secondary" />
               <span>基本信息与员工档案</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-zinc-600 font-medium mb-1">
+                <label className="block text-fg-secondary font-medium mb-1">
                   员工姓名 <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -600,12 +605,12 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                   placeholder="例如: Eddie Lake"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                  className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-zinc-600 font-medium mb-1">
+                <label className="block text-fg-secondary font-medium mb-1">
                   企业工作邮箱 <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -613,23 +618,23 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                   placeholder="name@novaspay.global"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                  className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-zinc-600 font-medium mb-1">联系电话</label>
+                <label className="block text-fg-secondary font-medium mb-1">联系电话</label>
                 <input
                   type="text"
                   placeholder="+1 (555) 019-2831"
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                  className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-zinc-600 font-medium mb-1">账号启用状态</label>
+                <label className="block text-fg-secondary font-medium mb-1">账号启用状态</label>
                 <div className="w-full">
                   <ShadcnSelect
                     value={formStatus}
@@ -646,8 +651,8 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
 
           {/* Department Section（多选，继承部门角色权限） */}
           <div className="space-y-2">
-            <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-100 pb-2">
-              <Building className="w-3.5 h-3.5 text-zinc-500" />
+            <h3 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5 border-b border-line-subtle pb-2">
+              <Building className="w-3.5 h-3.5 text-fg-secondary" />
               <span>所属部门（多选）</span>
             </h3>
             <MultiSelect
@@ -659,7 +664,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                 label: d.name,
               }))}
             />
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-fg-tertiary">
               用户将继承所选部门绑定角色的权限；在部门管理中可配置各部门绑定的角色。
             </p>
             {inheritedRoleKeys.length > 0 && (
@@ -680,8 +685,8 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
 
           {/* Role Section（多选，非必选） */}
           <div className="space-y-2">
-            <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-100 pb-2">
-              <Shield className="w-3.5 h-3.5 text-zinc-500" />
+            <h3 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5 border-b border-line-subtle pb-2">
+              <Shield className="w-3.5 h-3.5 text-fg-secondary" />
               <span>角色权限配置（多选，非必选）</span>
             </h3>
             <MultiSelect
@@ -693,15 +698,15 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                 label: r.name,
               }))}
             />
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-fg-tertiary">
               角色决定该用户在系统中可操作的功能模块与读写权限；可不分配角色，仅通过部门继承权限。
             </p>
           </div>
 
           {/* Application Permission Section（多选下拉） */}
           <div className="space-y-2">
-            <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-100 pb-2">
-              <Layers className="w-3.5 h-3.5 text-zinc-500" />
+            <h3 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5 border-b border-line-subtle pb-2">
+              <Layers className="w-3.5 h-3.5 text-fg-secondary" />
               <span>出海应用授权范围（多选）</span>
             </h3>
             <MultiSelect
@@ -716,7 +721,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               ]}
               showToolbar
             />
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-fg-tertiary">
               被授权的应用代表该用户仅能查阅和处理这些出海业务线的专属交易流水、商品价格体系与支付网关。
             </p>
           </div>
