@@ -1,0 +1,6 @@
+{
+  "name": "海外统一聚合支付中台",
+  "description": "企业级海外聚合支付中台，集成Stripe/PayPal/Adyen支付渠道、SendGrid/SES邮件渠道、实时Webhook调度、多语言邮件管理、终端用户全生命周期动作流与交易时间轴对账",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
