@@ -23,6 +23,7 @@ import {
   ListFilter,
   Eye,
   Link2,
+  Settings2,
 } from "lucide-react";
 import {
   DictionaryEntry,
@@ -54,6 +55,25 @@ export const LANGUAGES: {
   { code: "de-DE", label: "Deutsch (de-DE)", flag: "🇩🇪", nativeName: "Deutsch" },
   { code: "es-ES", label: "Español (es-ES)", flag: "🇪🇸", nativeName: "Español" },
   { code: "fr-FR", label: "Français (fr-FR)", flag: "🇫🇷", nativeName: "Français" },
+];
+
+// 可扩展候选语言池（字典管理 → 语种配置中可添加到全局多语言）
+export const AVAILABLE_LANGUAGES: {
+  code: string;
+  label: string;
+  flag: string;
+  nativeName: string;
+}[] = [
+  { code: "ko-KR", label: "한국어 (ko-KR)", flag: "🇰🇷", nativeName: "한국어" },
+  { code: "pt-BR", label: "Português (pt-BR)", flag: "🇧🇷", nativeName: "Português" },
+  { code: "it-IT", label: "Italiano (it-IT)", flag: "🇮🇹", nativeName: "Italiano" },
+  { code: "ru-RU", label: "Русский (ru-RU)", flag: "🇷🇺", nativeName: "Русский" },
+  { code: "ar-SA", label: "العربية (ar-SA)", flag: "🇸🇦", nativeName: "العربية" },
+  { code: "hi-IN", label: "हिन्दी (hi-IN)", flag: "🇮🇳", nativeName: "हिन्दी" },
+  { code: "nl-NL", label: "Nederlands (nl-NL)", flag: "🇳🇱", nativeName: "Nederlands" },
+  { code: "sv-SE", label: "Svenska (sv-SE)", flag: "🇸🇪", nativeName: "Svenska" },
+  { code: "pl-PL", label: "Polski (pl-PL)", flag: "🇵🇱", nativeName: "Polski" },
+  { code: "tr-TR", label: "Türkçe (tr-TR)", flag: "🇹🇷", nativeName: "Türkçe" },
 ];
 
 export const PLATFORM_OPTIONS: {
@@ -208,11 +228,20 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
-  const [previewLanguage, setPreviewLanguage] = useState<SupportedLanguage>("en-US");
+  const [previewLanguage, setPreviewLanguage] = useState<string>("en-US");
   const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [treeKeyword, setTreeKeyword] = useState("");
+
+  // ===== 语种配置（字典管理可配置"有哪些多语言"）=====
+  const [languages, setLanguages] = useState<
+    { code: string; label: string; flag: string; nativeName: string }[]
+  >(LANGUAGES);
+  const [isLangModalOpen, setIsLangModalOpen] = useState(false);
+  const [customLangCode, setCustomLangCode] = useState("");
+  const [customLangName, setCustomLangName] = useState("");
+  const [customLangFlag, setCustomLangFlag] = useState("");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -230,14 +259,67 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     "EMAIL_NOTIFY",
   ]);
   const [formDescription, setFormDescription] = useState("");
-  const [formTranslations, setFormTranslations] = useState<Record<SupportedLanguage, string>>({
-    "en-US": "",
-    "zh-CN": "",
-    "ja-JP": "",
-    "de-DE": "",
-    "es-ES": "",
-    "fr-FR": "",
-  });
+  const [formTranslations, setFormTranslations] = useState<Record<string, string>>({});
+
+  // 基于当前语种配置构造空译文表单
+  const emptyTranslations = (): Record<string, string> => {
+    const t: Record<string, string> = {};
+    languages.forEach((l) => (t[l.code] = ""));
+    return t;
+  };
+
+  // 添加语种：同步所有词条补齐该语言（默认沿用 en-US/zh-CN 兜底文案）
+  const handleAddLanguage = (lang: { code: string; label: string; flag: string; nativeName: string }) => {
+    if (languages.some((l) => l.code === lang.code)) {
+      showToast(`语言 ${lang.nativeName} (${lang.code}) 已在多语言配置中`);
+      return;
+    }
+    setLanguages((prev) => [...prev, lang]);
+    setEntryList((prev) =>
+      prev.map((e) => {
+        const fallback = e.translations["en-US"] || e.translations["zh-CN"] || "";
+        return { ...e, translations: { ...e.translations, [lang.code]: fallback } };
+      })
+    );
+    showToast(`已添加语言 ${lang.nativeName} (${lang.code})，所有词条已自动补齐占位译文`);
+  };
+
+  // 移除语种：同步移除所有词条该语言译文
+  const handleRemoveLanguage = (lang: { code: string; label: string; flag: string; nativeName: string }) => {
+    if (languages.length <= 1) {
+      showToast("至少需要保留一种语言");
+      return;
+    }
+    setLanguages((prev) => prev.filter((l) => l.code !== lang.code));
+    setEntryList((prev) =>
+      prev.map((e) => {
+        const t = { ...e.translations };
+        delete t[lang.code];
+        return { ...e, translations: t };
+      })
+    );
+    setPreviewLanguage((prev) => (prev === lang.code ? languages[0].code : prev));
+    showToast(`已移除语言 ${lang.nativeName} (${lang.code})`);
+  };
+
+  // 自定义添加语种
+  const handleAddCustomLanguage = () => {
+    const code = customLangCode.trim();
+    const name = customLangName.trim();
+    if (!code || !name) {
+      showToast("请填写语言代码与语言名称");
+      return;
+    }
+    handleAddLanguage({
+      code,
+      label: `${name} (${code})`,
+      flag: customLangFlag.trim() || "🌐",
+      nativeName: name,
+    });
+    setCustomLangCode("");
+    setCustomLangName("");
+    setCustomLangFlag("");
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -260,14 +342,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setFormCategory(presetCategory || "COMMON");
     setFormPlatforms(["CHECKOUT", "PORTAL", "EMAIL_NOTIFY", "MOBILE_SDK"]);
     setFormDescription("");
-    setFormTranslations({
-      "en-US": "",
-      "zh-CN": "",
-      "ja-JP": "",
-      "de-DE": "",
-      "es-ES": "",
-      "fr-FR": "",
-    });
+    setFormTranslations(emptyTranslations());
     setIsModalOpen(true);
   };
 
@@ -277,14 +352,9 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setFormCategory(entry.category);
     setFormPlatforms(entry.platforms || ["CHECKOUT", "PORTAL", "EMAIL_NOTIFY"]);
     setFormDescription(entry.description);
-    setFormTranslations({
-      "en-US": entry.translations["en-US"] || "",
-      "zh-CN": entry.translations["zh-CN"] || "",
-      "ja-JP": entry.translations["ja-JP"] || "",
-      "de-DE": entry.translations["de-DE"] || "",
-      "es-ES": entry.translations["es-ES"] || "",
-      "fr-FR": entry.translations["fr-FR"] || "",
-    });
+    const t: Record<string, string> = {};
+    languages.forEach((l) => (t[l.code] = entry.translations[l.code] || ""));
+    setFormTranslations(t);
     setIsModalOpen(true);
   };
 
@@ -303,7 +373,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     }
 
     const source = baseZh || baseEn;
-    const newTranslations: Record<SupportedLanguage, string> = { ...formTranslations };
+    const newTranslations: Record<string, string> = { ...formTranslations };
 
     const matchedPreset = PROJECT_PRESET_ENTRIES.find(
       (p) =>
@@ -313,25 +383,25 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     );
 
     if (matchedPreset) {
-      LANGUAGES.forEach((l) => {
-        newTranslations[l.code] = matchedPreset.translations[l.code];
+      languages.forEach((l) => {
+        newTranslations[l.code] = matchedPreset.translations[l.code] || newTranslations["en-US"] || "";
       });
-      showToast("已匹配出海全项目标准词典，自动补全 6 国语言！");
+      showToast(`已匹配出海全项目标准词典，自动补全 ${languages.length} 种语言！`);
     } else {
-      if (baseZh) {
-        newTranslations["en-US"] = baseEn || `${baseZh} (Official English)`;
-        newTranslations["ja-JP"] = formTranslations["ja-JP"] || `${baseZh}（公式日本語）`;
-        newTranslations["de-DE"] = formTranslations["de-DE"] || `${baseZh} (Offizielle Deutsche Fassung)`;
-        newTranslations["es-ES"] = formTranslations["es-ES"] || `${baseZh} (Versión en Español)`;
-        newTranslations["fr-FR"] = formTranslations["fr-FR"] || `${baseZh} (Version Française)`;
-      } else {
-        newTranslations["zh-CN"] = formTranslations["zh-CN"] || `${baseEn}（官方中文译文）`;
-        newTranslations["ja-JP"] = formTranslations["ja-JP"] || `${baseEn} (公式日本語)`;
-        newTranslations["de-DE"] = formTranslations["de-DE"] || `${baseEn} (Deutsch)`;
-        newTranslations["es-ES"] = formTranslations["es-ES"] || `${baseEn} (Español)`;
-        newTranslations["fr-FR"] = formTranslations["fr-FR"] || `${baseEn} (Français)`;
-      }
-      showToast("已智能补全全套 6 种语言文案！您可直接进行细节微调。");
+      const fallbackMap: Record<string, string> = {};
+      languages.forEach((l) => {
+        if (l.code === "en-US") {
+          fallbackMap[l.code] = baseEn || `${baseZh} (Official English)`;
+        } else if (l.code === "zh-CN") {
+          fallbackMap[l.code] = baseZh || `${baseEn}（官方中文译文）`;
+        } else {
+          fallbackMap[l.code] = baseZh || baseEn;
+        }
+      });
+      languages.forEach((l) => {
+        newTranslations[l.code] = formTranslations[l.code] || fallbackMap[l.code] || "";
+      });
+      showToast(`已智能补全全套 ${languages.length} 种语言文案！您可直接进行细节微调。`);
     }
 
     setFormTranslations(newTranslations);
@@ -342,21 +412,25 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setFormCategory(preset.category);
     setFormPlatforms(preset.platforms);
     setFormDescription(preset.description);
-    setFormTranslations({ ...preset.translations });
-    showToast(`已应用【${preset.key}】全项目出海预设，已默认填充全部 6 种语言！`);
+    const t: Record<string, string> = {};
+    languages.forEach((l) => (t[l.code] = preset.translations[l.code] || ""));
+    setFormTranslations(t);
+    showToast(`已应用【${preset.key}】全项目出海预设，已默认填充全部 ${languages.length} 种语言！`);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const guaranteedTranslations: Record<SupportedLanguage, string> = {
-      "en-US": formTranslations["en-US"] || formTranslations["zh-CN"] || formKey,
-      "zh-CN": formTranslations["zh-CN"] || formTranslations["en-US"] || formKey,
-      "ja-JP": formTranslations["ja-JP"] || formTranslations["en-US"] || formKey,
-      "de-DE": formTranslations["de-DE"] || formTranslations["en-US"] || formKey,
-      "es-ES": formTranslations["es-ES"] || formTranslations["en-US"] || formKey,
-      "fr-FR": formTranslations["fr-FR"] || formTranslations["en-US"] || formKey,
-    };
+    const guaranteedTranslations: Record<string, string> = {};
+    languages.forEach((l) => {
+      if (l.code === "en-US") {
+        guaranteedTranslations[l.code] = formTranslations["en-US"] || formTranslations["zh-CN"] || formKey;
+      } else if (l.code === "zh-CN") {
+        guaranteedTranslations[l.code] = formTranslations["zh-CN"] || formTranslations["en-US"] || formKey;
+      } else {
+        guaranteedTranslations[l.code] = formTranslations[l.code] || formTranslations["en-US"] || formKey;
+      }
+    });
 
     if (editingEntry) {
       const updated: DictionaryEntry = {
@@ -370,7 +444,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       };
       setEntryList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       onSaveEntry(updated);
-      showToast(`全项目字典词条【${updated.key}】更新成功！各端 6 种语言已同步`);
+      showToast(`全项目字典词条【${updated.key}】更新成功！各端 ${languages.length} 种语言已同步`);
     } else {
       const newEntry: DictionaryEntry = {
         id: `dict_${Date.now().toString().slice(-6)}`,
@@ -384,7 +458,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       };
       setEntryList((prev) => [newEntry, ...prev]);
       onSaveEntry(newEntry);
-      showToast(`新词条【${newEntry.key}】已加入全项目词典！默认 6 国语言已就绪`);
+      showToast(`新词条【${newEntry.key}】已加入全项目词典！默认 ${languages.length} 种语言已就绪`);
     }
     setIsModalOpen(false);
   };
@@ -411,7 +485,8 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       let changed = false;
       const fallback = trans["en-US"] || trans["zh-CN"] || entry.key;
 
-      LANGUAGES.forEach((l) => {
+      // 补齐当前配置的所有语种（含新增语种）
+      languages.forEach((l) => {
         if (!trans[l.code]) {
           trans[l.code] = `${fallback} (${l.nativeName})`;
           changed = true;
@@ -428,12 +503,12 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     });
 
     setEntryList(updated);
-    showToast(`已成功为全项目 ${completedCount} 个词条补齐全部 6 国多语言！`);
+    showToast(`已成功为全项目 ${completedCount} 个词条补齐全部 ${languages.length} 种多语言！`);
   };
 
   const handleExportWebJSON = () => {
     const i18nBundle: Record<string, Record<string, string>> = {};
-    LANGUAGES.forEach((l) => {
+    languages.forEach((l) => {
       i18nBundle[l.code] = {};
       entryList.forEach((entry) => {
         i18nBundle[l.code][entry.key] = entry.translations[l.code] || entry.key;
@@ -614,10 +689,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               type="button"
               onClick={handleBatchAutoComplete}
               className="px-2.5 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="智能补全所有词条的 6 种语言"
+              title="智能补全所有词条的当前配置语种"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              智能补全 6 国
+              智能补全 {languages.length} 语
             </button>
 
             <button
@@ -639,7 +714,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             巡检语种：
           </span>
           <div className="flex items-center gap-1 flex-wrap">
-            {LANGUAGES.map((l) => (
+            {languages.map((l) => (
               <button
                 key={l.code}
                 type="button"
@@ -654,6 +729,15 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 <span>{l.nativeName}</span>
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setIsLangModalOpen(true)}
+              className="px-2 py-1 rounded-md text-[11px] font-medium flex items-center gap-1 cursor-pointer bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 transition-colors"
+              title="配置全项目支持的多语言列表（可新增 / 移除语种）"
+            >
+              <Settings2 className="w-3 h-3" />
+              管理语种
+            </button>
           </div>
         </div>
 
@@ -692,8 +776,8 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   <th className="py-2.5 px-3 w-[260px]">名称 (Key)</th>
                   <th className="py-2.5 px-3 w-[110px]">ID</th>
                   <th className="py-2.5 px-3 min-w-[240px]">
-                    值（{LANGUAGES.find((l) => l.code === previewLanguage)?.flag}{" "}
-                    {LANGUAGES.find((l) => l.code === previewLanguage)?.nativeName}）
+                    值（{languages.find((l) => l.code === previewLanguage)?.flag}{" "}
+                    {languages.find((l) => l.code === previewLanguage)?.nativeName}）
                   </th>
                   <th className="py-2.5 px-3 min-w-[180px]">备注</th>
                   <th className="py-2.5 px-3 min-w-[160px]">关联位置</th>
@@ -777,7 +861,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                           </td>
                           <td className="py-2.5 px-3 text-center">
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              {completedCount}/6
+                              {completedCount}/{languages.length}
                             </span>
                             <div className="text-[9px] text-zinc-400 mt-0.5">
                               {item.referencedTemplatesCount ?? 0} 模板
@@ -805,7 +889,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                                 type="button"
                                 onClick={() => toggleExpand(item.id)}
                                 className="px-2 py-1 text-zinc-500 hover:bg-zinc-100 rounded-md text-[11px] font-medium cursor-pointer"
-                                title="展开 6 种语言对照"
+                                title="展开全部语种对照"
                               >
                                 {isExpanded ? <ChevronUp className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                               </button>
@@ -834,7 +918,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                           </td>
                         </tr>
 
-                        {/* 展开：6 语言对照 */}
+                        {/* 展开：全部语种对照 */}
                         {isExpanded && (
                           <tr className="bg-violet-50/40">
                             <td colSpan={9} className="p-4 border-b border-zinc-200">
@@ -842,11 +926,11 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                                 <div className="flex items-center justify-between text-xs font-bold text-zinc-900 pb-2 border-b border-zinc-100">
                                   <span className="flex items-center gap-1.5">
                                     <Languages className="w-4 h-4 text-violet-600" />
-                                    【{item.key}】全项目 6 国多语言完整译文对照
+                                    【{item.key}】全项目 {languages.length} 种多语言完整译文对照
                                   </span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                  {LANGUAGES.map((l) => (
+                                  {languages.map((l) => (
                                     <div key={l.code} className="bg-zinc-50 p-2.5 rounded-lg border border-zinc-200 text-xs space-y-1">
                                       <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-700">
                                         <span className="flex items-center gap-1">
@@ -975,13 +1059,144 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         </SideSheet>
       )}
 
+      {/* ===== 语种配置 SideSheet（配置全项目支持哪些多语言） ===== */}
+      <SideSheet
+        id="side-sheet-lang-config"
+        isOpen={isLangModalOpen}
+        onClose={() => setIsLangModalOpen(false)}
+        title="多语言配置 (Language Settings)"
+        description="配置全项目支持哪些语种：新增语种会同步为所有词条补齐占位译文，移除语种会一并移除词条中该语言译文。所有与多语言关联的位置（收银台 / 邮件模板 / 网关提示）均以该配置为准。"
+        icon={<Languages className="w-5 h-5 text-violet-600" />}
+        widthClass="max-w-xl"
+        footer={
+          <button
+            type="button"
+            onClick={() => setIsLangModalOpen(false)}
+            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold cursor-pointer"
+          >
+            完成
+          </button>
+        }
+      >
+        <div className="space-y-5 text-xs">
+          {/* 当前已配置语言 */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-zinc-900 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                已配置语种
+                <span className="text-[10px] text-zinc-400 font-mono">({languages.length})</span>
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {languages.map((l) => (
+                <div
+                  key={l.code}
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-zinc-200 bg-white"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-base leading-none">{l.flag}</span>
+                    <div>
+                      <div className="font-semibold text-zinc-900">{l.nativeName}</div>
+                      <div className="text-[10px] text-zinc-400 font-mono">{l.code} · {l.label}</div>
+                    </div>
+                  </div>
+                  <Popconfirm
+                    title={`移除语言「${l.nativeName}」？`}
+                    description="将同时移除所有词条中该语言的译文，且不可恢复。"
+                    onConfirm={() => handleRemoveLanguage(l)}
+                  >
+                    <button
+                      type="button"
+                      disabled={languages.length <= 1}
+                      className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md font-medium cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={languages.length <= 1 ? "至少保留一种语言" : "移除该语言"}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </Popconfirm>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 候选语言池 */}
+          <div className="border-t border-zinc-100 pt-4">
+            <div className="font-bold text-zinc-900 mb-2 flex items-center gap-1.5">
+              <Plus className="w-3.5 h-3.5 text-violet-600" />
+              从候选语种添加
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {AVAILABLE_LANGUAGES.map((cand) => {
+                const added = languages.some((l) => l.code === cand.code);
+                return (
+                  <button
+                    key={cand.code}
+                    type="button"
+                    disabled={added}
+                    onClick={() => handleAddLanguage(cand)}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                      added
+                        ? "bg-zinc-50 text-zinc-300 border-zinc-100 cursor-not-allowed"
+                        : "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100"
+                    }`}
+                  >
+                    <span>{cand.flag}</span>
+                    <span>{cand.nativeName}</span>
+                    <span className="font-mono text-[9px] opacity-70">{cand.code}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 自定义语种 */}
+          <div className="border-t border-zinc-100 pt-4">
+            <div className="font-bold text-zinc-900 mb-2 flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-violet-600" />
+              自定义添加语种
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <input
+                type="text"
+                placeholder="语言代码，如 ko-KR"
+                value={customLangCode}
+                onChange={(e) => setCustomLangCode(e.target.value)}
+                className="px-2.5 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-white"
+              />
+              <input
+                type="text"
+                placeholder="语言名称，如 한국어"
+                value={customLangName}
+                onChange={(e) => setCustomLangName(e.target.value)}
+                className="px-2.5 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-white"
+              />
+              <input
+                type="text"
+                placeholder="国旗 Emoji（可选）"
+                value={customLangFlag}
+                onChange={(e) => setCustomLangFlag(e.target.value)}
+                className="px-2.5 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-white"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleAddCustomLanguage}
+              className="mt-2 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+            >
+              添加自定义语种
+            </button>
+          </div>
+        </div>
+      </SideSheet>
+
       {/* Add / Edit Dictionary SideSheet */}
       {isModalOpen && (
         <SideSheet
           id="side-sheet-dict-edit"
           isOpen={true}
           onClose={() => setIsModalOpen(false)}
-          title={editingEntry ? `编辑全项目词条: ${editingEntry.key}` : "新增全项目字典词条 (默认配置 6 国语言)"}
+          title={editingEntry ? `编辑全项目词条: ${editingEntry.key}` : `新增全项目字典词条 (默认配置 ${languages.length} 种语言)`}
           description="统一字典是全工程的国际化单一事实来源，配置后自动同步给收银台、商户中台、网关API、移动端与通知邮件"
           icon={<Globe className="w-5 h-5 text-violet-600" />}
           widthClass="max-w-2xl"
@@ -1009,7 +1224,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <div className="bg-violet-50/70 p-3 rounded-xl border border-violet-200/80 space-y-1.5">
               <div className="text-[11px] font-bold text-violet-900 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-violet-600" />
-                快速插入出海全工程标准词条模板（点击自动填充全套 6 种语言）：
+                快速插入出海全工程标准词条模板（点击自动填充当前配置语种）：
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {PROJECT_PRESET_ENTRIES.map((preset) => (
@@ -1107,7 +1322,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               <div className="flex items-center justify-between mb-2">
                 <div className="font-bold text-zinc-900 flex items-center gap-1.5">
                   <Languages className="w-4 h-4 text-indigo-600" />
-                  <span>默认多语言配置 (全套 6 种支持语种):</span>
+                  <span>默认多语言配置 (当前 {languages.length} 种支持语种):</span>
                 </div>
                 <button
                   type="button"
@@ -1121,7 +1336,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {LANGUAGES.map((l) => (
+                {languages.map((l) => (
                   <div key={l.code} className="bg-zinc-50 p-3 rounded-xl border border-zinc-200/90 space-y-1">
                     <div className="flex items-center justify-between text-[11px] font-bold text-zinc-800">
                       <span className="flex items-center gap-1.5">

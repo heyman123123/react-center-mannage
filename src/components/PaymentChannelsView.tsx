@@ -23,12 +23,14 @@ import {
   ShieldAlert,
   Layers,
 } from "lucide-react";
-import { PaymentChannelConfig, PaymentChannel, TransactionRecord } from "../types/payment";
+import { PaymentChannelConfig, PaymentChannel, TransactionRecord, PaymentApp } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
+import * as Popover from "@radix-ui/react-popover";
 
 interface PaymentChannelsViewProps {
   channels: PaymentChannelConfig[];
+  apps?: PaymentApp[];
   onUpdateChannel?: (channel: PaymentChannelConfig) => void;
   onSaveChannel?: (channel: PaymentChannelConfig) => void;
   onCreateTestTransaction?: (tx: TransactionRecord) => void;
@@ -37,6 +39,7 @@ interface PaymentChannelsViewProps {
 
 export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
   channels,
+  apps = [],
   onUpdateChannel,
   onSaveChannel,
   onCreateTestTransaction,
@@ -502,6 +505,74 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                     综合扣率: <strong className="text-zinc-900 font-mono">{channel.feeRateText}</strong>
                   </div>
                 </div>
+
+                {/* 关联应用（使用了该支付渠道的应用） */}
+                {(() => {
+                  const relatedApps = apps.filter((app) =>
+                    (app.enabledChannels || []).includes(channel.channelKey)
+                  );
+                  if (relatedApps.length === 0) return null;
+                  const shown = relatedApps.slice(0, 3);
+                  const rest = relatedApps.slice(3);
+                  return (
+                    <div className="pt-2 border-t border-zinc-100/80">
+                      <div className="text-[10px] text-zinc-400 font-sans mb-1.5 flex items-center gap-1">
+                        <Layers className="w-3 h-3 text-zinc-400" />
+                        已启用该渠道的应用 ({relatedApps.length})
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {shown.map((app) => (
+                          <span
+                            key={app.id}
+                            title={`${app.name} · ${app.code} · ${app.environment}`}
+                            className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[10px] font-medium border border-blue-100 inline-flex items-center gap-1"
+                          >
+                            {app.name}
+                          </span>
+                        ))}
+                        {rest.length > 0 && (
+                          <Popover.Root>
+                            <Popover.Trigger asChild>
+                              <button
+                                type="button"
+                                className="px-1.5 py-0.5 bg-zinc-100 text-zinc-600 hover:bg-zinc-200 rounded-md text-[10px] font-medium transition-colors cursor-pointer"
+                              >
+                                +{rest.length} 更多
+                              </button>
+                            </Popover.Trigger>
+                            <Popover.Portal>
+                              <Popover.Content
+                                align="start"
+                                side="top"
+                                sideOffset={6}
+                                className="z-[9999] w-64 rounded-xl border border-zinc-200 bg-white p-2 shadow-2xl animate-in fade-in zoom-in-95 outline-none"
+                              >
+                                <div className="text-[10px] font-bold text-zinc-400 px-1 pb-1.5 border-b border-zinc-100 mb-1">
+                                  使用该支付渠道的全部应用
+                                </div>
+                                <div className="space-y-0.5 max-h-52 overflow-y-auto">
+                                  {relatedApps.map((app) => (
+                                    <div
+                                      key={app.id}
+                                      className="flex items-center justify-between px-1.5 py-1 rounded-md hover:bg-zinc-50"
+                                    >
+                                      <span className="text-xs font-medium text-zinc-700 truncate">
+                                        {app.name}
+                                      </span>
+                                      <span className="text-[9px] text-zinc-400 font-mono shrink-0 ml-2">
+                                        {app.code} · {app.environment === "Production" ? "生产" : "测试"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </Popover.Content>
+                            </Popover.Portal>
+                          </Popover.Root>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Card Footer Actions */}

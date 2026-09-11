@@ -474,6 +474,7 @@ export default function App() {
           {currentTab === "payment_channels" && (
             <PaymentChannelsView
               channels={paymentChannels}
+              apps={paymentApps}
               onSaveChannel={(updated) => {
                 setPaymentChannels((prev) =>
                   prev.map((c) => (c.id === updated.id ? updated : c))
