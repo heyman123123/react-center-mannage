@@ -14,7 +14,7 @@ export function TableSkeleton({ rows = 9, cols = 6 }: { rows?: number; cols?: nu
   return (
     <div className="bg-surface rounded-2xl border border-line shadow-card overflow-hidden">
       {/* 卡片标题 + 搜索/筛选区 */}
-      <div className="p-5 pb-4 flex items-center justify-between gap-4 border-b border-line-subtle">
+      <div className="p-4 pb-4 flex items-center justify-between gap-3 border-b border-line-subtle">
         <div className="space-y-2.5 min-w-0">
           <Skeleton className="h-4 w-36" />
           <Skeleton className="h-3 w-56" />
@@ -27,7 +27,7 @@ export function TableSkeleton({ rows = 9, cols = 6 }: { rows?: number; cols?: nu
 
       {/* 列头 */}
       <div
-        className="grid gap-4 px-5 pt-4 pb-3 border-b border-line-subtle"
+        className="grid gap-3 px-4 pt-4 pb-3 border-b border-line-subtle"
         style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}
       >
         {widths.map((w, i) => (
@@ -40,7 +40,7 @@ export function TableSkeleton({ rows = 9, cols = 6 }: { rows?: number; cols?: nu
         {Array.from({ length: rows }).map((_, r) => (
           <div
             key={`r-${r}`}
-            className="grid gap-4 px-5 py-3.5 items-center"
+            className="grid gap-3 px-4 py-3.5 items-center"
             style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}
           >
             {widths.map((w, i) => (
@@ -54,7 +54,7 @@ export function TableSkeleton({ rows = 9, cols = 6 }: { rows?: number; cols?: nu
       </div>
 
       {/* 分页占位 */}
-      <div className="flex items-center justify-center gap-3 py-4 border-t border-line-subtle">
+      <div className="flex items-center justify-center gap-2 py-2 border-t border-line-subtle">
         <Skeleton className="h-8 w-20 rounded-lg" />
         <Skeleton className="h-3 w-40" />
         <Skeleton className="h-8 w-20 rounded-lg" />
@@ -71,9 +71,9 @@ export function DashboardSkeleton() {
   return (
     <div className="space-y-6">
       {/* 统计卡片 4 列 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={`s-${i}`} className="bg-surface rounded-2xl border border-line shadow-card p-5 space-y-3">
+          <div key={`s-${i}`} className="bg-surface rounded-2xl border border-line shadow-card p-4 space-y-3">
             <Skeleton className="h-3.5 w-24" />
             <Skeleton className="h-7 w-28" />
             <Skeleton className="h-3 w-20" />
@@ -82,7 +82,7 @@ export function DashboardSkeleton() {
       </div>
 
       {/* 图表区 */}
-      <div className="bg-surface rounded-2xl border border-line shadow-card p-5">
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-4">
         <div className="flex items-center justify-between mb-4">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-8 w-44 rounded-lg" />
@@ -99,11 +99,11 @@ export function DashboardSkeleton() {
 export function GenericSkeleton({ rows = 8 }: { rows?: number }) {
   return (
     <div className="bg-surface rounded-2xl border border-line shadow-card overflow-hidden">
-      <div className="p-5 pb-4 border-b border-line-subtle space-y-2.5">
+      <div className="p-4 pb-4 border-b border-line-subtle space-y-2.5">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-3 w-60" />
       </div>
-      <div className="p-5 space-y-4">
+      <div className="p-4 space-y-4">
         {Array.from({ length: rows }).map((_, i) => (
           <Skeleton key={`g-${i}`} className="h-12 w-full" />
         ))}

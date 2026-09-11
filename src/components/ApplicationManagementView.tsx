@@ -366,7 +366,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
     <div className="space-y-6">
       {/* Toast */}
       {toastMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>{toastMessage}</span>
@@ -378,7 +378,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
       )}
 
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
@@ -403,8 +403,8 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
       </div>
 
       {/* Overview Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>已接入客户端应用</span>
             <Layers className="w-4 h-4 text-indigo-500" />
@@ -417,7 +417,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           </div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>全应用累计清算 GMV</span>
             <TrendingUp className="w-4 h-4 text-emerald-500" />
@@ -428,7 +428,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           <div className="text-[11px] text-fg-secondary mt-0.5">包含 Stripe / PayPal / Adyen 全渠道</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>活跃出海订阅用户</span>
             <Users className="w-4 h-4 text-blue-500" />
@@ -439,7 +439,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           <div className="text-[11px] text-fg-secondary mt-0.5">北美、西欧及亚太全球受众</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>支持语言与国际化</span>
             <Globe className="w-4 h-4 text-amber-500" />
@@ -460,11 +460,11 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           return (
             <div
               key={app.id}
-              className="bg-surface border border-line/80 hover:border-line rounded-2xl p-5 shadow-card transition-all flex flex-col justify-between"
+              className="bg-surface border border-line/80 hover:border-line rounded-2xl p-4 shadow-card transition-all flex flex-col justify-between"
             >
               <div className="space-y-4">
                 {/* Header */}
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-fg text-sm">{app.name}</h3>
@@ -734,7 +734,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       }
                       setCurrentStep((prev) => Math.min(6, prev + 1));
                     }}
-                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold flex items-center gap-1 text-xs shadow-card cursor-pointer transition-colors"
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold flex items-center gap-1 text-xs shadow-card cursor-pointer transition-colors"
                   >
                     <span>下一步</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -747,7 +747,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       e.stopPropagation();
                       handleSaveAppConfiguration();
                     }}
-                    className="px-5 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-bold flex items-center gap-1.5 text-xs shadow-card cursor-pointer transition-colors"
+                    className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-bold flex items-center gap-1.5 text-xs shadow-card cursor-pointer transition-colors"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                     <span>{editingAppId ? "保存更新完整配置" : "完成接入并生成应用"}</span>
@@ -796,7 +796,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
               {/* Step 1: Basic Information */}
               {currentStep === 1 && (
                 <div className="space-y-3 animate-in fade-in">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold">
                         应用名称 (Application Name) <span className="text-rose-500">*</span>:
@@ -825,7 +825,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold">业务归属单元:</label>
                       <ShadcnSelect
@@ -935,7 +935,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                         return (
                           <label
                             key={ch.key}
-                            className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                            className={`flex items-start gap-2 p-3 rounded-xl border transition-all cursor-pointer ${
                               isChecked
                                 ? "bg-indigo-50/50 border-indigo-300 ring-1 ring-indigo-200"
                                 : "bg-surface border-line hover:bg-subtle"
@@ -1228,7 +1228,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
               {/* Step 5: Email Gateway & Notification Events */}
               {currentStep === 5 && (
                 <div className="space-y-4 animate-in fade-in">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold text-xs">
                         绑定发信邮件渠道 (Email Channel):
@@ -1344,7 +1344,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                         return (
                           <label
                             key={l.code}
-                            className={`flex items-center gap-3 p-3 rounded-xl border text-xs cursor-pointer transition-all ${
+                            className={`flex items-center gap-2 p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                               isChecked
                                 ? "bg-indigo-50/50 border-indigo-300 ring-1 ring-indigo-200 font-medium text-fg"
                                 : "bg-surface border-line text-fg-secondary hover:bg-subtle"

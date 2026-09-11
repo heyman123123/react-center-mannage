@@ -70,7 +70,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
           >
             取消
           </button>
@@ -78,7 +78,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
             type="button"
             onClick={handleSubmit}
             disabled={isProcessing}
-            className="flex items-center gap-1.5 px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer disabled:opacity-50"
           >
             {isProcessing ? (
               <>

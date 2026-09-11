@@ -28,7 +28,6 @@ import {
 import { PaymentChannelConfig, PaymentChannel, TransactionRecord, PaymentApp } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
-import * as Popover from "@radix-ui/react-popover";
 
 interface PaymentChannelsViewProps {
   channels: PaymentChannelConfig[];
@@ -53,6 +52,19 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [editingChannel, setEditingChannel] = useState<PaymentChannelConfig | null>(null);
+
+  // 新增渠道表单
+  const [isAddChannelOpen, setIsAddChannelOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newChannelKey, setNewChannelKey] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newMode, setNewMode] = useState<"live" | "sandbox">("live");
+  const [newCurrencies, setNewCurrencies] = useState("USD,EUR,GBP");
+  const [newFeeRate, setNewFeeRate] = useState("2.9% + $0.30");
+
+  // 应用详情 SideSheet（需求4：点击应用名 chips 查看其绑定渠道）
+  const [selectedApp, setSelectedApp] = useState<PaymentApp | null>(null);
+  const [appSheetRelatedChannel, setAppSheetRelatedChannel] = useState<PaymentChannelConfig | null>(null);
 
   // Test Transaction Modal State
   const [isTestTxModalOpen, setIsTestTxModalOpen] = useState(false);
@@ -116,6 +128,42 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     if (onUpdateChannel) onUpdateChannel(editingChannel);
     if (onSaveChannel) onSaveChannel(editingChannel);
     setEditingChannel(null);
+  };
+
+  // 新增渠道：追加本地列表并同步父级 App 的 paymentChannels
+  const handleSaveNewChannel = (e: React.FormEvent) => {
+    e.preventDefault();
+    const key = (newChannelKey || newName).trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    const newChannel: PaymentChannelConfig = {
+      id: `ch_custom_${Date.now()}`,
+      channelKey: key || "custom",
+      name: newName.trim() || "自定义支付渠道",
+      description: newDescription.trim() || "通过后台手动接入的新支付渠道",
+      enabled: true,
+      mode: newMode,
+      apiPublicKey: `pk_${newMode}_${Math.random().toString(36).slice(2, 10)}`,
+      apiSecretKey: `sk_${newMode}_${Math.random().toString(36).slice(2, 12)}`,
+      webhookSecret: `whsec_${Math.random().toString(36).slice(2, 12)}`,
+      supportedCurrencies: newCurrencies.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
+      feeRateText: newFeeRate.trim() || "2.9% + $0.30",
+      routingPriority: channelList.length + 1,
+      lastTestedAt: "未测试",
+      testStatus: "DEGRADED",
+      latencyMs: 0,
+    };
+    setChannelList((prev) => [...prev, newChannel]);
+    if (onSaveChannel) onSaveChannel(newChannel);
+    setIsAddChannelOpen(false);
+    // 重置表单
+    setNewName("");
+    setNewChannelKey("");
+    setNewDescription("");
+  };
+
+  // 打开应用详情 SideSheet
+  const openAppSheet = (app: PaymentApp, channel?: PaymentChannelConfig) => {
+    setSelectedApp(app);
+    setAppSheetRelatedChannel(channel || null);
   };
 
   const handleExecuteTestTransaction = () => {
@@ -281,7 +329,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
@@ -298,26 +346,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
 
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => {
-              const demoNew: PaymentChannelConfig = {
-                id: `ch_custom_${Date.now()}`,
-                channelKey: "checkout",
-                name: "Checkout.com New Gateway",
-                description: "新添跨境卡组直连收单通道",
-                enabled: true,
-                mode: "live",
-                apiPublicKey: "pk_live_new_0981203",
-                apiSecretKey: "sk_live_new_9812039801",
-                webhookSecret: "whsec_new_981023",
-                supportedCurrencies: ["USD", "EUR", "GBP"],
-                feeRateText: "2.5% + $0.30",
-                routingPriority: channelList.length + 1,
-                lastTestedAt: "未测试",
-                testStatus: "HEALTHY",
-                latencyMs: 120,
-              };
-              setChannelList([...channelList, demoNew]);
-            }}
+            onClick={() => setIsAddChannelOpen(true)}
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -329,7 +358,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
       {/* Test feedback notification */}
       {testResult && (
         <div
-          className={`p-4 rounded-xl border flex items-center justify-between text-xs animate-in fade-in ${
+          className={`p-3 rounded-xl border flex items-center justify-between text-xs animate-in fade-in ${
             testResult.success
               ? "bg-emerald-50 border-emerald-200 text-emerald-800"
               : "bg-rose-50 border-rose-200 text-rose-800"
@@ -349,7 +378,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
       )}
 
       {/* Channel Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {channelList.map((channel) => {
           const isSecretVisible = showSecretMap[channel.id];
           const isTesting = testingId === channel.id;
@@ -357,7 +386,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
           return (
             <div
               key={channel.id}
-              className={`bg-surface border rounded-2xl p-5 shadow-card transition-all flex flex-col justify-between ${
+              className={`bg-surface border rounded-2xl p-4 shadow-card transition-all flex flex-col justify-between ${
                 channel.enabled
                   ? "border-line/80 hover:border-line"
                   : "border-line/50 opacity-70 bg-subtle/50"
@@ -366,7 +395,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
               <div className="space-y-4">
                 {/* Card Header */}
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <div className="w-10 h-10 rounded-xl bg-hover flex items-center justify-center font-bold text-fg text-sm tracking-tighter uppercase font-mono border border-line/80">
                       {channel.channelKey.slice(0, 3)}
                     </div>
@@ -527,52 +556,25 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {shown.map((app) => (
-                          <span
+                          <button
                             key={app.id}
-                            title={`${app.name} · ${app.code} · ${app.environment}`}
-                            className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[10px] font-medium border border-blue-100 inline-flex items-center gap-1"
+                            type="button"
+                            title={`查看 ${app.name} 绑定的全部支付渠道`}
+                            onClick={() => openAppSheet(app, channel)}
+                            className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[10px] font-medium border border-blue-100 inline-flex items-center gap-1 hover:bg-blue-100 hover:border-blue-200 transition-colors cursor-pointer"
                           >
                             {app.name}
-                          </span>
+                          </button>
                         ))}
                         {rest.length > 0 && (
-                          <Popover.Root>
-                            <Popover.Trigger asChild>
-                              <button
-                                type="button"
-                                className="px-1.5 py-0.5 bg-hover text-fg-secondary hover:bg-hover rounded-md text-[10px] font-medium transition-colors cursor-pointer"
-                              >
-                                +{rest.length} 更多
-                              </button>
-                            </Popover.Trigger>
-                            <Popover.Portal>
-                              <Popover.Content
-                                align="start"
-                                side="top"
-                                sideOffset={6}
-                                className="z-[9999] w-64 rounded-xl border border-line bg-surface p-2 shadow-2xl animate-in fade-in zoom-in-95 outline-none"
-                              >
-                                <div className="text-[10px] font-bold text-fg-tertiary px-1 pb-1.5 border-b border-line-subtle mb-1">
-                                  使用该支付渠道的全部应用
-                                </div>
-                                <div className="space-y-0.5 max-h-52 overflow-y-auto">
-                                  {relatedApps.map((app) => (
-                                    <div
-                                      key={app.id}
-                                      className="flex items-center justify-between px-1.5 py-1 rounded-md hover:bg-subtle"
-                                    >
-                                      <span className="text-xs font-medium text-fg-secondary truncate">
-                                        {app.name}
-                                      </span>
-                                      <span className="text-[9px] text-fg-tertiary font-mono shrink-0 ml-2">
-                                        {app.code} · {app.environment === "Production" ? "生产" : "测试"}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </Popover.Content>
-                            </Popover.Portal>
-                          </Popover.Root>
+                          <button
+                            type="button"
+                            onClick={() => openAppSheet(relatedApps[0], channel)}
+                            title="查看该渠道关联应用与渠道绑定"
+                            className="px-1.5 py-0.5 bg-hover text-fg-secondary hover:bg-hover rounded-md text-[10px] font-medium transition-colors cursor-pointer"
+                          >
+                            +{rest.length} 更多
+                          </button>
                         )}
                       </div>
                     </div>
@@ -643,14 +645,14 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
             <button
               type="button"
               onClick={() => setEditingChannel(null)}
-              className="px-4 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
               form="form-edit-channel"
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
             >
               保存配置
             </button>
@@ -729,7 +731,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-fg-secondary block mb-1 font-medium">费率说明</label>
                   <input
@@ -807,7 +809,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                       setIsTestTxModalOpen(false);
                       setLastExecutedTxResult(null);
                     }}
-                    className="px-4 py-1.5 border border-line text-fg-secondary rounded-xl font-medium hover:bg-subtle text-xs transition-colors cursor-pointer"
+                    className="px-3 py-1.5 border border-line text-fg-secondary rounded-xl font-medium hover:bg-subtle text-xs transition-colors cursor-pointer"
                   >
                     完成并退出
                   </button>
@@ -819,7 +821,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                         setLastExecutedTxResult(null);
                         onNavigateToTransactions();
                       }}
-                      className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-card transition-colors cursor-pointer"
+                      className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-card transition-colors cursor-pointer"
                     >
                       <span>在交易流水中查看此记录</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -831,7 +833,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   type="button"
                   disabled={isExecutingTxTest}
                   onClick={handleExecuteTestTransaction}
-                  className="px-5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-card transition-colors cursor-pointer"
+                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-card transition-colors cursor-pointer"
                 >
                   {isExecutingTxTest ? (
                     <>
@@ -857,7 +859,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                 /* Test Execution Result Card */
                 <div className="space-y-4 animate-in fade-in">
                   <div
-                    className={`p-4 rounded-xl border flex items-start gap-3 ${
+                    className={`p-3 rounded-xl border flex items-start gap-2 ${
                       lastExecutedTxResult.success
                         ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
                         : "bg-amber-50/80 border-amber-200 text-amber-900"
@@ -879,7 +881,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   </div>
 
                   {/* Transaction Details Overview */}
-                  <div className="bg-subtle border border-line rounded-xl p-4 space-y-3">
+                  <div className="bg-subtle border border-line rounded-xl p-3 space-y-3">
                     <div className="font-bold text-fg text-xs border-b border-line/80 pb-2 flex items-center justify-between">
                       <span>已生成的对账单详情</span>
                       <span className="font-mono text-fg-secondary font-normal">
@@ -887,7 +889,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                       <div>
                         <span className="text-fg-tertiary block text-[11px]">支付渠道</span>
                         <span className="font-semibold text-fg uppercase font-mono">
@@ -974,7 +976,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                 /* Test Configuration Inputs */
                 <div className="space-y-4">
                   {/* Channel & App Selection */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold text-xs">
                         测试收单渠道 (Channel Gateway) <span className="text-rose-500">*</span>:
@@ -1012,7 +1014,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   </div>
 
                   {/* Currency & Amount */}
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold text-xs">
                         交易结算货币:
@@ -1130,6 +1132,171 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                 </div>
               )}
             </div>
+        )}
+      </SideSheet>
+
+      {/* 新增支付渠道 SideSheet 表单 */}
+      <SideSheet
+        isOpen={isAddChannelOpen}
+        onClose={() => setIsAddChannelOpen(false)}
+        title="接入新支付渠道"
+        description="填写网关基础信息，保存后追加到渠道列表并同步到中台配置"
+        icon={<Plus className="w-5 h-5 text-fg" />}
+        widthClass="max-w-xl"
+      >
+        <form onSubmit={handleSaveNewChannel} className="space-y-4 text-xs">
+          <div>
+            <label className="font-semibold text-fg block mb-1.5">渠道名称 *</label>
+            <input
+              required
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="如：Checkout.com 直连收单"
+              className="w-full p-2 bg-input border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="font-semibold text-fg block mb-1.5">渠道标识 channelKey</label>
+              <input
+                value={newChannelKey}
+                onChange={(e) => setNewChannelKey(e.target.value)}
+                placeholder="如 checkout / bluesnap"
+                className="w-full p-2 bg-input border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="font-semibold text-fg block mb-1.5">运行模式</label>
+              <select
+                value={newMode}
+                onChange={(e) => setNewMode(e.target.value as "live" | "sandbox")}
+                className="w-full p-2 bg-input border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="live">live（生产）</option>
+                <option value="sandbox">sandbox（沙箱）</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="font-semibold text-fg block mb-1.5">渠道描述</label>
+            <input
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="新添跨境卡组直连收单通道"
+              className="w-full p-2 bg-input border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="font-semibold text-fg block mb-1.5">支持币种（逗号分隔）</label>
+              <input
+                value={newCurrencies}
+                onChange={(e) => setNewCurrencies(e.target.value)}
+                placeholder="USD,EUR,GBP"
+                className="w-full p-2 bg-input border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="font-semibold text-fg block mb-1.5">综合费率</label>
+              <input
+                value={newFeeRate}
+                onChange={(e) => setNewFeeRate(e.target.value)}
+                placeholder="2.9% + $0.30"
+                className="w-full p-2 bg-input border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          </div>
+          <div className="pt-3 flex items-center justify-end gap-2 border-t border-line">
+            <button
+              type="button"
+              onClick={() => setIsAddChannelOpen(false)}
+              className="px-3 py-2 border border-line hover:bg-hover rounded-xl font-semibold text-fg cursor-pointer"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
+            >
+              保存并接入
+            </button>
+          </div>
+        </form>
+      </SideSheet>
+
+      {/* 应用详情 + 渠道绑定 SideSheet（需求4） */}
+      <SideSheet
+        isOpen={!!selectedApp}
+        onClose={() => setSelectedApp(null)}
+        title={selectedApp ? `应用：${selectedApp.name}` : ""}
+        description={selectedApp ? `Code: ${selectedApp.code} · ${selectedApp.environment === "Production" ? "生产环境" : "测试环境"}` : ""}
+        icon={<Layers className="w-5 h-5 text-fg" />}
+        widthClass="max-w-xl"
+      >
+        {selectedApp && (
+          <div className="space-y-4 text-xs">
+            {/* 应用详情 */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-3 bg-subtle rounded-xl border border-line-subtle">
+                <div className="text-[10px] text-fg-tertiary">应用状态</div>
+                <div className={`font-bold mt-0.5 ${selectedApp.status === "ACTIVE" ? "text-emerald-600" : "text-amber-600"}`}>
+                  {selectedApp.status === "ACTIVE" ? "● 已启用 (Active)" : "● 已暂停 (Paused)"}
+                </div>
+              </div>
+              <div className="p-3 bg-subtle rounded-xl border border-line-subtle">
+                <div className="text-[10px] text-fg-tertiary">默认结算币种</div>
+                <div className="font-bold mt-0.5 font-mono">{selectedApp.defaultCurrency}</div>
+              </div>
+            </div>
+
+            {/* 绑定渠道列表 */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-semibold text-fg">该应用绑定的支付渠道</div>
+                <div className="text-[10px] text-fg-tertiary">
+                  已绑定 {(selectedApp.enabledChannels || []).length} / {channelList.length}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                {channelList.map((ch) => {
+                  const bound = (selectedApp.enabledChannels || []).includes(ch.channelKey as any);
+                  return (
+                    <div
+                      key={ch.id}
+                      className={`flex items-center justify-between p-2.5 rounded-xl border ${
+                        bound ? "bg-surface border-line" : "bg-subtle/50 border-line-subtle opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-hover flex items-center justify-center font-bold text-[10px] font-mono uppercase border border-line-subtle shrink-0">
+                          {ch.channelKey.slice(0, 3)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className={`font-semibold truncate ${bound ? "text-fg" : "text-fg-tertiary"}`}>{ch.name}</div>
+                          <div className="text-[10px] text-fg-tertiary font-mono">{ch.channelKey}</div>
+                        </div>
+                      </div>
+                      {bound ? (
+                        <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-medium shrink-0">
+                          已绑定
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 bg-hover text-fg-tertiary border border-line-subtle rounded text-[10px] font-medium shrink-0">
+                          未绑定
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {appSheetRelatedChannel && (
+              <div className="p-2.5 bg-blue-50 border border-blue-100 rounded-xl text-blue-700 text-[11px]">
+                您正从渠道「{appSheetRelatedChannel.name}」打开此应用详情。
+              </div>
+            )}
+          </div>
         )}
       </SideSheet>
     </div>

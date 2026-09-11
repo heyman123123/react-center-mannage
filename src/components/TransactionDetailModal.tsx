@@ -105,7 +105,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
             >
               关闭详情
             </button>
@@ -282,7 +282,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 )}
               </button>
             </div>
-            <pre className="p-4 bg-primary text-primary-foreground rounded-xl font-mono text-[11px] overflow-x-auto max-h-96">
+            <pre className="p-3 bg-primary text-primary-foreground rounded-xl font-mono text-[11px] overflow-x-auto max-h-96">
               {JSON.stringify(
                 {
                   id: transaction.id,
@@ -322,7 +322,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         {/* Content Tab 3: Risk & Compliance */}
         {activeTab === "risk" && (
           <div className="space-y-3">
-            <div className="p-4 bg-subtle border border-line rounded-xl space-y-3">
+            <div className="p-3 bg-subtle border border-line rounded-xl space-y-3">
               <div className="flex items-center justify-between">
                 <div className="font-bold text-fg flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
@@ -333,7 +333,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-[11px]">
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
                 <div className="p-2.5 bg-surface border border-line rounded-lg">
                   <span className="text-fg-tertiary block">3D Secure 2.0 验证:</span>
                   <strong className="text-fg">免密通过 (Frictionless Authentication)</strong>

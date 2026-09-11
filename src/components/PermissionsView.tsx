@@ -202,7 +202,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
         <button
           type="button"
           onClick={openCreateRole}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           新增角色
@@ -225,17 +225,17 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
   if (loading) return <TableSkeleton rows={8} />;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto font-sans p-6 md:p-8">
+    <div className="space-y-6 max-w-7xl mx-auto font-sans p-4 md:p-8">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Header Banner */}
-      <div className="bg-surface border border-line rounded-2xl p-6 shadow-2xs">
+      <div className="bg-surface border border-line rounded-2xl p-4 shadow-2xs">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold">
             <KeyRound className="w-5 h-5 text-amber-400" />
@@ -254,7 +254,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 items-start">
         {/* 左侧：角色列表（右键增删改查） */}
         <div className="bg-surface border border-line rounded-2xl shadow-2xs overflow-hidden lg:sticky lg:top-6">
-          <div className="px-4 py-3 bg-subtle border-b border-line text-xs font-semibold text-fg-secondary flex items-center justify-between">
+          <div className="px-3 py-2 bg-subtle border-b border-line text-xs font-semibold text-fg-secondary flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" />
               选择要配置的角色
@@ -302,7 +302,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => switchRole(role)}
-                      className={`w-full text-left px-4 py-3 transition-colors cursor-pointer ${
+                      className={`w-full text-left px-3 py-2 transition-colors cursor-pointer ${
                         isActive ? "bg-primary text-primary-foreground" : "hover:bg-subtle"
                       }`}
                       title="右键可新增 / 编辑 / 删除角色"
@@ -338,7 +338,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
               );
             })}
           </div>
-          <div className="px-4 py-2 border-t border-line-subtle bg-subtle/60 text-[10px] text-fg-tertiary flex items-center gap-1">
+          <div className="px-3 py-2 border-t border-line-subtle bg-subtle/60 text-[10px] text-fg-tertiary flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
             右键角色可新增 / 编辑 / 删除
           </div>
@@ -347,7 +347,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
         {/* 右侧：菜单树权限 + 应用权限 */}
         <div className="space-y-5 min-w-0">
           {/* 菜单树权限 */}
-          <div className="bg-surface border border-line rounded-2xl shadow-2xs p-5">
+          <div className="bg-surface border border-line rounded-2xl shadow-2xs p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-bold text-fg flex items-center gap-1.5">
@@ -385,7 +385,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
           </div>
 
           {/* 应用权限 */}
-          <div className="bg-surface border border-line rounded-2xl shadow-2xs p-5">
+          <div className="bg-surface border border-line rounded-2xl shadow-2xs p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-bold text-fg flex items-center gap-1.5">
@@ -453,7 +453,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
           </div>
 
           {/* 保存区 */}
-          <div className="bg-surface border border-line rounded-2xl shadow-2xs p-4 flex items-center justify-between gap-3">
+          <div className="bg-surface border border-line rounded-2xl shadow-2xs p-3 flex items-center justify-between gap-2">
             <div className="flex items-start gap-2 text-xs text-fg-secondary">
               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <span>
@@ -464,7 +464,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
             <button
               type="button"
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer shrink-0"
             >
               <Save className="w-3.5 h-3.5" />
               保存权限配置
@@ -480,7 +480,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
           onClick={() => setPendingDeleteRole(null)}
         >
           <div
-            className="w-80 rounded-2xl border border-line bg-surface p-4 shadow-2xl animate-in zoom-in-95"
+            className="w-80 rounded-2xl border border-line bg-surface p-3 shadow-2xl animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-2.5">
@@ -537,14 +537,14 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
             <button
               type="button"
               onClick={() => setIsRoleSheetOpen(false)}
-              className="px-4 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSubmitRole}
-              className="px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
             >
               {editingRole ? "保存角色" : "创建角色"}
             </button>

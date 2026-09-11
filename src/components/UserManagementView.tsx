@@ -319,7 +319,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
     <div className="space-y-6 font-sans">
       {/* Action Toast */}
       {actionToast && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>{actionToast}</span>
@@ -331,7 +331,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
       )}
 
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
@@ -376,8 +376,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>海外客户建档总数</span>
             <Users className="w-4 h-4 text-blue-500" />
@@ -388,7 +388,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
           <div className="text-[11px] text-fg-secondary mt-0.5">跨北美、西欧及亚太全球受众</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>有效订阅率 (Active)</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -401,7 +401,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
           </div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>累计客户贡献总值 (LTV)</span>
             <DollarSign className="w-4 h-4 text-indigo-500" />
@@ -412,7 +412,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
           <div className="text-[11px] text-fg-secondary mt-0.5">平均客单值: ${(totalSpendSum / (userList.length || 1)).toFixed(0)}</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>行为事件穿透采集</span>
             <Clock className="w-4 h-4 text-amber-500" />
@@ -425,7 +425,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
       </div>
 
       {/* Filter and Search */}
-      <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-fg-tertiary text-xs">订阅状态:</span>
           {["ALL", "ACTIVE", "CANCELED"].map((status) => (
@@ -475,13 +475,13 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
           <table className="min-w-[1100px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-3 px-4 min-w-[220px]">客户 ID & 姓名</th>
-                <th className="py-3 px-4 w-[130px]">国家 / 地区</th>
-                <th className="py-3 px-4 w-[200px]">当前订阅方案 & 状态</th>
-                <th className="py-3 px-4 w-[160px]">绑定扣款方式</th>
-                <th className="py-3 px-4 w-[140px]">终生价值 (LTV)</th>
-                <th className="py-3 px-4 w-[180px]">最近登录时间 & IP</th>
-                <th className="py-3 px-4 w-[150px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="py-2 px-3 min-w-[220px]">客户 ID & 姓名</th>
+                <th className="py-2 px-3 w-[130px]">国家 / 地区</th>
+                <th className="py-2 px-3 w-[200px]">当前订阅方案 & 状态</th>
+                <th className="py-2 px-3 w-[200px]">绑定扣款方式</th>
+                <th className="py-2 px-3 w-[140px]">终生价值 (LTV)</th>
+                <th className="py-2 px-3 w-[180px]">最近登录时间 & IP</th>
+                <th className="py-2 px-3 w-[150px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
@@ -496,7 +496,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                     onClick={() => setSelectedUser(user)}
                     className="hover:bg-subtle/80 transition-colors cursor-pointer group"
                   >
-                    <td className="py-3.5 px-4 min-w-[220px]">
+                    <td className="py-3.5 px-3 min-w-[220px]">
                       <div className="font-semibold text-fg group-hover:text-blue-600 flex items-center gap-1.5 line-clamp-1">
                         <span>{user.name}</span>
                         <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -506,11 +506,11 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[130px] font-medium text-fg-secondary whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[130px] font-medium text-fg-secondary whitespace-nowrap">
                       {user.country}
                     </td>
 
-                    <td className="py-3.5 px-4 w-[200px]">
+                    <td className="py-3.5 px-3 w-[200px]">
                       <div className="flex flex-col gap-1">
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold w-fit ${
@@ -526,26 +526,29 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                           )}
                           {user.currentSubscription.planName}
                         </span>
-                        <span className="text-[10px] text-fg-tertiary font-mono">
+                        <span className="text-[10px] text-fg-tertiary font-mono whitespace-nowrap">
                           下次到期: {user.currentSubscription.nextBillingDate}
                         </span>
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[160px] font-mono text-fg-secondary whitespace-nowrap">
-                      <span className="px-1.5 py-0.5 bg-hover rounded text-[11px] border border-line">
+                    <td className="py-3.5 px-3 w-[200px] font-mono text-fg-secondary whitespace-nowrap">
+                      <span
+                        className="inline-block max-w-full truncate px-1.5 py-0.5 bg-hover rounded text-[11px] border border-line"
+                        title={`${user.defaultPaymentMethod.brand} •••• ${user.defaultPaymentMethod.last4}`}
+                      >
                         {user.defaultPaymentMethod.brand} •••• {user.defaultPaymentMethod.last4}
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[140px] font-mono font-bold text-fg whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[140px] font-mono font-bold text-fg whitespace-nowrap">
                       {formatCurrency(user.totalSpend, user.currentSubscription.currency)}
                       <span className="text-[10px] text-fg-tertiary font-normal block">
                         共 {user.totalOrdersCount} 笔交易
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[180px]">
+                    <td className="py-3.5 px-3 w-[180px]">
                       <div className="font-mono text-fg-secondary whitespace-nowrap">{user.lastLoginAt}</div>
                       <div className="font-mono text-[10px] text-fg-tertiary truncate max-w-[160px]" title={user.lastLoginIp}>
                         {user.lastLoginIp}
@@ -553,7 +556,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                     </td>
 
                     {/* Actions: Sticky Right */}
-                    <td className="py-3.5 px-4 w-[150px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    <td className="py-3.5 px-3 w-[150px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -587,7 +590,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
             <button
               type="button"
               onClick={() => setSelectedUser(null)}
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
             >
               关闭面板
             </button>
@@ -611,7 +614,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
             </div>
 
             {/* Overview Chips */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div className="bg-subtle rounded-xl p-3 border border-line-subtle">
                 <span className="text-[10px] text-fg-tertiary block font-medium">当前订阅套餐</span>
                 <span className="font-bold text-xs text-fg block truncate mt-0.5">
@@ -712,7 +715,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                           {action.description}
                         </p>
 
-                        <div className="pt-2 border-t border-line/60 flex flex-wrap items-center gap-3 text-[10px] text-fg-secondary font-mono">
+                        <div className="pt-2 border-t border-line/60 flex flex-wrap items-center gap-2 text-[10px] text-fg-secondary font-mono">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3 h-3 text-fg-tertiary" />
                             {action.location}
@@ -766,7 +769,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
             <button
               type="submit"
               form="form-add-end-user"
-              className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold cursor-pointer"
+              className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold cursor-pointer"
             >
               确认建档
             </button>
@@ -799,7 +802,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-fg-secondary block mb-1 font-semibold">所在国家/地区</label>
                   <ShadcnSelect

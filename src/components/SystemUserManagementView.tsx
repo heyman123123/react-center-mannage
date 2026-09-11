@@ -237,14 +237,14 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
     <div className="space-y-5 font-sans">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Page Header */}
-      <div className="bg-surface border border-line rounded-xl shadow-card px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-surface border border-line rounded-xl shadow-card px-4 py-2 flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <span className="p-2 rounded-lg bg-hover text-fg">
             <Users className="w-5 h-5" />
@@ -262,7 +262,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         <button
           id="btn-add-system-user"
           onClick={handleOpenAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors cursor-pointer self-start md:self-auto"
+          className="flex items-center gap-2 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors cursor-pointer self-start md:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>新增系统用户</span>
@@ -270,7 +270,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-surface border border-line rounded-xl shadow-card px-4 py-3 flex flex-col lg:flex-row gap-3 items-center justify-between">
+      <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2 flex flex-col lg:flex-row gap-2 items-center justify-between">
         <div className="relative w-full lg:w-72">
           <Search className="w-4 h-4 text-fg-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -353,13 +353,13 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
           <table className="w-full text-left text-xs">
             <thead className="bg-subtle border-b border-line text-fg-secondary font-medium">
               <tr>
-                <th className="px-4 py-3">用户与联系方式</th>
-                <th className="px-4 py-3">所属部门（多选）</th>
-                <th className="px-4 py-3">角色权限（多选）</th>
-                <th className="px-4 py-3">应用授权范围</th>
-                <th className="px-4 py-3">账号状态</th>
-                <th className="px-4 py-3">最后登录</th>
-                <th className="px-4 py-3 text-right">操作</th>
+                <th className="px-3 py-2">用户与联系方式</th>
+                <th className="px-3 py-2">所属部门（多选）</th>
+                <th className="px-3 py-2">角色权限（多选）</th>
+                <th className="px-3 py-2">应用授权范围</th>
+                <th className="px-3 py-2">账号状态</th>
+                <th className="px-3 py-2">最后登录</th>
+                <th className="px-3 py-2 text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle text-fg-secondary">
@@ -391,8 +391,8 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                       }`}
                     >
                       {/* Name & Email */}
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-hover border border-line text-fg font-bold flex items-center justify-center shrink-0 text-xs">
                             {u.avatarText || u.name[0]}
                           </div>
@@ -414,7 +414,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                       </td>
 
                       {/* Departments */}
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-1 max-w-[200px]">
                           {deptIds.length === 0 ? (
                             <span className="text-[11px] text-fg-tertiary italic">
@@ -435,7 +435,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                       </td>
 
                       {/* Roles */}
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-1 max-w-[220px]">
                           {userRoleKeys.length === 0 ? (
                             <span className="text-[11px] text-fg-tertiary italic">
@@ -456,7 +456,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                       </td>
 
                       {/* App Permissions */}
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <div className="flex flex-wrap items-center gap-1.5 max-w-xs">
                           {isAllApps ? (
                             <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-[10px] font-medium flex items-center gap-1">
@@ -485,7 +485,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                       </td>
 
                       {/* Status（点击切换账号状态，Popconfirm 二次确认） */}
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <Popconfirm
                           title={u.status === "DISABLED" ? `启用用户「${u.name}」？` : `停用用户「${u.name}」？`}
                           description={
@@ -517,12 +517,12 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                       </td>
 
                       {/* Last Login */}
-                      <td className="px-4 py-3 text-[11px] text-fg-secondary">
+                      <td className="px-3 py-2 text-[11px] text-fg-secondary">
                         {u.lastLogin || "暂未登录记录"}
                       </td>
 
                       {/* Actions */}
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
@@ -573,14 +573,14 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
             <button
               type="button"
               onClick={() => setIsSheetOpen(false)}
-              className="px-4 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
             >
               {editingUser ? "保存用户权限" : "创建并授权用户"}
             </button>
@@ -595,7 +595,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               <span>基本信息与员工档案</span>
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-fg-secondary font-medium mb-1">
                   员工姓名 <span className="text-rose-500">*</span>

@@ -134,14 +134,14 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
+            className="px-3 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
           >
             取消
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
+            className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
           >
             确认生成海外流水
           </button>
@@ -178,7 +178,7 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
         </div>
 
         {/* Channel & Amount Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label className="font-semibold text-fg-secondary block mb-1">
               海外支付通道 (Gateway):

@@ -48,7 +48,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
@@ -64,7 +64,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
         </div>
 
         {/* Global Delivery Stats */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <div className="text-right">
             <span className="text-[11px] text-fg-tertiary block">综合投递送达率</span>
             <span className="text-sm font-bold font-mono text-emerald-600">99.82%</span>
@@ -78,7 +78,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
       </div>
 
       {/* Filter and Search */}
-      <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-fg-tertiary text-xs">状态事件:</span>
           {["ALL", "DELIVERED", "OPENED", "BOUNCED"].map((tab) => (
@@ -120,12 +120,12 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
           <table className="min-w-[1000px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-3 px-4 w-[220px]">消息 ID & 服务商</th>
-                <th className="py-3 px-4 w-[180px]">事件类型</th>
-                <th className="py-3 px-4 w-[200px]">目标收件人</th>
-                <th className="py-3 px-4 min-w-[220px]">邮件主题与模版</th>
-                <th className="py-3 px-4 w-[160px]">发生时间</th>
-                <th className="py-3 px-4 w-[120px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="py-2 px-3 w-[220px]">消息 ID & 服务商</th>
+                <th className="py-2 px-3 w-[180px]">事件类型</th>
+                <th className="py-2 px-3 w-[200px]">目标收件人</th>
+                <th className="py-2 px-3 min-w-[220px]">邮件主题与模版</th>
+                <th className="py-2 px-3 w-[160px]">发生时间</th>
+                <th className="py-2 px-3 w-[120px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
@@ -134,14 +134,14 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
               {filtered.map((log) => {
                 return (
                   <tr key={log.id} className="hover:bg-subtle/80 transition-colors group">
-                    <td className="py-3.5 px-4 w-[220px]">
+                    <td className="py-3.5 px-3 w-[220px]">
                       <div className="font-mono text-fg truncate max-w-[190px]" title={log.messageId}>{log.messageId}</div>
                       <div className="text-[11px] text-fg-tertiary uppercase font-mono mt-0.5">
                         {log.provider}
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[180px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[180px] whitespace-nowrap">
                       {log.eventType === "email.delivered" && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <CheckCircle2 className="w-3 h-3" />
@@ -162,23 +162,23 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 w-[200px] font-medium text-fg font-mono truncate" title={log.recipient}>
+                    <td className="py-3.5 px-3 w-[200px] font-medium text-fg font-mono truncate" title={log.recipient}>
                       {log.recipient}
                     </td>
 
-                    <td className="py-3.5 px-4 min-w-[220px]">
+                    <td className="py-3.5 px-3 min-w-[220px]">
                       <div className="text-fg truncate font-medium line-clamp-1">{log.subject}</div>
                       <div className="text-[11px] text-fg-tertiary font-mono mt-0.5">
                         模版: {log.templateCode}
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[160px] font-mono text-[11px] text-fg-secondary whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[160px] font-mono text-[11px] text-fg-secondary whitespace-nowrap">
                       {log.timestamp}
                     </td>
 
                     {/* Actions: Sticky Right */}
-                    <td className="py-3.5 px-4 w-[120px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    <td className="py-3.5 px-3 w-[120px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                       <button
                         onClick={() => setSelectedLog(log)}
                         className="px-2.5 py-1 bg-hover hover:bg-hover text-fg-secondary rounded font-medium text-[11px] transition-colors"
@@ -207,7 +207,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
           <button
             type="button"
             onClick={() => setSelectedLog(null)}
-            className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
+            className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
           >
             关闭
           </button>

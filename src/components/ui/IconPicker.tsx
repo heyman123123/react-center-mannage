@@ -78,7 +78,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label =
           );
         })}
         {filtered.length === 0 && (
-          <div className="col-span-full py-4 text-center text-[11px] text-fg-tertiary">
+          <div className="col-span-full py-2 text-center text-[11px] text-fg-tertiary">
             未找到匹配图标
           </div>
         )}

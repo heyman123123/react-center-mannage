@@ -226,7 +226,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     <div className="space-y-6">
       {/* Toast */}
       {toastMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>{toastMessage}</span>
@@ -238,7 +238,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
@@ -265,8 +265,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>在售独立 SKU 数</span>
             <Package className="w-4 h-4 text-blue-500" />
@@ -277,7 +277,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <div className="text-[11px] text-fg-secondary mt-0.5">每条对应特定币种与唯一 Code</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>覆盖结算币种</span>
             <Coins className="w-4 h-4 text-emerald-500" />
@@ -290,7 +290,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           </div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>周期性订阅方案 (Recurring)</span>
             <Zap className="w-4 h-4 text-amber-500" />
@@ -301,7 +301,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <div className="text-[11px] text-fg-secondary mt-0.5">月付/年付海外自动扣款</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>全球活跃订阅用户</span>
             <Globe className="w-4 h-4 text-indigo-500" />
@@ -314,7 +314,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
           {/* Currency Filter */}
           <span className="text-fg-tertiary text-xs font-medium">货币筛选:</span>
@@ -392,15 +392,15 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <table className="min-w-[1200px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-3 px-4 w-[240px]">商品唯一编号 (Code / SKU)</th>
-                <th className="py-3 px-4 min-w-[200px]">商品方案名称</th>
-                <th className="py-3 px-4 w-[140px]">结算货币 & 单价</th>
-                <th className="py-3 px-4 w-[140px]">计费模式与周期</th>
-                <th className="py-3 px-4 w-[150px]">试用期 / 特性权益</th>
-                <th className="py-3 px-4 w-[140px]">Stripe / PayPal 映射</th>
-                <th className="py-3 px-4 w-[100px]">海外订阅数</th>
-                <th className="py-3 px-4 w-[100px]">状态</th>
-                <th className="py-3 px-4 w-[150px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="py-2 px-3 w-[240px]">商品唯一编号 (Code / SKU)</th>
+                <th className="py-2 px-3 min-w-[200px]">商品方案名称</th>
+                <th className="py-2 px-3 w-[140px]">结算货币 & 单价</th>
+                <th className="py-2 px-3 w-[140px]">计费模式与周期</th>
+                <th className="py-2 px-3 w-[150px]">试用期 / 特性权益</th>
+                <th className="py-2 px-3 w-[140px]">Stripe / PayPal 映射</th>
+                <th className="py-2 px-3 w-[100px]">海外订阅数</th>
+                <th className="py-2 px-3 w-[100px]">状态</th>
+                <th className="py-2 px-3 w-[150px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
@@ -414,7 +414,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 return (
                   <tr key={p.id} className="hover:bg-subtle/80 transition-colors group">
                     {/* Code */}
-                    <td className="py-3.5 px-4 w-[240px] whitespace-nowrap font-mono">
+                    <td className="py-3.5 px-3 w-[240px] whitespace-nowrap font-mono">
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-fg bg-hover px-2 py-0.5 rounded border border-line text-[11px] truncate max-w-[170px]" title={p.code}>
                           {p.code}
@@ -434,7 +434,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
 
                     {/* Name & Desc */}
-                    <td className="py-3.5 px-4 min-w-[200px]">
+                    <td className="py-3.5 px-3 min-w-[200px]">
                       <div className="font-semibold text-fg text-xs line-clamp-1">{p.name}</div>
                       <div className="text-[11px] text-fg-tertiary line-clamp-1 mt-0.5">
                         {p.description}
@@ -442,7 +442,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
 
                     {/* Currency & Price */}
-                    <td className="py-3.5 px-4 w-[140px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[140px] whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span className="px-1.5 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 font-mono text-[10px] font-bold rounded">
                           {currInfo?.flag} {p.currency || "USD"}
@@ -454,7 +454,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
 
                     {/* Type & Interval */}
-                    <td className="py-3.5 px-4 w-[140px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[140px] whitespace-nowrap">
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                           p.type === "SUBSCRIPTION"
@@ -482,7 +482,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
 
                     {/* Trial / Features */}
-                    <td className="py-3.5 px-4 w-[150px] text-[11px] text-fg-secondary">
+                    <td className="py-3.5 px-3 w-[150px] text-[11px] text-fg-secondary">
                       {p.trialDays ? (
                         <div className="font-semibold text-emerald-600">
                           {p.trialDays} 天免费试用
@@ -496,7 +496,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
 
                     {/* Gateway ID */}
-                    <td className="py-3.5 px-4 w-[140px] whitespace-nowrap font-mono text-[11px] text-fg-secondary">
+                    <td className="py-3.5 px-3 w-[140px] whitespace-nowrap font-mono text-[11px] text-fg-secondary">
                       {p.stripePriceId ? (
                         <span className="bg-subtle border border-line px-1.5 py-0.5 rounded text-[10px] block max-w-[120px] truncate" title={p.stripePriceId}>
                           {p.stripePriceId}
@@ -507,12 +507,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
 
                     {/* Subscribers */}
-                    <td className="py-3.5 px-4 w-[100px] whitespace-nowrap font-mono text-fg">
+                    <td className="py-3.5 px-3 w-[100px] whitespace-nowrap font-mono text-fg">
                       {p.subscriberCount?.toLocaleString() || 0}
                     </td>
 
                     {/* Status */}
-                    <td className="py-3.5 px-4 w-[100px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[100px] whitespace-nowrap">
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                           p.status === "ACTIVE"
@@ -530,7 +530,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
 
                     {/* Actions: Sticky Right */}
-                    <td className="py-3.5 px-4 w-[150px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    <td className="py-3.5 px-3 w-[150px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                       <div className="flex items-center justify-end gap-1">
                         {/* Clone to other currency */}
                         <div className="relative group">
@@ -604,14 +604,14 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
+                className="px-3 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
+                className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
               >
                 {editingProduct ? "保存更改" : "确认创建独立 SKU"}
               </button>
@@ -620,7 +620,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         >
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             {/* Currency & Code */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
                   指定计费货币 (Currency):
@@ -666,7 +666,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             </div>
 
             {/* Name & Price */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
                 <label className="font-semibold text-fg-secondary block mb-1">
                   商品 / 方案名称:
@@ -702,7 +702,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             </div>
 
             {/* Type & Interval */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
                   业务类型:
@@ -736,7 +736,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             </div>
 
             {/* Trial & Gateway IDs */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
                   免费试用天数 (Trial Days):

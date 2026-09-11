@@ -93,10 +93,10 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
   if (loading) return <TableSkeleton rows={8} />;
 
   return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto font-sans">
+    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto font-sans">
       {/* Toast Alert */}
       {successToast && (
-        <div className="bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center justify-between text-sm animate-in fade-in slide-in-from-top-2">
+        <div className="bg-emerald-600 text-white px-3 py-2 rounded-xl shadow-lg flex items-center justify-between text-sm animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4" />
             <span>{successToast}</span>
@@ -111,7 +111,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       )}
 
       {/* Header Banner with Action */}
-      <div className="bg-surface border border-line/90 rounded-xl p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <Scale className="w-5 h-5 text-fg" />
@@ -124,12 +124,12 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             id="run-recon-engine-btn"
             disabled={isRunningEngine || !canReconcile}
             onClick={handleRunReconciliation}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold shadow-card transition-all ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold shadow-card transition-all ${
               !canReconcile
                 ? "bg-hover text-fg-tertiary cursor-not-allowed border border-line"
                 : isRunningEngine
@@ -154,9 +154,9 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       </div>
 
       {/* Three-Way Reconciliation Architecture Visualizer */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Node 1: Business Order Side */}
-        <div className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs">
+        <div className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider">
               1. 业务订单侧 (Internal Orders)
@@ -178,7 +178,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
         </div>
 
         {/* Node 2: Payment Gateway Stream */}
-        <div className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs">
+        <div className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider">
               2. 聚合支付网关 (Gateway Stream)
@@ -200,7 +200,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
         </div>
 
         {/* Node 3: Bank & Channel Clearing Files */}
-        <div className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs">
+        <div className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider">
               3. 银行与渠道对账单 (Channel Bills)
@@ -225,7 +225,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
 
       {/* Discrepancy Workbench (差错账工作台) */}
       <div className="bg-surface border border-line/90 rounded-xl shadow-2xs overflow-hidden">
-        <div className="p-4 border-b border-line/80 flex items-center justify-between">
+        <div className="p-3 border-b border-line/80 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-red-600" />
             <h2 className="text-sm font-semibold text-fg">
@@ -256,7 +256,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             {discrepancies.map((tx) => (
               <div
                 key={tx.id}
-                className="p-4 hover:bg-subtle transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+                className="p-3 hover:bg-subtle transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -275,14 +275,14 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                   <div className="text-xs text-red-600 bg-red-50/60 border border-red-100 rounded-lg p-2 mt-1">
                     ⚠️ {tx.discrepancyNote}
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-fg-secondary pt-1 font-mono">
+                  <div className="flex items-center gap-3 text-xs text-fg-secondary pt-1 font-mono">
                     <span>商户: {tx.merchantName}</span>
                     <span>渠道单号: {tx.channelTradeNo}</span>
                     <span>发生时间: {tx.createdAt}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <div className="text-right">
                     <div className="font-bold text-sm text-fg font-mono">
                       {formatCurrency(tx.orderAmount, tx.currency)}
@@ -306,7 +306,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       </div>
 
       {/* Historical Reconciliation Batches Table */}
-      <div className="bg-surface border border-line/90 rounded-xl shadow-2xs p-5">
+      <div className="bg-surface border border-line/90 rounded-xl shadow-2xs p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-fg">
             近期对账批次记录 (Recent Reconciliation Batches)

@@ -83,7 +83,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-sky-50 text-sky-600 rounded-lg">
@@ -107,7 +107,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
       </div>
 
       {/* Dedicated Channels Endpoints Banner */}
-      <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
         <div className="flex items-center justify-between mb-3 text-xs">
           <div className="flex items-center gap-1.5 font-bold text-fg">
             <Cpu className="w-4 h-4 text-sky-600" />
@@ -157,7 +157,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
 
       {/* Redeliver Toast */}
       {redeliverToast && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>{redeliverToast}</span>
@@ -169,7 +169,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
           <span className="text-fg-tertiary text-xs">事件筛选:</span>
           {["ALL", "SUCCESS", "FAILED", "subscription", "dispute"].map((tab) => (
@@ -213,13 +213,13 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
           <table className="min-w-[1100px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-3 px-4 w-[220px]">事件 ID & 来源渠道</th>
-                <th className="py-3 px-4 w-[180px]">事件类型 (Event Type)</th>
-                <th className="py-3 px-4 min-w-[220px]">下游目标应用 & 回调地址</th>
-                <th className="py-3 px-4 w-[120px]">HTTP 状态</th>
-                <th className="py-3 px-4 w-[120px]">耗时 / 重试</th>
-                <th className="py-3 px-4 w-[160px]">触发时间</th>
-                <th className="py-3 px-4 w-[160px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="py-2 px-3 w-[220px]">事件 ID & 来源渠道</th>
+                <th className="py-2 px-3 w-[180px]">事件类型 (Event Type)</th>
+                <th className="py-2 px-3 min-w-[220px]">下游目标应用 & 回调地址</th>
+                <th className="py-2 px-3 w-[120px]">HTTP 状态</th>
+                <th className="py-2 px-3 w-[120px]">耗时 / 重试</th>
+                <th className="py-2 px-3 w-[160px]">触发时间</th>
+                <th className="py-2 px-3 w-[160px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
@@ -229,27 +229,27 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
                 const isRedelivering = redeliveringId === log.id;
                 return (
                   <tr key={log.id} className="hover:bg-subtle/80 transition-colors group">
-                    <td className="py-3.5 px-4 w-[220px]">
+                    <td className="py-3.5 px-3 w-[220px]">
                       <div className="font-mono font-medium text-fg truncate max-w-[190px]" title={log.eventId}>{log.eventId}</div>
                       <div className="text-[11px] text-fg-tertiary uppercase font-mono mt-0.5">
                         {log.channel}
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[180px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[180px] whitespace-nowrap">
                       <span className="px-2 py-0.5 rounded font-mono text-[11px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
                         {log.eventType}
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 min-w-[220px]">
+                    <td className="py-3.5 px-3 min-w-[220px]">
                       <div className="font-semibold text-fg line-clamp-1">{log.appName}</div>
                       <div className="font-mono text-[11px] text-fg-secondary truncate mt-0.5 max-w-sm" title={log.targetUrl}>
                         {log.targetUrl}
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[120px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[120px] whitespace-nowrap">
                       {log.httpStatus === 200 ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <CheckCircle2 className="w-3 h-3" />
@@ -263,17 +263,17 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 w-[120px] whitespace-nowrap font-mono text-[11px] text-fg-secondary">
+                    <td className="py-3.5 px-3 w-[120px] whitespace-nowrap font-mono text-[11px] text-fg-secondary">
                       <div>{log.latencyMs}ms</div>
                       <div className="text-fg-tertiary text-[10px]">重试: {log.attempts} 次</div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[160px] font-mono text-[11px] text-fg-secondary whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[160px] font-mono text-[11px] text-fg-secondary whitespace-nowrap">
                       {log.timestamp}
                     </td>
 
                     {/* Actions: Sticky Right */}
-                    <td className="py-3.5 px-4 w-[160px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    <td className="py-3.5 px-3 w-[160px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => setSelectedLog(log)}
@@ -315,7 +315,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
           <button
             type="button"
             onClick={() => setSelectedLog(null)}
-            className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
+            className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
           >
             关闭
           </button>

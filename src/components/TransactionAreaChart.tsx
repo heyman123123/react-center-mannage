@@ -137,10 +137,10 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
   return (
     <div
       id="chart-card-container"
-      className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs hover:shadow-card transition-shadow duration-200"
+      className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs hover:shadow-card transition-shadow duration-200"
     >
       {/* Chart Card Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <div>
           <h2 className="text-base font-semibold text-fg tracking-tight">
             Total Transaction Volume (聚合交易流水与清算峰值)
@@ -323,7 +323,7 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
             <div className="font-semibold text-zinc-200 border-b border-line pb-1 mb-1">
               {activePoint.date} (实时对账详情)
             </div>
-            <div className="flex items-center justify-between gap-3 text-zinc-300">
+            <div className="flex items-center justify-between gap-2 text-zinc-300">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-surface inline-block" />
                 业务应收:
@@ -332,7 +332,7 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
                 ¥{activePoint.gross.toLocaleString()}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-3 text-zinc-300">
+            <div className="flex items-center justify-between gap-2 text-zinc-300">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-hover inline-block" />
                 渠道实收:
@@ -341,7 +341,7 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
                 ¥{activePoint.net.toLocaleString()}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-3 text-emerald-400 text-[11px] pt-1 mt-1 border-t border-line font-mono">
+            <div className="flex items-center justify-between gap-2 text-emerald-400 text-[11px] pt-1 mt-1 border-t border-line font-mono">
               <span>自动平账率:</span>
               <span>
                 {((activePoint.net / activePoint.gross) * 100).toFixed(2)}%
@@ -352,7 +352,7 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
       </div>
 
       {/* X Axis Date labels (exact match to screenshot's dates: Apr 3 ... Jun 30) */}
-      <div className="flex items-center justify-between px-4 mt-2 text-[11px] text-fg-tertiary font-mono overflow-x-auto">
+      <div className="flex items-center justify-between px-3 mt-2 text-[11px] text-fg-tertiary font-mono overflow-x-auto">
         {dataPoints.map((d, i) => (
           <span
             key={i}

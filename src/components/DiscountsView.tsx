@@ -168,7 +168,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     <div className="space-y-6">
       {/* Toast */}
       {toastMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>{toastMessage}</span>
@@ -180,7 +180,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-rose-50 text-rose-600 rounded-lg">
@@ -207,8 +207,8 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>生效中折扣方案</span>
             <Tag className="w-4 h-4 text-rose-500" />
@@ -219,7 +219,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           <div className="text-[11px] text-fg-secondary mt-0.5">支持独立站结账页实时输入校验</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>海外用户累计核销次数</span>
             <TrendingUp className="w-4 h-4 text-blue-500" />
@@ -230,7 +230,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           <div className="text-[11px] text-fg-secondary mt-0.5">有效提升海外结账转化率与客单价</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>促销活动结合联动</span>
             <Sparkles className="w-4 h-4 text-amber-500" />
@@ -243,7 +243,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
           <span className="text-fg-tertiary text-xs">类型筛选:</span>
           {[
@@ -305,14 +305,14 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           <table className="min-w-[1100px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-3 px-4 w-[220px]">优惠码 (Promo Code)</th>
-                <th className="py-3 px-4 min-w-[200px]">折扣名称 & 适用范围</th>
-                <th className="py-3 px-4 w-[130px]">优惠力度</th>
-                <th className="py-3 px-4 w-[120px]">门槛条件</th>
-                <th className="py-3 px-4 w-[160px]">使用进度 (已用 / 限额)</th>
-                <th className="py-3 px-4 w-[170px]">有效期限</th>
-                <th className="py-3 px-4 w-[100px]">状态</th>
-                <th className="py-3 px-4 w-[140px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="py-2 px-3 w-[220px]">优惠码 (Promo Code)</th>
+                <th className="py-2 px-3 min-w-[200px]">折扣名称 & 适用范围</th>
+                <th className="py-2 px-3 w-[130px]">优惠力度</th>
+                <th className="py-2 px-3 w-[120px]">门槛条件</th>
+                <th className="py-2 px-3 w-[160px]">使用进度 (已用 / 限额)</th>
+                <th className="py-2 px-3 w-[170px]">有效期限</th>
+                <th className="py-2 px-3 w-[100px]">状态</th>
+                <th className="py-2 px-3 w-[140px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
@@ -323,7 +323,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                 const isCopied = copiedCode === d.code;
                 return (
                   <tr key={d.id} className="hover:bg-subtle/80 transition-colors group">
-                    <td className="py-3.5 px-4 w-[220px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[220px] whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <span className="font-mono font-bold text-sm text-fg bg-hover px-2 py-0.5 rounded border border-line">
                           {d.code}
@@ -342,7 +342,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 min-w-[200px]">
+                    <td className="py-3.5 px-3 min-w-[200px]">
                       <div className="font-semibold text-fg line-clamp-1">{d.name}</div>
                       <div className="text-[10px] text-fg-tertiary mt-0.5 line-clamp-1">
                         {d.applicableScope === "ALL"
@@ -353,7 +353,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[130px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[130px] whitespace-nowrap">
                       <div className="font-bold font-mono text-fg">
                         {d.type === "PERCENTAGE" ? (
                           <span className="text-rose-600">{d.value}% 折扣</span>
@@ -366,7 +366,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[120px] whitespace-nowrap text-fg-secondary">
+                    <td className="py-3.5 px-3 w-[120px] whitespace-nowrap text-fg-secondary">
                       {d.minOrderAmount > 0 ? (
                         <span>
                           满 ${d.minOrderAmount} 可用
@@ -376,7 +376,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 w-[160px]">
+                    <td className="py-3.5 px-3 w-[160px]">
                       <div className="flex items-center justify-between text-[11px] font-mono mb-1">
                         <span className="font-bold text-fg">{d.usedCount}</span>
                         <span className="text-fg-tertiary">/ {d.maxUsageLimit}</span>
@@ -395,12 +395,12 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[170px] whitespace-nowrap text-[11px] font-mono text-fg-secondary">
+                    <td className="py-3.5 px-3 w-[170px] whitespace-nowrap text-[11px] font-mono text-fg-secondary">
                       <div>{d.startDate} 至</div>
                       <div>{d.endDate}</div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[100px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[100px] whitespace-nowrap">
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                           d.status === "ACTIVE"
@@ -428,7 +428,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                     </td>
 
                     {/* Actions: Sticky Right */}
-                    <td className="py-3.5 px-4 w-[140px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    <td className="py-3.5 px-3 w-[140px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleOpenEdit(d)}
@@ -473,14 +473,14 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
+                className="px-3 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
+                className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
               >
                 {editingDiscount ? "保存更新" : "确认创建"}
               </button>
@@ -488,7 +488,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           }
         >
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
                   优惠兑换码 (Promo Code):
@@ -531,7 +531,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
                   {formType === "PERCENTAGE" ? "折扣比例 (%)" : "立减金额 ($)"}:
@@ -562,7 +562,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
                   总限量使用次数:
@@ -592,7 +592,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
                   生效开始时间:

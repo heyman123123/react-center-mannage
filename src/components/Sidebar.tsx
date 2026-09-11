@@ -155,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       className="w-64 h-screen bg-surface border-r border-line/80 flex flex-col justify-between shrink-0 select-none text-fg font-sans"
     >
       {/* Top Section */}
-      <div className="p-3.5 flex flex-col gap-3 overflow-y-auto flex-1">
+      <div className="p-3.5 flex flex-col gap-2 overflow-y-auto flex-1">
         {/* Platform Identity */}
         <div className="flex items-center gap-2.5 p-2 rounded-xl border border-line-subtle bg-subtle/60">
           <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs shrink-0 shadow-card">

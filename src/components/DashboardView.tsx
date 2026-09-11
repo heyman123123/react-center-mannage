@@ -155,13 +155,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   if (loading) return <DashboardSkeleton />;
 
   return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto font-sans">
+    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto font-sans">
       {/* 4 Top KPI Cards (matching the screenshot's exact visual layout and metrics) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: Total Revenue */}
         <div
           id="kpi-card-total-revenue"
-          className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs hover:shadow-card transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>Total Revenue</span>
@@ -185,7 +185,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 2: New Customers / 接入商户 */}
         <div
           id="kpi-card-new-customers"
-          className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs hover:shadow-card transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>New Customers</span>
@@ -209,7 +209,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 3: Active Accounts / 结算账户 */}
         <div
           id="kpi-card-active-accounts"
-          className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs hover:shadow-card transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>Active Accounts</span>
@@ -233,7 +233,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 4: Growth Rate / 对账平账率 */}
         <div
           id="kpi-card-growth-rate"
-          className="bg-surface border border-line/90 rounded-xl p-5 shadow-2xs hover:shadow-card transition-all"
+          className="bg-surface border border-line/90 rounded-xl p-4 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>Growth Rate</span>
@@ -268,7 +268,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         className="bg-surface border border-line/90 rounded-xl shadow-2xs overflow-hidden"
       >
         {/* Table Toolbar Header */}
-        <div className="p-4 border-b border-line/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-3 border-b border-line/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Filter Tabs (mirrors Outline, Past Performance 3, Key Personnel 2, Focus Documents) */}
           <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
             <button
@@ -392,7 +392,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <table className="min-w-[1050px] w-full text-left text-xs text-fg-secondary border-collapse">
             <thead className="bg-subtle/90 text-fg-secondary font-medium border-b border-line/80 select-none text-[11px]">
               <tr>
-                <th className="w-10 px-3 py-3 text-center">
+                <th className="w-10 px-3 py-2 text-center">
                   <input
                     type="checkbox"
                     checked={isAllSelected}
@@ -400,27 +400,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     className="rounded border-line text-fg focus:ring-line"
                   />
                 </th>
-                <th className="w-8 px-1 py-3 text-center"></th>
+                <th className="w-8 px-1 py-2 text-center"></th>
                 {visibleColumns.header && (
-                  <th className="px-4 py-3 min-w-[200px] font-semibold text-fg-secondary">Header</th>
+                  <th className="px-3 py-2 min-w-[200px] font-semibold text-fg-secondary">Header</th>
                 )}
                 {visibleColumns.sectionType && (
-                  <th className="px-4 py-3 w-[140px] font-semibold text-fg-secondary">Section Type</th>
+                  <th className="px-3 py-2 w-[140px] font-semibold text-fg-secondary">Section Type</th>
                 )}
                 {visibleColumns.status && (
-                  <th className="px-4 py-3 w-[130px] font-semibold text-fg-secondary">Status</th>
+                  <th className="px-3 py-2 w-[130px] font-semibold text-fg-secondary">Status</th>
                 )}
                 {visibleColumns.target && (
-                  <th className="px-4 py-3 w-[100px] font-semibold text-fg-secondary">Target</th>
+                  <th className="px-3 py-2 w-[100px] font-semibold text-fg-secondary">Target</th>
                 )}
                 {visibleColumns.limit && (
-                  <th className="px-4 py-3 w-[100px] font-semibold text-fg-secondary">Limit</th>
+                  <th className="px-3 py-2 w-[100px] font-semibold text-fg-secondary">Limit</th>
                 )}
                 {visibleColumns.reviewer && (
-                  <th className="px-4 py-3 w-[150px] font-semibold text-fg-secondary">Reviewer</th>
+                  <th className="px-3 py-2 w-[150px] font-semibold text-fg-secondary">Reviewer</th>
                 )}
                 {visibleColumns.actions && (
-                  <th className="w-[90px] px-3 py-3 sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                  <th className="w-[90px] px-3 py-2 sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                     操作
                   </th>
                 )}
@@ -452,7 +452,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     >
                       {/* Checkbox */}
                       <td
-                        className="w-10 px-3 py-3 text-center"
+                        className="w-10 px-3 py-2 text-center"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <input
@@ -464,13 +464,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </td>
 
                       {/* Drag Grip Handle */}
-                      <td className="w-8 px-1 py-3 text-center text-zinc-300 group-hover:text-fg-secondary cursor-grab">
+                      <td className="w-8 px-1 py-2 text-center text-zinc-300 group-hover:text-fg-secondary cursor-grab">
                         <GripVertical className="w-3.5 h-3.5 mx-auto" />
                       </td>
 
                       {/* Header (Title & Code) */}
                       {visibleColumns.header && (
-                        <td className="px-4 py-3 min-w-[200px]">
+                        <td className="px-3 py-2 min-w-[200px]">
                           <div className="font-semibold text-fg line-clamp-1">
                             {tx.orderTitle}
                           </div>
@@ -484,7 +484,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                       {/* Section Type (Channel tag) */}
                       {visibleColumns.sectionType && (
-                        <td className="px-4 py-3 w-[140px] whitespace-nowrap">
+                        <td className="px-3 py-2 w-[140px] whitespace-nowrap">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${channelInfo.bg}`}
                           >
@@ -495,7 +495,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                       {/* Status */}
                       {visibleColumns.status && (
-                        <td className="px-4 py-3 w-[130px] whitespace-nowrap">
+                        <td className="px-3 py-2 w-[130px] whitespace-nowrap">
                           {tx.status === "done" && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -532,21 +532,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                       {/* Target (Amount / Target Ratio) */}
                       {visibleColumns.target && (
-                        <td className="px-4 py-3 w-[100px] font-mono font-medium text-fg whitespace-nowrap">
+                        <td className="px-3 py-2 w-[100px] font-mono font-medium text-fg whitespace-nowrap">
                           {tx.targetQuotaRatio ?? (tx.orderAmount > 1000 ? Math.round(tx.orderAmount / 100) : 18)}
                         </td>
                       )}
 
                       {/* Limit (Channel Fee / Limit Ratio) */}
                       {visibleColumns.limit && (
-                        <td className="px-4 py-3 w-[100px] font-mono text-fg-secondary whitespace-nowrap">
+                        <td className="px-3 py-2 w-[100px] font-mono text-fg-secondary whitespace-nowrap">
                           {tx.limitRatio ?? (tx.channelFee > 0 ? Math.round(tx.channelFee * 2) : 5)}
                         </td>
                       )}
 
                       {/* Reviewer */}
                       {visibleColumns.reviewer && (
-                        <td className="px-4 py-3 w-[150px] whitespace-nowrap">
+                        <td className="px-3 py-2 w-[150px] whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <div className="w-5 h-5 rounded-full bg-hover text-fg-secondary flex items-center justify-center text-[10px] font-bold">
                               {tx.reviewer?.name ? tx.reviewer.name.slice(0, 1) : "平"}
@@ -560,7 +560,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                       {/* Actions: Sticky Right */}
                       {visibleColumns.actions && (
-                        <td className="w-[90px] px-3 py-3 sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                        <td className="w-[90px] px-3 py-2 sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                           <div className="flex items-center justify-end gap-1">
                             {tx.status === "discrepancy" ? (
                               <button
@@ -605,7 +605,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Table Bottom Footer Pagination Info */}
-        <div className="px-4 py-3 border-t border-line/80 bg-subtle/50 flex items-center justify-between text-xs text-fg-secondary">
+        <div className="px-3 py-2 border-t border-line/80 bg-subtle/50 flex items-center justify-between text-xs text-fg-secondary">
           <div>
             已选 <span className="font-semibold text-fg">{selectedTxIds.length}</span> 条流水 / 共{" "}
             <span className="font-semibold text-fg">

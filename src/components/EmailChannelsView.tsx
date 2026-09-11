@@ -143,7 +143,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-purple-50 text-purple-600 rounded-lg">
@@ -170,7 +170,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
       </div>
 
       {/* Email Channels Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {channelList.map((channel) => {
           const quotaPercent = Math.min(
             100,
@@ -180,7 +180,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           return (
             <div
               key={channel.id}
-              className={`bg-surface border rounded-2xl p-5 shadow-card flex flex-col justify-between transition-all ${
+              className={`bg-surface border rounded-2xl p-4 shadow-card flex flex-col justify-between transition-all ${
                 channel.enabled
                   ? "border-line/80 hover:border-line"
                   : "border-line/50 opacity-60 bg-subtle/50"
@@ -188,8 +188,8 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             >
               <div className="space-y-4">
                 {/* Header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
                     <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-sm tracking-tighter uppercase font-mono border border-purple-100">
                       {channel.providerKey.slice(0, 3)}
                     </div>
@@ -337,7 +337,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 type="submit"
                 form="form-test-email"
                 disabled={isSendingTest}
-                className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium flex items-center gap-1.5 shadow-card cursor-pointer"
+                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium flex items-center gap-1.5 shadow-card cursor-pointer"
               >
                 {isSendingTest ? (
                   <>
@@ -356,7 +356,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             <button
               type="button"
               onClick={() => setTestModalChannel(null)}
-              className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium cursor-pointer"
+              className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium cursor-pointer"
             >
               完成
             </button>
@@ -365,7 +365,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
       >
         {testModalChannel &&
           (testFeedback ? (
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium">
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium">
               {testFeedback}
             </div>
           ) : (
@@ -401,7 +401,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
 
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-[9999] bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-[9999] bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -421,14 +421,14 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             <button
               type="button"
               onClick={() => setIsCreateSheetOpen(false)}
-              className="px-4 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
               form="form-add-email-channel"
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
             >
               确认添加渠道
             </button>
@@ -440,7 +440,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           onSubmit={handleAddChannel}
           className="space-y-3 text-xs"
         >
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-fg-secondary block mb-1 font-medium">
                 服务商 (Provider)
@@ -483,7 +483,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-fg-secondary block mb-1 font-medium">
                 发件人昵称 (From Name)
@@ -522,7 +522,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-fg-secondary block mb-1 font-medium">SMTP 主机地址</label>
               <input
@@ -573,14 +573,14 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             <button
               type="button"
               onClick={() => setEditingChannel(null)}
-              className="px-4 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
               form="form-edit-email-channel"
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
             >
               保存通道配置
             </button>
@@ -613,7 +613,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-fg-secondary block mb-1 font-medium">发件人昵称 (From Name)</label>
                   <input
@@ -653,7 +653,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-fg-secondary block mb-1 font-medium">SMTP 主机地址</label>
                   <input

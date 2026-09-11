@@ -29,10 +29,10 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header
       id="main-top-header"
-      className="h-14 px-6 border-b border-line/80 bg-surface flex items-center justify-between shrink-0 select-none"
+      className="h-14 px-4 border-b border-line/80 bg-surface flex items-center justify-between shrink-0 select-none"
     >
       {/* Left Breadcrumbs */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button
           id="sidebar-toggle-btn"
           title="折叠/展开导航"

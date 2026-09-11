@@ -185,7 +185,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
     <div className="space-y-6 font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>{toastMessage}</span>
@@ -197,7 +197,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-amber-50 text-amber-600 rounded-lg">
@@ -224,8 +224,8 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>已成功投递批次</span>
             <Send className="w-4 h-4 text-emerald-500" />
@@ -236,7 +236,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
           <div className="text-[11px] text-fg-secondary mt-0.5">高可靠海外直连投递保障</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>触达海外买家总人次</span>
             <Users className="w-4 h-4 text-blue-500" />
@@ -247,7 +247,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
           <div className="text-[11px] text-fg-secondary mt-0.5">平均海外邮箱开信率: 45.8%</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>促销带来直接成交 GMV</span>
             <DollarSign className="w-4 h-4 text-indigo-500" />
@@ -258,7 +258,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
           <div className="text-[11px] text-fg-secondary mt-0.5">优惠券核销关联直接转化收益</div>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card">
+        <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
             <span>多语言动态渲染</span>
             <Sparkles className="w-4 h-4 text-amber-500" />
@@ -271,7 +271,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-surface p-4 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-fg-tertiary text-xs">状态筛选:</span>
           {[
@@ -312,15 +312,15 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
           <table className="min-w-[1200px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-3 px-4 min-w-[240px]">活动名称 & 邮件主题</th>
-                <th className="py-3 px-4 w-[150px]">目标受众</th>
-                <th className="py-3 px-4 w-[130px]">绑定折扣券</th>
-                <th className="py-3 px-4 w-[110px]">受众规模</th>
-                <th className="py-3 px-4 w-[180px]">打开 / 点击 / 转化</th>
-                <th className="py-3 px-4 w-[120px]">带来估算 GMV</th>
-                <th className="py-3 px-4 w-[160px]">排期 / 发送时间</th>
-                <th className="py-3 px-4 w-[110px]">状态</th>
-                <th className="py-3 px-4 w-[180px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="py-2 px-3 min-w-[240px]">活动名称 & 邮件主题</th>
+                <th className="py-2 px-3 w-[150px]">目标受众</th>
+                <th className="py-2 px-3 w-[130px]">绑定折扣券</th>
+                <th className="py-2 px-3 w-[110px]">受众规模</th>
+                <th className="py-2 px-3 w-[180px]">打开 / 点击 / 转化</th>
+                <th className="py-2 px-3 w-[120px]">带来估算 GMV</th>
+                <th className="py-2 px-3 w-[160px]">排期 / 发送时间</th>
+                <th className="py-2 px-3 w-[110px]">状态</th>
+                <th className="py-2 px-3 w-[180px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
@@ -335,7 +335,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
 
                 return (
                   <tr key={c.id} className="hover:bg-subtle/80 transition-colors group">
-                    <td className="py-3.5 px-4 min-w-[240px]">
+                    <td className="py-3.5 px-3 min-w-[240px]">
                       <div className="font-semibold text-fg line-clamp-1">{c.name}</div>
                       <div className="text-[11px] text-fg-secondary flex items-center gap-1 mt-0.5 line-clamp-1">
                         <Mail className="w-3 h-3 text-fg-tertiary shrink-0" />
@@ -343,7 +343,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[150px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[150px] whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-hover text-fg-secondary">
                         <Users className="w-3 h-3 text-fg-secondary" />
                         {c.targetAudience === "ALL_USERS"
@@ -356,7 +356,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[130px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[130px] whitespace-nowrap">
                       {c.discountCode ? (
                         <span className="font-mono font-bold text-xs bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded">
                           {c.discountCode}
@@ -366,14 +366,14 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 w-[110px] whitespace-nowrap font-mono">
+                    <td className="py-3.5 px-3 w-[110px] whitespace-nowrap font-mono">
                       <span className="font-bold text-fg">
                         {c.totalRecipients.toLocaleString()}
                       </span>{" "}
                       <span className="text-fg-tertiary text-[10px]">人</span>
                     </td>
 
-                    <td className="py-3.5 px-4 w-[180px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[180px] whitespace-nowrap">
                       {c.status === "SENT" ? (
                         <div className="flex items-center gap-2 font-mono text-[11px]">
                           <div>
@@ -394,7 +394,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 w-[120px] whitespace-nowrap font-mono font-bold text-fg">
+                    <td className="py-3.5 px-3 w-[120px] whitespace-nowrap font-mono font-bold text-fg">
                       {c.status === "SENT" ? (
                         <span className="text-emerald-700">${estimatedGmv.toLocaleString()}</span>
                       ) : (
@@ -402,7 +402,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 w-[160px] whitespace-nowrap text-[11px] font-mono text-fg-secondary">
+                    <td className="py-3.5 px-3 w-[160px] whitespace-nowrap text-[11px] font-mono text-fg-secondary">
                       {c.sentTime ? (
                         <div>
                           <span className="text-emerald-600 font-bold">发:</span> {c.sentTime.slice(5, 16)}
@@ -416,7 +416,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 w-[110px] whitespace-nowrap">
+                    <td className="py-3.5 px-3 w-[110px] whitespace-nowrap">
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                           c.status === "SENT"
@@ -444,7 +444,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                     </td>
 
                     {/* Actions: Sticky Right */}
-                    <td className="py-3.5 px-4 w-[180px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    <td className="py-3.5 px-3 w-[180px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => setPreviewCampaign(c)}
@@ -506,7 +506,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
             <button
               type="button"
               onClick={() => setPreviewCampaign(null)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
+              className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
             >
               关闭预览
             </button>
@@ -529,7 +529,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
               </div>
 
               {/* Email Body Card */}
-              <div className="p-6 bg-surface max-w-md mx-auto my-4 rounded-xl border border-line shadow-card text-center space-y-4">
+              <div className="p-4 bg-surface max-w-md mx-auto my-4 rounded-xl border border-line shadow-card text-center space-y-4">
                 <div className="w-10 h-10 mx-auto rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-base">
                   N
                 </div>
@@ -555,7 +555,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                   <a
                     href="#claim"
                     onClick={(e) => e.preventDefault()}
-                    className="inline-block px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-card"
+                    className="inline-block px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-card"
                   >
                     Claim Your Discount Now →
                   </a>
@@ -585,14 +585,14 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
+                className="px-3 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
+                className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
               >
                 {formScheduleType === "NOW" ? "立即派发活动" : "保存活动排期"}
               </button>
@@ -614,7 +614,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
                   目标受众客群:
@@ -681,7 +681,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
               <label className="font-semibold text-fg-secondary block mb-1">
                 发送时间设定:
               </label>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="radio"

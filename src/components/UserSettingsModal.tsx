@@ -253,7 +253,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
           <form onSubmit={handleSaveProfile} className="space-y-4 pt-1">
             <div>
               <label className="font-semibold text-fg-secondary block mb-2">选择或上传用户头像:</label>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <img
                   src={avatar}
                   alt={name}
@@ -281,7 +281,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">姓名 / 昵称:</label>
                 <input
@@ -303,7 +303,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">业务主时区:</label>
                 <ShadcnSelect
@@ -337,13 +337,13 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-line hover:bg-hover rounded-xl font-semibold text-fg-secondary cursor-pointer"
+                className="px-3 py-2 border border-line hover:bg-hover rounded-xl font-semibold text-fg-secondary cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
+                className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
               >
                 保存资料修改
               </button>
@@ -439,13 +439,13 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-line hover:bg-hover rounded-xl font-semibold text-fg-secondary cursor-pointer"
+                className="px-3 py-2 border border-line hover:bg-hover rounded-xl font-semibold text-fg-secondary cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
+                className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
               >
                 更新安全密码
               </button>
@@ -528,7 +528,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                     onClose();
                   }, 1200);
                 }}
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
+                className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
               >
                 保存通知偏好
               </button>

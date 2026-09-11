@@ -61,8 +61,8 @@ export const SideSheet: React.FC<SideSheetProps> = ({
         )}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-line-subtle flex items-center justify-between shrink-0 bg-surface">
-          <div className="flex items-center gap-3 pr-4">
+        <div className="px-4 py-2 border-b border-line-subtle flex items-center justify-between shrink-0 bg-surface">
+          <div className="flex items-center gap-2 pr-4">
             {icon && (
               <div className="p-2 rounded-xl bg-hover text-fg shrink-0">
                 {icon}
@@ -96,11 +96,11 @@ export const SideSheet: React.FC<SideSheetProps> = ({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        <div className="flex-1 overflow-y-auto px-4 py-5">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-3.5 border-t border-line-subtle bg-subtle/80 shrink-0 flex items-center justify-end gap-2.5">
+          <div className="px-4 py-3.5 border-t border-line-subtle bg-subtle/80 shrink-0 flex items-center justify-end gap-2.5">
             {footer}
           </div>
         )}

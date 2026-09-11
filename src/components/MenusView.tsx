@@ -228,7 +228,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
     return (
       <React.Fragment key={node.id}>
         <div
-          className={`flex items-center justify-between py-2.5 px-4 transition-colors group border-b border-line-subtle ${
+          className={`flex items-center justify-between py-2.5 px-3 transition-colors group border-b border-line-subtle ${
             isRoot
               ? "bg-subtle/80 font-bold text-fg"
               : "hover:bg-subtle/60 text-fg text-xs"
@@ -294,7 +294,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
           </div>
 
           {/* Node Right Content (Actions) */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Actions */}
             <div className="flex items-center gap-1">
               <button
@@ -346,17 +346,17 @@ export const MenusView: React.FC<MenusViewProps> = ({
   if (loading) return <TableSkeleton rows={8} />;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto font-sans p-6 md:p-8">
+    <div className="space-y-6 max-w-7xl mx-auto font-sans p-4 md:p-8">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Header Banner */}
-      <div className="bg-surface border border-line rounded-2xl p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface border border-line rounded-2xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -392,7 +392,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
             id="btn-add-menu-root"
             type="button"
             onClick={() => handleOpenAdd("NONE")}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>新增菜单节点</span>
@@ -401,7 +401,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-surface border border-line rounded-2xl p-4 shadow-2xs flex flex-col md:flex-row gap-3 items-center justify-between">
+      <div className="bg-surface border border-line rounded-2xl p-3 shadow-2xs flex flex-col md:flex-row gap-2 items-center justify-between">
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-fg-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -416,7 +416,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
 
       {/* Tree Structure Card */}
       <div className="bg-surface border border-line rounded-2xl shadow-2xs overflow-hidden">
-        <div className="px-5 py-3 bg-subtle border-b border-line text-xs font-medium text-fg-secondary flex items-center justify-between">
+        <div className="px-4 py-2 bg-subtle border-b border-line text-xs font-medium text-fg-secondary flex items-center justify-between">
           <span>层级节点名称 / 路由路径</span>
           <span className="hidden sm:inline">操作</span>
         </div>
@@ -445,14 +445,14 @@ export const MenusView: React.FC<MenusViewProps> = ({
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSubmit}
-              className="px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
             >
               {editingMenu ? "保存菜单变更" : "创建并挂载节点"}
             </button>
@@ -496,7 +496,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-fg-secondary font-medium mb-1">
                 路由路径 (Route Path) <span className="text-rose-500">*</span>

@@ -95,15 +95,39 @@ export default function App() {
   const [departments, setDepartments] = useState<Department[]>(DEPARTMENTS);
 
   // Current View & Modals
-  const [currentTab, setCurrentTab] = useState<string>("dashboard");
+  const VALID_TABS = [
+    "dashboard", "transactions", "reconciliation", "products", "discounts",
+    "promo_campaigns", "payment_channels", "payment_webhooks", "apps",
+    "email_channels", "email_webhooks", "email_templates", "dictionary",
+    "users", "roles", "permissions", "menus", "departments", "system_users",
+  ];
+  const tabFromHash = (): string => {
+    const raw = (window.location.hash || "").replace(/^#\/?/, "");
+    return VALID_TABS.includes(raw) ? raw : "dashboard";
+  };
+  const [currentTab, setCurrentTab] = useState<string>(tabFromHash);
+  const [refreshTick, setRefreshTick] = useState<number>(0);
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
   const [quickCreateOpen, setQuickCreateOpen] = useState<boolean>(false);
   const [activeDiscrepancyTx, setActiveDiscrepancyTx] = useState<TransactionRecord | null>(null);
   const [userSettingsOpen, setUserSettingsOpen] = useState<boolean>(false);
 
+  // 切换页面：更新 state 并同步 URL hash
+  const navigateToTab = (tab: string) => {
+    if (!VALID_TABS.includes(tab)) tab = "dashboard";
+    setCurrentTab(tab);
+    if (window.location.hash !== `#/${tab}`) {
+      window.history.replaceState(null, "", `#/${tab}`);
+    }
+  };
+
   // 初始化：读取持久化主题并挂载到根节点
   useEffect(() => {
     applyTheme(getStoredTheme());
+    // 监听 hash 变化（地址栏改 hash / 前进后退）切换页面
+    const onHashChange = () => setCurrentTab(tabFromHash());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
   // Global Keyboard Shortcut: ⌘K or Ctrl+K opens Quick Create
@@ -379,7 +403,7 @@ export default function App() {
       <Sidebar
         menus={menus}
         currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={navigateToTab}
         currentUser={currentUser}
         onOpenUserSettings={() => setUserSettingsOpen(true)}
         onOpenQuickCreate={() => setQuickCreateOpen(true)}
@@ -394,13 +418,14 @@ export default function App() {
           isSimulating={isSimulating}
           setIsSimulating={setIsSimulating}
           onRefreshData={() => {
-            setTransactions([...transactions]);
-          }}
+          // 刷新当前页数据：重挂载当前视图以重新触发骨架屏与数据加载，停留当前页
+          setRefreshTick((n) => n + 1);
+        }}
           currentViewTitle={getTabTitle()}
         />
 
-        {/* Dynamic View Scroll Container */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-8 max-w-7xl w-full mx-auto">
+        {/* Dynamic View Scroll Container (key 随当前页+刷新计数变化，刷新即重挂载重跑骨架屏) */}
+        <main key={`${currentTab}-${refreshTick}`} className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-4 max-w-7xl w-full mx-auto">
           {currentTab === "dashboard" && (
             <DashboardView
               currentTenant={currentTenant}
@@ -483,7 +508,9 @@ export default function App() {
               apps={paymentApps}
               onSaveChannel={(updated) => {
                 setPaymentChannels((prev) =>
-                  prev.map((c) => (c.id === updated.id ? updated : c))
+                  prev.some((c) => c.id === updated.id)
+                    ? prev.map((c) => (c.id === updated.id ? updated : c))
+                    : [updated, ...prev]
                 );
               }}
               onUpdateChannel={(updated) => {
@@ -494,7 +521,7 @@ export default function App() {
               onCreateTestTransaction={(newTx) => {
                 setTransactions((prev) => [newTx, ...prev]);
               }}
-              onNavigateToTransactions={() => setCurrentTab("transactions")}
+              onNavigateToTransactions={() => navigateToTab("transactions")}
             />
           )}
 

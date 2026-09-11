@@ -202,10 +202,10 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
   if (loading) return <TableSkeleton rows={8} />;
 
   return (
-    <div className="flex gap-4 items-start font-sans">
+    <div className="flex gap-3 items-start font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -259,7 +259,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
       {/* ===== 右侧：角色列表 ===== */}
       <div className="flex-1 min-w-0 space-y-3">
         {/* 标题与工具栏 */}
-        <div className="bg-surface border border-line rounded-xl shadow-card px-4 py-2.5 flex items-center justify-between gap-3">
+        <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-bold text-fg">
             <span>角色列表</span>
             <span className="text-fg-tertiary font-normal text-xs">
@@ -320,7 +320,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
 
         {/* 表格 */}
         <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-line-subtle">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-line-subtle">
             <span className="text-xs text-fg-secondary">
               共 <b className="text-fg font-mono">{filteredRoles.length}</b> 个角色
             </span>
@@ -340,7 +340,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                  <th className="py-2.5 px-4 w-8">
+                  <th className="py-2.5 px-3 w-8">
                     <input
                       type="checkbox"
                       checked={selectedIds.length > 0 && filteredRoles.every((r) => selectedIds.includes(roleIdentifier(r)))}
@@ -356,7 +356,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                   <th className="py-2.5 px-3 text-center">成员数</th>
                   <th className="py-2.5 px-3 text-center">数据范围</th>
                   <th className="py-2.5 px-3 text-center">菜单权限</th>
-                  <th className="py-2.5 px-4 text-right">操作</th>
+                  <th className="py-2.5 px-3 text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-subtle text-fg-secondary">
@@ -383,7 +383,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
 
                     return (
                       <tr key={rid} className="hover:bg-subtle/80 transition-colors">
-                        <td className="py-2.5 px-4">
+                        <td className="py-2.5 px-3">
                           <input
                             type="checkbox"
                             checked={selectedIds.includes(rid)}
@@ -441,7 +441,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                             <span className="font-mono">{menuCount}/{menus.length}</span>
                           </span>
                         </td>
-                        <td className="py-2.5 px-4">
+                        <td className="py-2.5 px-3">
                           <div className="flex items-center justify-end gap-0.5">
                             <button
                               type="button"
@@ -498,14 +498,14 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSubmit}
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card"
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card"
             >
               {selectedRole ? "保存角色权限配置" : "确认创建角色"}
             </button>

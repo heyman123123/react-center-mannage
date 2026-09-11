@@ -100,7 +100,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-surface border border-line/90 rounded-2xl p-6 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface border border-line/90 rounded-2xl p-4 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
@@ -126,7 +126,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-surface border border-line/90 rounded-xl p-4 shadow-card flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="bg-surface border border-line/90 rounded-xl p-3 shadow-card flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex flex-wrap items-center gap-2">
           {/* Search input */}
           <div className="relative">
@@ -183,15 +183,15 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
           <table className="min-w-[1100px] w-full text-left text-xs text-fg-secondary border-collapse">
             <thead className="bg-subtle/90 text-fg-secondary font-semibold border-b border-line">
               <tr>
-                <th className="px-4 py-3 w-[220px]">流水号 / 渠道单号</th>
-                <th className="px-4 py-3 min-w-[200px]">订单描述 & 签约商户</th>
-                <th className="px-4 py-3 w-[160px]">海外网关 & 支付方式</th>
-                <th className="px-4 py-3 w-[130px] text-right">交易金额 (Gross)</th>
-                <th className="px-4 py-3 w-[120px] text-right">网关手续费 (Fee)</th>
-                <th className="px-4 py-3 w-[120px] text-right">实际净结 (Net)</th>
-                <th className="px-4 py-3 w-[130px] text-center">对账平账状态</th>
-                <th className="px-4 py-3 w-[150px]">交易发生时间</th>
-                <th className="px-4 py-3 w-[140px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="px-3 py-2 w-[220px]">流水号 / 渠道单号</th>
+                <th className="px-3 py-2 min-w-[200px]">订单描述 & 签约商户</th>
+                <th className="px-3 py-2 w-[160px]">海外网关 & 支付方式</th>
+                <th className="px-3 py-2 w-[130px] text-right">交易金额 (Gross)</th>
+                <th className="px-3 py-2 w-[120px] text-right">网关手续费 (Fee)</th>
+                <th className="px-3 py-2 w-[120px] text-right">实际净结 (Net)</th>
+                <th className="px-3 py-2 w-[130px] text-center">对账平账状态</th>
+                <th className="px-3 py-2 w-[150px]">交易发生时间</th>
+                <th className="px-3 py-2 w-[140px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   流程穿透
                 </th>
               </tr>
@@ -210,7 +210,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                     onClick={() => setActiveTxDetail(tx)}
                     className="hover:bg-subtle/80 transition-colors cursor-pointer group"
                   >
-                    <td className="px-4 py-3 w-[220px] font-mono">
+                    <td className="px-3 py-2 w-[220px] font-mono">
                       <div className="font-semibold text-fg group-hover:text-blue-600 flex items-center gap-1">
                         <span>{tx.id}</span>
                         <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -220,12 +220,12 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 min-w-[200px]">
+                    <td className="px-3 py-2 min-w-[200px]">
                       <div className="font-semibold text-fg line-clamp-1">{tx.orderTitle}</div>
                       <div className="text-[11px] text-fg-tertiary">{tx.merchantName}</div>
                     </td>
 
-                    <td className="px-4 py-3 w-[160px]">
+                    <td className="px-3 py-2 w-[160px]">
                       <span className="font-mono text-[11px] font-bold uppercase text-fg bg-hover px-1.5 py-0.5 rounded border border-line">
                         {tx.channel}
                       </span>
@@ -234,19 +234,19 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 w-[130px] text-right font-mono font-bold text-fg">
+                    <td className="px-3 py-2 w-[130px] text-right font-mono font-bold text-fg">
                       {formatCurrency(tx.orderAmount, tx.currency)}
                     </td>
 
-                    <td className="px-4 py-3 w-[120px] text-right font-mono text-fg-secondary">
+                    <td className="px-3 py-2 w-[120px] text-right font-mono text-fg-secondary">
                       {formatCurrency(tx.channelFee, tx.currency)}
                     </td>
 
-                    <td className="px-4 py-3 w-[120px] text-right font-mono font-semibold text-emerald-700">
+                    <td className="px-3 py-2 w-[120px] text-right font-mono font-semibold text-emerald-700">
                       {formatCurrency(tx.settleAmount, tx.currency)}
                     </td>
 
-                    <td className="px-4 py-3 w-[130px] text-center whitespace-nowrap">
+                    <td className="px-3 py-2 w-[130px] text-center whitespace-nowrap">
                       {tx.status === "done" && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <CheckCircle2 className="w-3 h-3" /> 平账成功
@@ -269,11 +269,11 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                       )}
                     </td>
 
-                    <td className="px-4 py-3 w-[150px] text-[11px] text-fg-secondary font-mono whitespace-nowrap">
+                    <td className="px-3 py-2 w-[150px] text-[11px] text-fg-secondary font-mono whitespace-nowrap">
                       {tx.createdAt}
                     </td>
 
-                    <td className="px-4 py-3 w-[140px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    <td className="px-3 py-2 w-[140px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                       {tx.status === "discrepancy" ? (
                         <button
                           onClick={(e) => {

@@ -562,10 +562,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   if (loading) return <TableSkeleton rows={9} />;
 
   return (
-    <div className="flex gap-4 items-start font-sans">
+    <div className="flex gap-3 items-start font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -634,7 +634,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       {/* ===== 右侧：字典列表 ===== */}
       <div className="flex-1 min-w-0 space-y-3">
         {/* 标题与工具栏 */}
-        <div className="bg-surface border border-line rounded-xl shadow-card px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+        <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 text-sm font-bold text-fg">
             <span>字典列表</span>
             <span className="text-fg-tertiary font-normal text-xs">（{currentCategoryLabel}）</span>
@@ -713,7 +713,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         </div>
 
         {/* 语种切换 */}
-        <div className="bg-surface border border-line rounded-xl shadow-card px-4 py-2 flex items-center justify-between gap-2">
+        <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2 flex items-center justify-between gap-2">
           <span className="text-xs text-fg-secondary flex items-center gap-1.5">
             <Languages className="w-3.5 h-3.5 text-violet-500" />
             巡检语种：
@@ -748,7 +748,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
         {/* 表格 */}
         <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-line-subtle">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-line-subtle">
             <span className="text-xs text-fg-secondary">
               共 <b className="text-fg font-mono">{filteredEntries.length}</b> 个词条
             </span>
@@ -768,7 +768,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <table className="min-w-[1080px] w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                  <th className="py-2.5 px-4 w-8">
+                  <th className="py-2.5 px-3 w-8">
                     <input
                       type="checkbox"
                       checked={selectedIds.length > 0 && filteredEntries.every((e) => selectedIds.includes(e.id))}
@@ -788,7 +788,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   <th className="py-2.5 px-3 min-w-[160px]">关联位置</th>
                   <th className="py-2.5 px-3 w-[100px]">创建</th>
                   <th className="py-2.5 px-3 w-[80px] text-center">引用</th>
-                  <th className="py-2.5 px-4 w-[150px] text-right">操作</th>
+                  <th className="py-2.5 px-3 w-[150px] text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-subtle text-fg-secondary">
@@ -807,7 +807,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     return (
                       <React.Fragment key={item.id}>
                         <tr className="hover:bg-subtle/80 transition-colors group">
-                          <td className="py-2.5 px-4">
+                          <td className="py-2.5 px-3">
                             <input
                               type="checkbox"
                               checked={selectedIds.includes(item.id)}
@@ -872,7 +872,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               {item.referencedTemplatesCount ?? 0} 模板
                             </div>
                           </td>
-                          <td className="py-2.5 px-4">
+                          <td className="py-2.5 px-3">
                             <div className="flex items-center justify-end gap-0.5">
                               <button
                                 type="button"
@@ -926,15 +926,15 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                         {/* 展开：全部语种对照 */}
                         {isExpanded && (
                           <tr className="bg-violet-50/40">
-                            <td colSpan={9} className="p-4 border-b border-line">
-                              <div className="bg-surface rounded-xl p-4 border border-violet-200 shadow-card space-y-3">
+                            <td colSpan={9} className="p-3 border-b border-line">
+                              <div className="bg-surface rounded-xl p-3 border border-violet-200 shadow-card space-y-3">
                                 <div className="flex items-center justify-between text-xs font-bold text-fg pb-2 border-b border-line-subtle">
                                   <span className="flex items-center gap-1.5">
                                     <Languages className="w-4 h-4 text-violet-600" />
                                     【{item.key}】全项目 {languages.length} 种多语言完整译文对照
                                   </span>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                   {languages.map((l) => (
                                     <div key={l.code} className="bg-subtle p-2.5 rounded-lg border border-line text-xs space-y-1">
                                       <div className="flex items-center justify-between text-[11px] font-semibold text-fg-secondary">
@@ -980,7 +980,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <button
               type="button"
               onClick={() => setIsCodeModalOpen(false)}
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold cursor-pointer"
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold cursor-pointer"
             >
               关闭
             </button>
@@ -1077,7 +1077,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <button
             type="button"
             onClick={() => setIsLangModalOpen(false)}
-            className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold cursor-pointer"
+            className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold cursor-pointer"
           >
             完成
           </button>
@@ -1210,14 +1210,14 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
+                className="px-3 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold shadow-card cursor-pointer"
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold shadow-card cursor-pointer"
               >
                 {editingEntry ? "保存全项目词条更改" : "确认添加词条 (默认 6 语种生效)"}
               </button>
@@ -1245,7 +1245,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
                   统一词条键名 (Key Identifier) <span className="text-rose-500">*</span>:
@@ -1340,7 +1340,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {languages.map((l) => (
                   <div key={l.code} className="bg-subtle p-3 rounded-xl border border-line/90 space-y-1">
                     <div className="flex items-center justify-between text-[11px] font-bold text-fg">

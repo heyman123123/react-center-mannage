@@ -324,7 +324,7 @@ The {{app_name}} Team`,
     <div className="space-y-6">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between shadow-card animate-in fade-in">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between shadow-card animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>{toastMessage}</span>
@@ -336,8 +336,8 @@ The {{app_name}} Team`,
       )}
 
       {/* Top Header Card */}
-      <div className="bg-surface p-5 rounded-2xl border border-line/80 shadow-card">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
               <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
@@ -356,7 +356,7 @@ The {{app_name}} Team`,
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={handleOpenCreateNew}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
             >
               <Plus className="w-4 h-4" />
               新建独立邮件
@@ -365,7 +365,7 @@ The {{app_name}} Team`,
         </div>
 
         {/* Quick KPI Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-line-subtle">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5 pt-4 border-t border-line-subtle">
           <div className="bg-subtle/80 p-3 rounded-xl border border-line/60">
             <div className="text-[11px] text-fg-secondary font-medium flex items-center gap-1">
               <Mail className="w-3.5 h-3.5 text-fg-tertiary" />
@@ -421,7 +421,7 @@ The {{app_name}} Team`,
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-surface p-4 rounded-2xl border border-line/80 shadow-card space-y-3">
+      <div className="bg-surface p-3 rounded-2xl border border-line/80 shadow-card space-y-3">
         {/* Language Tabs / Filter Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs scrollbar-none">
           <span className="text-fg-tertiary font-semibold flex items-center gap-1 text-[11px] shrink-0">
@@ -513,13 +513,13 @@ The {{app_name}} Team`,
           <table className="min-w-[1100px] w-full text-left border-collapse">
             <thead>
               <tr className="bg-subtle/90 text-[11px] font-semibold text-fg-secondary border-b border-line/70">
-                <th className="py-3 px-4 w-[240px]">独立邮件信息 / 唯一编号</th>
-                <th className="py-3 px-3 w-[160px]">归属语言</th>
-                <th className="py-3 px-3 w-[180px]">业务分类 & 触发器</th>
-                <th className="py-3 px-3 min-w-[260px]">发件人 & 邮件主题 (Subject)</th>
-                <th className="py-3 px-3 w-[110px]">状态</th>
-                <th className="py-3 px-3 w-[110px]">最近更新</th>
-                <th className="py-3 px-4 w-[160px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="py-2 px-3 w-[240px]">独立邮件信息 / 唯一编号</th>
+                <th className="py-2 px-3 w-[160px]">归属语言</th>
+                <th className="py-2 px-3 w-[180px]">业务分类 & 触发器</th>
+                <th className="py-2 px-3 min-w-[260px]">发件人 & 邮件主题 (Subject)</th>
+                <th className="py-2 px-3 w-[110px]">状态</th>
+                <th className="py-2 px-3 w-[110px]">最近更新</th>
+                <th className="py-2 px-3 w-[160px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   操作
                 </th>
               </tr>
@@ -551,7 +551,7 @@ The {{app_name}} Team`,
                   return (
                     <tr key={email.id} className="hover:bg-subtle/80 transition-colors group">
                       {/* Name & Code */}
-                      <td className="py-3.5 px-4 w-[240px]">
+                      <td className="py-3.5 px-3 w-[240px]">
                         <div className="flex flex-col">
                           <span className="font-bold text-fg flex items-center gap-1.5">
                             {email.name}
@@ -638,7 +638,7 @@ The {{app_name}} Team`,
                       </td>
 
                       {/* Action Buttons: Sticky Right */}
-                      <td className="py-3.5 px-4 w-[160px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                      <td className="py-3.5 px-3 w-[160px] sticky right-0 z-10 bg-surface group-hover:bg-subtle/95 backdrop-blur-xs text-right whitespace-nowrap shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                         <div className="flex items-center justify-end gap-1">
                           {/* Preview Button */}
                           <button
@@ -746,14 +746,14 @@ The {{app_name}} Team`,
               <button
                 type="button"
                 onClick={() => setIsEditingModalOpen(false)}
-                className="px-4 py-2 border border-line hover:bg-hover text-fg-secondary rounded-xl text-xs font-semibold cursor-pointer"
+                className="px-3 py-2 border border-line hover:bg-hover text-fg-secondary rounded-xl text-xs font-semibold cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="button"
                 onClick={handleSaveEmail}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card cursor-pointer"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 保存独立邮件
@@ -771,7 +771,7 @@ The {{app_name}} Team`,
               {/* Left Side: Form Fields */}
               <div className={activeTabInEditor === "SPLIT_PREVIEW" ? "lg:col-span-7 space-y-4" : "space-y-4"}>
                 {/* Basic Metadata */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-subtle/50 p-4 rounded-xl border border-line/60">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-subtle/50 p-3 rounded-xl border border-line/60">
                   <div>
                     <label className="block text-xs font-semibold text-fg-secondary mb-1">
                       邮件名称 <span className="text-rose-500">*</span>
@@ -874,8 +874,8 @@ The {{app_name}} Team`,
                 </div>
 
                   {/* Sender & Subject */}
-                  <div className="space-y-3 bg-subtle/50 p-4 rounded-xl border border-line/60">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-3 bg-subtle/50 p-3 rounded-xl border border-line/60">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
                         <label className="block text-xs font-semibold text-fg-secondary mb-1">发件人显示名称</label>
                         <input
@@ -998,7 +998,7 @@ The {{app_name}} Team`,
 
                 {/* Right Side: Split-Pane Real-Time Render */}
                 {activeTabInEditor === "SPLIT_PREVIEW" && (
-                  <div className="lg:col-span-5 bg-hover/70 p-4 rounded-xl border border-line/80 flex flex-col">
+                  <div className="lg:col-span-5 bg-hover/70 p-3 rounded-xl border border-line/80 flex flex-col">
                     <div className="flex items-center justify-between pb-3 border-b border-line mb-3">
                       <span className="text-xs font-bold text-fg flex items-center gap-1.5">
                         <Eye className="w-3.5 h-3.5 text-indigo-500" />
@@ -1009,7 +1009,7 @@ The {{app_name}} Team`,
                       </span>
                     </div>
 
-                    <div className="flex-1 bg-surface rounded-xl border border-line p-4 overflow-y-auto text-xs space-y-3 shadow-card">
+                    <div className="flex-1 bg-surface rounded-xl border border-line p-3 overflow-y-auto text-xs space-y-3 shadow-card">
                       {/* Email Header Preview */}
                       <div className="pb-3 border-b border-line-subtle text-fg-secondary space-y-1 text-[11px]">
                         <div>
@@ -1116,9 +1116,9 @@ The {{app_name}} Team`,
           }
         >
           {/* Email Canvas Preview */}
-          <div className="bg-hover p-4 sm:p-6 rounded-2xl flex justify-center">
+          <div className="bg-hover p-3 sm:p-4 rounded-2xl flex justify-center">
             <div
-              className={`bg-surface rounded-xl border border-line shadow-md p-6 transition-all ${
+              className={`bg-surface rounded-xl border border-line shadow-md p-4 transition-all ${
                 previewDevice === "desktop" ? "w-full max-w-[640px]" : "w-[375px]"
               }`}
             >
@@ -1172,14 +1172,14 @@ The {{app_name}} Team`,
               <button
                 type="button"
                 onClick={() => setCloningSourceEmail(null)}
-                className="px-4 py-2 border border-line hover:bg-hover rounded-xl text-xs font-semibold text-fg-secondary cursor-pointer"
+                className="px-3 py-2 border border-line hover:bg-hover rounded-xl text-xs font-semibold text-fg-secondary cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="button"
                 onClick={handleExecuteClone}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card cursor-pointer"
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card cursor-pointer"
               >
                 <CopyPlus className="w-3.5 h-3.5" /> 确认克隆并立即编辑
               </button>
@@ -1232,7 +1232,7 @@ The {{app_name}} Team`,
               <button
                 type="button"
                 onClick={() => setTestSendingEmail(null)}
-                className="px-4 py-2 border border-line hover:bg-hover rounded-xl text-xs font-semibold text-fg-secondary cursor-pointer"
+                className="px-3 py-2 border border-line hover:bg-hover rounded-xl text-xs font-semibold text-fg-secondary cursor-pointer"
               >
                 关闭
               </button>
@@ -1240,7 +1240,7 @@ The {{app_name}} Team`,
                 type="button"
                 disabled={isSending || !testEmailAddress}
                 onClick={handleExecuteTestSend}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card cursor-pointer"
+                className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card cursor-pointer"
               >
                 {isSending ? (
                   <>
