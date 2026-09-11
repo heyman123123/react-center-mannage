@@ -7,25 +7,25 @@
    ============================================================ */
 
 :root {
-  /* 表面层级 */
-  --bg-page: #f5f1ed; /* 暖米色页面背景 */
+  /* 表面层级 — 中性冷灰系 */
+  --bg-page: #f4f4f5; /* 页面背景 */
   --bg-surface: #ffffff; /* 卡片 / 面板 / 侧边栏 */
-  --bg-subtle: #f3eee8; /* 次级表面：表头、输入底、信息块 */
-  --bg-hover: #eae1d7; /* hover / 选中行填充 */
-  --bg-input: #f7f3ee; /* 输入框背景 */
+  --bg-subtle: #fafafa; /* 次级表面：表头、输入底、信息块 */
+  --bg-hover: #f4f4f5; /* hover / 选中行填充 */
+  --bg-input: #fafafa; /* 输入框背景 */
 
   /* 边框 */
-  --border-default: #e2dbd1;
-  --border-subtle: #ece5dc;
+  --border-default: #e4e4e7;
+  --border-subtle: #ececee;
 
   /* 文字 */
-  --text-primary: #1c1917; /* 一级文字 */
-  --text-secondary: #57534e; /* 二级文字 */
-  --text-tertiary: #a8a29e; /* 三级文字 / 占位 / 禁用 */
+  --text-primary: #18181b; /* 一级文字 */
+  --text-secondary: #52525b; /* 二级文字 */
+  --text-tertiary: #a1a1aa; /* 三级文字 / 占位 / 禁用 */
 
   /* 主色（主按钮 / 链接 / 选中态） */
-  --brand: #1c1917; /* 浅色下为深色按钮 */
-  --brand-hover: #2b2724;
+  --brand: #18181b; /* 浅色下为深色按钮 */
+  --brand-hover: #27272a;
   --brand-fg: #ffffff; /* 主色上的文字 */
 
   /* 圆角 */
@@ -34,39 +34,39 @@
   --radius-lg: 14px;
 
   /* 阴影 */
-  --shadow-card: 0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 3px rgba(28, 25, 23, 0.05);
-  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.03);
+  --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.04), 0 1px 3px rgba(24, 24, 27, 0.05);
+  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.03);
 
   /* 骨架屏 */
-  --skeleton-base: #e9e1d7;
-  --skeleton-highlight: #f3eee8;
+  --skeleton-base: #e9e9eb;
+  --skeleton-highlight: #f4f4f5;
 
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bg-page: #14110d; /* 近黑暖棕背景 */
-  --bg-surface: #1e1a15; /* 稍亮卡片 */
-  --bg-subtle: #262119;
-  --bg-hover: #332c23;
-  --bg-input: #221e17;
+  --bg-page: #09090b; /* 近黑中性背景 */
+  --bg-surface: #18181b; /* 稍亮卡片 */
+  --bg-subtle: #27272a;
+  --bg-hover: #3f3f46;
+  --bg-input: #1f1f23;
 
-  --border-default: #3a332a;
-  --border-subtle: #2c2720;
+  --border-default: #3f3f46;
+  --border-subtle: #2c2c31;
 
-  --text-primary: #f5efe6;
-  --text-secondary: #b3a998;
-  --text-tertiary: #7c7365;
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d8;
+  --text-tertiary: #71717a;
 
-  --brand: #f5efe6; /* 深色下主按钮反转为浅色 */
+  --brand: #fafafa; /* 深色下主按钮反转为浅色 */
   --brand-hover: #ffffff;
-  --brand-fg: #1c1917;
+  --brand-fg: #18181b;
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
 
-  --skeleton-base: #2c271f;
-  --skeleton-highlight: #3a332a;
+  --skeleton-base: #27272a;
+  --skeleton-highlight: #3f3f46;
 
   color-scheme: dark;
 }
