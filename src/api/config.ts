@@ -6,8 +6,9 @@ import type { AppEnvironment } from "../types/payment";
  * - 维护当前业务环境（sandbox / live），供 mock 数据按环境分桶过滤
  */
 
-// Vite 环境变量均为 string，需显式与 'true' 比较
-export const USE_MOCK: boolean = import.meta.env.VITE_USE_MOCK === "true";
+// Mock 开关：默认开启（缺省/未定义时视为 true），仅显式配置为 "false" 时才走真实后端。
+// 这样在未配置 .env 的开发环境中页面也能正常展示内置 Mock 数据，不会因缺变量发起无效请求。
+export const USE_MOCK: boolean = import.meta.env.VITE_USE_MOCK !== "false";
 export const API_BASE_URL: string =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
