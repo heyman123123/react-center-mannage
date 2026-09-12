@@ -26,6 +26,10 @@ import {
   RiskRule,
   BlacklistEntry,
   MerchantApplication,
+  AlertRule,
+  AlertHistory,
+  SystemConfigParam,
+  ScheduledTask,
 } from "../types/payment";
 
 // 1. 跨境出海多租户组织
@@ -3534,6 +3538,43 @@ export const INITIAL_MENUS: SystemMenuItem[] = [
     status: "ENABLED",
     description: "全量操作审计、RBAC 拦截记录与行为追溯",
   },
+  {
+    id: "menu_system_config",
+    title: "系统参数与定时任务",
+    path: "/system-config",
+    icon: "Settings",
+    parentId: "root_system",
+    routeKey: "system_config",
+    order: 8,
+    visible: true,
+    status: "ENABLED",
+    description: "系统级参数配置与对账/结算/汇率等定时任务调度",
+  },
+
+  // ============ 一级分组：运维与监控 ============
+  {
+    id: "root_ops",
+    title: "运维与监控",
+    path: "/ops",
+    icon: "Folder",
+    parentId: null,
+    order: 6,
+    visible: true,
+    status: "ENABLED",
+    description: "渠道/对账/失败率告警规则、通知渠道与告警历史处置",
+  },
+  {
+    id: "menu_alerts",
+    title: "告警与通知",
+    path: "/alerts",
+    icon: "BellRing",
+    parentId: "root_ops",
+    routeKey: "alerts",
+    order: 1,
+    visible: true,
+    status: "ENABLED",
+    description: "告警规则配置、通知渠道与告警历史跟踪处理",
+  },
 ];
 
 // ============================================================
@@ -3656,5 +3697,243 @@ export const INITIAL_MERCHANT_APPLICATIONS: MerchantApplication[] = [
     { name: "LLC_Operating_Agreement.pdf", type: "营业执照", size: "2.2 MB", uploadedAt: "2026-09-02 09:00" },
     { name: "W9_Form.pdf", type: "税务证明", size: "640 KB", uploadedAt: "2026-09-02 09:01" },
   ], status: "PENDING", submittedAt: "2026-09-02 09:10" },
+];
+
+// ============================================================
+// P2: 告警与通知 —— 告警规则
+// ============================================================
+export const INITIAL_ALERT_RULES: AlertRule[] = [
+  { id: "alr01", name: "Stripe 渠道健康度异常", monitorObject: "CHANNEL_ABNORMAL", triggerCondition: "渠道健康检查失败或延迟 > 2000ms 持续 3 分钟", severity: "P0", notifyChannels: ["IN_APP", "EMAIL", "WEBHOOK"], status: "ENABLED", thresholdParams: { latencyMs: 2000, windowMin: 3 }, updatedAt: "2026-09-01 09:00", updatedBy: "系统管理员" },
+  { id: "alr02", name: "PayPal 渠道降级告警", monitorObject: "CHANNEL_ABNORMAL", triggerCondition: "渠道状态变为 DEGRADED 或 DOWN", severity: "P1", notifyChannels: ["IN_APP", "EMAIL"], status: "ENABLED", thresholdParams: {}, updatedAt: "2026-09-01 09:10", updatedBy: "系统管理员" },
+  { id: "alr03", name: "对账差异金额超阈值", monitorObject: "RECON_DIFF", triggerCondition: "单笔对账差异金额 > 500 USD 或累计差异 > 5000 USD", severity: "P1", notifyChannels: ["IN_APP", "EMAIL"], status: "ENABLED", thresholdParams: { singleUsd: 500, cumulativeUsd: 5000 }, updatedAt: "2026-09-02 10:00", updatedBy: "财务-林晓" },
+  { id: "alr04", name: "自动对账长款告警", monitorObject: "RECON_DIFF", triggerCondition: "出现 channel_missing / internal_missing 类型差异", severity: "P2", notifyChannels: ["IN_APP"], status: "ENABLED", thresholdParams: {}, updatedAt: "2026-09-02 10:20", updatedBy: "财务-林晓" },
+  { id: "alr05", name: "整体支付失败率飙升", monitorObject: "FAIL_RATE", triggerCondition: "10 分钟内全局支付失败率 > 15%", severity: "P0", notifyChannels: ["IN_APP", "EMAIL", "WEBHOOK"], status: "ENABLED", thresholdParams: { percent: 15, windowMin: 10 }, updatedAt: "2026-09-03 14:00", updatedBy: "风控-赵磊" },
+  { id: "alr06", name: "单渠道失败率告警", monitorObject: "FAIL_RATE", triggerCondition: "单渠道 30 分钟失败率 > 20%", severity: "P1", notifyChannels: ["IN_APP", "EMAIL"], status: "ENABLED", thresholdParams: { percent: 20, windowMin: 30 }, updatedAt: "2026-09-03 14:30", updatedBy: "风控-赵磊" },
+  { id: "alr07", name: "出金批次失败", monitorObject: "PAYOUT_FAIL", triggerCondition: "结算出金状态变为 FAILED 立即告警", severity: "P0", notifyChannels: ["IN_APP", "EMAIL", "WEBHOOK"], status: "ENABLED", thresholdParams: {}, updatedAt: "2026-09-04 11:00", updatedBy: "财务-林晓" },
+  { id: "alr08", name: "大额出金预警", monitorObject: "PAYOUT_FAIL", triggerCondition: "单笔出金金额 > 100,000 USD 触发预警", severity: "P2", notifyChannels: ["IN_APP"], status: "DISABLED", thresholdParams: { amountUsd: 100000 }, updatedAt: "2026-09-04 11:30", updatedBy: "财务-林晓" },
+];
+
+// ============================================================
+// P2: 告警与通知 —— 告警历史
+// ============================================================
+export const INITIAL_ALERT_HISTORY: AlertHistory[] = [
+  { id: "alh01", title: "Stripe 渠道延迟飙升至 2340ms", ruleName: "Stripe 渠道健康度异常", severity: "P0", status: "PROCESSING", triggerTime: "2026-09-12 08:42:11", assignee: "运维-陈昊", message: "Stripe US 区域延迟持续超过阈值，正在排查上游", timeline: [
+    { title: "监控探测触发", timestamp: "2026-09-12 08:42:11", description: "连续 3 次健康检查延迟 > 2000ms" },
+    { title: "通知发送", timestamp: "2026-09-12 08:42:13", description: "站内 + 邮件 + Webhook 均已送达" },
+  ], handlingRecords: [
+    { operator: "运维-陈昊", action: "认领处理", note: "正在联系 Stripe 技术支持", time: "2026-09-12 08:45:00" },
+  ] },
+  { id: "alh02", title: "PayPal 失败率 22.4% 超阈值", ruleName: "单渠道失败率告警", severity: "P1", status: "RESOLVED", triggerTime: "2026-09-12 07:15:40", assignee: "风控-赵磊", message: "PayPal 欧洲区失败率短时升高", timeline: [
+    { title: "监控探测触发", timestamp: "2026-09-12 07:15:40" },
+  ], handlingRecords: [
+    { operator: "风控-赵磊", action: "标记处理中", note: "降级到备用渠道 Adyen", time: "2026-09-12 07:20:00" },
+    { operator: "风控-赵磊", action: "标记已解决", note: "PayPal 恢复，失败率回落至 6%", time: "2026-09-12 08:05:00" },
+  ] },
+  { id: "alh03", title: "SET-20260910 出金失败 (Stripe)", ruleName: "出金批次失败", severity: "P0", status: "PROCESSING", triggerTime: "2026-09-12 06:30:05", assignee: "财务-林晓", message: "银行返回 R01 代码（账户信息错误）", timeline: [
+    { title: "出金回调失败", timestamp: "2026-09-12 06:30:05", description: "Stripe Payout 返回 failed" },
+  ], handlingRecords: [
+    { operator: "财务-林晓", action: "认领处理", note: "联系商户核对收款账户", time: "2026-09-12 06:35:00" },
+  ] },
+  { id: "alh04", title: "对账差异：TRX-8821 长短款 $1,240", ruleName: "对账差异金额超阈值", severity: "P1", status: "UNHANDLED", triggerTime: "2026-09-12 05:00:12", assignee: undefined, message: "渠道报告金额与内部不一致", timeline: [
+    { title: "日终对账完成", timestamp: "2026-09-12 05:00:12" },
+  ], handlingRecords: [] },
+  { id: "alh05", title: "全局失败率 16.8% 触发熔断", ruleName: "整体支付失败率飙升", severity: "P0", status: "RESOLVED", triggerTime: "2026-09-11 22:10:00", assignee: "运维-陈昊", message: "风控黑名单误拦截导致", timeline: [
+    { title: "熔断触发", timestamp: "2026-09-11 22:10:00" },
+  ], handlingRecords: [
+    { operator: "运维-陈昊", action: "标记已解决", note: "回滚误加的 IP 黑名单", time: "2026-09-11 22:25:00" },
+  ] },
+  { id: "alh06", title: "Adyen 渠道健康检查 DOWN", ruleName: "PayPal 渠道降级告警", severity: "P1", status: "IGNORED", triggerTime: "2026-09-11 18:00:00", assignee: "运维-陈昊", message: "计划性维护窗口", timeline: [
+    { title: "健康检查失败", timestamp: "2026-09-11 18:00:00" },
+  ], handlingRecords: [
+    { operator: "运维-陈昊", action: "忽略", note: "Adyen 官方计划维护", time: "2026-09-11 18:05:00" },
+  ] },
+  { id: "alh07", title: "对账差异：channel_missing × 3", ruleName: "自动对账长款告警", severity: "P2", status: "UNHANDLED", triggerTime: "2026-09-11 05:00:00", assignee: undefined, message: "渠道侧 3 笔交易未上报", timeline: [
+    { title: "日终对账完成", timestamp: "2026-09-11 05:00:00" },
+  ], handlingRecords: [] },
+  { id: "alh08", title: "Klarna 失败率 24% 超阈值", ruleName: "单渠道失败率告警", severity: "P1", status: "PROCESSING", triggerTime: "2026-09-10 16:40:00", assignee: "风控-赵磊", message: "Klarna 德国区审批通过率下降", timeline: [
+    { title: "监控探测触发", timestamp: "2026-09-10 16:40:00" },
+  ], handlingRecords: [
+    { operator: "风控-赵磊", action: "认领处理", note: "观察中，未达熔断线", time: "2026-09-10 16:50:00" },
+  ] },
+  { id: "alh09", title: "Stripe 延迟 1800ms 接近阈值", ruleName: "Stripe 渠道健康度异常", severity: "P2", status: "RESOLVED", triggerTime: "2026-09-10 11:20:00", assignee: "运维-陈昊", message: "短暂网络抖动", timeline: [
+    { title: "监控探测触发", timestamp: "2026-09-10 11:20:00" },
+  ], handlingRecords: [
+    { operator: "运维-陈昊", action: "标记已解决", note: "自动恢复", time: "2026-09-10 11:35:00" },
+  ] },
+  { id: "alh10", title: "出金批次 SET-20260909 待人工复核", ruleName: "大额出金预警", severity: "P2", status: "IGNORED", triggerTime: "2026-09-09 09:00:00", assignee: "财务-林晓", message: "金额 120,000 USD", timeline: [
+    { title: "大额预警触发", timestamp: "2026-09-09 09:00:00" },
+  ], handlingRecords: [
+    { operator: "财务-林晓", action: "忽略", note: "战略商户 VIP，已确认", time: "2026-09-09 09:10:00" },
+  ] },
+  { id: "alh11", title: "Apple Pay 渠道延迟 2100ms", ruleName: "Stripe 渠道健康度异常", severity: "P1", status: "UNHANDLED", triggerTime: "2026-09-09 03:12:00", assignee: undefined, message: "Apple Pay 网关接入异常", timeline: [
+    { title: "监控探测触发", timestamp: "2026-09-09 03:12:00" },
+  ], handlingRecords: [] },
+  { id: "alh12", title: "对账差异：fee_discrepancy $86", ruleName: "自动对账长款告警", severity: "P2", status: "RESOLVED", triggerTime: "2026-09-08 05:00:00", assignee: "财务-林晓", message: "渠道手续费口径差异", timeline: [
+    { title: "日终对账完成", timestamp: "2026-09-08 05:00:00" },
+  ], handlingRecords: [
+    { operator: "财务-林晓", action: "标记已解决", note: "按渠道账单调账", time: "2026-09-08 10:00:00" },
+  ] },
+  { id: "alh13", title: "全局失败率 19.2% 触发熔断", ruleName: "整体支付失败率飙升", severity: "P0", status: "RESOLVED", triggerTime: "2026-09-07 14:00:00", assignee: "运维-陈昊", message: "3DS 证书过期", timeline: [
+    { title: "熔断触发", timestamp: "2026-09-07 14:00:00" },
+  ], handlingRecords: [
+    { operator: "运维-陈昊", action: "标记已解决", note: "更新 3DS 证书", time: "2026-09-07 15:30:00" },
+  ] },
+  { id: "alh14", title: "PayPal 出金 FAILED", ruleName: "出金批次失败", severity: "P0", status: "PROCESSING", triggerTime: "2026-09-07 06:00:00", assignee: "财务-林晓", message: "银行账户已注销", timeline: [
+    { title: "出金回调失败", timestamp: "2026-09-07 06:00:00" },
+  ], handlingRecords: [
+    { operator: "财务-林晓", action: "认领处理", note: "重新绑定账户", time: "2026-09-07 06:20:00" },
+  ] },
+  { id: "alh15", title: "汇率同步任务失败", ruleName: "对账差异金额超阈值", severity: "P2", status: "IGNORED", triggerTime: "2026-09-06 04:00:00", assignee: "运维-陈昊", message: "汇率源超时，已自动重试成功", timeline: [
+    { title: "任务失败", timestamp: "2026-09-06 04:00:00" },
+  ], handlingRecords: [
+    { operator: "运维-陈昊", action: "忽略", note: "重试成功，无需介入", time: "2026-09-06 04:05:00" },
+  ] },
+];
+
+// ============================================================
+// P2: 系统参数
+// ============================================================
+export const INITIAL_SYSTEM_CONFIGS: SystemConfigParam[] = [
+  { id: "cfg01", key: "payment.global_timeout_ms", value: "15000", description: "支付网关全局请求超时（毫秒）", category: "支付", updatedAt: "2026-09-01 10:00", updatedBy: "系统管理员", remark: "超过后判失败并重试" },
+  { id: "cfg02", key: "payment.retry_max_attempts", value: "3", description: "支付失败自动重试最大次数", category: "支付", updatedAt: "2026-09-01 10:05", updatedBy: "系统管理员" },
+  { id: "cfg03", key: "payment.default_currency", value: "USD", description: "系统默认结算币种", category: "支付", updatedAt: "2026-08-20 09:00", updatedBy: "财务-林晓" },
+  { id: "cfg04", key: "email.daily_quota_warning_pct", value: "80", description: "邮件渠道日用量告警阈值（%）", category: "邮件", updatedAt: "2026-08-22 11:00", updatedBy: "运维-陈昊" },
+  { id: "cfg05", key: "email.retry_interval_min", value: "15", description: "邮件发送失败重试间隔（分钟）", category: "邮件", updatedAt: "2026-08-22 11:10", updatedBy: "运维-陈昊" },
+  { id: "cfg06", key: "risk.failed_rate_alert_pct", value: "15", description: "失败率告警默认阈值（%）", category: "风控", updatedAt: "2026-09-01 14:00", updatedBy: "风控-赵磊" },
+  { id: "cfg07", key: "risk.three_ds_region_force", value: "EEA", description: "强制 3DS 的地区代码", category: "风控", updatedAt: "2026-09-01 14:10", updatedBy: "风控-赵磊" },
+  { id: "cfg08", key: "settlement.cycle_default", value: "T+1", description: "默认结算周期", category: "结算", updatedAt: "2026-08-15 09:00", updatedBy: "财务-林晓" },
+  { id: "cfg09", key: "settlement.min_payout_usd", value: "100", description: "最小出金金额（USD）", category: "结算", updatedAt: "2026-08-15 09:20", updatedBy: "财务-林晓" },
+  { id: "cfg10", key: "system.session_timeout_min", value: "120", description: "后台登录会话超时（分钟）", category: "系统", updatedAt: "2026-08-10 10:00", updatedBy: "系统管理员" },
+  { id: "cfg11", key: "system.data_retention_days", value: "180", description: "交易数据归档保留天数", category: "系统", updatedAt: "2026-08-10 10:30", updatedBy: "系统管理员", remark: "超期后归档到冷存储" },
+  { id: "cfg12", key: "system.timezone", value: "Asia/Shanghai", description: "系统默认时区", category: "系统", updatedAt: "2026-08-10 11:00", updatedBy: "系统管理员" },
+];
+
+// ============================================================
+// P2: 定时任务
+// ============================================================
+export const INITIAL_SCHEDULED_TASKS: ScheduledTask[] = [
+  {
+    id: "task01", name: "全渠道日终对账", type: "对账任务", cron: "0 5 * * *",
+    lastRunAt: "2026-09-12 05:00:00", lastRunStatus: "SUCCESS", nextRunAt: "2026-09-13 05:00:00", status: "ENABLED",
+    logs: [
+      { id: "t01-l1", time: "2026-09-12 05:00:00", status: "SUCCESS", durationMs: 48200, summary: "对账 12,482 笔，匹配 12,450，差异 32 笔" },
+      { id: "t01-l2", time: "2026-09-11 05:00:00", status: "SUCCESS", durationMs: 45100, summary: "对账 12,310 笔，全部匹配" },
+      { id: "t01-l3", time: "2026-09-10 05:00:00", status: "SUCCESS", durationMs: 51200, summary: "对账 12,200 笔，差异 5 笔已自动冲正" },
+      { id: "t01-l4", time: "2026-09-09 05:00:00", status: "FAILED", durationMs: 1200, summary: "Stripe 对账文件下载超时" },
+    ],
+  },
+  {
+    id: "task02", name: "结算批次生成", type: "结算任务", cron: "0 6 * * 1-5",
+    lastRunAt: "2026-09-12 06:00:00", lastRunStatus: "SUCCESS", nextRunAt: "2026-09-13 06:00:00", status: "ENABLED",
+    logs: [
+      { id: "t02-l1", time: "2026-09-12 06:00:00", status: "SUCCESS", durationMs: 23400, summary: "生成结算批次 18 个，应收合计 $486,200" },
+      { id: "t02-l2", time: "2026-09-11 06:00:00", status: "SUCCESS", durationMs: 21800, summary: "生成结算批次 17 个" },
+      { id: "t02-l3", time: "2026-09-10 06:00:00", status: "RUNNING", durationMs: 0, summary: "正在归集交易明细..." },
+    ],
+  },
+  {
+    id: "task03", name: "汇率行情同步", type: "汇率同步", cron: "*/15 * * * *",
+    lastRunAt: "2026-09-12 08:45:00", lastRunStatus: "SUCCESS", nextRunAt: "2026-09-12 09:00:00", status: "ENABLED",
+    logs: [
+      { id: "t03-l1", time: "2026-09-12 08:45:00", status: "SUCCESS", durationMs: 1240, summary: "更新 16 个币种对汇率" },
+      { id: "t03-l2", time: "2026-09-12 08:30:00", status: "SUCCESS", durationMs: 1180, summary: "更新 16 个币种对汇率" },
+      { id: "t03-l3", time: "2026-09-12 08:15:00", status: "FAILED", durationMs: 15000, summary: "汇率源 API 超时" },
+      { id: "t03-l4", time: "2026-09-12 08:00:00", status: "SUCCESS", durationMs: 1300, summary: "更新 16 个币种对汇率" },
+      { id: "t03-l5", time: "2026-09-12 07:45:00", status: "SUCCESS", durationMs: 1210, summary: "更新 16 个币种对汇率" },
+    ],
+  },
+  {
+    id: "task04", name: "失败邮件重试", type: "邮件重试", cron: "*/30 * * * *",
+    lastRunAt: "2026-09-12 08:30:00", lastRunStatus: "SUCCESS", nextRunAt: "2026-09-12 09:00:00", status: "ENABLED",
+    logs: [
+      { id: "t04-l1", time: "2026-09-12 08:30:00", status: "SUCCESS", durationMs: 3400, summary: "重试 12 封，成功 10，失败 2" },
+      { id: "t04-l2", time: "2026-09-12 08:00:00", status: "SUCCESS", durationMs: 2900, summary: "重试 8 封，全部成功" },
+      { id: "t04-l3", time: "2026-09-12 07:30:00", status: "SUCCESS", durationMs: 3100, summary: "重试 15 封，成功 14" },
+    ],
+  },
+  {
+    id: "task05", name: "历史交易数据归档", type: "数据归档", cron: "0 3 * * 0",
+    lastRunAt: "2026-09-08 03:00:00", lastRunStatus: "SUCCESS", nextRunAt: "2026-09-15 03:00:00", status: "ENABLED",
+    logs: [
+      { id: "t05-l1", time: "2026-09-08 03:00:00", status: "SUCCESS", durationMs: 482000, summary: "归档 180 天前数据 420,000 条到冷存储" },
+      { id: "t05-l2", time: "2026-09-01 03:00:00", status: "SUCCESS", durationMs: 460000, summary: "归档 398,000 条" },
+      { id: "t05-l3", time: "2026-08-25 03:00:00", status: "FAILED", durationMs: 60000, summary: "冷存储写入配额不足" },
+    ],
+  },
+  {
+    id: "task06", name: "风控黑名单同步", type: "对账任务", cron: "0 */6 * * *",
+    lastRunAt: "2026-09-12 06:00:00", lastRunStatus: "SUCCESS", nextRunAt: "2026-09-12 12:00:00", status: "DISABLED",
+    logs: [
+      { id: "t06-l1", time: "2026-09-12 06:00:00", status: "SUCCESS", durationMs: 2200, summary: "同步外部黑名单 1,240 条" },
+      { id: "t06-l2", time: "2026-09-12 00:00:00", status: "SUCCESS", durationMs: 2100, summary: "同步外部黑名单 1,240 条" },
+      { id: "t06-l3", time: "2026-09-11 18:00:00", status: "FAILED", durationMs: 5000, summary: "黑名单源鉴权失败" },
+    ],
+  },
+];
+
+// ============================================================
+// P2: Sandbox 环境补充数据（交易/结算/退款各数条）
+// ============================================================
+export const SANDBOX_TRANSACTIONS: TransactionRecord[] = [
+  {
+    id: "TX-SBX-1001", tenantId: "bu_na_ecom", channel: "stripe",
+    orderTitle: "[SBX] Novas AI Copilot 测试订阅", orderNumber: "ORD-SBX-1001",
+    orderAmount: 49.0, amount: 49.0, fee: 1.72, channelFee: 1.72, netAmount: 47.28,
+    currency: "USD", createdAt: "2026-09-12 09:10:00", status: "done",
+    channelTradeNo: "pi_sandbox_TEST001", paymentMethod: "Visa **** 4242",
+    customerEmail: "test@example.com", environment: "sandbox",
+  },
+  {
+    id: "TX-SBX-1002", tenantId: "bu_eu_saas", channel: "paypal",
+    orderTitle: "[SBX] CloudSync 测试扣费", orderNumber: "ORD-SBX-1002",
+    orderAmount: 29.99, amount: 29.99, fee: 1.37, channelFee: 1.37, netAmount: 28.62,
+    currency: "EUR", createdAt: "2026-09-12 09:15:00", status: "done",
+    channelTradeNo: "PPL_SBX_TEST002", paymentMethod: "PayPal Balance",
+    customerEmail: "dev@test.io", environment: "sandbox",
+  },
+  {
+    id: "TX-SBX-1003", tenantId: "bu_apac_japan", channel: "adyen",
+    orderTitle: "[SBX] PixelMagic 测试授权", orderNumber: "ORD-SBX-1003",
+    orderAmount: 10800, amount: 10800, fee: 324, channelFee: 324, netAmount: 10476,
+    currency: "JPY", createdAt: "2026-09-12 09:20:00", status: "done",
+    channelTradeNo: "adyen_sbx_7788", paymentMethod: "Mastercard **** 8899",
+    customerEmail: "qa@example.jp", environment: "sandbox",
+  },
+];
+
+export const SANDBOX_SETTLEMENTS: SettlementBatch[] = [
+  {
+    id: "SET-SBX-20260912-01", tenantId: "bu_na_ecom", channel: "stripe", currency: "USD",
+    receivableAmount: 49.0, fee: 1.72, netAmount: 47.28, status: "PENDING", cycle: "T+1",
+    createdAt: "2026-09-12 06:00:00",
+    txItems: [{ tradeNo: "TX-SBX-1001", orderTitle: "[SBX] Novas AI 测试", amount: 49.0, fee: 1.72 }],
+    fees: { channelFee: 1.72, fxGainLoss: 0, platformFee: 0 },
+    payoutAccount: { bankName: "Test Bank", accountLast4: "0001", currency: "USD" },
+    remark: "Sandbox 环境测试结算", environment: "sandbox",
+  },
+  {
+    id: "SET-SBX-20260912-02", tenantId: "bu_eu_saas", channel: "paypal", currency: "EUR",
+    receivableAmount: 29.99, fee: 1.37, netAmount: 28.62, status: "PAID", cycle: "Daily",
+    createdAt: "2026-09-11 06:00:00",
+    txItems: [{ tradeNo: "TX-SBX-1002", orderTitle: "[SBX] CloudSync 测试", amount: 29.99, fee: 1.37 }],
+    fees: { channelFee: 1.37, fxGainLoss: 0, platformFee: 0 },
+    payoutAccount: { bankName: "Test Bank EU", accountLast4: "0002", currency: "EUR" },
+    environment: "sandbox",
+  },
+];
+
+export const SANDBOX_REFUNDS: RefundRecord[] = [
+  {
+    id: "RFD-SBX-001", transactionNo: "TX-SBX-1001", tenantId: "bu_na_ecom", channel: "stripe",
+    refundAmount: 49.0, originalAmount: 49.0, currency: "USD", reason: "客户要求",
+    status: "SUCCESS", refundType: "FULL", createdAt: "2026-09-12 09:30:00",
+    note: "Sandbox 退款测试", environment: "sandbox",
+  },
+  {
+    id: "RFD-SBX-002", transactionNo: "TX-SBX-1002", tenantId: "bu_eu_saas", channel: "paypal",
+    refundAmount: 10.0, originalAmount: 29.99, currency: "EUR", reason: "商品缺陷",
+    status: "PENDING_REVIEW", refundType: "PARTIAL", createdAt: "2026-09-12 09:35:00",
+    note: "Sandbox 部分退款测试", environment: "sandbox",
+  },
 ];
 

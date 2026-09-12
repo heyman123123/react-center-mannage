@@ -8,9 +8,11 @@ import { ShadcnSelect } from "./ui/select";
 import { ContextMenu } from "./ui/ContextMenu";
 import { AuditLog } from "../types/payment";
 import { exportToCSV } from "../lib/utils";
+import { INITIAL_AUDIT_LOGS } from "../data/mockData";
 
 interface AuditLogsViewProps {
-  logs: AuditLog[];
+  /** 兼容旧 props 接口；传入时直接使用，未传入时走模拟 API 取数 */
+  logs?: AuditLog[];
 }
 
 const STATUS_META: Record<string, { label: string; badge: string; icon: React.ReactNode }> = {
@@ -27,7 +29,8 @@ const TIME_RANGES = [
 ];
 
 export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
-  const [rows, setRows] = useState<AuditLog[]>(logs);
+  const [rows, setRows] = useState<AuditLog[]>(logs ?? []);
+  const [dataLoading, setDataLoading] = useState<boolean>(!logs);
   const [operatorFilter, setOperatorFilter] = useState("ALL");
   const [actionFilter, setActionFilter] = useState("ALL");
   const [timeRange, setTimeRange] = useState("all");
@@ -35,6 +38,16 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
   const [detailLog, setDetailLog] = useState<AuditLog | null>(null);
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
   useEffect(() => { reset(); }, [operatorFilter, actionFilter, timeRange, searchQuery, reset]);
+
+  // P2: 未传入 props 时模拟 API 取数（带 300-600ms 延迟）
+  useEffect(() => {
+    if (logs) { setRows(logs); setDataLoading(false); return; }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) { setRows(INITIAL_AUDIT_LOGS); setDataLoading(false); }
+    }, 300 + Math.random() * 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [logs]);
 
   const operatorName = (l: AuditLog) => l.operator || l.userName || "系统";
 
@@ -85,7 +98,8 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
     );
   };
 
-  const loading = useViewLoading();
+  const viewLoading = useViewLoading();
+  const loading = viewLoading || dataLoading;
   if (loading) return <TableSkeleton rows={9} cols={6} />;
 
   return (

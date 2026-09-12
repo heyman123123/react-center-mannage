@@ -35,10 +35,12 @@ import {
   RefundReason,
   TenantId,
 } from "../types/payment";
+import { refundsApi } from "../api";
 
 interface RefundsViewProps {
-  refunds: RefundRecord[];
-  chargebacks: ChargebackRecord[];
+  /** 兼容旧 props 接口；传入时直接使用，未传入时走 API 层获取 */
+  refunds?: RefundRecord[];
+  chargebacks?: ChargebackRecord[];
 }
 
 const TENANT_LABEL: Record<TenantId, string> = {
@@ -81,7 +83,7 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
   const [tab, setTab] = useState<"refund" | "chargeback">("refund");
 
   // Refund state
-  const [refundRows, setRefundRows] = useState<RefundRecord[]>(refunds);
+  const [refundRows, setRefundRows] = useState<RefundRecord[]>(refunds ?? []);
   const [refundSearch, setRefundSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedRefund, setSelectedRefund] = useState<RefundRecord | null>(null);
@@ -92,12 +94,26 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Chargeback state
-  const [cbRows, setCbRows] = useState<ChargebackRecord[]>(chargebacks);
+  const [cbRows, setCbRows] = useState<ChargebackRecord[]>(chargebacks ?? []);
   const [cbSearch, setCbSearch] = useState("");
   const [activeCb, setActiveCb] = useState<ChargebackRecord | null>(null);
+  const [dataLoading, setDataLoading] = useState<boolean>(!refunds || !chargebacks);
 
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
   useEffect(() => { reset(); }, [tab, refundSearch, cbSearch, reset]);
+
+  // P2: 未传入 props 时通过 API 层取数（按当前环境分桶，带模拟延迟）
+  useEffect(() => {
+    if (refunds && chargebacks) { setRefundRows(refunds); setCbRows(chargebacks); setDataLoading(false); return; }
+    let cancelled = false;
+    Promise.all([refundsApi.getRefunds(), refundsApi.getChargebacks()]).then(([r, cb]) => {
+      if (cancelled) return;
+      setRefundRows(r);
+      setCbRows(cb);
+      setDataLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [refunds, chargebacks]);
 
   const filteredRefunds = useMemo(
     () =>
@@ -185,7 +201,8 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
     setActiveCb(null);
   };
 
-  const loading = useViewLoading();
+  const viewLoading = useViewLoading();
+  const loading = viewLoading || dataLoading;
   if (loading) return <TableSkeleton rows={9} cols={7} />;
 
   return (

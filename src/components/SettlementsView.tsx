@@ -23,9 +23,11 @@ import { ShadcnSelect } from "./ui/select";
 import { ContextMenu } from "./ui/ContextMenu";
 import { SettlementBatch, SettlementStatus, TenantId } from "../types/payment";
 import { exportToCSV } from "../lib/utils";
+import { settlementsApi } from "../api";
 
 interface SettlementsViewProps {
-  batches: SettlementBatch[];
+  /** 兼容旧 props 接口；传入时直接使用，未传入时走 API 层获取 */
+  batches?: SettlementBatch[];
 }
 
 const TENANT_LABEL: Record<TenantId, string> = {
@@ -72,7 +74,8 @@ const fmt = (n: number, currency: string) =>
   `${currency} ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => {
-  const [rows, setRows] = useState<SettlementBatch[]>(batches);
+  const [rows, setRows] = useState<SettlementBatch[]>(batches ?? []);
+  const [dataLoading, setDataLoading] = useState<boolean>(!batches);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [detailBatch, setDetailBatch] = useState<SettlementBatch | null>(null);
@@ -85,6 +88,16 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
   const [toast, setToast] = useState<string | null>(null);
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
   useEffect(() => { reset(); }, [statusFilter, searchQuery, reset]);
+
+  // P2: 未传入 props 时通过 API 层取数（按当前环境分桶，带模拟延迟）
+  useEffect(() => {
+    if (batches) { setRows(batches); setDataLoading(false); return; }
+    let cancelled = false;
+    settlementsApi.getSettlements().then((data) => {
+      if (!cancelled) { setRows(data); setDataLoading(false); }
+    });
+    return () => { cancelled = true; };
+  }, [batches]);
 
   const filtered = useMemo(() => {
     return rows.filter((b) => {
@@ -135,7 +148,8 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
     }, 1500);
   };
 
-  const loading = useViewLoading();
+  const viewLoading = useViewLoading();
+  const loading = viewLoading || dataLoading;
   if (loading) return <TableSkeleton rows={9} cols={8} />;
 
   return (

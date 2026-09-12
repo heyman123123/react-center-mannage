@@ -1,15 +1,12 @@
 import React from "react";
 import {
   PanelLeft,
-  Radio,
   RefreshCw,
-  ShieldCheck,
-  Building,
-  CheckCircle2,
-  AlertTriangle,
+  FlaskConical,
+  Rocket,
 } from "lucide-react";
-import { Tenant, SystemUser } from "../types/payment";
-import { RBAC_ROLES } from "../data/mockData";
+import { Tenant, SystemUser, AppEnvironment } from "../types/payment";
+import { Popconfirm } from "./ui/Popconfirm";
 
 interface HeaderProps {
   currentTenant?: Tenant;
@@ -20,6 +17,10 @@ interface HeaderProps {
   currentViewTitle: string;
   currentPath?: string;
   onToggleSidebar?: () => void;
+  /** P2: 当前业务环境 */
+  currentEnv?: AppEnvironment;
+  /** P2: 切换环境回调 */
+  onEnvChange?: (env: AppEnvironment) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,6 +28,8 @@ export const Header: React.FC<HeaderProps> = ({
   currentViewTitle,
   currentPath,
   onToggleSidebar,
+  currentEnv = "live",
+  onEnvChange,
 }) => {
   return (
     <header
@@ -63,6 +66,55 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right side controls */}
       <div className="flex items-center gap-2">
+        {/* P2: 环境切换器 */}
+        {onEnvChange && (
+          <div className="flex items-center gap-1 p-0.5 bg-hover rounded-lg border border-line/60">
+            {/* 当前环境徽章（常显） */}
+            <span
+              className={`hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold border ${
+                currentEnv === "sandbox"
+                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-200"
+              }`}
+            >
+              {currentEnv === "sandbox" ? <FlaskConical className="w-3 h-3" /> : <Rocket className="w-3 h-3" />}
+              {currentEnv === "sandbox" ? "Sandbox" : "Live"}
+            </span>
+
+            {/* 切换按钮 */}
+            {(["sandbox", "live"] as AppEnvironment[]).map((env) => {
+              if (env === currentEnv) return null;
+              const isSandbox = env === "sandbox";
+              return (
+                <Popconfirm
+                  key={env}
+                  title={isSandbox ? "切换到 Sandbox 环境？" : "切换到 Live 生产环境？"}
+                  description={
+                    isSandbox
+                      ? "将展示沙箱测试数据，不影响真实交易。"
+                      : "即将切换到生产环境，所有数据为真实业务数据，请谨慎操作。"
+                  }
+                  confirmText="确认切换"
+                  onConfirm={() => onEnvChange(env)}
+                >
+                  <button
+                    type="button"
+                    title={isSandbox ? "切换到 Sandbox" : "切换到 Live"}
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                      isSandbox
+                        ? "text-amber-600 hover:bg-amber-50"
+                        : "text-emerald-600 hover:bg-emerald-50"
+                    }`}
+                  >
+                    {isSandbox ? <FlaskConical className="w-3 h-3" /> : <Rocket className="w-3 h-3" />}
+                    <span className="hidden md:inline">{isSandbox ? "Sandbox" : "Live"}</span>
+                  </button>
+                </Popconfirm>
+              );
+            })}
+          </div>
+        )}
+
         {/* Manual Refresh */}
         <button
           id="manual-refresh-btn"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { LayoutDashboard, Receipt, Wallet, RotateCcw, User } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
@@ -29,6 +29,8 @@ import { ExchangeRatesView } from "./components/ExchangeRatesView";
 import { FeeRulesView } from "./components/FeeRulesView";
 import { RiskRulesView } from "./components/RiskRulesView";
 import { MerchantReviewView } from "./components/MerchantReviewView";
+import { AlertsView } from "./components/AlertsView";
+import { SystemConfigView } from "./components/SystemConfigView";
 import { UserSettingsModal } from "./components/UserSettingsModal";
 import { QuickCreateModal } from "./components/QuickCreateModal";
 import { DiscrepancyModal } from "./components/DiscrepancyModal";
@@ -60,6 +62,11 @@ import {
   RiskRule,
   BlacklistEntry,
   MerchantApplication,
+  AlertRule,
+  AlertHistory,
+  SystemConfigParam,
+  ScheduledTask,
+  AppEnvironment,
 } from "./types/payment";
 import { getStoredTheme, applyTheme } from "./lib/theme";
 import {
@@ -89,7 +96,15 @@ import {
   INITIAL_RISK_RULES,
   INITIAL_BLACKLIST,
   INITIAL_MERCHANT_APPLICATIONS,
+  INITIAL_ALERT_RULES,
+  INITIAL_ALERT_HISTORY,
+  INITIAL_SYSTEM_CONFIGS,
+  INITIAL_SCHEDULED_TASKS,
+  SANDBOX_TRANSACTIONS,
+  SANDBOX_SETTLEMENTS,
+  SANDBOX_REFUNDS,
 } from "./data/mockData";
+import { setCurrentApiEnv } from "./api";
 
 export default function App() {
   const [tenants, setTenants] = useState<Tenant[]>(INITIAL_TENANTS);
@@ -130,6 +145,44 @@ export default function App() {
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>(INITIAL_BLACKLIST);
   const [merchantApps, setMerchantApps] = useState<MerchantApplication[]>(INITIAL_MERCHANT_APPLICATIONS);
 
+  // P2: 告警与通知 / 系统参数与定时任务（系统管理类，不随环境分桶）
+  const [alertRules, setAlertRules] = useState<AlertRule[]>(INITIAL_ALERT_RULES);
+  const [alertHistories, setAlertHistories] = useState<AlertHistory[]>(INITIAL_ALERT_HISTORY);
+  const [systemConfigs, setSystemConfigs] = useState<SystemConfigParam[]>(INITIAL_SYSTEM_CONFIGS);
+  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>(INITIAL_SCHEDULED_TASKS);
+
+  // P2: 沙箱/生产环境隔离
+  const [currentEnv, setCurrentEnv] = useState<AppEnvironment>("live");
+
+  // 环境切换时同步到 API 层全局，供已接入 API 的视图按环境取数
+  useEffect(() => {
+    setCurrentApiEnv(currentEnv);
+  }, [currentEnv]);
+
+  // P2: 按当前环境过滤业务数据（environment 缺省视为 live；sandbox 仅显示 sandbox 并叠加独立数据集）
+  const isLiveEnv = currentEnv === "live";
+  const filteredTransactions = useMemo(() => {
+    const base = transactions.filter((t) => (isLiveEnv ? t.environment !== "sandbox" : t.environment === "sandbox"));
+    return isLiveEnv ? base : [...base, ...SANDBOX_TRANSACTIONS];
+  }, [transactions, isLiveEnv]);
+  const filteredSettlements = useMemo(() => {
+    const base = settlements.filter((s) => (isLiveEnv ? s.environment !== "sandbox" : s.environment === "sandbox"));
+    return isLiveEnv ? base : [...base, ...SANDBOX_SETTLEMENTS];
+  }, [settlements, isLiveEnv]);
+  const filteredRefunds = useMemo(() => {
+    const base = refunds.filter((r) => (isLiveEnv ? r.environment !== "sandbox" : r.environment === "sandbox"));
+    return isLiveEnv ? base : [...base, ...SANDBOX_REFUNDS];
+  }, [refunds, isLiveEnv]);
+  const filteredChannels = useMemo(
+    () => paymentChannels.filter((c) => (isLiveEnv ? c.environment !== "sandbox" : c.environment === "sandbox")),
+    [paymentChannels, isLiveEnv]
+  );
+  const filteredApps = useMemo(
+    // PaymentApp 既有 environment 字段：Production=live, Staging=sandbox
+    () => paymentApps.filter((a) => (isLiveEnv ? a.environment === "Production" : a.environment === "Staging")),
+    [paymentApps, isLiveEnv]
+  );
+
   // Current View & Modals
   const VALID_TABS = [
     "dashboard", "transactions", "reconciliation", "products", "discounts",
@@ -138,6 +191,7 @@ export default function App() {
     "users", "roles", "permissions", "menus", "departments", "system_users",
     "settlements", "refunds", "audit_logs",
     "exchange_rates", "fee_rules", "risk_rules", "merchant_review",
+    "alerts", "system_config",
   ];
   const tabFromHash = (): string => {
     const raw = (window.location.hash || "").replace(/^#\/?/, "");
@@ -446,6 +500,10 @@ export default function App() {
         return "风控规则与黑名单";
       case "merchant_review":
         return "商户 / KYB 审核";
+      case "alerts":
+        return "告警与通知";
+      case "system_config":
+        return "系统参数与定时任务";
       default:
         return "海外聚合支付中台";
     }
@@ -503,6 +561,8 @@ export default function App() {
           }}
           onToggleSidebar={() => setMobileMenuOpen((v) => !v)}
           currentViewTitle={getTabTitle()}
+          currentEnv={currentEnv}
+          onEnvChange={(env) => setCurrentEnv(env)}
         />
 
         {/* Dynamic View Scroll Container (key 随当前页+刷新计数变化，刷新即重挂载重跑骨架屏) */}
@@ -511,7 +571,7 @@ export default function App() {
             <DashboardView
               currentTenant={currentTenant}
               currentUser={currentUser}
-              transactions={transactions}
+              transactions={filteredTransactions}
               onOpenDiscrepancy={(tx) => setActiveDiscrepancyTx(tx)}
               onResolveQuickDone={handleQuickDone}
             />
@@ -521,7 +581,7 @@ export default function App() {
             <TransactionsView
               currentTenant={currentTenant}
               currentUser={currentUser}
-              transactions={transactions}
+              transactions={filteredTransactions}
               onOpenDiscrepancy={(tx) => setActiveDiscrepancyTx(tx)}
             />
           )}
@@ -530,7 +590,7 @@ export default function App() {
             <ReconciliationView
               currentTenant={currentTenant}
               currentUser={currentUser}
-              transactions={transactions}
+              transactions={filteredTransactions}
               onOpenDiscrepancy={(tx) => setActiveDiscrepancyTx(tx)}
               onAutoReconcileAll={handleAutoReconcileAll}
             />
@@ -540,7 +600,7 @@ export default function App() {
             <ProductsView
               products={products}
               currentTenant={currentTenant}
-              paymentChannels={paymentChannels}
+              paymentChannels={filteredChannels}
               onSaveProduct={(updated) => {
                 setProducts((prev) => {
                   const exists = prev.some((p) => p.id === updated.id);
@@ -556,7 +616,7 @@ export default function App() {
             <DiscountsView
               discounts={discounts}
               currentTenant={currentTenant}
-              paymentChannels={paymentChannels}
+              paymentChannels={filteredChannels}
               onSaveDiscount={(updated) => {
                 setDiscounts((prev) => {
                   const exists = prev.some((d) => d.id === updated.id);
@@ -587,8 +647,8 @@ export default function App() {
 
           {currentTab === "payment_channels" && (
             <PaymentChannelsView
-              channels={paymentChannels}
-              apps={paymentApps}
+              channels={filteredChannels}
+              apps={filteredApps}
               dictionary={dictionary}
               onSaveChannel={(updated) => {
                 setPaymentChannels((prev) =>
@@ -615,8 +675,8 @@ export default function App() {
 
           {currentTab === "apps" && (
             <ApplicationManagementView
-              apps={paymentApps}
-              paymentChannels={paymentChannels}
+              apps={filteredApps}
+              paymentChannels={filteredChannels}
               emailChannels={emailChannels}
               products={products}
               discounts={discounts}
@@ -793,22 +853,15 @@ export default function App() {
           )}
 
           {currentTab === "settlements" && (
-            <SettlementsView
-              batches={settlements}
-            />
+            <SettlementsView />
           )}
 
           {currentTab === "refunds" && (
-            <RefundsView
-              refunds={refunds}
-              chargebacks={chargebacks}
-            />
+            <RefundsView />
           )}
 
           {currentTab === "audit_logs" && (
-            <AuditLogsView
-              logs={auditLogs}
-            />
+            <AuditLogsView />
           )}
 
           {currentTab === "exchange_rates" && (
@@ -834,6 +887,20 @@ export default function App() {
           {currentTab === "merchant_review" && (
             <MerchantReviewView
               applications={merchantApps}
+            />
+          )}
+
+          {currentTab === "alerts" && (
+            <AlertsView
+              rules={alertRules}
+              histories={alertHistories}
+            />
+          )}
+
+          {currentTab === "system_config" && (
+            <SystemConfigView
+              configs={systemConfigs}
+              tasks={scheduledTasks}
             />
           )}
         </main>
