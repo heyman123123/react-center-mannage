@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ScrollText, Search, Eye, RefreshCw, CheckCircle2, ShieldBan, AlertTriangle, User } from "lucide-react";
+import { ScrollText, Search, Eye, RefreshCw, CheckCircle2, ShieldBan, AlertTriangle, User, Download } from "lucide-react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -7,6 +7,7 @@ import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { ContextMenu } from "./ui/ContextMenu";
 import { AuditLog } from "../types/payment";
+import { exportToCSV } from "../lib/utils";
 
 interface AuditLogsViewProps {
   logs: AuditLog[];
@@ -73,6 +74,17 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
     });
   }, [rows, operatorFilter, actionFilter, timeRange, searchQuery, refNow]);
 
+  const handleExport = () => {
+    exportToCSV(
+      "操作审计日志",
+      ["时间", "操作人", "角色", "动作", "操作对象", "目标ID", "详情", "来源IP", "租户", "状态"],
+      filtered.map((l) => [
+        l.timestamp, operatorName(l), l.operatorRole || l.role || "", l.action,
+        l.targetResource || "", l.targetId || "", l.details || "", l.ipAddress, l.tenantId, l.status || "",
+      ])
+    );
+  };
+
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={9} cols={6} />;
 
@@ -91,6 +103,13 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
             全量记录后台操作人、动作类型、操作对象与来源 IP，含 RBAC 拦截与安全告警，支持完整 JSON 追溯。
           </p>
         </div>
+        <button
+          onClick={handleExport}
+          className="inline-flex items-center gap-1.5 px-3 py-2 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-semibold self-start md:self-auto"
+        >
+          <Download className="w-4 h-4" />
+          导出 CSV
+        </button>
       </div>
 
       {/* Filter bar */}

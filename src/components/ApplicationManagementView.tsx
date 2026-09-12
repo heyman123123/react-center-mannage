@@ -33,6 +33,7 @@ import {
   X,
   AlertCircle,
   RotateCcw,
+  Download,
 } from "lucide-react";
 import {
   PaymentApp,
@@ -45,7 +46,7 @@ import {
   Tenant,
   SupportedLanguage,
 } from "../types/payment";
-import { formatCurrency } from "../lib/utils";
+import { formatCurrency, exportToCSV } from "../lib/utils";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 
@@ -377,6 +378,17 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
   const totalAppGmv = appList.reduce((acc, a) => acc + (a.totalGmv || 0), 0);
   const totalSubscribers = appList.reduce((acc, a) => acc + (a.activeSubscribersCount || 0), 0);
 
+  const handleExport = () => {
+    exportToCSV(
+      "接入应用表",
+      ["应用ID", "应用名称", "代码", "环境", "默认币种", "订阅数", "GMV", "状态", "创建时间"],
+      appList.map((a) => [
+        a.id, a.name, a.code, a.environment, a.defaultCurrency,
+        a.activeSubscribersCount, a.totalGmv, a.status, a.createdAt,
+      ])
+    );
+  };
+
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={8} />;
 
@@ -411,13 +423,22 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreateApp}
-          className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>接入并完整配置新应用</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleExport}
+            className="px-3.5 py-2 border border-line hover:bg-subtle text-fg-secondary rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>导出 CSV</span>
+          </button>
+          <button
+            onClick={handleOpenCreateApp}
+            className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>接入并完整配置新应用</span>
+          </button>
+        </div>
       </div>
 
       {/* Overview Stat Cards */}

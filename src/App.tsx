@@ -25,6 +25,10 @@ import { DepartmentManagementView } from "./components/DepartmentManagementView"
 import { SettlementsView } from "./components/SettlementsView";
 import { RefundsView } from "./components/RefundsView";
 import { AuditLogsView } from "./components/AuditLogsView";
+import { ExchangeRatesView } from "./components/ExchangeRatesView";
+import { FeeRulesView } from "./components/FeeRulesView";
+import { RiskRulesView } from "./components/RiskRulesView";
+import { MerchantReviewView } from "./components/MerchantReviewView";
 import { UserSettingsModal } from "./components/UserSettingsModal";
 import { QuickCreateModal } from "./components/QuickCreateModal";
 import { DiscrepancyModal } from "./components/DiscrepancyModal";
@@ -51,6 +55,11 @@ import {
   SettlementBatch,
   RefundRecord,
   ChargebackRecord,
+  ExchangeRate,
+  FeeRule,
+  RiskRule,
+  BlacklistEntry,
+  MerchantApplication,
 } from "./types/payment";
 import { getStoredTheme, applyTheme } from "./lib/theme";
 import {
@@ -75,6 +84,11 @@ import {
   INITIAL_SETTLEMENTS,
   INITIAL_REFUNDS,
   INITIAL_CHARGEBACKS,
+  INITIAL_EXCHANGE_RATES,
+  INITIAL_FEE_RULES,
+  INITIAL_RISK_RULES,
+  INITIAL_BLACKLIST,
+  INITIAL_MERCHANT_APPLICATIONS,
 } from "./data/mockData";
 
 export default function App() {
@@ -109,6 +123,13 @@ export default function App() {
   const [refunds, setRefunds] = useState<RefundRecord[]>(INITIAL_REFUNDS);
   const [chargebacks, setChargebacks] = useState<ChargebackRecord[]>(INITIAL_CHARGEBACKS);
 
+  // P1: 汇率 / 费率规则 / 风控规则与黑名单 / 商户审核
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>(INITIAL_EXCHANGE_RATES);
+  const [feeRules, setFeeRules] = useState<FeeRule[]>(INITIAL_FEE_RULES);
+  const [riskRules, setRiskRules] = useState<RiskRule[]>(INITIAL_RISK_RULES);
+  const [blacklist, setBlacklist] = useState<BlacklistEntry[]>(INITIAL_BLACKLIST);
+  const [merchantApps, setMerchantApps] = useState<MerchantApplication[]>(INITIAL_MERCHANT_APPLICATIONS);
+
   // Current View & Modals
   const VALID_TABS = [
     "dashboard", "transactions", "reconciliation", "products", "discounts",
@@ -116,6 +137,7 @@ export default function App() {
     "email_channels", "email_webhooks", "email_templates", "dictionary",
     "users", "roles", "permissions", "menus", "departments", "system_users",
     "settlements", "refunds", "audit_logs",
+    "exchange_rates", "fee_rules", "risk_rules", "merchant_review",
   ];
   const tabFromHash = (): string => {
     const raw = (window.location.hash || "").replace(/^#\/?/, "");
@@ -416,6 +438,14 @@ export default function App() {
         return "退款与拒付管理";
       case "audit_logs":
         return "操作审计日志";
+      case "exchange_rates":
+        return "汇率管理";
+      case "fee_rules":
+        return "费率规则引擎";
+      case "risk_rules":
+        return "风控规则与黑名单";
+      case "merchant_review":
+        return "商户 / KYB 审核";
       default:
         return "海外聚合支付中台";
     }
@@ -778,6 +808,32 @@ export default function App() {
           {currentTab === "audit_logs" && (
             <AuditLogsView
               logs={auditLogs}
+            />
+          )}
+
+          {currentTab === "exchange_rates" && (
+            <ExchangeRatesView
+              rates={exchangeRates}
+              dictionary={dictionary}
+            />
+          )}
+
+          {currentTab === "fee_rules" && (
+            <FeeRulesView
+              rules={feeRules}
+            />
+          )}
+
+          {currentTab === "risk_rules" && (
+            <RiskRulesView
+              rules={riskRules}
+              blacklist={blacklist}
+            />
+          )}
+
+          {currentTab === "merchant_review" && (
+            <MerchantReviewView
+              applications={merchantApps}
             />
           )}
         </main>

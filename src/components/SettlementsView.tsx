@@ -13,6 +13,7 @@ import {
   XCircle,
   Hourglass,
   PlusCircle,
+  Download,
 } from "lucide-react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -21,6 +22,7 @@ import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { ContextMenu } from "./ui/ContextMenu";
 import { SettlementBatch, SettlementStatus, TenantId } from "../types/payment";
+import { exportToCSV } from "../lib/utils";
 
 interface SettlementsViewProps {
   batches: SettlementBatch[];
@@ -97,6 +99,17 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
   const pendingBatches = rows.filter((b) => b.status === "PENDING");
   const selectedBatch = rows.find((b) => b.id === payoutBatchId) || null;
 
+  const handleExport = () => {
+    exportToCSV(
+      "结算批次表",
+      ["批次号", "商户", "渠道", "应收金额", "手续费", "净结金额", "状态", "结算周期", "创建时间"],
+      filtered.map((b) => [
+        b.id, TENANT_LABEL[b.tenantId], CHANNEL_LABEL[b.channel] || b.channel,
+        b.receivableAmount, b.fee, b.netAmount, STATUS_META[b.status].label, b.cycle, b.createdAt,
+      ])
+    );
+  };
+
   const openPayout = (batchId?: string) => {
     setPayoutOpen(true);
     const id = batchId || pendingBatches[0]?.id || "";
@@ -140,14 +153,23 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
             多币种结算批次归集、渠道费/汇兑损溢/平台服务费明细核算，并支持跨境银行出金申请与状态跟踪。
           </p>
         </div>
-        <button
-          onClick={() => openPayout()}
-          disabled={pendingBatches.length === 0}
-          className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors disabled:opacity-40"
-        >
-          <PlusCircle className="w-4 h-4" />
-          发起出金
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-1.5 px-3 py-2 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-semibold transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            导出 CSV
+          </button>
+          <button
+            onClick={() => openPayout()}
+            disabled={pendingBatches.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors disabled:opacity-40"
+          >
+            <PlusCircle className="w-4 h-4" />
+            发起出金
+          </button>
+        </div>
       </div>
 
       {toast && (

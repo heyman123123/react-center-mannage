@@ -17,6 +17,7 @@ import {
   Sparkles,
   Search,
   Filter,
+  Download,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import {
@@ -26,7 +27,7 @@ import {
   ReconciliationBatch,
 } from "../types/payment";
 import { RBAC_ROLES, INITIAL_RECON_BATCHES } from "../data/mockData";
-import { formatCurrency } from "../lib/utils";
+import { formatCurrency, exportToCSV } from "../lib/utils";
 
 interface ReconciliationViewProps {
   currentTenant: Tenant;
@@ -90,6 +91,17 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
     }, 1200);
   };
 
+  const handleExport = () => {
+    exportToCSV(
+      "对账差异表",
+      ["交易流水号", "归属租户", "渠道", "渠道单号", "交易金额", "货币", "对账状态", "差异原因", "时间"],
+      discrepancies.map((t) => [
+        t.id, t.tenantId, t.channel, t.channelTradeNo, t.orderAmount, t.currency,
+        t.reconStatus || t.status, t.discrepancyReason || t.discrepancyType || "", t.createdAt,
+      ])
+    );
+  };
+
   const { currentPage, setCurrentPage, reset: _reset, pageSize } = usePagination(10);
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={8} />;
@@ -127,6 +139,13 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-3 py-2 border border-line hover:bg-subtle text-fg-secondary rounded-lg text-xs font-semibold transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>导出 CSV</span>
+          </button>
           <button
             id="run-recon-engine-btn"
             disabled={isRunningEngine || !canReconcile}

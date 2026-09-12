@@ -14,9 +14,11 @@ import {
   ArrowDownLeft,
   Server,
   Info,
+  Download,
 } from "lucide-react";
 import { EmailWebhookLog } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
+import { exportToCSV } from "../lib/utils";
 
 interface EmailWebhooksViewProps {
   logs: EmailWebhookLog[];
@@ -45,6 +47,16 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
     return matchesFilter && matchesSearch;
   });
 
+  const handleExport = () => {
+    exportToCSV(
+      "邮件Webhook日志",
+      ["消息ID", "事件类型", "服务商", "收件人", "主题", "模板代码", "时间", "状态"],
+      filtered.map((l) => [
+        l.messageId, l.eventType, l.provider, l.recipient, l.subject, l.templateCode, l.timestamp, l.status,
+      ])
+    );
+  };
+
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={9} />;
 
@@ -68,6 +80,14 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
 
         {/* Global Delivery Stats */}
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-1.5 px-3 py-2 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-semibold"
+          >
+            <Download className="w-3.5 h-3.5" />
+            导出 CSV
+          </button>
+          <div className="h-8 w-px bg-hover" />
           <div className="text-right">
             <span className="text-[11px] text-fg-tertiary block">综合投递送达率</span>
             <span className="text-sm font-bold font-mono text-emerald-600">99.82%</span>

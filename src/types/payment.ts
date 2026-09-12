@@ -648,3 +648,93 @@ export interface ChargebackRecord {
   timeline: ChargebackTimelineStep[];
   note?: string;
 }
+
+// ============================================================
+// P1: 汇率管理
+// ============================================================
+export interface ExchangeRate {
+  id: string;
+  baseCurrency: string; // 基础币种，如 USD
+  targetCurrency: string; // 目标币种，如 EUR
+  bid: number; // 买入价（1 基础币兑换目标币）
+  ask: number; // 卖出价
+  effectiveFrom: string; // 生效时间
+  status: "ENABLED" | "DISABLED";
+  remark?: string;
+  updatedAt: string;
+}
+
+// ============================================================
+// P1: 费率规则引擎
+// ============================================================
+export type MerchantTier = "ALL" | "NORMAL" | "VIP" | "STRATEGIC";
+
+export interface FeeRule {
+  id: string;
+  name: string; // 规则名称
+  channels: PaymentChannel[]; // 适用渠道
+  currency: string; // 适用币种
+  minAmount: number; // 金额区间下限
+  maxAmount: number; // 金额区间上限（Infinity 用 -1 表示无上限）
+  merchantTier: MerchantTier; // 商户分级
+  fixedFee: number; // 固定费
+  percentFee: number; // 百分比费率，如 2.9 表示 2.9%
+  priority: number; // 优先级，数字越小越高
+  status: "ENABLED" | "DISABLED";
+  createdAt: string;
+}
+
+// ============================================================
+// P1: 风控规则配置 & 黑名单管理
+// ============================================================
+export type RiskRuleType = "THREE_DS" | "FAILURE_RATE" | "ABNORMAL_AMOUNT" | "ABNORMAL_FREQ";
+export type RiskAction = "BLOCK" | "ALERT" | "MANUAL_REVIEW";
+
+export interface RiskRule {
+  id: string;
+  name: string; // 规则名称
+  type: RiskRuleType; // 规则类型
+  condition: string; // 触发条件描述
+  action: RiskAction; // 动作
+  params: Record<string, string | number>; // 阈值参数
+  status: "ENABLED" | "DISABLED";
+  updatedAt: string;
+}
+
+export type BlacklistType = "CARD_BIN" | "IP" | "EMAIL";
+
+export interface BlacklistEntry {
+  id: string;
+  type: BlacklistType; // 类型：卡BIN / IP / 邮箱
+  value: string; // 黑名单值
+  reason: string; // 原因
+  expiresAt: string; // 添加/过期时间
+  status: "ACTIVE" | "EXPIRED";
+  createdAt: string;
+}
+
+// ============================================================
+// P1: 商户 / KYB 审核
+// ============================================================
+export type MerchantApplyType = "NEW" | "CHANGE";
+export type MerchantReviewStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED";
+
+export interface MerchantDocument {
+  name: string; // 文件名
+  type: string; // 文件类型（营业执照 / 法人身份证 / 银行流水等）
+  size: string; // 文件大小
+  uploadedAt: string; // 上传时间
+}
+
+export interface MerchantApplication {
+  id: string;
+  companyName: string; // 公司名称
+  country: string; // 国家代码 US/UK/JP/DE/SG/HK/CA/AU
+  applyType: MerchantApplyType; // 申请类型
+  contactPerson: string; // 联系人
+  contactEmail: string; // 联系邮箱
+  documents: MerchantDocument[]; // 资质文件
+  status: MerchantReviewStatus;
+  submittedAt: string; // 申请时间
+  rejectReason?: string; // 驳回原因
+}

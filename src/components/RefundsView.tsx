@@ -17,6 +17,7 @@ import {
   Send,
   Ban,
   Paperclip,
+  Download,
 } from "lucide-react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -25,6 +26,7 @@ import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { ContextMenu } from "./ui/ContextMenu";
 import { Popconfirm } from "./ui/Popconfirm";
+import { exportToCSV } from "../lib/utils";
 import {
   RefundRecord,
   ChargebackRecord,
@@ -118,6 +120,17 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
       ),
     [cbRows, cbSearch]
   );
+
+  const handleExportRefunds = () => {
+    exportToCSV(
+      "退款记录表",
+      ["退款单号", "关联交易号", "商户", "渠道", "退款金额", "原金额", "货币", "原因", "类型", "状态", "创建时间"],
+      filteredRefunds.map((r) => [
+        r.id, r.transactionNo, TENANT_LABEL[r.tenantId], CHANNEL_LABEL[r.channel] || r.channel,
+        r.refundAmount, r.originalAmount, r.currency, r.reason, r.refundType, r.status, r.createdAt,
+      ])
+    );
+  };
 
   const handleCreateRefund = () => {
     const newRefund: RefundRecord = {
@@ -220,13 +233,22 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
                 className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
               />
             </div>
-            <button
-              onClick={() => setCreateOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card"
-            >
-              <PlusCircle className="w-4 h-4" />
-              发起退款
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportRefunds}
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-semibold"
+              >
+                <Download className="w-4 h-4" />
+                导出 CSV
+              </button>
+              <button
+                onClick={() => setCreateOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card"
+              >
+                <PlusCircle className="w-4 h-4" />
+                发起退款
+              </button>
+            </div>
           </div>
 
           <div className="bg-surface rounded-2xl border border-line/80 shadow-card overflow-hidden">

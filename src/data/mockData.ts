@@ -21,6 +21,11 @@ import {
   SettlementBatch,
   RefundRecord,
   ChargebackRecord,
+  ExchangeRate,
+  FeeRule,
+  RiskRule,
+  BlacklistEntry,
+  MerchantApplication,
 } from "../types/payment";
 
 // 1. 跨境出海多租户组织
@@ -3237,6 +3242,18 @@ export const INITIAL_MENUS: SystemMenuItem[] = [
     status: "ENABLED",
     description: "海外终端客户画像、支付方式与全生命周期动作流",
   },
+  {
+    id: "menu_merchant_review",
+    title: "商户/KYB 审核",
+    path: "/merchant-review",
+    icon: "FileText",
+    parentId: "root_core",
+    routeKey: "merchant_review",
+    order: 7,
+    visible: true,
+    status: "ENABLED",
+    description: "海外商户入驻与资料变更 KYB 资质审核",
+  },
 
   // ============ 一级分组：商品与促销 ============
   {
@@ -3334,6 +3351,42 @@ export const INITIAL_MENUS: SystemMenuItem[] = [
     visible: true,
     status: "ENABLED",
     description: "出海独立站与 SaaS 客户端 API Key 与凭证",
+  },
+  {
+    id: "menu_exchange_rates",
+    title: "汇率管理",
+    path: "/exchange-rates",
+    icon: "Globe",
+    parentId: "root_gateway",
+    routeKey: "exchange_rates",
+    order: 4,
+    visible: true,
+    status: "ENABLED",
+    description: "多币种对汇率配置、买卖点与历史走势",
+  },
+  {
+    id: "menu_fee_rules",
+    title: "费率规则引擎",
+    path: "/fee-rules",
+    icon: "SlidersHorizontal",
+    parentId: "root_gateway",
+    routeKey: "fee_rules",
+    order: 5,
+    visible: true,
+    status: "ENABLED",
+    description: "渠道/币种/金额/分级多维费率规则与试算",
+  },
+  {
+    id: "menu_risk_rules",
+    title: "风控规则与黑名单",
+    path: "/risk-rules",
+    icon: "Shield",
+    parentId: "root_gateway",
+    routeKey: "risk_rules",
+    order: 6,
+    visible: true,
+    status: "ENABLED",
+    description: "3DS/失败率/异常金额频次风控规则与卡 BIN、IP、邮箱黑名单",
   },
 
   // ============ 一级分组：国际化与邮件 ============
@@ -3481,5 +3534,127 @@ export const INITIAL_MENUS: SystemMenuItem[] = [
     status: "ENABLED",
     description: "全量操作审计、RBAC 拦截记录与行为追溯",
   },
+];
+
+// ============================================================
+// P1: 汇率管理 mock 数据（覆盖主要币种对）
+// ============================================================
+export const INITIAL_EXCHANGE_RATES: ExchangeRate[] = [
+  { id: "fx_usd_eur", baseCurrency: "USD", targetCurrency: "EUR", bid: 0.9215, ask: 0.9245, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "欧美主力结算对", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_usd_gbp", baseCurrency: "USD", targetCurrency: "GBP", bid: 0.7842, ask: 0.7868, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "英镑对", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_usd_jpy", baseCurrency: "USD", targetCurrency: "JPY", bid: 147.32, ask: 147.68, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "日元高频波动对", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_usd_cad", baseCurrency: "USD", targetCurrency: "CAD", bid: 1.3621, ask: 1.3655, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_usd_aud", baseCurrency: "USD", targetCurrency: "AUD", bid: 1.5210, ask: 1.5248, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_usd_hkd", baseCurrency: "USD", targetCurrency: "HKD", bid: 7.8012, ask: 7.8058, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "联系汇率制", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_usd_sgd", baseCurrency: "USD", targetCurrency: "SGD", bid: 1.3420, ask: 1.3456, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_eur_gbp", baseCurrency: "EUR", targetCurrency: "GBP", bid: 0.8510, ask: 0.8542, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "欧元区内部对", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_eur_jpy", baseCurrency: "EUR", targetCurrency: "JPY", bid: 160.05, ask: 160.55, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_gbp_jpy", baseCurrency: "GBP", targetCurrency: "JPY", bid: 187.60, ask: 188.20, effectiveFrom: "2026-09-12 00:00", status: "DISABLED", remark: "临时停牌观察", updatedAt: "2026-09-10 18:00" },
+  { id: "fx_eur_usd", baseCurrency: "EUR", targetCurrency: "USD", bid: 1.0818, ask: 1.0852, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "反向报价", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_gbp_usd", baseCurrency: "GBP", targetCurrency: "USD", bid: 1.2740, ask: 1.2782, effectiveFrom: "2026-09-12 00:00", status: "ENABLED", remark: "反向报价", updatedAt: "2026-09-12 08:30" },
+  { id: "fx_hkd_cny", baseCurrency: "HKD", targetCurrency: "CNY", bid: 0.9120, ask: 0.9155, effectiveFrom: "2026-09-11 00:00", status: "ENABLED", remark: "离岸人民币桥接", updatedAt: "2026-09-11 09:00" },
+  { id: "fx_sgd_jpy", baseCurrency: "SGD", targetCurrency: "JPY", bid: 109.65, ask: 110.10, effectiveFrom: "2026-09-11 00:00", status: "ENABLED", remark: "亚太交叉盘", updatedAt: "2026-09-11 09:00" },
+  { id: "fx_aud_usd", baseCurrency: "AUD", targetCurrency: "USD", bid: 0.6562, ask: 0.6588, effectiveFrom: "2026-09-11 00:00", status: "DISABLED", remark: "等待澳联储议息", updatedAt: "2026-09-10 22:00" },
+  { id: "fx_cad_usd", baseCurrency: "CAD", targetCurrency: "USD", bid: 0.7328, ask: 0.7352, effectiveFrom: "2026-09-11 00:00", status: "ENABLED", remark: "", updatedAt: "2026-09-11 09:00" },
+];
+
+// ============================================================
+// P1: 费率规则引擎 mock 数据
+// ============================================================
+export const INITIAL_FEE_RULES: FeeRule[] = [
+  { id: "fee_r01", name: "Stripe 标准信用卡费率", channels: ["stripe"], currency: "USD", minAmount: 0, maxAmount: 999999, merchantTier: "NORMAL", fixedFee: 0.3, percentFee: 2.9, priority: 10, status: "ENABLED", createdAt: "2026-08-01 10:00" },
+  { id: "fee_r02", name: "Stripe 战略商户优惠", channels: ["stripe"], currency: "USD", minAmount: 0, maxAmount: 999999, merchantTier: "STRATEGIC", fixedFee: 0.2, percentFee: 2.4, priority: 5, status: "ENABLED", createdAt: "2026-08-01 10:05" },
+  { id: "fee_r03", name: "PayPal 商户费率", channels: ["paypal"], currency: "USD", minAmount: 0, maxAmount: 999999, merchantTier: "NORMAL", fixedFee: 0.35, percentFee: 3.4, priority: 20, status: "ENABLED", createdAt: "2026-08-02 11:00" },
+  { id: "fee_r04", name: "PayPal 跨境附加费", channels: ["paypal"], currency: "EUR", minAmount: 0, maxAmount: 999999, merchantTier: "ALL", fixedFee: 0.35, percentFee: 4.4, priority: 15, status: "ENABLED", createdAt: "2026-08-02 11:10" },
+  { id: "fee_r05", name: "Adyen 欧洲本地卡优惠", channels: ["adyen"], currency: "EUR", minAmount: 0, maxAmount: 999999, merchantTier: "VIP", fixedFee: 0.22, percentFee: 1.9, priority: 8, status: "ENABLED", createdAt: "2026-08-03 09:30" },
+  { id: "fee_r06", name: "大额交易阶梯优惠", channels: ["stripe", "adyen"], currency: "USD", minAmount: 10000, maxAmount: 999999, merchantTier: "ALL", fixedFee: 0.0, percentFee: 1.5, priority: 3, status: "ENABLED", createdAt: "2026-08-04 14:00" },
+  { id: "fee_r07", name: "小额交易保底费", channels: ["stripe", "paypal", "adyen"], currency: "USD", minAmount: 0, maxAmount: 5, merchantTier: "ALL", fixedFee: 0.5, percentFee: 5.0, priority: 2, status: "ENABLED", createdAt: "2026-08-04 14:20" },
+  { id: "fee_r08", name: "Klarna 先买后付费率", channels: ["klarna"], currency: "EUR", minAmount: 10, maxAmount: 5000, merchantTier: "NORMAL", fixedFee: 0.0, percentFee: 3.6, priority: 30, status: "ENABLED", createdAt: "2026-08-05 16:00" },
+  { id: "fee_r09", name: "Apple Pay 钱包费率", channels: ["apple_pay"], currency: "USD", minAmount: 0, maxAmount: 999999, merchantTier: "VIP", fixedFee: 0.25, percentFee: 2.6, priority: 12, status: "ENABLED", createdAt: "2026-08-06 10:00" },
+  { id: "fee_r10", name: "JPY 大额日元交易", channels: ["stripe"], currency: "JPY", minAmount: 100000, maxAmount: 9999999, merchantTier: "STRATEGIC", fixedFee: 0, percentFee: 1.2, priority: 4, status: "DISABLED", createdAt: "2026-08-07 13:00" },
+  { id: "fee_r11", name: "GBP 英国本地卡费率", channels: ["adyen", "stripe"], currency: "GBP", minAmount: 0, maxAmount: 999999, merchantTier: "NORMAL", fixedFee: 0.2, percentFee: 2.2, priority: 18, status: "ENABLED", createdAt: "2026-08-08 09:00" },
+];
+
+// ============================================================
+// P1: 风控规则 mock 数据
+// ============================================================
+export const INITIAL_RISK_RULES: RiskRule[] = [
+  { id: "risk01", name: "欧洲强 3DS 验证", type: "THREE_DS", condition: "欧洲 EEA 交易强制 3DS 2.0 验证", action: "BLOCK", params: { region: "EEA", channel: "all" }, status: "ENABLED", updatedAt: "2026-09-01 10:00" },
+  { id: "risk02", name: "失败率超阈值告警", type: "FAILURE_RATE", condition: "1 小时内失败率超过 15%", action: "ALERT", params: { percent: 15, windowMin: 60 }, status: "ENABLED", updatedAt: "2026-09-01 10:05" },
+  { id: "risk03", name: "失败率触发拦截", type: "FAILURE_RATE", condition: "10 分钟内失败率超过 30% 自动限流", action: "BLOCK", params: { percent: 30, windowMin: 10 }, status: "ENABLED", updatedAt: "2026-09-01 10:10" },
+  { id: "risk04", name: "异常单笔大额", type: "ABNORMAL_AMOUNT", condition: "单笔交易超过 50,000 USD 进入人工审核", action: "MANUAL_REVIEW", params: { singleLimit: 50000 }, status: "ENABLED", updatedAt: "2026-09-02 09:00" },
+  { id: "risk05", name: "异常高频刷单", type: "ABNORMAL_FREQ", condition: "同一卡 BIN 每分钟超过 10 笔", action: "BLOCK", params: { perMinute: 10 }, status: "ENABLED", updatedAt: "2026-09-02 09:20" },
+  { id: "risk06", name: "新卡首单高额告警", type: "ABNORMAL_AMOUNT", condition: "新绑定卡首单超过 5,000 USD 告警", action: "ALERT", params: { singleLimit: 5000 }, status: "ENABLED", updatedAt: "2026-09-03 11:00" },
+  { id: "risk07", name: "凌晨集中交易", type: "ABNORMAL_FREQ", condition: "00:00-05:00 同一 IP 每分钟超过 5 笔", action: "MANUAL_REVIEW", params: { perMinute: 5, window: "00:00-05:00" }, status: "DISABLED", updatedAt: "2026-09-03 11:30" },
+  { id: "risk08", name: "美国卡 3DS 降级", type: "THREE_DS", condition: "美国非 EEA 卡仅在风险评分 >70 时触发 3DS", action: "MANUAL_REVIEW", params: { region: "US", riskScore: 70 }, status: "ENABLED", updatedAt: "2026-09-04 14:00" },
+];
+
+export const INITIAL_BLACKLIST: BlacklistEntry[] = [
+  { id: "bl01", type: "CARD_BIN", value: "40000027", reason: "已知测试卡 BIN，盗刷高发", expiresAt: "永久", status: "ACTIVE", createdAt: "2026-08-20 10:00" },
+  { id: "bl02", type: "CARD_BIN", value: "55555500", reason: "欺诈团伙常用 BIN", expiresAt: "永久", status: "ACTIVE", createdAt: "2026-08-21 10:00" },
+  { id: "bl03", type: "IP", value: "185.220.101.45", reason: "代理/VPN 出口，关联多笔拒付", expiresAt: "永久", status: "ACTIVE", createdAt: "2026-08-22 10:00" },
+  { id: "bl04", type: "IP", value: "103.75.190.22", reason: "数据中心 IP，非真人交易", expiresAt: "永久", status: "ACTIVE", createdAt: "2026-08-23 10:00" },
+  { id: "bl05", type: "IP", value: "45.148.10.99", reason: "临时拉黑观察，到期自动解除", expiresAt: "2026-09-20 00:00", status: "ACTIVE", createdAt: "2026-09-01 10:00" },
+  { id: "bl06", type: "EMAIL", value: "fraud_bot@tempmail.io", reason: "一次性邮箱，恶意注册", expiresAt: "永久", status: "ACTIVE", createdAt: "2026-08-24 10:00" },
+  { id: "bl07", type: "EMAIL", value: "chargeback_spam@dispostable.com", reason: "历史高频拒付用户", expiresAt: "永久", status: "ACTIVE", createdAt: "2026-08-25 10:00" },
+  { id: "bl08", type: "CARD_BIN", value: "41111111", reason: "Sandbox 测试 BIN，误进入生产", expiresAt: "2026-10-01 00:00", status: "ACTIVE", createdAt: "2026-08-26 10:00" },
+  { id: "bl09", type: "EMAIL", value: "return_abuser@mailinator.com", reason: "退款滥用者", expiresAt: "永久", status: "EXPIRED", createdAt: "2026-07-01 10:00" },
+  { id: "bl10", type: "IP", value: "198.51.100.77", reason: "旧观察名单，已解封", expiresAt: "2026-08-01 00:00", status: "EXPIRED", createdAt: "2026-07-01 10:00" },
+  { id: "bl11", type: "CARD_BIN", value: "378282", reason: "Amex 欺诈测试 BIN", expiresAt: "永久", status: "ACTIVE", createdAt: "2026-09-05 10:00" },
+  { id: "bl12", type: "EMAIL", value: "scammer_uk@guerrillamail.com", reason: "英国欺诈团伙邮箱", expiresAt: "永久", status: "ACTIVE", createdAt: "2026-09-06 10:00" },
+];
+
+// ============================================================
+// P1: 商户 / KYB 审核 mock 数据
+// ============================================================
+export const INITIAL_MERCHANT_APPLICATIONS: MerchantApplication[] = [
+  { id: "ma01", companyName: "Nordic Living AB", country: "SE", applyType: "NEW", contactPerson: "Erik Johansson", contactEmail: "erik@nordicliving.se", documents: [
+    { name: "营业执照_瑞典注册证.pdf", type: "营业执照", size: "1.2 MB", uploadedAt: "2026-09-10 09:20" },
+    { name: "法人身份证_护照.jpg", type: "法人证件", size: "860 KB", uploadedAt: "2026-09-10 09:21" },
+    { name: "银行账户证明.pdf", type: "银行流水", size: "2.4 MB", uploadedAt: "2026-09-10 09:22" },
+  ], status: "PENDING", submittedAt: "2026-09-10 09:25" },
+  { id: "ma02", companyName: "TechNova Japan KK", country: "JP", applyType: "NEW", contactPerson: "佐藤 健一", contactEmail: "sato@technova.jp", documents: [
+    { name: "登記事項証明書.pdf", type: "营业执照", size: "1.8 MB", uploadedAt: "2026-09-10 11:00" },
+    { name: "在留カード.jpg", type: "法人证件", size: "1.1 MB", uploadedAt: "2026-09-10 11:01" },
+  ], status: "IN_REVIEW", submittedAt: "2026-09-10 11:05" },
+  { id: "ma03", companyName: "BlueOrbit Inc.", country: "US", applyType: "CHANGE", contactPerson: "Michael Chen", contactEmail: "mchen@blueorbit.io", documents: [
+    { name: "Certificate of Incorporation.pdf", type: "营业执照", size: "980 KB", uploadedAt: "2026-09-09 14:00" },
+    { name: "EIN_Letter.pdf", type: "税务证明", size: "1.5 MB", uploadedAt: "2026-09-09 14:01" },
+    { name: "Beneficial_Ownership_Doc.pdf", type: "受益所有人", size: "3.1 MB", uploadedAt: "2026-09-09 14:02" },
+    { name: "Bank_Statement.pdf", type: "银行流水", size: "2.0 MB", uploadedAt: "2026-09-09 14:03" },
+  ], status: "APPROVED", submittedAt: "2026-09-09 14:10" },
+  { id: "ma04", companyName: "Alpengrün GmbH", country: "DE", applyType: "NEW", contactPerson: "Anna Becker", contactEmail: "a.becker@alpengrun.de", documents: [
+    { name: "Handelsregisterauszug.pdf", type: "营业执照", size: "1.3 MB", uploadedAt: "2026-09-08 10:00" },
+    { name: "Gewerbeschein.pdf", type: "经营许可", size: "760 KB", uploadedAt: "2026-09-08 10:01" },
+  ], status: "REJECTED", rejectReason: "营业执照已过期，请上传最新注册证明后重新提交", submittedAt: "2026-09-08 10:05" },
+  { id: "ma05", companyName: "Lion City Pte Ltd", country: "SG", applyType: "NEW", contactPerson: "Lim Wei Ling", contactEmail: "weiling@lioncity.sg", documents: [
+    { name: "BizProfile.pdf", type: "营业执照", size: "1.0 MB", uploadedAt: "2026-09-08 16:00" },
+    { name: "NRIC_Front.jpg", type: "法人证件", size: "1.4 MB", uploadedAt: "2026-09-08 16:01" },
+    { name: "NRIC_Back.jpg", type: "法人证件", size: "1.3 MB", uploadedAt: "2026-09-08 16:01" },
+  ], status: "PENDING", submittedAt: "2026-09-08 16:10" },
+  { id: "ma06", companyName: "Victoria Peak Holdings", country: "HK", applyType: "CHANGE", contactPerson: "陈伟明", contactEmail: "wmchan@victoripeak.hk", documents: [
+    { name: "商業登記證.pdf", type: "营业执照", size: "1.1 MB", uploadedAt: "2026-09-07 09:00" },
+    { name: "公司註冊證書.pdf", type: "营业执照", size: "1.2 MB", uploadedAt: "2026-09-07 09:01" },
+  ], status: "IN_REVIEW", submittedAt: "2026-09-07 09:10" },
+  { id: "ma07", companyName: "Maple Leaf Tech Inc.", country: "CA", applyType: "NEW", contactPerson: "Julie Tremblay", contactEmail: "julie@mapleleaf.ca", documents: [
+    { name: "Articles of Incorporation.pdf", type: "营业执照", size: "1.7 MB", uploadedAt: "2026-09-06 13:00" },
+  ], status: "APPROVED", submittedAt: "2026-09-06 13:05" },
+  { id: "ma08", companyName: "Sydney Digital Pty Ltd", country: "AU", applyType: "NEW", contactPerson: "Sophie Turner", contactEmail: "sophie@syddig.au", documents: [
+    { name: "ASIC_Extract.pdf", type: "营业执照", size: "2.0 MB", uploadedAt: "2026-09-05 15:00" },
+    { name: "Passport_Sophie.jpg", type: "法人证件", size: "920 KB", uploadedAt: "2026-09-05 15:01" },
+  ], status: "PENDING", submittedAt: "2026-09-05 15:10" },
+  { id: "ma09", companyName: "Thames River Ltd", country: "GB", applyType: "CHANGE", contactPerson: "James Whitmore", contactEmail: "james@thamesriver.co.uk", documents: [
+    { name: "CompaniesHouse_Report.pdf", type: "营业执照", size: "1.6 MB", uploadedAt: "2026-09-04 10:00" },
+    { name: "Directors_ID.jpg", type: "法人证件", size: "1.1 MB", uploadedAt: "2026-09-04 10:01" },
+    { name: "Utility_Bill.pdf", type: "地址证明", size: "880 KB", uploadedAt: "2026-09-04 10:02" },
+  ], status: "REJECTED", rejectReason: "地址证明文件姓名与公司董事不一致，请重新上传", submittedAt: "2026-09-04 10:10" },
+  { id: "ma10", companyName: "Amazonas Serviços", country: "BR", applyType: "NEW", contactPerson: "Carlos Silva", contactEmail: "carlos@amazonas.br", documents: [
+    { name: "CNPJ_Cartão.pdf", type: "营业执照", size: "1.9 MB", uploadedAt: "2026-09-03 11:00" },
+    { name: "RG_CPF.pdf", type: "法人证件", size: "1.3 MB", uploadedAt: "2026-09-03 11:01" },
+  ], status: "IN_REVIEW", submittedAt: "2026-09-03 11:05" },
+  { id: "ma11", companyName: "Cascade Ventures LLC", country: "US", applyType: "NEW", contactPerson: "David Park", contactEmail: "dpark@cascadevent.us", documents: [
+    { name: "LLC_Operating_Agreement.pdf", type: "营业执照", size: "2.2 MB", uploadedAt: "2026-09-02 09:00" },
+    { name: "W9_Form.pdf", type: "税务证明", size: "640 KB", uploadedAt: "2026-09-02 09:01" },
+  ], status: "PENDING", submittedAt: "2026-09-02 09:10" },
 ];
 
