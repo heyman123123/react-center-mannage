@@ -550,3 +550,101 @@ export interface AuditLog {
   ipAddress: string;
   status?: "SUCCESS" | "BLOCKED_BY_RBAC" | "WARNING";
 }
+
+// ============================================================
+// P0: 结算单 / 出金管理
+// ============================================================
+export type SettlementStatus = "PENDING" | "SETTLING" | "PAID" | "FAILED";
+
+/** 结算批次内的单笔交易明细 */
+export interface SettlementTxItem {
+  tradeNo: string; // 关联交易号
+  orderTitle?: string;
+  amount: number; // 该笔交易金额
+  fee: number; // 该笔手续费
+}
+
+/** 结算批次费用明细 */
+export interface SettlementFeeBreakdown {
+  channelFee: number; // 渠道费
+  fxGainLoss: number; // 汇兑损溢（负数为损失）
+  platformFee: number; // 平台服务费
+}
+
+/** 出金账户 */
+export interface PayoutAccount {
+  bankName: string;
+  accountLast4: string;
+  currency: string;
+}
+
+export interface SettlementBatch {
+  id: string; // 批次号
+  tenantId: TenantId;
+  channel: PaymentChannel;
+  currency: string;
+  receivableAmount: number; // 应收金额
+  fee: number; // 总手续费
+  netAmount: number; // 净结金额
+  status: SettlementStatus;
+  cycle: string; // 结算周期，如 T+1 / Daily / Weekly
+  createdAt: string;
+  txItems: SettlementTxItem[]; // 交易明细
+  fees: SettlementFeeBreakdown; // 费用明细
+  payoutAccount?: PayoutAccount; // 出金账户
+  remark?: string;
+}
+
+// ============================================================
+// P0: 退款与拒付管理
+// ============================================================
+export type RefundReason = "客户要求" | "商品缺陷" | "重复扣款" | "欺诈疑似" | "其他";
+export type RefundStatus = "PENDING_REVIEW" | "PROCESSING" | "SUCCESS" | "FAILED";
+
+export interface RefundRecord {
+  id: string; // 退款单号
+  transactionNo: string; // 关联交易号
+  tenantId: TenantId;
+  channel: PaymentChannel;
+  refundAmount: number; // 退款金额
+  originalAmount: number; // 原交易金额
+  currency: string;
+  reason: RefundReason;
+  status: RefundStatus;
+  refundType: "PARTIAL" | "FULL"; // 部分 / 全额退款
+  note?: string;
+  createdAt: string;
+}
+
+export type ChargebackReason = "欺诈" | "未收到商品" | "商品不符" | "其他";
+export type ChargebackStatus = "待响应" | "已提交证据" | "胜诉" | "败诉";
+
+export interface ChargebackEvidence {
+  id: string;
+  name: string;
+  size: string;
+  uploadedAt: string;
+}
+
+export interface ChargebackTimelineStep {
+  title: string;
+  timestamp: string;
+  status: "completed" | "current" | "pending";
+  description?: string;
+}
+
+export interface ChargebackRecord {
+  id: string; // 拒付单号
+  transactionNo: string; // 关联交易号
+  tenantId: TenantId;
+  channel: PaymentChannel;
+  amount: number; // 争议金额
+  currency: string;
+  reason: ChargebackReason;
+  status: ChargebackStatus;
+  deadline: string; // 响应截止时间
+  remainingDays: number; // 剩余天数
+  evidence: ChargebackEvidence[]; // 证据文件列表
+  timeline: ChargebackTimelineStep[];
+  note?: string;
+}

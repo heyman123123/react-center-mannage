@@ -19,12 +19,14 @@ interface HeaderProps {
   onRefreshData: () => void;
   currentViewTitle: string;
   currentPath?: string;
+  onToggleSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onRefreshData,
   currentViewTitle,
   currentPath,
+  onToggleSidebar,
 }) => {
   return (
     <header
@@ -35,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-2">
         <button
           id="sidebar-toggle-btn"
+          onClick={onToggleSidebar}
           title="折叠/展开导航"
           className="p-1.5 text-fg-secondary hover:text-fg hover:bg-hover rounded-md transition-colors cursor-pointer"
         >

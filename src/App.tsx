@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { LayoutDashboard, Receipt, Wallet, RotateCcw, User } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { DashboardView } from "./components/DashboardView";
@@ -21,6 +22,9 @@ import { DictionaryView } from "./components/DictionaryView";
 import { MenusView } from "./components/MenusView";
 import { RolesView } from "./components/RolesView";
 import { DepartmentManagementView } from "./components/DepartmentManagementView";
+import { SettlementsView } from "./components/SettlementsView";
+import { RefundsView } from "./components/RefundsView";
+import { AuditLogsView } from "./components/AuditLogsView";
 import { UserSettingsModal } from "./components/UserSettingsModal";
 import { QuickCreateModal } from "./components/QuickCreateModal";
 import { DiscrepancyModal } from "./components/DiscrepancyModal";
@@ -44,6 +48,9 @@ import {
   SystemMenuItem,
   UserProfileSettings,
   RbacRole,
+  SettlementBatch,
+  RefundRecord,
+  ChargebackRecord,
 } from "./types/payment";
 import { getStoredTheme, applyTheme } from "./lib/theme";
 import {
@@ -65,6 +72,9 @@ import {
   INITIAL_DICTIONARY,
   INITIAL_MENUS,
   RBAC_ROLES,
+  INITIAL_SETTLEMENTS,
+  INITIAL_REFUNDS,
+  INITIAL_CHARGEBACKS,
 } from "./data/mockData";
 
 export default function App() {
@@ -94,12 +104,18 @@ export default function App() {
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>(SYSTEM_USERS);
   const [departments, setDepartments] = useState<Department[]>(DEPARTMENTS);
 
+  // P0: 结算 / 退款 / 拒付
+  const [settlements, setSettlements] = useState<SettlementBatch[]>(INITIAL_SETTLEMENTS);
+  const [refunds, setRefunds] = useState<RefundRecord[]>(INITIAL_REFUNDS);
+  const [chargebacks, setChargebacks] = useState<ChargebackRecord[]>(INITIAL_CHARGEBACKS);
+
   // Current View & Modals
   const VALID_TABS = [
     "dashboard", "transactions", "reconciliation", "products", "discounts",
     "promo_campaigns", "payment_channels", "payment_webhooks", "apps",
     "email_channels", "email_webhooks", "email_templates", "dictionary",
     "users", "roles", "permissions", "menus", "departments", "system_users",
+    "settlements", "refunds", "audit_logs",
   ];
   const tabFromHash = (): string => {
     const raw = (window.location.hash || "").replace(/^#\/?/, "");
@@ -111,11 +127,13 @@ export default function App() {
   const [quickCreateOpen, setQuickCreateOpen] = useState<boolean>(false);
   const [activeDiscrepancyTx, setActiveDiscrepancyTx] = useState<TransactionRecord | null>(null);
   const [userSettingsOpen, setUserSettingsOpen] = useState<boolean>(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   // 切换页面：更新 state 并同步 URL hash
   const navigateToTab = (tab: string) => {
     if (!VALID_TABS.includes(tab)) tab = "dashboard";
     setCurrentTab(tab);
+    setMobileMenuOpen(false);
     if (window.location.hash !== `#/${tab}`) {
       window.history.replaceState(null, "", `#/${tab}`);
     }
@@ -392,6 +410,12 @@ export default function App() {
         return "系统菜单与导航节点管理";
       case "system_users":
         return "用户管理 (角色权限与应用权限)";
+      case "settlements":
+        return "结算与出金管理";
+      case "refunds":
+        return "退款与拒付管理";
+      case "audit_logs":
+        return "操作审计日志";
       default:
         return "海外聚合支付中台";
     }
@@ -399,15 +423,41 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-page font-sans text-fg antialiased selection:bg-primary selection:text-primary-foreground">
-      {/* Left Sidebar (driven by menu management data) */}
-      <Sidebar
-        menus={menus}
-        currentTab={currentTab}
-        setCurrentTab={navigateToTab}
-        currentUser={currentUser}
-        onOpenUserSettings={() => setUserSettingsOpen(true)}
-        onOpenQuickCreate={() => setQuickCreateOpen(true)}
-      />
+      {/* Left Sidebar (desktop only, md+) */}
+      <div className="hidden md:block shrink-0">
+        <Sidebar
+          menus={menus}
+          currentTab={currentTab}
+          setCurrentTab={navigateToTab}
+          currentUser={currentUser}
+          onOpenUserSettings={() => setUserSettingsOpen(true)}
+          onOpenQuickCreate={() => setQuickCreateOpen(true)}
+        />
+      </div>
+
+      {/* Mobile drawer sidebar (off-canvas, <md) */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs animate-in fade-in"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="fixed inset-y-0 left-0 z-50 h-full animate-in slide-in-from-left duration-300 ease-out">
+            <Sidebar
+              menus={menus}
+              currentTab={currentTab}
+              setCurrentTab={navigateToTab}
+              currentUser={currentUser}
+              onOpenUserSettings={() => {
+                setUserSettingsOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              onOpenQuickCreate={() => setQuickCreateOpen(true)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -418,14 +468,15 @@ export default function App() {
           isSimulating={isSimulating}
           setIsSimulating={setIsSimulating}
           onRefreshData={() => {
-          // 刷新当前页数据：重挂载当前视图以重新触发骨架屏与数据加载，停留当前页
-          setRefreshTick((n) => n + 1);
-        }}
+            // 刷新当前页数据：重挂载当前视图以重新触发骨架屏与数据加载，停留当前页
+            setRefreshTick((n) => n + 1);
+          }}
+          onToggleSidebar={() => setMobileMenuOpen((v) => !v)}
           currentViewTitle={getTabTitle()}
         />
 
         {/* Dynamic View Scroll Container (key 随当前页+刷新计数变化，刷新即重挂载重跑骨架屏) */}
-        <main key={`${currentTab}-${refreshTick}`} className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-4 max-w-7xl w-full mx-auto">
+        <main key={`${currentTab}-${refreshTick}`} className="flex-1 overflow-y-auto overflow-x-hidden p-2 md:p-4 pb-20 md:pb-4 max-w-7xl w-full mx-auto">
           {currentTab === "dashboard" && (
             <DashboardView
               currentTenant={currentTenant}
@@ -710,8 +761,57 @@ export default function App() {
               }}
             />
           )}
+
+          {currentTab === "settlements" && (
+            <SettlementsView
+              batches={settlements}
+            />
+          )}
+
+          {currentTab === "refunds" && (
+            <RefundsView
+              refunds={refunds}
+              chargebacks={chargebacks}
+            />
+          )}
+
+          {currentTab === "audit_logs" && (
+            <AuditLogsView
+              logs={auditLogs}
+            />
+          )}
         </main>
       </div>
+
+      {/* Mobile bottom tab bar (<md only) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-surface border-t border-line flex items-stretch h-16 px-1 pb-[env(safe-area-inset-bottom)]">
+        {[
+          { key: "dashboard", label: "看板", icon: LayoutDashboard, tab: "dashboard" as const },
+          { key: "transactions", label: "交易", icon: Receipt, tab: "transactions" as const },
+          { key: "settlements", label: "结算", icon: Wallet, tab: "settlements" as const },
+          { key: "refunds", label: "退款", icon: RotateCcw, tab: "refunds" as const },
+          { key: "me", label: "我的", icon: User, tab: null },
+        ].map((item) => {
+          const active = item.tab ? currentTab === item.tab : false;
+          const IconCmp = item.icon;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => {
+                if (item.tab) navigateToTab(item.tab);
+                else setUserSettingsOpen(true);
+              }}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors ${
+                active ? "text-primary" : "text-fg-tertiary"
+              }`}
+            >
+              <IconCmp className={`w-5 h-5 ${active ? "text-primary" : "text-fg-tertiary"}`} />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       {/* User Settings Modal (Avatar, Password, Name) */}
       <UserSettingsModal
