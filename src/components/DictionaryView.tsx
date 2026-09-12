@@ -749,20 +749,23 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <button
             type="button"
             onClick={() => setCategoryFilter("ALL")}
-            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+            className={`relative w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
               categoryFilter === "ALL"
-                ? "bg-primary text-primary-foreground font-semibold border-primary shadow-card"
+                ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm"
                 : "text-fg-secondary hover:bg-hover border-transparent"
             }`}
           >
-            <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-              categoryFilter === "ALL" ? "bg-white/15" : "bg-subtle border border-line-subtle"
+            {categoryFilter === "ALL" && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-r-full" />
+            )}
+            <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+              categoryFilter === "ALL" ? "bg-blue-500" : "bg-subtle border border-line-subtle"
             }`}>
-              <BookOpen className={`w-3.5 h-3.5 ${categoryFilter === "ALL" ? "text-amber-300" : "text-fg-tertiary"}`} />
+              <BookOpen className={`w-3.5 h-3.5 ${categoryFilter === "ALL" ? "text-white" : "text-fg-tertiary"}`} />
             </span>
             <span className="flex-1 text-left truncate">全部</span>
             <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-              categoryFilter === "ALL" ? "bg-white/15" : "bg-hover text-fg-tertiary"
+              categoryFilter === "ALL" ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
             }`}>{entryList.length}</span>
           </button>
 
@@ -794,20 +797,23 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setCategoryFilter(c.key)}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+                      className={`relative w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
                         categoryFilter === c.key
-                          ? "bg-primary text-primary-foreground font-semibold border-primary shadow-card"
+                          ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm"
                           : "text-fg-secondary hover:bg-hover border-transparent"
                       }`}
                     >
-                      <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-                        categoryFilter === c.key ? "bg-white/15" : "bg-subtle border border-line-subtle"
+                      {categoryFilter === c.key && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-r-full" />
+                      )}
+                      <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                        categoryFilter === c.key ? "bg-blue-500" : "bg-subtle border border-line-subtle"
                       }`}>
-                        <FolderTree className={`w-3.5 h-3.5 ${categoryFilter === c.key ? "text-blue-300" : "text-fg-tertiary"}`} />
+                        <FolderTree className={`w-3.5 h-3.5 ${categoryFilter === c.key ? "text-white" : "text-fg-tertiary"}`} />
                       </span>
                       <span className="flex-1 text-left truncate">{c.label}</span>
                       <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
-                        categoryFilter === c.key ? "bg-white/15" : "bg-hover text-fg-tertiary"
+                        categoryFilter === c.key ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
                       }`}>{count}</span>
                     </button>
                   )

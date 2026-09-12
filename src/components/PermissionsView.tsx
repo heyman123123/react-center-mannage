@@ -312,22 +312,25 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => switchRole(role)}
-                      className={`w-full text-left px-3.5 py-3 rounded-xl border transition-all cursor-pointer ${
+                      className={`relative w-full text-left px-3.5 py-3 rounded-xl border transition-all cursor-pointer ${
                         isActive
-                          ? "bg-primary text-primary-foreground border-primary shadow-card"
-                          : "bg-surface border-line hover:border-primary/40 hover:shadow-card"
+                          ? "bg-blue-50/90 border-blue-200 shadow-sm"
+                          : "bg-surface border-line hover:border-blue-300/60 hover:shadow-card"
                       }`}
                       title="右键可新增 / 编辑 / 删除角色"
                     >
+                      {isActive && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-500 rounded-r-full" />
+                      )}
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                            isActive ? "bg-white/15" : "bg-subtle border border-line-subtle"
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                            isActive ? "bg-blue-500" : "bg-subtle border border-line-subtle"
                           }`}
                         >
                           <ShieldCheck
                             className={`w-4 h-4 ${
-                              isActive ? "text-amber-400" : "text-fg-secondary"
+                              isActive ? "text-white" : "text-fg-secondary"
                             }`}
                           />
                         </span>
@@ -335,22 +338,20 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                           {role.name}
                         </span>
                         {isActive && (
-                          <span className="ml-auto text-[9px] font-bold bg-white/15 rounded px-1.5 py-0.5">
+                          <span className="ml-auto text-[9px] font-bold bg-blue-100 text-blue-700 rounded px-1.5 py-0.5">
                             当前
                           </span>
                         )}
                       </div>
                       <p
-                        className={`text-[11px] mt-1.5 line-clamp-2 leading-relaxed ${
-                          isActive ? "text-primary-foreground/75" : "text-fg-secondary"
-                        }`}
+                        className={`text-[11px] mt-1.5 line-clamp-2 leading-relaxed text-fg-secondary`}
                       >
                         {role.description}
                       </p>
                       <div
                         className={`mt-2 pt-2 border-t flex items-center justify-between text-[10px] font-mono ${
                           isActive
-                            ? "border-white/15 text-primary-foreground/70"
+                            ? "border-blue-100 text-blue-700"
                             : "border-line-subtle text-fg-tertiary"
                         }`}
                       >
@@ -375,11 +376,13 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
           <div className="bg-surface border border-line rounded-2xl shadow-2xs p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-bold text-fg flex items-center gap-1.5">
-                  <FolderTree className="w-4 h-4 text-fg-secondary" />
+                <h3 className="text-sm font-bold text-fg flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-center">
+                    <FolderTree className="w-3.5 h-3.5 text-blue-600" />
+                  </span>
                   菜单树权限配置
                 </h3>
-                <p className="text-xs text-fg-secondary mt-0.5">
+                <p className="text-xs text-fg-secondary mt-1">
                   勾选该角色可访问的菜单节点（与左侧侧边栏 / 菜单管理数据一致，父子联动）
                 </p>
               </div>
@@ -413,11 +416,13 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
           <div className="bg-surface border border-line rounded-2xl shadow-2xs p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-bold text-fg flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-fg-secondary" />
+                <h3 className="text-sm font-bold text-fg flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-center">
+                    <Layers className="w-3.5 h-3.5 text-blue-600" />
+                  </span>
                   应用权限配置 (Application Permissions)
                 </h3>
-                <p className="text-xs text-fg-secondary mt-0.5">
+                <p className="text-xs text-fg-secondary mt-1">
                   限定该角色可管理/查看的接入应用范围
                 </p>
               </div>
@@ -444,15 +449,15 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                       onClick={() => toggleApp(app.id)}
                       className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start justify-between ${
                         isChecked
-                          ? "border-primary bg-subtle/90 shadow-2xs"
-                          : "border-line bg-surface hover:border-line"
+                          ? "border-blue-200 bg-blue-50/70 shadow-sm"
+                          : "border-line bg-surface hover:border-blue-300/60"
                       }`}
                     >
                       <div className="flex items-start gap-2.5 min-w-0">
                         <span
                           className={`w-4 h-4 rounded border mt-0.5 flex items-center justify-center transition-colors shrink-0 ${
                             isChecked
-                              ? "bg-primary border-primary text-primary-foreground"
+                              ? "bg-blue-500 border-blue-500 text-white"
                               : "border-line bg-surface"
                           }`}
                         >

@@ -76,9 +76,9 @@ export const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
           <span
             className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
               isChecked
-                ? "bg-primary border-primary text-primary-foreground"
+                ? "bg-blue-500 border-blue-500 text-white"
                 : isIndeterminate
-                ? "bg-primary border-primary text-primary-foreground"
+                ? "bg-blue-500 border-blue-500 text-white"
                 : "border-line bg-surface"
             }`}
           >

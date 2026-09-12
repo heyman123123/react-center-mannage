@@ -308,9 +308,9 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           items={deptNodeMenu(node)}
           trigger={(
           <div
-          className={`flex items-center gap-1.5 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+          className={`relative flex items-center gap-1.5 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
             isActive
-              ? "bg-primary text-primary-foreground font-semibold border-primary shadow-card"
+              ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm"
               : "text-fg-secondary hover:bg-hover border-transparent"
           }`}
           style={{ paddingLeft: `${6 + node.level * 14}px` }}
@@ -320,6 +320,9 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             setSearchQuery("");
           }}
         >
+          {isActive && (
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-r-full" />
+          )}
           {hasChildren ? (
             <button
               type="button"
@@ -338,14 +341,14 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           ) : (
             <span className="w-3.5 shrink-0" />
           )}
-          <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-            isActive ? "bg-white/15" : "bg-subtle border border-line-subtle"
+          <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+            isActive ? "bg-blue-500" : "bg-subtle border border-line-subtle"
           }`}>
-            <Building2 className={`w-3.5 h-3.5 ${isActive ? "text-blue-300" : "text-fg-tertiary"}`} />
+            <Building2 className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-fg-tertiary"}`} />
           </span>
           <span className="truncate flex-1">{node.name}</span>
           <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-            isActive ? "bg-white/15" : "bg-hover text-fg-tertiary"
+            isActive ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
           }`}>
             {node.memberCount ?? 0}
           </span>
@@ -406,17 +409,26 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
 
         <div className="p-2 space-y-0.5">
           <div
-            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-              selectedDeptId === "ALL" ? "bg-primary text-primary-foreground font-semibold" : "text-fg-secondary hover:bg-hover"
+            className={`relative flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+              selectedDeptId === "ALL" ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm" : "text-fg-secondary hover:bg-hover border-transparent"
             }`}
             onClick={() => {
               setSelectedDeptId("ALL");
               setViewMode("DEPT");
             }}
           >
-            <FolderTree className="w-3.5 h-3.5 text-fg-tertiary" />
+            {selectedDeptId === "ALL" && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-r-full" />
+            )}
+            <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+              selectedDeptId === "ALL" ? "bg-blue-500" : "bg-subtle border border-line-subtle"
+            }`}>
+              <FolderTree className={`w-3.5 h-3.5 ${selectedDeptId === "ALL" ? "text-white" : "text-fg-tertiary"}`} />
+            </span>
             <span className="truncate flex-1">全部部门</span>
-            <span className="text-[10px] font-mono text-fg-tertiary">{deptList.length}</span>
+            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+              selectedDeptId === "ALL" ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
+            }`}>{deptList.length}</span>
           </div>
           {tree.map((node) => renderTreeNode(node))}
         </div>
@@ -588,7 +600,18 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                             </div>
                           </td>
                           <td className="py-2 px-3 font-mono text-fg-secondary">{dept.code}</td>
-                          <td className="py-2 px-3 text-fg-secondary">{parent ? parent.name : "—（顶级部门）"}</td>
+                          <td className="py-2 px-3 text-fg-secondary">
+                            {parent ? (
+                              <span className="inline-flex items-center gap-1 text-[11px]">
+                                <Building2 className="w-3 h-3 text-fg-tertiary" />
+                                {parent.name}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-1.5 py-0.5 bg-hover text-fg-tertiary border border-line rounded text-[10px]">
+                                顶级部门
+                              </span>
+                            )}
+                          </td>
                           <td className="py-2 px-3">
                             <div className="flex flex-wrap gap-1 max-w-[220px]">
                               {roleKeys.length === 0 ? (
