@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -13,6 +14,7 @@ interface PaginationProps {
  * 统一表格分页器：底部居中「第 X 页，共 Y 页（共 N 条记录）」+ 上一页/下一页
  */
 export function Pagination({ currentPage, totalItems, pageSize, onPageChange }: PaginationProps) {
+  const { t } = useTranslation("common");
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const canPrev = currentPage > 1;
   const canNext = currentPage < totalPages;
@@ -26,12 +28,10 @@ export function Pagination({ currentPage, totalItems, pageSize, onPageChange }: 
         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-secondary bg-surface hover:bg-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
-        上一页
+        {t("pagination.prev")}
       </button>
       <div className="text-xs text-fg-secondary whitespace-nowrap">
-        第 <span className="font-bold text-fg">{currentPage}</span> 页，共{" "}
-        <span className="font-bold text-fg">{totalPages}</span> 页（共{" "}
-        <span className="font-bold text-fg">{totalItems}</span> 条记录）
+        {t("pagination.pageInfo", { current: currentPage, totalPages, totalItems })}
       </div>
       <button
         type="button"
@@ -39,7 +39,7 @@ export function Pagination({ currentPage, totalItems, pageSize, onPageChange }: 
         onClick={() => onPageChange(currentPage + 1)}
         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-secondary bg-surface hover:bg-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        下一页
+        {t("pagination.next")}
         <ChevronRight className="w-3.5 h-3.5" />
       </button>
     </div>

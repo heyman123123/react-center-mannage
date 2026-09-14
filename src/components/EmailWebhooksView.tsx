@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -25,6 +26,7 @@ interface EmailWebhooksViewProps {
 }
 
 export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) => {
+  const { t } = useTranslation(["email", "common"]);
   const [emailLogs] = useState<EmailWebhookLog[]>(logs);
   const [filterType, setFilterType] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -49,7 +51,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
 
   const handleExport = () => {
     exportToCSV(
-      "邮件Webhook日志",
+      t("webhooks.exportFilename"),
       ["消息ID", "事件类型", "服务商", "收件人", "主题", "模板代码", "时间", "状态"],
       filtered.map((l) => [
         l.messageId, l.eventType, l.provider, l.recipient, l.subject, l.templateCode, l.timestamp, l.status,
@@ -70,7 +72,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
               <MailCheck className="w-5 h-5" />
             </span>
             <h1 className="text-xl font-bold text-fg tracking-tight">
-              邮件 Webhook 事件监听中心
+              {t("webhooks.title")}
             </h1>
           </div>
           <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
@@ -85,16 +87,16 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
             className="inline-flex items-center gap-1.5 px-3 py-2 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-semibold"
           >
             <Download className="w-3.5 h-3.5" />
-            导出 CSV
+            {t("webhooks.exportCsv")}
           </button>
           <div className="h-8 w-px bg-hover" />
           <div className="text-right">
-            <span className="text-[11px] text-fg-tertiary block">综合投递送达率</span>
+            <span className="text-[11px] text-fg-tertiary block">{t("webhooks.stats.deliveryRate")}</span>
             <span className="text-sm font-bold font-mono text-emerald-600">99.82%</span>
           </div>
           <div className="h-8 w-px bg-hover" />
           <div className="text-right">
-            <span className="text-[11px] text-fg-tertiary block">账单邮件打开率</span>
+            <span className="text-[11px] text-fg-tertiary block">{t("webhooks.stats.openRate")}</span>
             <span className="text-sm font-bold font-mono text-purple-600">64.50%</span>
           </div>
         </div>
@@ -103,7 +105,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
       {/* Filter and Search */}
       <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-fg-tertiary text-xs">状态事件:</span>
+          <span className="text-fg-tertiary text-xs">{t("webhooks.filterLabel")}</span>
           {["ALL", "DELIVERED", "OPENED", "BOUNCED"].map((tab) => (
             <button
               key={tab}
@@ -115,12 +117,12 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
               }`}
             >
               {tab === "ALL"
-                ? "全部回执"
+                ? t("webhooks.filters.all")
                 : tab === "DELIVERED"
-                ? "成功送达 (Delivered)"
+                ? t("webhooks.filters.delivered")
                 : tab === "OPENED"
-                ? "客户已读 (Opened)"
-                : "退信拦截 (Bounced)"}
+                ? t("webhooks.filters.opened")
+                : t("webhooks.filters.bounced")}
             </button>
           ))}
         </div>
@@ -129,7 +131,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
           <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
-            placeholder="搜索收件邮箱 / 邮件主题..."
+            placeholder={t("webhooks.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
@@ -143,13 +145,13 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
           <table className="min-w-[1000px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-2 px-3 w-[220px]">消息 ID & 服务商</th>
-                <th className="py-2 px-3 w-[180px]">事件类型</th>
-                <th className="py-2 px-3 w-[200px]">目标收件人</th>
-                <th className="py-2 px-3 min-w-[220px]">邮件主题与模版</th>
-                <th className="py-2 px-3 w-[160px]">发生时间</th>
+                <th className="py-2 px-3 w-[220px]">{t("webhooks.table.messageId")}</th>
+                <th className="py-2 px-3 w-[180px]">{t("webhooks.table.eventType")}</th>
+                <th className="py-2 px-3 w-[200px]">{t("webhooks.table.recipient")}</th>
+                <th className="py-2 px-3 min-w-[220px]">{t("webhooks.table.subject")}</th>
+                <th className="py-2 px-3 w-[160px]">{t("webhooks.table.time")}</th>
                 <th className="py-2 px-3 w-[120px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                  操作
+                  {t("webhooks.table.operations")}
                 </th>
               </tr>
             </thead>
@@ -233,7 +235,7 @@ export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) =>
             onClick={() => setSelectedLog(null)}
             className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
           >
-            关闭
+            {t("common:actions.close")}
           </button>
         }
       >

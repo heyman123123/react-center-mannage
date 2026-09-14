@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   User,
   Lock,
@@ -19,6 +20,7 @@ import {
   Sparkles,
   Sun,
   Moon,
+  LogOut,
 } from "lucide-react";
 import { UserProfileSettings, SystemUser } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
@@ -30,6 +32,7 @@ interface UserSettingsModalProps {
   onClose: () => void;
   currentUser: SystemUser;
   onSaveProfile: (profile: UserProfileSettings) => void;
+  onLogout?: () => void;
 }
 
 const AVATAR_PRESETS = [
@@ -50,26 +53,32 @@ const TIMEZONE_OPTIONS = [
   { value: "Asia/Singapore", label: "Asia/Singapore (SGT, UTC+8)" },
 ];
 
-const LOCALE_OPTIONS = [
-  { value: "zh-CN", label: "简体中文 (zh-CN)" },
-  { value: "en-US", label: "English (US)" },
-  { value: "ja-JP", label: "日本語 (ja-JP)" },
-];
+function useLocaleOptions() {
+  const { t } = useTranslation("settings");
+  return [
+    { value: "zh-CN", label: t("profile.localeOptions.zhCN") },
+    { value: "en-US", label: t("profile.localeOptions.enUS") },
+    { value: "ja-JP", label: t("profile.localeOptions.jaJP") },
+  ];
+}
 
 export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
   isOpen,
   onClose,
   currentUser,
   onSaveProfile,
+  onLogout,
 }) => {
+  const { t } = useTranslation(["settings", "common"]);
+  const localeOptions = useLocaleOptions();
   const [activeTab, setActiveTab] = useState<"PROFILE" | "SECURITY" | "NOTIFICATIONS">("PROFILE");
   const [name, setName] = useState(currentUser.name);
   const [email, setEmail] = useState(currentUser.email);
   const [avatar, setAvatar] = useState(currentUser.avatar);
   const [jobTitle, setJobTitle] = useState(
     currentUser.role === "SUPER_ADMIN"
-      ? "全球技术总监 / VP of Engineering"
-      : "高级海外收单与结算运营"
+      ? t("profile.jobTitleDefaults.admin")
+      : t("profile.jobTitleDefaults.operator")
   );
   const [timezone, setTimezone] = useState("America/New_York");
   const [locale, setLocale] = useState("zh-CN");
@@ -103,9 +112,9 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     if (/[0-9]/.test(newPassword)) score += 1;
     if (/[^A-Za-z0-9]/.test(newPassword)) score += 1;
 
-    if (score <= 1) return { score: 1, text: "弱 (Weak)", color: "bg-rose-500" };
-    if (score === 2 || score === 3) return { score: 2, text: "中等 (Medium)", color: "bg-amber-500" };
-    return { score: 3, text: "极高强 (Strong)", color: "bg-emerald-500" };
+    if (score <= 1) return { score: 1, text: t("profile.passwordStrength.weak"), color: "bg-rose-500" };
+    if (score === 2 || score === 3) return { score: 2, text: t("profile.passwordStrength.medium"), color: "bg-amber-500" };
+    return { score: 3, text: t("profile.passwordStrength.strong"), color: "bg-emerald-500" };
   };
 
   const strength = getPasswordStrength();
@@ -120,7 +129,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
       timezone: timezone,
       locale: locale,
     });
-    setSuccessToast("基本资料与时区配置已成功更新！");
+    setSuccessToast(t("profile.toast.profileSaved"));
     setTimeout(() => {
       setSuccessToast(null);
       onClose();
@@ -132,19 +141,19 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     setPasswordError(null);
 
     if (!currentPassword) {
-      setPasswordError("请输入当前登录密码进行安全验证");
+      setPasswordError(t("profile.toast.passwordCurrentRequired"));
       return;
     }
     if (newPassword.length < 8) {
-      setPasswordError("新密码长度必须至少为 8 位字符");
+      setPasswordError(t("profile.toast.passwordMinLength"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError("两次输入的新密码不一致，请核对");
+      setPasswordError(t("profile.toast.passwordMismatch"));
       return;
     }
 
-    setSuccessToast("系统安全登录凭证已重置成功！");
+    setSuccessToast(t("profile.toast.passwordReset"));
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
@@ -159,8 +168,8 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
       id="side-sheet-user-settings"
       isOpen={isOpen}
       onClose={onClose}
-      title="个人中心与账户安全"
-      description="管理个人名片、头像、时区语言及修改系统安全登录凭证"
+      title={t("profile.title")}
+      description={t("profile.description")}
       icon={<User className="w-5 h-5 text-fg" />}
       widthClass="max-w-xl"
     >
@@ -185,7 +194,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             }`}
           >
             <User className="w-3.5 h-3.5" />
-            <span>基本资料 & 头像</span>
+            <span>{t("profile.tabs.profile")}</span>
           </button>
           <button
             type="button"
@@ -197,7 +206,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             }`}
           >
             <Lock className="w-3.5 h-3.5" />
-            <span>安全与密码</span>
+            <span>{t("profile.tabs.security")}</span>
           </button>
           <button
             type="button"
@@ -209,7 +218,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             }`}
           >
             <Mail className="w-3.5 h-3.5" />
-            <span>风控告警通知</span>
+            <span>{t("profile.tabs.notifications")}</span>
           </button>
         </div>
 
@@ -219,9 +228,9 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             <div className="space-y-0.5">
               <div className="font-semibold text-fg flex items-center gap-1.5">
                 <Sun className="w-3.5 h-3.5 text-fg-secondary" />
-                <span>外观主题</span>
+                <span>{t("profile.theme.label")}</span>
               </div>
-              <div className="text-[11px] text-fg-tertiary">选择浅色或深色界面，立即全局生效并自动记忆</div>
+              <div className="text-[11px] text-fg-tertiary">{t("profile.theme.hint")}</div>
             </div>
             <div className="flex items-center gap-1.5 bg-surface border border-line rounded-lg p-1">
               <button
@@ -232,7 +241,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 }`}
               >
                 <Sun className="w-3.5 h-3.5" />
-                浅色
+                {t("profile.theme.light")}
               </button>
               <button
                 type="button"
@@ -242,7 +251,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 }`}
               >
                 <Moon className="w-3.5 h-3.5" />
-                深色
+                {t("profile.theme.dark")}
               </button>
             </div>
           </div>
@@ -252,7 +261,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
         {activeTab === "PROFILE" && (
           <form onSubmit={handleSaveProfile} className="space-y-4 pt-1">
             <div>
-              <label className="font-semibold text-fg-secondary block mb-2">选择或上传用户头像:</label>
+              <label className="font-semibold text-fg-secondary block mb-2">{t("profile.avatar.label")}</label>
               <div className="flex items-center gap-3">
                 <img
                   src={avatar}
@@ -260,7 +269,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                   className="w-14 h-14 rounded-2xl object-cover border-2 border-line shadow-card"
                 />
                 <div className="space-y-2 flex-1">
-                  <div className="text-[11px] text-fg-secondary font-medium">推荐预设头像：</div>
+                  <div className="text-[11px] text-fg-secondary font-medium">{t("profile.avatar.presets")}</div>
                   <div className="flex items-center gap-2">
                     {AVATAR_PRESETS.map((preset, idx) => (
                       <button
@@ -283,7 +292,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label className="font-semibold text-fg-secondary block mb-1">姓名 / 昵称:</label>
+                <label className="font-semibold text-fg-secondary block mb-1">{t("profile.fields.name")}</label>
                 <input
                   type="text"
                   required
@@ -293,7 +302,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 />
               </div>
               <div>
-                <label className="font-semibold text-fg-secondary block mb-1">职位 / 角色描述:</label>
+                <label className="font-semibold text-fg-secondary block mb-1">{t("profile.fields.jobTitle")}</label>
                 <input
                   type="text"
                   value={jobTitle}
@@ -305,7 +314,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label className="font-semibold text-fg-secondary block mb-1">业务主时区:</label>
+                <label className="font-semibold text-fg-secondary block mb-1">{t("profile.fields.timezone")}</label>
                 <ShadcnSelect
                   value={timezone}
                   onValueChange={setTimezone}
@@ -314,11 +323,11 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               </div>
 
               <div>
-                <label className="font-semibold text-fg-secondary block mb-1">操作界面语言:</label>
+                <label className="font-semibold text-fg-secondary block mb-1">{t("profile.fields.locale")}</label>
                 <ShadcnSelect
                   value={locale}
                   onValueChange={setLocale}
-                  options={LOCALE_OPTIONS}
+                  options={localeOptions}
                 />
               </div>
             </div>
@@ -326,7 +335,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             <div className="p-3 bg-subtle rounded-xl border border-line text-[11px] text-fg-secondary flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Building className="w-4 h-4 text-fg-tertiary" />
-                <span>当前所属体系: 全球跨境支付中台</span>
+                <span>{t("profile.fields.org")}</span>
               </div>
               <span className="font-mono font-bold text-fg bg-hover/60 px-2 py-0.5 rounded">
                 {currentUser.role}
@@ -339,13 +348,13 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 onClick={onClose}
                 className="px-3 py-2 border border-line hover:bg-hover rounded-xl font-semibold text-fg-secondary cursor-pointer"
               >
-                取消
+                {t("common:actions.cancel")}
               </button>
               <button
                 type="submit"
                 className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
               >
-                保存资料修改
+                {t("profile.actions.saveProfile")}
               </button>
             </div>
           </form>
@@ -362,7 +371,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             )}
 
             <div>
-              <label className="font-semibold text-fg-secondary block mb-1">当前旧密码:</label>
+              <label className="font-semibold text-fg-secondary block mb-1">{t("profile.fields.currentPassword")}</label>
               <input
                 type="password"
                 required
@@ -374,11 +383,11 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             </div>
 
             <div>
-              <label className="font-semibold text-fg-secondary block mb-1">新密码:</label>
+              <label className="font-semibold text-fg-secondary block mb-1">{t("profile.fields.newPassword")}</label>
               <input
                 type="password"
                 required
-                placeholder="至少 8 位，包含大写字母与数字"
+                placeholder={t("profile.fields.passwordPlaceholder")}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
@@ -386,7 +395,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               {newPassword && (
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center justify-between text-[10px] text-fg-secondary">
-                    <span>密码强度:</span>
+                    <span>{t("profile.fields.passwordStrength")}</span>
                     <span className="font-bold">{strength.text}</span>
                   </div>
                   <div className="h-1.5 w-full bg-hover rounded-full overflow-hidden">
@@ -400,11 +409,11 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             </div>
 
             <div>
-              <label className="font-semibold text-fg-secondary block mb-1">确认新密码:</label>
+              <label className="font-semibold text-fg-secondary block mb-1">{t("profile.fields.confirmPassword")}</label>
               <input
                 type="password"
                 required
-                placeholder="再次输入新密码"
+                placeholder={t("profile.fields.confirmPlaceholder")}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
@@ -416,9 +425,9 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               <div className="space-y-0.5">
                 <div className="font-semibold text-fg flex items-center gap-1.5">
                   <Smartphone className="w-3.5 h-3.5 text-fg-secondary" />
-                  <span>双因子身份验证 (2FA Authenticator)</span>
+                  <span>{t("profile.twoFactor.title")}</span>
                 </div>
-                <div className="text-[11px] text-fg-tertiary">使用 Google Authenticator 或 1Password 进行登录二次验证</div>
+                <div className="text-[11px] text-fg-tertiary">{t("profile.twoFactor.hint")}</div>
               </div>
               <button
                 type="button"
@@ -441,13 +450,13 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 onClick={onClose}
                 className="px-3 py-2 border border-line hover:bg-hover rounded-xl font-semibold text-fg-secondary cursor-pointer"
               >
-                取消
+                {t("common:actions.cancel")}
               </button>
               <button
                 type="submit"
                 className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
               >
-                更新安全密码
+                {t("profile.actions.updatePassword")}
               </button>
             </div>
           </form>
@@ -459,8 +468,8 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             <div className="space-y-2">
               <div className="p-3 bg-subtle rounded-xl border border-line flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-fg">大额交易失败告警</div>
-                  <div className="text-[11px] text-fg-tertiary">单笔交易额超过 $1,000 扣款被拒时发送即时通知</div>
+                  <div className="font-semibold text-fg">{t("profile.notifications.paymentFailure.title")}</div>
+                  <div className="text-[11px] text-fg-tertiary">{t("profile.notifications.paymentFailure.hint")}</div>
                 </div>
                 <button
                   type="button"
@@ -479,8 +488,8 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
 
               <div className="p-3 bg-subtle rounded-xl border border-line flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-fg">自动平账差错异常通知</div>
-                  <div className="text-[11px] text-fg-tertiary">每日对账完成后发现未平账差异订单即刻预警</div>
+                  <div className="font-semibold text-fg">{t("profile.notifications.discrepancy.title")}</div>
+                  <div className="text-[11px] text-fg-tertiary">{t("profile.notifications.discrepancy.hint")}</div>
                 </div>
                 <button
                   type="button"
@@ -499,8 +508,8 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
 
               <div className="p-3 bg-subtle rounded-xl border border-line flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-fg">Visa / Mastercard 拒付争议 (Chargeback)</div>
-                  <div className="text-[11px] text-fg-tertiary">收到发卡行调单或欺诈申诉时通知风控专员</div>
+                  <div className="font-semibold text-fg">{t("profile.notifications.chargeback.title")}</div>
+                  <div className="text-[11px] text-fg-tertiary">{t("profile.notifications.chargeback.hint")}</div>
                 </div>
                 <button
                   type="button"
@@ -522,7 +531,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setSuccessToast("风控告警通知偏好已保存！");
+                  setSuccessToast(t("profile.notifications.saved"));
                   setTimeout(() => {
                     setSuccessToast(null);
                     onClose();
@@ -530,7 +539,33 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 }}
                 className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
               >
-                保存通知偏好
+                {t("profile.notifications.save")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 退出登录 */}
+        {onLogout && (
+          <div className="mt-6 pt-4 border-t border-line-subtle">
+            <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold text-rose-700">{t("profile.logout.title")}</div>
+                <div className="text-[11px] text-fg-secondary mt-0.5">
+                  {t("profile.logout.hint")}
+                </div>
+              </div>
+              <button
+                id="user-settings-logout-btn"
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onLogout();
+                }}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 transition-colors cursor-pointer shrink-0"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                {t("profile.logout.button")}
               </button>
             </div>
           </div>

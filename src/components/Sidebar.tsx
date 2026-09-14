@@ -1,14 +1,27 @@
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
+  BadgeCheck,
+  Bell,
+  ChevronsUpDown,
   ChevronDown,
   ChevronRight,
-  Shield,
-  Settings,
-  Globe,
+  CreditCard,
+  LogOut,
+  Sparkles,
 } from "lucide-react";
 import { SystemUser, SystemMenuItem } from "../types/payment";
 import { RBAC_ROLES } from "../data/mockData";
 import { renderMenuIcon } from "./ui/iconRegistry";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 interface SidebarProps {
   menus: SystemMenuItem[];
@@ -17,6 +30,7 @@ interface SidebarProps {
   currentUser: SystemUser;
   onOpenUserSettings: () => void;
   onOpenQuickCreate?: () => void;
+  onLogout?: () => void;
 }
 
 interface MenuTreeNode extends SystemMenuItem {
@@ -55,14 +69,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setCurrentTab,
   currentUser,
   onOpenUserSettings,
+  onLogout,
 }) => {
+  const { t } = useTranslation("nav");
   const currentRole = RBAC_ROLES[currentUser.roleKey] || {
     name: currentUser.role,
   };
 
   const tree = useMemo(() => buildMenuTree(menus), [menus]);
 
-  // 默认展开所有一级分组
   const [expandedIds, setExpandedIds] = useState<Set<string>>(
     () => new Set(tree.filter((n) => n.children.length > 0).map((n) => n.id))
   );
@@ -76,13 +91,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
   };
 
+  const avatarFallback =
+    currentUser.avatarText || currentUser.name.slice(0, 2).toUpperCase();
+
+  const UserAvatar = ({ className = "size-8" }: { className?: string }) =>
+    currentUser.avatar ? (
+      <img
+        src={currentUser.avatar}
+        alt={currentUser.name}
+        className={`${className} rounded-lg object-cover shrink-0`}
+      />
+    ) : (
+      <div
+        className={`${className} rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs shrink-0`}
+      >
+        {avatarFallback}
+      </div>
+    );
+
   const renderNode = (node: MenuTreeNode): React.ReactNode => {
     const hasChildren = node.children.length > 0;
     const isExpanded = expandedIds.has(node.id);
     const isActive = !hasChildren && currentTab === node.routeKey;
 
     if (hasChildren) {
-      // 手风琴分组节点：递归渲染子节点，无限层级
       const visibleChildren = node.children.filter((c) => c.visible !== false);
       return (
         <div key={node.id} className="space-y-0.5">
@@ -124,7 +156,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       );
     }
 
-    // 叶子节点：直接导航
     return (
       <button
         key={node.id}
@@ -154,24 +185,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id="main-sidebar"
       className="w-64 h-screen bg-surface border-r border-line/80 flex flex-col justify-between shrink-0 select-none text-fg font-sans"
     >
-      {/* Top Section */}
       <div className="p-3.5 flex flex-col gap-2 overflow-y-auto flex-1">
-        {/* Platform Identity */}
-        <div className="flex items-center gap-2.5 p-2 rounded-xl border border-line-subtle bg-subtle/60">
-          <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs shrink-0 shadow-card">
-            <Globe className="w-4 h-4 text-blue-400" />
-          </div>
-          <div className="truncate">
-            <div className="font-bold text-xs text-fg truncate">
-              全球聚合支付中台
-            </div>
-            <div className="text-[10px] text-fg-tertiary font-mono">
-              Global PayHub • Overseas
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation Accordion (driven by menu management data) */}
         <nav className="space-y-0.5 pt-1">
           {tree
             .filter((n) => n.visible !== false)
@@ -179,40 +193,92 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* Bottom User Card - Opens User Profile Settings */}
+      {/* NavUser（sidebar-07） */}
       <div className="p-3 border-t border-line/80 bg-subtle/50">
-        <button
-          id="user-profile-settings-btn"
-          onClick={onOpenUserSettings}
-          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-hover transition-colors text-left group bg-surface border border-line/60 shadow-2xs cursor-pointer"
-          title="点击打开个人账户设置（修改头像、修改密码等）"
-        >
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            {currentUser.avatar ? (
-              <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
-                className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-line"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-line">
-                {currentUser.avatarText || currentUser.name.slice(0, 2).toUpperCase()}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              id="user-profile-settings-btn"
+              type="button"
+              className="w-full flex items-center gap-2 p-2 rounded-xl hover:bg-hover transition-colors text-left group bg-surface border border-line/60 shadow-2xs cursor-pointer data-[state=open]:bg-hover"
+              title={t("userMenu.openMenu")}
+            >
+              <UserAvatar />
+              <div className="grid flex-1 text-left text-xs leading-tight min-w-0">
+                <span className="truncate font-semibold text-fg">{currentUser.name}</span>
+                <span className="truncate text-[10px] text-fg-secondary">
+                  {currentUser.email || currentRole.name}
+                </span>
               </div>
+              <ChevronsUpDown className="ml-auto size-4 text-fg-tertiary shrink-0" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56 rounded-lg"
+            side="right"
+            align="end"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <UserAvatar className="size-8" />
+                <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                  <span className="truncate font-medium">{currentUser.name}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {currentUser.email || currentRole.name}
+                  </span>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                onSelect={() => onOpenUserSettings()}
+                className="gap-2"
+              >
+                <Sparkles />
+                {t("userMenu.upgradePro")}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                onSelect={() => onOpenUserSettings()}
+                className="gap-2"
+              >
+                <BadgeCheck />
+                {t("userMenu.account")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => setCurrentTab("settlements")}
+                className="gap-2"
+              >
+                <CreditCard />
+                {t("userMenu.billing")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => setCurrentTab("alerts")}
+                className="gap-2"
+              >
+                <Bell />
+                {t("userMenu.notifications")}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            {onLogout && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={() => onLogout()}
+                  className="gap-2"
+                >
+                  <LogOut />
+                  {t("userMenu.logout")}
+                </DropdownMenuItem>
+              </>
             )}
-            <div className="truncate">
-              <div className="font-bold text-xs text-fg truncate group-hover:text-blue-600 transition-colors">
-                {currentUser.name}
-              </div>
-              <div className="text-[10px] text-fg-secondary truncate flex items-center gap-1">
-                <Shield className="w-2.5 h-2.5 text-blue-600" />
-                <span>{currentRole.name ? currentRole.name.split(" ")[0] : currentUser.role}</span>
-              </div>
-            </div>
-          </div>
-          <div className="p-1 rounded-lg text-fg-tertiary group-hover:text-fg group-hover:bg-hover transition-colors shrink-0">
-            <Settings className="w-4 h-4" />
-          </div>
-        </button>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </aside>
   );

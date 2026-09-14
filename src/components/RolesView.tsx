@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -35,6 +36,7 @@ interface RolesViewProps {
 type RoleCategory = "ALL" | "BUILTIN" | "CUSTOM";
 
 export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSaveRole, onDeleteRole }) => {
+  const { t } = useTranslation(["settings", "common"]);
   const [roleList, setRoleList] = useState<RbacRole[]>(roles);
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState<RoleCategory>("ALL");
@@ -82,22 +84,22 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
       ...r,
       id: generatedId,
       key: generatedId,
-      name: `${r.name} (复制角色)`,
-      description: `基于【${r.name}】克隆自定义创建的权限策略`,
+      name: `${r.name}${t("roles.cloneSuffix")}`,
+      description: t("roles.cloneDesc", { name: r.name }),
       isCustom: true,
       assignedMembersCount: 0,
       permissions: { ...r.permissions },
     };
     setRoleList([duplicated, ...roleList]);
     onSaveRole(duplicated);
-    showToast(`角色【${duplicated.name}】已成功克隆！`);
+    showToast(t("roles.toast.duplicated", { name: duplicated.name }));
   };
 
   const handleDelete = (r: RbacRole) => {
     const name = r.name;
     setRoleList((prev) => prev.filter((item) => roleIdentifier(item) !== roleIdentifier(r)));
     if (onDeleteRole) onDeleteRole(roleIdentifier(r));
-    showToast(`角色【${name}】已删除`);
+    showToast(t("roles.toast.deleted", { name }));
   };
 
   const handleBatchDelete = () => {
@@ -105,7 +107,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
     setRoleList((prev) => prev.filter((item) => !selectedIds.includes(roleIdentifier(item))));
     if (onDeleteRole) selectedIds.forEach((id) => onDeleteRole(id));
     setSelectedIds([]);
-    showToast(`已删除 ${selectedIds.length} 个角色`);
+    showToast(t("roles.toast.batchDeleted", { count: selectedIds.length }));
   };
 
   const toggleAppInForm = (appId: string) => {
@@ -125,7 +127,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
     e.preventDefault();
 
     if (!formName.trim()) {
-      showToast("请填写角色名称");
+      showToast(t("roles.toast.nameRequired"));
       return;
     }
 
@@ -145,7 +147,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
         prev.map((item) => (roleIdentifier(item) === id ? updated : item))
       );
       onSaveRole(updated);
-      showToast(`角色【${updated.name}】权限策略已成功更新！`);
+      showToast(t("roles.toast.updated", { name: updated.name }));
     } else {
       const generatedId = `role_${Date.now().toString().slice(-6)}`;
       const newRole: RbacRole = {
@@ -162,7 +164,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
       };
       setRoleList((prev) => [...prev, newRole]);
       onSaveRole(newRole);
-      showToast(`新系统角色【${newRole.name}】创建成功！`);
+      showToast(t("roles.toast.created", { name: newRole.name }));
     }
     setIsModalOpen(false);
   };
@@ -197,9 +199,9 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
   const isFormAllApps = formAppIds.includes("ALL");
 
   const categories: { key: RoleCategory; label: string }[] = [
-    { key: "ALL", label: "全部角色" },
-    { key: "BUILTIN", label: "内置角色" },
-    { key: "CUSTOM", label: "自定义角色" },
+    { key: "ALL", label: t("roles.categories.all") },
+    { key: "BUILTIN", label: t("roles.categories.builtin") },
+    { key: "CUSTOM", label: t("roles.categories.custom") },
   ];
 
   const loading = useViewLoading();
@@ -220,7 +222,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
         {/* 标题与工具栏 */}
         <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2.5 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-bold text-fg">
-            <span>角色列表</span>
+            <span>{t("roles.listTitle")}</span>
             {/* 分类筛选 tabs */}
             <div className="flex items-center gap-1 ml-2">
               {categories.map((c) => (
@@ -247,13 +249,13 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
               onClick={() => {
                 setSearchQuery("");
                 setSelectedIds([]);
-                showToast("角色数据已刷新");
+                showToast(t("roles.toast.refreshed"));
               }}
               className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="刷新角色数据"
+              title={t("roles.refreshTitle")}
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              刷新
+              {t("roles.refresh")}
             </button>
 
             <button
@@ -262,7 +264,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
               className="px-2.5 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              新增
+              {t("roles.add")}
             </button>
 
             {selectedIds.length === 0 ? (
@@ -272,12 +274,12 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                 className="px-2.5 py-1.5 border border-rose-200 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                删除
+                {t("roles.delete")}
               </button>
             ) : (
               <Popconfirm
-                title={`删除选中的 ${selectedIds.length} 个角色？`}
-                description="删除后这些角色将不再可用，被授权用户将失去对应权限。"
+                title={t("roles.batchDeleteTitle", { count: selectedIds.length })}
+                description={t("roles.batchDeleteDesc")}
                 onConfirm={handleBatchDelete}
               >
                 <button
@@ -285,7 +287,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                   className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  删除
+                  {t("common:actions.delete")}
                 </button>
               </Popconfirm>
             )}
@@ -296,13 +298,13 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
         <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 border-b border-line-subtle">
             <span className="text-xs text-fg-secondary">
-              共 <b className="text-fg font-mono">{filteredRoles.length}</b> 个角色
+{t("roles.countRoles", { count: filteredRoles.length })}
             </span>
             <div className="relative w-56">
               <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="搜索名称"
+                placeholder={t("roles.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
@@ -324,20 +326,20 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                       className="rounded text-fg"
                     />
                   </th>
-                  <th className="py-2.5 px-3">角色名称</th>
-                  <th className="py-2.5 px-3">标识 (Key)</th>
-                  <th className="py-2.5 px-3">权限说明</th>
-                  <th className="py-2.5 px-3 text-center">成员数</th>
-                  <th className="py-2.5 px-3 text-center">数据范围</th>
-                  <th className="py-2.5 px-3 text-center">菜单权限</th>
-                  <th className="py-2.5 px-3 text-right">操作</th>
+                  <th className="py-2.5 px-3">{t("roles.table.name")}</th>
+                  <th className="py-2.5 px-3">{t("roles.table.key")}</th>
+                  <th className="py-2.5 px-3">{t("roles.table.description")}</th>
+                  <th className="py-2.5 px-3 text-center">{t("roles.table.members")}</th>
+                  <th className="py-2.5 px-3 text-center">{t("roles.table.scope")}</th>
+                  <th className="py-2.5 px-3 text-center">{t("roles.table.menuPerm")}</th>
+                  <th className="py-2.5 px-3 text-right">{t("roles.table.actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-subtle text-fg-secondary">
                 {filteredRoles.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-fg-tertiary">
-                      暂无角色数据
+{t("roles.empty")}
                     </td>
                   </tr>
                 ) : (
@@ -348,32 +350,32 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                     const isSuperAdmin = rid.includes("ADMIN") || rid.includes("SUPER");
                     const scopeLabel =
                       role.dataScope === "ALL_TENANTS"
-                        ? "全集团"
+                        ? t("roles.scope.ALL")
                         : role.dataScope === "READ_ONLY_MASKED"
-                        ? "只读脱敏"
+                        ? t("roles.scope.READONLY")
                         : role.dataScope
-                        ? "指定范围"
+                        ? t("roles.scope.SCOPED")
                         : "—";
 
                     return (
                       <ContextMenu
                         key={rid}
                         items={[
-                          { key: "add", label: "新增角色", onClick: handleOpenAdd },
+                          { key: "add", label: t("roles.menu.add"), onClick: handleOpenAdd },
                           {
-                            key: "rename", label: "重命名", onClick: () => {
-                              const name = window.prompt("角色名称：", role.name);
+                            key: "rename", label: t("roles.menu.rename"), onClick: () => {
+                              const name = window.prompt(t("roles.menu.renamePrompt"), role.name);
                               if (name && name.trim()) {
                                 setRoleList((prev) => prev.map((r) => (roleIdentifier(r) === rid ? { ...r, name: name.trim() } : r)));
-                                showToast("角色已重命名");
+                                showToast(t("roles.toast.renamed"));
                               }
                             },
                           },
-                          { key: "del", label: "删除", danger: true, onClick: () => handleDelete(role) },
+                          { key: "del", label: t("roles.menu.delete"), danger: true, onClick: () => handleDelete(role) },
                           {
-                            key: "refresh", label: "刷新列表", onClick: () => {
+                            key: "refresh", label: t("roles.menu.refresh"), onClick: () => {
                               setRoleList(roles);
-                              showToast("角色列表已刷新");
+                              showToast(t("roles.toast.listRefreshed"));
                             },
                           },
                         ]}
@@ -405,11 +407,11 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                               <div className="text-[10px] text-fg-tertiary flex items-center gap-1">
                                 {role.isCustom ? (
                                   <span className="px-1 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[9px] font-medium">
-                                    自定义
+{t("roles.tags.custom")}
                                   </span>
                                 ) : (
                                   <span className="px-1 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-[9px] font-medium">
-                                    内置
+{t("roles.tags.builtin")}
                                   </span>
                                 )}
                               </div>
@@ -443,7 +445,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                               type="button"
                               onClick={() => handleDuplicateRole(role)}
                               className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded-md text-[11px] font-medium cursor-pointer"
-                              title="复制为新角色"
+                              title={t("roles.actions.copyAsNew")}
                             >
                               <Copy className="w-3 h-3" />
                             </button>
@@ -451,19 +453,19 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                               type="button"
                               onClick={() => handleOpenEdit(role)}
                               className="px-2 py-1 text-fg-secondary hover:bg-hover rounded-md text-[11px] font-medium cursor-pointer"
-                              title="编辑角色与权限"
+                              title={t("roles.actions.edit")}
                             >
                               <Edit2 className="w-3 h-3" />
                             </button>
                             <Popconfirm
-                              title={`删除角色「${role.name}」？`}
-                              description="删除后该角色将不再可用，被该角色授权的用户将失去对应权限。"
+                              title={t("roles.actions.deleteTitle", { name: role.name })}
+                              description={t("roles.actions.deleteDesc")}
                               onConfirm={() => handleDelete(role)}
                             >
                               <button
                                 type="button"
                                 className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-medium cursor-pointer"
-                                title="删除角色"
+                                title={t("roles.actions.deleteRole")}
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
@@ -488,8 +490,8 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
         id="side-sheet-role-edit"
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={selectedRole ? `配置角色权限: ${selectedRole.name}` : "新建系统角色"}
-        description="配置角色基本信息，并按菜单树勾选该角色可访问的菜单节点，以及可操作的应用范围。"
+        title={selectedRole ? t("roles.sheet.editTitle", { name: selectedRole.name }) : t("roles.sheet.createTitle")}
+        description={t("roles.sheet.description")}
         icon={<ShieldCheck className="w-5 h-5 text-fg" />}
         widthClass="max-w-2xl"
         footer={
@@ -499,25 +501,25 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
               onClick={() => setIsModalOpen(false)}
               className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
-              取消
+              {t("common:actions.cancel")}
             </button>
             <button
               type="button"
               onClick={handleSubmit}
               className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card"
             >
-              {selectedRole ? "保存角色权限配置" : "确认创建角色"}
+              {selectedRole ? t("roles.sheet.saveEdit") : t("roles.sheet.saveCreate")}
             </button>
           </>
         }
       >
         <form onSubmit={handleSubmit} className="py-1 space-y-5 text-xs">
           <div>
-            <label className="font-semibold text-fg-secondary block mb-1">角色名称 (中文):</label>
+            <label className="font-semibold text-fg-secondary block mb-1">{t("roles.sheet.nameLabel")}</label>
             <input
               type="text"
               required
-              placeholder="如：海外合规与风险专员"
+              placeholder={t("roles.sheet.namePlaceholder")}
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               className="w-full p-2 bg-surface border border-line rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none"
@@ -525,11 +527,11 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
           </div>
 
           <div>
-            <label className="font-semibold text-fg-secondary block mb-1">岗位职能与职责描述:</label>
+            <label className="font-semibold text-fg-secondary block mb-1">{t("roles.sheet.descLabel")}</label>
             <textarea
               rows={2}
               required
-              placeholder="如：负责审核海外高风险扣款与抗辩拒付，查阅终端用户登录流水..."
+              placeholder={t("roles.sheet.descPlaceholder")}
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               className="w-full p-2 bg-surface border border-line rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none"
@@ -541,7 +543,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
             <div className="font-bold text-fg mb-2 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <FolderTree className="w-3.5 h-3.5 text-fg-secondary" />
-                菜单树权限分配（基于菜单管理配置）
+{t("roles.sheet.menuPermTitle")}
               </span>
               <div className="flex items-center gap-2 text-[11px]">
                 <button
@@ -549,7 +551,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                   onClick={() => setFormMenuIds(menus.map((m) => m.id))}
                   className="text-fg-secondary hover:text-fg underline"
                 >
-                  全选
+                  {t("roles.sheet.selectAll")}
                 </button>
                 <span className="text-zinc-300">|</span>
                 <button
@@ -557,7 +559,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                   onClick={() => setFormMenuIds([])}
                   className="text-fg-secondary hover:text-fg underline"
                 >
-                  清空
+                  {t("roles.sheet.clearAll")}
                 </button>
               </div>
             </div>
@@ -573,7 +575,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
             <div className="font-bold text-fg mb-2 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-fg-secondary" />
-                应用权限范围 (Application Permissions)
+{t("roles.sheet.appPermTitle")}
               </span>
               <button
                 type="button"
@@ -584,13 +586,13 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                 }
                 className="text-fg-secondary hover:text-fg underline text-[11px]"
               >
-                {isFormAllApps ? "取消全部应用" : "全选全部应用"}
+                {isFormAllApps ? t("roles.sheet.toggleAllApps") : t("roles.sheet.selectAllApps")}
               </button>
             </div>
 
             {apps.length === 0 ? (
               <div className="py-6 text-center text-fg-tertiary border border-dashed border-line rounded-xl">
-                暂无可授权应用
+{t("roles.sheet.noApps")}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto p-1">

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import {
@@ -33,6 +34,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
   onSaveMenu,
   onDeleteMenu,
 }) => {
+  const { t } = useTranslation(["settings", "common"]);
   const [menuList, setMenuList] = useState<SystemMenuItem[]>(menus);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -75,12 +77,12 @@ export const MenusView: React.FC<MenusViewProps> = ({
     menuList.forEach((m) => allIds.add(m.id));
     treeData.forEach((t) => allIds.add(t.id));
     setExpandedNodeIds(allIds);
-    showToast("已展开全部树级菜单");
+    showToast(t("menus.toast.expandedAll"));
   };
 
   const collapseAll = () => {
     setExpandedNodeIds(new Set());
-    showToast("已收起全部树级菜单");
+    showToast(t("menus.toast.collapsedAll"));
   };
 
   // 由 parentId 构建无限级树
@@ -155,7 +157,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) {
-      showToast("请填写菜单标题");
+      showToast(t("menus.toast.titleRequired"));
       return;
     }
 
@@ -176,7 +178,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
       };
       setMenuList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       onSaveMenu(updated);
-      showToast(`菜单节点【${updated.title}】已成功更新！`);
+      showToast(t("menus.toast.updated", { title: updated.title }));
     } else {
       const newMenu: SystemMenuItem = {
         id: `menu_${Date.now().toString().slice(-6)}`,
@@ -194,7 +196,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
       if (finalParent) {
         setExpandedNodeIds((prev) => new Set([...prev, finalParent]));
       }
-      showToast(`新子菜单【${newMenu.title}】已成功挂载到树节点！`);
+      showToast(t("menus.toast.created", { title: newMenu.title }));
     }
     setIsModalOpen(false);
   };
@@ -202,7 +204,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
   const handleDelete = (id: string, title: string) => {
     setMenuList((prev) => prev.filter((m) => m.id !== id && m.parentId !== id));
     if (onDeleteMenu) onDeleteMenu(id);
-    showToast(`菜单节点【${title}】及其子节点已成功删除`);
+    showToast(t("menus.toast.deleted", { title }));
   };
 
   // Filter evaluation helper
@@ -242,7 +244,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
                 type="button"
                 onClick={() => toggleNodeExpand(node.id)}
                 className="p-1 text-fg-tertiary hover:text-fg hover:bg-hover/60 rounded transition-colors cursor-pointer"
-                title={isExpanded ? "收起子节点" : "展开子节点"}
+                title={isExpanded ? t("menus.collapseNode") : t("menus.expandNode")}
               >
                 {isExpanded ? (
                   <ChevronDown className="w-3.5 h-3.5 text-fg-secondary" />
@@ -287,7 +289,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
 
               {isRoot && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-hover text-fg-secondary font-medium">
-                  {node.children?.length || 0} 个子菜单项
+                  {t("menus.childCount", { count: node.children?.length || 0 })}
                 </span>
               )}
             </div>
@@ -301,7 +303,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
                 type="button"
                 onClick={() => handleOpenAdd(node.id)}
                 className="p-1 text-fg-secondary hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
-                title="添加子菜单"
+                title={t("menus.menu.addChild")}
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -310,20 +312,20 @@ export const MenusView: React.FC<MenusViewProps> = ({
                 type="button"
                 onClick={() => handleOpenEdit(node)}
                 className="p-1 text-fg-secondary hover:text-fg hover:bg-hover rounded transition-colors cursor-pointer"
-                title="编辑菜单节点"
+                title={t("menus.menu.edit")}
               >
                 <Edit2 className="w-3.5 h-3.5" />
               </button>
 
               <Popconfirm
-                title={`删除菜单节点「${node.title}」？`}
-                description="该节点及其全部子节点将从侧边栏菜单树中移除，且无法恢复。"
+                title={t("menus.menu.deleteTitle", { title: node.title })}
+                description={t("menus.menu.deleteDesc")}
                 onConfirm={() => handleDelete(node.id, node.title)}
               >
                 <button
                   type="button"
                   className="p-1 text-fg-tertiary hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                  title="删除节点（含子节点）"
+                  title={t("menus.menu.deleteNode")}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -364,10 +366,10 @@ export const MenusView: React.FC<MenusViewProps> = ({
             </div>
             <div>
               <h1 className="text-lg font-bold text-fg">
-                系统菜单树结构管理 (Menu Management)
+{t("menus.titleFull")}
               </h1>
               <p className="text-xs text-fg-secondary mt-0.5">
-                以无限级树状结构管理左侧导航菜单（左侧侧边栏与这里保持一致），支持任意层级挂载与图标选择。
+{t("menus.subtitle")}
               </p>
             </div>
           </div>
@@ -379,14 +381,14 @@ export const MenusView: React.FC<MenusViewProps> = ({
             onClick={expandAll}
             className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded-xl text-xs font-medium transition-colors cursor-pointer"
           >
-            全部展开
+{t("menus.expandAll")}
           </button>
           <button
             type="button"
             onClick={collapseAll}
             className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded-xl text-xs font-medium transition-colors cursor-pointer"
           >
-            全部收起
+{t("menus.collapseAll")}
           </button>
           <button
             id="btn-add-menu-root"
@@ -395,7 +397,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>新增菜单节点</span>
+            <span>{t("menus.addRoot")}</span>
           </button>
         </div>
       </div>
@@ -406,7 +408,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
           <Search className="w-4 h-4 text-fg-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="搜索菜单名称、路由路径..."
+            placeholder={t("menus.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-1.5 text-xs bg-subtle/80 border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:bg-surface"
@@ -417,15 +419,15 @@ export const MenusView: React.FC<MenusViewProps> = ({
       {/* Tree Structure Card */}
       <div className="bg-surface border border-line rounded-2xl shadow-2xs overflow-hidden">
         <div className="px-4 py-2 bg-subtle border-b border-line text-xs font-medium text-fg-secondary flex items-center justify-between">
-          <span>层级节点名称 / 路由路径</span>
-          <span className="hidden sm:inline">操作</span>
+          <span>{t("menus.treeHeader")}</span>
+          <span className="hidden sm:inline">{t("menus.treeActions")}</span>
         </div>
 
         <div className="divide-y divide-line-subtle">
           {treeData.map(renderTreeNode)}
           {treeData.length === 0 && (
             <div className="py-14 text-center text-xs text-fg-tertiary">
-              暂无菜单数据，点击右上角「新增菜单节点」创建第一个菜单
+{t("menus.empty")}
             </div>
           )}
         </div>
@@ -436,8 +438,8 @@ export const MenusView: React.FC<MenusViewProps> = ({
         id="side-sheet-menu-edit"
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingMenu ? `编辑菜单节点: ${editingMenu.title}` : "新增系统树级菜单"}
-        description="配置菜单名称、挂载的上级父节点、路由路径与图标。菜单管理不再绑定角色权限，权限在「权限管理」中按菜单树配置。"
+        title={editingMenu ? t("menus.sheet.editTitle", { title: editingMenu.title }) : t("menus.sheet.createTitle")}
+        description={t("menus.sheet.description")}
         icon={<FolderTree className="w-5 h-5 text-fg" />}
         widthClass="max-w-xl"
         footer={
@@ -447,14 +449,14 @@ export const MenusView: React.FC<MenusViewProps> = ({
               onClick={() => setIsModalOpen(false)}
               className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
-              取消
+              {t("common:actions.cancel")}
             </button>
             <button
               type="button"
               onClick={handleSubmit}
               className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
             >
-              {editingMenu ? "保存菜单变更" : "创建并挂载节点"}
+              {editingMenu ? t("menus.sheet.saveEdit") : t("menus.sheet.saveCreate")}
             </button>
           </>
         }
@@ -462,11 +464,11 @@ export const MenusView: React.FC<MenusViewProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
             <label className="block text-fg-secondary font-medium mb-1">
-              菜单标题 <span className="text-rose-500">*</span>
+{t("menus.sheet.titleLabel")} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
-              placeholder="例如: 财务分析报表"
+              placeholder={t("menus.sheet.titlePlaceholder")}
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
               className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
@@ -475,13 +477,13 @@ export const MenusView: React.FC<MenusViewProps> = ({
 
           <div>
             <label className="block text-fg-secondary font-medium mb-1">
-              挂载上级节点 (Parent Node)
+{t("menus.sheet.parentLabel")}
             </label>
             <ShadcnSelect
               value={formParentId}
               onValueChange={setFormParentId}
               options={[
-                { value: "NONE", label: "作为顶级根节点 (无上级)" },
+                { value: "NONE", label: t("menus.sheet.parentRoot") },
                 ...allNodes
                   .filter((n) => !editingMenu || n.id !== editingMenu.id)
                   .map((n) => ({
@@ -489,17 +491,17 @@ export const MenusView: React.FC<MenusViewProps> = ({
                     label: `${"　".repeat(n.depth)}${n.depth > 0 ? "└ " : ""}${n.label} (${n.id})`,
                   })),
               ]}
-              placeholder="选择上级菜单节点"
+              placeholder={t("menus.sheet.parentPlaceholder")}
             />
             <p className="text-[11px] text-fg-tertiary mt-1">
-              选择上级节点后，该菜单将以树状子节点缩进形式嵌套在其下方展示，支持无限层级。
+{t("menus.sheet.parentHint")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-fg-secondary font-medium mb-1">
-                路由路径 (Route Path) <span className="text-rose-500">*</span>
+{t("menus.sheet.pathLabel")} <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -511,7 +513,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
             </div>
 
             <div>
-              <label className="block text-fg-secondary font-medium mb-1">排序权重 (Order)</label>
+              <label className="block text-fg-secondary font-medium mb-1">{t("menus.sheet.orderLabel")}</label>
               <input
                 type="number"
                 value={formOrder}
@@ -525,10 +527,10 @@ export const MenusView: React.FC<MenusViewProps> = ({
           <IconPicker value={formIcon} onChange={setFormIcon} />
 
           <div>
-            <label className="block text-fg-secondary font-medium mb-1">功能用途说明</label>
+            <label className="block text-fg-secondary font-medium mb-1">{t("menus.sheet.descLabel")}</label>
             <textarea
               rows={3}
-              placeholder="简要阐述此菜单节点的职责边界与涉及的海外支付能力..."
+              placeholder={t("menus.sheet.descPlaceholder")}
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"

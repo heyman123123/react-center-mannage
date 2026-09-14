@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import {
@@ -18,6 +19,7 @@ import {
   Eye,
   ListTree,
   X,
+  ArrowRightLeft,
 } from "lucide-react";
 import { Department, SystemUser, RbacRole } from "../types/payment";
 import { RBAC_ROLES } from "../data/mockData";
@@ -75,6 +77,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
   onSaveDepartment,
   onDeleteDepartment,
 }) => {
+  const { t } = useTranslation(["settings", "common"]);
   const [deptList, setDeptList] = useState<Department[]>(departments);
   const [selectedDeptId, setSelectedDeptId] = useState<string>("ALL");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(
@@ -169,8 +172,8 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
   }, [users, viewMode, scopedDeptIds, selectedDeptId]);
 
   const selectedDeptName = useMemo(() => {
-    if (selectedDeptId === "ALL") return "全部部门";
-    return deptList.find((d) => d.id === selectedDeptId)?.name || "全部部门";
+    if (selectedDeptId === "ALL") return t("departments.allDepts");
+    return deptList.find((d) => d.id === selectedDeptId)?.name || t("departments.allDepts");
   }, [deptList, selectedDeptId]);
 
   const handleOpenAdd = (parentId?: string) => {
@@ -199,7 +202,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
 
   const handleSave = () => {
     if (!formName.trim()) {
-      showToast("请填写部门名称");
+      showToast(t("departments.toast.nameRequired"));
       return;
     }
     if (editingDept) {
@@ -215,7 +218,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
       };
       setDeptList((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
       onSaveDepartment(updated);
-      showToast(`部门【${updated.name}】已保存更新！`);
+      showToast(t("departments.toast.updated", { name: updated.name }));
     } else {
       const newDept: Department = {
         id: `dep_${Date.now().toString().slice(-6)}`,
@@ -231,7 +234,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
       };
       setDeptList((prev) => [...prev, newDept]);
       onSaveDepartment(newDept);
-      showToast(`新部门【${newDept.name}】创建成功！`);
+      showToast(t("departments.toast.created", { name: newDept.name }));
     }
     setIsSheetOpen(false);
   };
@@ -239,25 +242,30 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
   const handleDelete = (id: string, name: string) => {
     const hasChild = deptList.some((d) => d.parentId === id);
     if (hasChild) {
-      showToast(`部门【${name}】下存在子部门，请先删除子部门`);
+      showToast(t("departments.toast.hasChildren", { name }));
       return;
     }
     setDeptList((prev) => prev.filter((d) => d.id !== id));
     if (onDeleteDepartment) onDeleteDepartment(id);
-    showToast(`部门【${name}】已删除`);
+    showToast(t("departments.toast.deleted", { name }));
   };
 
   const handleBatchDelete = () => {
     if (selectedIds.length === 0) return;
     const canDelete = selectedIds.every((id) => !deptList.some((d) => d.parentId === id));
     if (!canDelete) {
-      showToast("存在包含子部门的项，请先处理子部门");
+      showToast(t("departments.toast.batchHasChildren"));
       return;
     }
     setDeptList((prev) => prev.filter((d) => !selectedIds.includes(d.id)));
     if (onDeleteDepartment) selectedIds.forEach((id) => onDeleteDepartment(id));
     setSelectedIds([]);
-    showToast(`已删除 ${selectedIds.length} 个部门`);
+    showToast(t("departments.toast.batchDeleted", { count: selectedIds.length }));
+  };
+
+  const handleBatchTransfer = () => {
+    if (selectedIds.length === 0) return;
+    showToast(t("departments.toast.batchTransfer", { count: selectedIds.length }));
   };
 
   const handleRefresh = () => {
@@ -265,7 +273,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
     setSearchQuery("");
     setSelectedIds([]);
     setViewMode("DEPT");
-    showToast("部门数据已刷新");
+    showToast(t("departments.toast.refreshed"));
   };
 
   // 继承角色提示：所选部门角色并集
@@ -277,22 +285,22 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
 
   // 部门节点右键菜单项（需求6）
   const deptNodeMenu = (node: DeptTreeNode) => [
-    { key: "add", label: "新增子部门", onClick: () => handleOpenAdd(node.id) },
+    { key: "add", label: t("departments.menu.addChild"), onClick: () => handleOpenAdd(node.id) },
     {
-      key: "rename", label: "重命名", onClick: () => {
-        const name = window.prompt("部门名称：", node.name);
+      key: "rename", label: t("departments.menu.rename"), onClick: () => {
+        const name = window.prompt(t("departments.menu.renamePrompt"), node.name);
         if (name && name.trim()) setDeptList((prev) => prev.map((d) => (d.id === node.id ? { ...d, name: name.trim() } : d)));
       },
     },
     {
-      key: "del", label: "删除", danger: true, onClick: () => {
-        if (!window.confirm(`确认删除部门【${node.name}】及其下级？`)) return;
+      key: "del", label: t("departments.menu.delete"), danger: true, onClick: () => {
+        if (!window.confirm(t("departments.deleteConfirm", { name: node.name }))) return;
         setDeptList((prev) => prev.filter((d) => d.id !== node.id));
         if (selectedDeptId === node.id) setSelectedDeptId("ALL");
-        showToast(`已删除部门【${node.name}】`);
+        showToast(t("departments.toast.nodeDeleted", { name: node.name }));
       },
     },
-    { key: "refresh", label: "刷新列表", onClick: handleRefresh },
+    { key: "refresh", label: t("departments.menu.refresh"), onClick: handleRefresh },
   ];
 
   // 渲染部门树
@@ -369,28 +377,145 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
   if (loading) return <TableSkeleton rows={8} />;
 
   return (
-    <div className="flex gap-3 items-start font-sans">
+    <div className="space-y-3 font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
+      {/* ===== 顶部操作栏（截图风格：扁平、无圆角 / 简洁） ===== */}
+      <div className="bg-surface border border-line rounded-md shadow-card px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            title={t("departments.refreshTitle")}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            {t("common:actions.refresh")}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleOpenAdd()}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {t("common:actions.add")}
+          </button>
+
+          {selectedIds.length === 0 ? (
+            <button
+              type="button"
+              disabled
+              className="px-3 py-1.5 border border-rose-200 text-rose-600 rounded text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {t("common:actions.delete")}
+            </button>
+          ) : (
+            <Popconfirm
+              title={t("departments.batchDeleteTitle", { count: selectedIds.length })}
+              description={t("departments.batchDeleteDesc")}
+              onConfirm={handleBatchDelete}
+            >
+              <button
+                type="button"
+                className="px-3 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {t("common:actions.delete")}
+              </button>
+            </Popconfirm>
+          )}
+
+          {selectedIds.length === 0 ? (
+            <button
+              type="button"
+              disabled
+              className="px-3 py-1.5 border border-emerald-200 text-emerald-600 rounded text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              {t("common:actions.transfer")}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleBatchTransfer}
+              className="px-3 py-1.5 border border-emerald-200 hover:bg-emerald-50 text-emerald-600 rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              {t("common:actions.transfer")}
+            </button>
+          )}
+
+          <div className="w-px h-5 bg-hover mx-1" />
+
+          <div className="flex items-center bg-hover p-0.5 rounded">
+            <button
+              type="button"
+              onClick={() => setViewMode("DEPT")}
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer ${
+                viewMode === "DEPT" ? "bg-surface text-fg shadow-card" : "text-fg-secondary hover:text-fg"
+              }`}
+            >
+              <span className="flex items-center gap-1">
+                <Building2 className="w-3 h-3" /> {t("departments.tabs.deptList")}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("MEMBER")}
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer ${
+                viewMode === "MEMBER" ? "bg-surface text-fg shadow-card" : "text-fg-secondary hover:text-fg"
+              }`}
+            >
+              <span className="flex items-center gap-1">
+                <Users className="w-3 h-3" /> {t("departments.tabs.members")}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <div className="relative w-56">
+            <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder={t("departments.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <button
+            type="button"
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Search className="w-3.5 h-3.5" />
+            {t("common:actions.search")}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-3 items-start">
       {/* ===== 左侧：类型 / 部门树 ===== */}
-      <div className="w-52 shrink-0 bg-surface border border-line rounded-xl shadow-card overflow-hidden lg:sticky lg:top-4">
+      <div className="w-52 shrink-0 bg-surface border border-line rounded-md shadow-card overflow-hidden lg:sticky lg:top-4">
         <div className="px-3 py-2.5 border-b border-line flex items-center justify-between">
           <span className="text-xs font-bold text-fg flex items-center gap-1.5">
             <ListTree className="w-3.5 h-3.5 text-fg-secondary" />
-            组织架构
+            {t("departments.orgStructure")}
           </span>
           <button
             type="button"
             onClick={() => setSelectedDeptId("ALL")}
             className="text-[10px] text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
           >
-            全部
+            {t("departments.all")}
           </button>
         </div>
 
@@ -399,17 +524,17 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             <Search className="w-3 h-3 text-fg-tertiary absolute left-2 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="搜索部门名称..."
+              placeholder={t("departments.treeSearchPlaceholder")}
               value={treeKeyword}
               onChange={(e) => setTreeKeyword(e.target.value)}
-              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
 
         <div className="p-2 space-y-0.5">
           <div
-            className={`relative flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+            className={`relative flex items-center gap-1.5 px-2 py-1.5 rounded text-xs cursor-pointer transition-all border ${
               selectedDeptId === "ALL" ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm" : "text-fg-secondary hover:bg-hover border-transparent"
             }`}
             onClick={() => {
@@ -425,7 +550,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             }`}>
               <FolderTree className={`w-3.5 h-3.5 ${selectedDeptId === "ALL" ? "text-white" : "text-fg-tertiary"}`} />
             </span>
-            <span className="truncate flex-1">全部部门</span>
+            <span className="truncate flex-1">{t("departments.allDepts")}</span>
             <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
               selectedDeptId === "ALL" ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
             }`}>{deptList.length}</span>
@@ -436,106 +561,15 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
 
       {/* ===== 右侧：列表 / 成员 ===== */}
       <div className="flex-1 min-w-0 space-y-3">
-        {/* 标题与工具栏 */}
-        <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2.5 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-sm font-bold text-fg">
-            <span>{viewMode === "DEPT" ? "部门列表" : "部门成员"}</span>
-            <span className="text-fg-tertiary font-normal text-xs">（{selectedDeptName}）</span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="刷新部门数据"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              刷新
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleOpenAdd()}
-              className="px-2.5 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              新增
-            </button>
-
-            {selectedIds.length === 0 ? (
-              <button
-                type="button"
-                disabled
-                className="px-2.5 py-1.5 border border-rose-200 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                删除
-              </button>
-            ) : (
-              <Popconfirm
-                title={`删除选中的 ${selectedIds.length} 个部门？`}
-                description="删除后这些部门及其成员关联关系将一并解除，且无法恢复。"
-                onConfirm={handleBatchDelete}
-              >
-                <button
-                  type="button"
-                  className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  删除
-                </button>
-              </Popconfirm>
-            )}
-
-            <div className="w-px h-5 bg-hover mx-1" />
-
-            <div className="flex items-center bg-hover p-0.5 rounded-lg">
-              <button
-                type="button"
-                onClick={() => setViewMode("DEPT")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                  viewMode === "DEPT" ? "bg-surface text-fg shadow-card" : "text-fg-secondary hover:text-fg"
-                }`}
-              >
-                <span className="flex items-center gap-1">
-                  <Building2 className="w-3 h-3" /> 部门列表
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("MEMBER")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                  viewMode === "MEMBER" ? "bg-surface text-fg shadow-card" : "text-fg-secondary hover:text-fg"
-                }`}
-              >
-                <span className="flex items-center gap-1">
-                  <Users className="w-3 h-3" /> 查看成员
-                </span>
-              </button>
-            </div>
-          </div>
+        {/* 标题 */}
+        <div className="flex items-center gap-2 text-sm font-bold text-fg px-1">
+          <span>{viewMode === "DEPT" ? t("departments.viewTitle.dept") : t("departments.viewTitle.member")}</span>
+          <span className="text-fg-tertiary font-normal text-xs">（{selectedDeptName}）</span>
         </div>
 
         {viewMode === "DEPT" ? (
           /* ===== 部门列表表格 ===== */
-          <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-line-subtle">
-              <span className="text-xs text-fg-secondary">
-                共 <b className="text-fg font-mono">{filteredDepts.length}</b> 个部门
-              </span>
-              <div className="relative w-56">
-                <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="搜索名称"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-            </div>
-
+          <div className="bg-surface border border-line rounded-md shadow-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
@@ -550,20 +584,20 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                         className="rounded text-fg"
                       />
                     </th>
-                    <th className="py-2 px-3">部门名称</th>
-                    <th className="py-2 px-3">编码</th>
-                    <th className="py-2 px-3">上级部门</th>
-                    <th className="py-2 px-3">绑定角色（多选）</th>
-                    <th className="py-2 px-3 text-center">成员数</th>
-                    <th className="py-2 px-3 text-center">排序</th>
-                    <th className="py-2 px-3 text-right">操作</th>
+                    <th className="py-2 px-3">{t("departments.table.name")}</th>
+                    <th className="py-2 px-3">{t("departments.table.code")}</th>
+                    <th className="py-2 px-3">{t("departments.table.parent")}</th>
+                    <th className="py-2 px-3">{t("departments.table.roles")}</th>
+                    <th className="py-2 px-3 text-center">{t("departments.table.members")}</th>
+                    <th className="py-2 px-3 text-center">{t("departments.table.sort")}</th>
+                    <th className="py-2 px-3 text-right">{t("departments.table.actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-subtle text-fg-secondary">
                   {filteredDepts.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-12 text-center text-fg-tertiary">
-                        暂无部门数据
+{t("departments.empty")}
                       </td>
                     </tr>
                   ) : (
@@ -594,7 +628,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               <div>
                                 <div className="font-semibold text-fg">{dept.name}</div>
                                 {dept.leader && (
-                                  <div className="text-[10px] text-fg-tertiary">负责人：{dept.leader}</div>
+                                  <div className="text-[10px] text-fg-tertiary">{t("departments.leader", { name: dept.leader })}</div>
                                 )}
                               </div>
                             </div>
@@ -608,14 +642,14 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               </span>
                             ) : (
                               <span className="inline-flex items-center px-1.5 py-0.5 bg-hover text-fg-tertiary border border-line rounded text-[10px]">
-                                顶级部门
+{t("departments.topLevel")}
                               </span>
                             )}
                           </td>
                           <td className="py-2 px-3">
                             <div className="flex flex-wrap gap-1 max-w-[220px]">
                               {roleKeys.length === 0 ? (
-                                <span className="text-[11px] text-fg-tertiary italic">未绑定角色</span>
+                                <span className="text-[11px] text-fg-tertiary italic">{t("departments.noRoles")}</span>
                               ) : (
                                 roleKeys.map((key) => (
                                   <span
@@ -634,34 +668,31 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                           </td>
                           <td className="py-2 px-3 text-center font-mono text-fg-secondary">{dept.sortOrder ?? 1}</td>
                           <td className="py-2 px-3">
-                            <div className="flex items-center justify-end gap-0.5">
+                            <div className="flex items-center justify-end gap-3 text-[11px]">
                               <button
                                 type="button"
-                                onClick={() => handleOpenAdd(dept.id)}
-                                className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded-md text-[11px] font-medium cursor-pointer"
-                                title="新增子部门"
+                                onClick={() => showToast(t("departments.toast.transferStarted", { name: dept.name }))}
+                                className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                               >
-                                <Plus className="w-3 h-3" />
+                                {t("common:actions.transfer")}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleOpenEdit(dept)}
-                                className="px-2 py-1 text-fg-secondary hover:bg-hover rounded-md text-[11px] font-medium cursor-pointer"
-                                title="编辑部门"
+                                className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                               >
-                                <Edit2 className="w-3 h-3" />
+                                {t("common:actions.edit")}
                               </button>
                               <Popconfirm
-                                title={`删除部门「${dept.name}」？`}
-                                description="删除后该部门及其成员关联关系将一并解除，且无法恢复。"
+                                title={t("departments.deleteTitle", { name: dept.name })}
+                                description={t("departments.deleteDesc")}
                                 onConfirm={() => handleDelete(dept.id, dept.name)}
                               >
                                 <button
                                   type="button"
-                                  className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-medium cursor-pointer"
-                                  title="删除部门"
+                                  className="text-rose-500 hover:text-rose-700 font-medium cursor-pointer"
                                 >
-                                  <Trash2 className="w-3 h-3" />
+                                  {t("common:actions.delete")}
                                 </button>
                               </Popconfirm>
                             </div>
@@ -677,31 +708,31 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           </div>
         ) : (
           /* ===== 部门成员视图 ===== */
-          <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+          <div className="bg-surface border border-line rounded-md shadow-card overflow-hidden">
             <div className="px-3 py-2 border-b border-line-subtle flex items-center justify-between">
               <span className="text-xs text-fg-secondary">
                 <Eye className="w-3.5 h-3.5 inline mr-1 text-blue-500" />
-                部门「{selectedDeptName}」及其子部门共 <b className="text-fg font-mono">{scopeMembers.length}</b> 名成员
+{t("departments.memberSummary", { name: selectedDeptName, count: scopeMembers.length })}
               </span>
-              <span className="text-[11px] text-fg-tertiary">成员角色继承自部门绑定角色与个人角色</span>
+              <span className="text-[11px] text-fg-tertiary">{t("departments.memberHint")}</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                    <th className="py-2 px-3">用户</th>
-                    <th className="py-2 px-3">所属部门</th>
-                    <th className="py-2 px-3">角色权限（多选）</th>
-                    <th className="py-2 px-3">应用授权范围</th>
-                    <th className="py-2 px-3">账号状态</th>
+                    <th className="py-2 px-3">{t("departments.memberTable.user")}</th>
+                    <th className="py-2 px-3">{t("departments.memberTable.dept")}</th>
+                    <th className="py-2 px-3">{t("departments.memberTable.roles")}</th>
+                    <th className="py-2 px-3">{t("departments.memberTable.apps")}</th>
+                    <th className="py-2 px-3">{t("departments.memberTable.status")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-subtle text-fg-secondary">
                   {scopeMembers.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="py-12 text-center text-fg-tertiary">
-                        该部门暂无成员
+{t("departments.noMembers")}
                       </td>
                     </tr>
                   ) : (
@@ -729,7 +760,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                           <td className="py-2 px-3">
                             <div className="flex flex-wrap gap-1 max-w-[180px]">
                               {deptNames.length === 0 ? (
-                                <span className="text-fg-tertiary italic">未分配</span>
+                                <span className="text-fg-tertiary italic">{t("departments.unassigned")}</span>
                               ) : (
                                 deptNames.map((name) => (
                                   <span key={name} className="px-1.5 py-0.5 bg-hover text-fg-secondary border border-line rounded text-[10px]">
@@ -742,7 +773,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                           <td className="py-2 px-3">
                             <div className="flex flex-wrap gap-1 max-w-[200px]">
                               {roleKeys.length === 0 ? (
-                                <span className="text-fg-tertiary italic">未分配角色</span>
+                                <span className="text-fg-tertiary italic">{t("departments.unassignedRole")}</span>
                               ) : (
                                 roleKeys.map((key) => (
                                   <span key={key} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${getRoleBadgeStyle(key)}`}>
@@ -755,12 +786,12 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                           </td>
                           <td className="py-2 px-3 text-[11px] text-fg-secondary">
                             {(u.allowedAppIds || []).includes("ALL")
-                              ? "全部应用"
-                              : `${(u.allowedAppIds || []).length} 款应用`}
+                              ? t("departments.allApps")
+                              : t("departments.appCount", { count: (u.allowedAppIds || []).length })}
                           </td>
                           <td className="py-2 px-3">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${u.status === "DISABLED" ? "bg-hover text-fg-secondary" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
-                              {u.status === "DISABLED" ? "已停用" : "正常在职"}
+                              {u.status === "DISABLED" ? t("departments.status.disabled") : t("departments.status.active")}
                             </span>
                           </td>
                         </tr>
@@ -773,14 +804,15 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           </div>
         )}
       </div>
+      </div>
 
       {/* ===== 新增/编辑部门 SideSheet ===== */}
       <SideSheet
         id="side-sheet-department-edit"
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
-        title={editingDept ? `编辑部门: ${editingDept.name}` : "新增部门"}
-        description="配置部门基本信息并绑定角色（多选）；部门成员将继承该部门绑定角色的权限。"
+        title={editingDept ? t("departments.sheet.editTitle", { name: editingDept.name }) : t("departments.sheet.createTitle")}
+        description={t("departments.sheet.description")}
         icon={<Building2 className="w-5 h-5 text-fg" />}
         widthClass="max-w-xl"
         footer={
@@ -788,16 +820,16 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             <button
               type="button"
               onClick={() => setIsSheetOpen(false)}
-              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded text-xs font-semibold transition-colors cursor-pointer"
             >
-              取消
+              {t("common:actions.cancel")}
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-colors cursor-pointer"
             >
-              {editingDept ? "保存部门" : "创建部门"}
+              {editingDept ? t("departments.sheet.saveEdit") : t("departments.sheet.saveCreate")}
             </button>
           </>
         }
@@ -806,37 +838,37 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-fg-secondary font-medium mb-1">
-                部门名称 <span className="text-rose-500">*</span>
+{t("departments.sheet.nameLabel")} <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
-                placeholder="例如: 出海运营中心"
+                placeholder={t("departments.sheet.namePlaceholder")}
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full px-3 py-2 bg-surface border border-line rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <div>
-              <label className="block text-fg-secondary font-medium mb-1">部门编码</label>
+              <label className="block text-fg-secondary font-medium mb-1">{t("departments.sheet.codeLabel")}</label>
               <input
                 type="text"
-                placeholder="例如: OPS-NA"
+                placeholder={t("departments.sheet.codePlaceholder")}
                 value={formCode}
                 onChange={(e) => setFormCode(e.target.value)}
-                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full px-3 py-2 bg-surface border border-line rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-fg-secondary font-medium mb-1">上级部门</label>
+              <label className="block text-fg-secondary font-medium mb-1">{t("departments.sheet.parentLabel")}</label>
               <ShadcnSelect
                 value={formParentId}
                 onValueChange={setFormParentId}
                 options={[
-                  { value: "ROOT", label: "作为顶级部门（无上级）" },
+                  { value: "ROOT", label: t("departments.sheet.parentRoot") },
                   ...deptList
                     .filter((d) => d.id !== editingDept?.id)
                     .map((d) => ({ value: d.id, label: d.name })),
@@ -845,49 +877,49 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             </div>
 
             <div>
-              <label className="block text-fg-secondary font-medium mb-1">排序权重</label>
+              <label className="block text-fg-secondary font-medium mb-1">{t("departments.sheet.sortLabel")}</label>
               <input
                 type="number"
                 value={formSort}
                 onChange={(e) => setFormSort(e.target.value)}
-                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full px-3 py-2 bg-surface border border-line rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-fg-secondary font-medium mb-1">负责人</label>
+            <label className="block text-fg-secondary font-medium mb-1">{t("departments.sheet.leaderLabel")}</label>
             <input
               type="text"
-              placeholder="部门负责人姓名"
+              placeholder={t("departments.sheet.leaderPlaceholder")}
               value={formLeader}
               onChange={(e) => setFormLeader(e.target.value)}
-              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full px-3 py-2 bg-surface border border-line rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
           <div>
-            <label className="block text-fg-secondary font-medium mb-1">部门描述</label>
+            <label className="block text-fg-secondary font-medium mb-1">{t("departments.sheet.descLabel")}</label>
             <textarea
               rows={2}
-              placeholder="部门职责说明"
+              placeholder={t("departments.sheet.descPlaceholder")}
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full px-3 py-2 bg-surface border border-line rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-fg-secondary font-medium">
-                绑定角色（多选）
+{t("departments.sheet.rolesLabel")}
               </label>
-              <span className="text-[11px] text-fg-tertiary">部门成员将继承所选角色的权限</span>
+              <span className="text-[11px] text-fg-tertiary">{t("departments.sheet.rolesHint")}</span>
             </div>
             <MultiSelect
               value={formRoleKeys}
               onValueChange={setFormRoleKeys}
-              placeholder="选择该部门绑定的角色..."
+              placeholder={t("departments.sheet.rolesPlaceholder")}
               options={roles.map((r) => ({
                 value: (r.key || r.id) as string,
                 label: r.name,
@@ -896,10 +928,10 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           </div>
 
           {inheritedRoleNames.length > 0 && (
-            <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 text-[11px] text-blue-800 flex items-start gap-2">
+            <div className="bg-blue-50/70 border border-blue-200 rounded p-3 text-[11px] text-blue-800 flex items-start gap-2">
               <Shield className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
               <span>
-                该部门将继承上级部门绑定角色：
+{t("departments.sheet.inheritHint")}
                 <b>{inheritedRoleNames.join("、")}</b>
               </span>
             </div>

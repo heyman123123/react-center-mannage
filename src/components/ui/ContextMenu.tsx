@@ -52,7 +52,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     };
   }, [state]);
 
-  const triggerWithHandler = React.cloneElement(trigger, {
+  type TriggerProps = { onContextMenu?: (e: React.MouseEvent) => void };
+  const triggerEl = trigger as React.ReactElement<TriggerProps>;
+  const triggerWithHandler = React.cloneElement(triggerEl, {
     onContextMenu: (e: React.MouseEvent) => {
       e.preventDefault();
       const viewportW = window.innerWidth;
@@ -62,7 +64,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       const x = Math.min(e.clientX, viewportW - menuW - 8);
       const y = Math.min(e.clientY, viewportH - menuH - 8);
       setState({ x: Math.max(8, x), y: Math.max(8, y) });
-      if (trigger.props.onContextMenu) trigger.props.onContextMenu(e);
+      triggerEl.props.onContextMenu?.(e);
     },
   });
 

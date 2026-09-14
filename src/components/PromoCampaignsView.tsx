@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -44,6 +45,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
   currentTenant,
   onSaveCampaign,
 }) => {
+  const { t } = useTranslation(["products", "common"]);
   const [campaignList, setCampaignList] = useState<PromoCampaign[]>(campaigns);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -87,7 +89,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
     const duplicated: PromoCampaign = {
       ...c,
       id: `camp_${Date.now().toString().slice(-6)}`,
-      name: `${c.name} (复制副本)`,
+      name: `${c.name}${t("promo.toast.copySuffix")}`,
       status: "DRAFT",
       sentTime: undefined,
       scheduledTime: undefined,
@@ -99,7 +101,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
     };
     setCampaignList([duplicated, ...campaignList]);
     onSaveCampaign(duplicated);
-    showToast(`活动【${duplicated.name}】已成功复制为新草稿！`);
+    showToast(t("promo.toast.duplicated", { name: duplicated.name }));
   };
 
   const handleTriggerSend = (c: PromoCampaign) => {
@@ -117,9 +119,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
       };
       setCampaignList((prev) => prev.map((item) => (item.id === c.id ? updated : item)));
       onSaveCampaign(updated);
-      showToast(
-        `促销邮件【${c.name}】已成功向 ${c.totalRecipients} 位海外目标客户分发，各渠道投递率 99.8%！`
-      );
+      showToast(t("promo.toast.sent", { name: c.name, count: c.totalRecipients }));
     }, 1200);
   };
 
@@ -157,8 +157,8 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
     onSaveCampaign(newCamp);
     showToast(
       isNow
-        ? `促销活动【${newCamp.name}】已即时触发投递！`
-        : `促销活动【${newCamp.name}】已成功排期至 ${newCamp.scheduledTime}`
+        ? t("promo.toast.createdNow", { name: newCamp.name })
+        : t("promo.toast.createdScheduled", { name: newCamp.name, time: newCamp.scheduledTime })
     );
     setIsModalOpen(false);
   };
@@ -206,13 +206,9 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
             <span className="p-1.5 bg-amber-50 text-amber-600 rounded-lg">
               <Megaphone className="w-5 h-5" />
             </span>
-            <h1 className="text-xl font-bold text-fg tracking-tight">
-              海外营销促销邮件管理 (Marketing & Promo Campaigns)
-            </h1>
+            <h1 className="text-xl font-bold text-fg tracking-tight">{t("promo.title")}</h1>
           </div>
-          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
-            精准圈选海外目标客群（试用未转化、流失召回、高净值企业），自动化嵌入多语言优惠券与营销模版，追踪邮件投递转化与产生的 GMV 流水。
-          </p>
+          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">{t("promo.subtitle")}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -221,7 +217,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>新建促销营销活动</span>
+            <span>{t("promo.addCampaign")}</span>
           </button>
         </div>
       </div>
@@ -230,58 +226,63 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>已成功投递批次</span>
+            <span>{t("promo.metrics.sentBatches")}</span>
             <Send className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {totalSentCampaigns} <span className="text-xs font-normal text-fg-tertiary">/ {campaignList.length} 场活动</span>
+            {totalSentCampaigns}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">
+              {t("promo.metrics.batchRatio", { total: campaignList.length })}
+            </span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">高可靠海外直连投递保障</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("promo.metrics.batchHint")}</div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>触达海外买家总人次</span>
+            <span>{t("promo.metrics.recipients")}</span>
             <Users className="w-4 h-4 text-blue-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {totalSentRecipients.toLocaleString()} <span className="text-xs font-normal text-fg-tertiary">人次</span>
+            {totalSentRecipients.toLocaleString()}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">{t("promo.metrics.recipientSuffix")}</span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">平均海外邮箱开信率: 45.8%</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("promo.metrics.recipientHint")}</div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>促销带来直接成交 GMV</span>
+            <span>{t("promo.metrics.gmv")}</span>
             <DollarSign className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
             $94,320
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">优惠券核销关联直接转化收益</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("promo.metrics.gmvHint")}</div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>多语言动态渲染</span>
+            <span>{t("promo.metrics.i18n")}</span>
             <Sparkles className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            6 国语言 <span className="text-xs font-normal text-fg-tertiary">全自动</span>
+            {t("promo.metrics.i18nCount")}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">{t("promo.metrics.i18nAuto")}</span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">根据接收人地区自适应语言模版</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("promo.metrics.i18nHint")}</div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
       <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-fg-tertiary text-xs">状态筛选:</span>
+          <span className="text-fg-tertiary text-xs">{t("promo.filters.statusLabel")}</span>
           {[
-            { key: "ALL", label: "全部活动" },
-            { key: "SENT", label: "已投递 (Sent)" },
-            { key: "SCHEDULED", label: "已排期 (Scheduled)" },
-            { key: "DRAFT", label: "草稿 (Draft)" },
+            { key: "ALL", label: t("promo.filters.statusAll") },
+            { key: "SENT", label: t("promo.filters.statusSent") },
+            { key: "SCHEDULED", label: t("promo.filters.statusScheduled") },
+            { key: "DRAFT", label: t("promo.filters.statusDraft") },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -301,7 +302,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
           <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
-            placeholder="搜索活动名称 / 邮件主题 / 优惠码..."
+            placeholder={t("promo.filters.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
@@ -315,16 +316,16 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
           <table className="min-w-[1200px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-2 px-3 min-w-[240px]">活动名称 & 邮件主题</th>
-                <th className="py-2 px-3 w-[150px]">目标受众</th>
-                <th className="py-2 px-3 w-[130px]">绑定折扣券</th>
-                <th className="py-2 px-3 w-[110px]">受众规模</th>
-                <th className="py-2 px-3 w-[180px]">打开 / 点击 / 转化</th>
-                <th className="py-2 px-3 w-[120px]">带来估算 GMV</th>
-                <th className="py-2 px-3 w-[160px]">排期 / 发送时间</th>
-                <th className="py-2 px-3 w-[110px]">状态</th>
+                <th className="py-2 px-3 min-w-[240px]">{t("promo.table.nameSubject")}</th>
+                <th className="py-2 px-3 w-[150px]">{t("promo.table.audience")}</th>
+                <th className="py-2 px-3 w-[130px]">{t("promo.table.coupon")}</th>
+                <th className="py-2 px-3 w-[110px]">{t("promo.table.size")}</th>
+                <th className="py-2 px-3 w-[180px]">{t("promo.table.metrics")}</th>
+                <th className="py-2 px-3 w-[120px]">{t("promo.table.gmv")}</th>
+                <th className="py-2 px-3 w-[160px]">{t("promo.table.schedule")}</th>
+                <th className="py-2 px-3 w-[110px]">{t("promo.table.status")}</th>
                 <th className="py-2 px-3 w-[180px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                  操作
+                  {t("promo.table.actions")}
                 </th>
               </tr>
             </thead>
@@ -349,13 +350,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                     <td className="py-3.5 px-3 w-[150px] whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-hover text-fg-secondary">
                         <Users className="w-3 h-3 text-fg-secondary" />
-                        {c.targetAudience === "ALL_USERS"
-                          ? "全量出海用户"
-                          : c.targetAudience === "TRIAL_USERS"
-                          ? "试用期未转化用户"
-                          : c.targetAudience === "CHURNED_90D"
-                          ? "90天未活跃召回"
-                          : "高净值企业 VIP"}
+                        {t(`promo.audience.${c.targetAudience}` as "promo.audience.ALL_USERS")}
                       </span>
                     </td>
 
@@ -365,7 +360,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                           {c.discountCode}
                         </span>
                       ) : (
-                        <span className="text-fg-tertiary">无优惠码</span>
+                        <span className="text-fg-tertiary">{t("promo.noCoupon")}</span>
                       )}
                     </td>
 
@@ -373,27 +368,27 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                       <span className="font-bold text-fg">
                         {c.totalRecipients.toLocaleString()}
                       </span>{" "}
-                      <span className="text-fg-tertiary text-[10px]">人</span>
+                      <span className="text-fg-tertiary text-[10px]">{t("promo.peopleSuffix")}</span>
                     </td>
 
                     <td className="py-3.5 px-3 w-[180px] whitespace-nowrap">
                       {c.status === "SENT" ? (
                         <div className="flex items-center gap-2 font-mono text-[11px]">
                           <div>
-                            <span className="text-fg-tertiary text-[9px] block">打开</span>
+                            <span className="text-fg-tertiary text-[9px] block">{t("promo.stats.open")}</span>
                             <span className="font-bold text-blue-600">{c.openRate}%</span>
                           </div>
                           <div>
-                            <span className="text-fg-tertiary text-[9px] block">点击</span>
+                            <span className="text-fg-tertiary text-[9px] block">{t("promo.stats.click")}</span>
                             <span className="font-bold text-amber-600">{c.clickRate}%</span>
                           </div>
                           <div>
-                            <span className="text-fg-tertiary text-[9px] block">转化</span>
+                            <span className="text-fg-tertiary text-[9px] block">{t("promo.stats.convert")}</span>
                             <span className="font-bold text-emerald-600">{c.conversionRate}%</span>
                           </div>
                         </div>
                       ) : (
-                        <span className="text-fg-tertiary text-[10px]">未开始统计</span>
+                        <span className="text-fg-tertiary text-[10px]">{t("promo.stats.notStarted")}</span>
                       )}
                     </td>
 
@@ -408,14 +403,14 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                     <td className="py-3.5 px-3 w-[160px] whitespace-nowrap text-[11px] font-mono text-fg-secondary">
                       {c.sentTime ? (
                         <div>
-                          <span className="text-emerald-600 font-bold">发:</span> {c.sentTime.slice(5, 16)}
+                          <span className="text-emerald-600 font-bold">{t("promo.schedule.sent")}</span> {c.sentTime.slice(5, 16)}
                         </div>
                       ) : c.scheduledTime ? (
                         <div>
-                          <span className="text-amber-600 font-bold">排:</span> {c.scheduledTime.slice(5, 16)}
+                          <span className="text-amber-600 font-bold">{t("promo.schedule.scheduled")}</span> {c.scheduledTime.slice(5, 16)}
                         </div>
                       ) : (
-                        <span className="text-fg-tertiary">草稿暂未预约</span>
+                        <span className="text-fg-tertiary">{t("promo.schedule.draft")}</span>
                       )}
                     </td>
 
@@ -439,10 +434,10 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                           }`}
                         />
                         {c.status === "SENT"
-                          ? "已投递"
+                          ? t("promo.statusLabels.SENT")
                           : c.status === "SCHEDULED"
-                          ? "预约排期中"
-                          : "草稿暂存"}
+                          ? t("promo.statusLabels.SCHEDULED")
+                          : t("promo.statusLabels.DRAFT")}
                       </span>
                     </td>
 
@@ -452,16 +447,16 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                         <button
                           onClick={() => setPreviewCampaign(c)}
                           className="p-1.5 bg-hover hover:bg-hover text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
-                          title="预览邮件外观"
+                          title={t("promo.actions.previewTitle")}
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span>预览</span>
+                          <span>{t("promo.actions.preview")}</span>
                         </button>
 
                         <button
                           onClick={() => handleDuplicateCampaign(c)}
                           className="p-1.5 text-fg-secondary hover:text-fg hover:bg-hover rounded-lg transition-colors"
-                          title="复制创建新活动"
+                          title={t("promo.actions.duplicateTitle")}
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
@@ -473,14 +468,14 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                             className="px-2.5 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-1 shadow-card transition-colors"
                           >
                             <Send className="w-3 h-3 text-amber-400" />
-                            <span>{isSending ? "投递中" : "派发"}</span>
+                            <span>{isSending ? t("promo.actions.sending") : t("promo.actions.dispatch")}</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => handleTriggerSend(c)}
                             disabled={isSending}
                             className="p-1.5 text-fg-secondary hover:bg-hover rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
-                            title="重新补发该营销批次"
+                            title={t("promo.actions.resendTitle")}
                           >
                             <RotateCcw className="w-3 h-3 text-fg-secondary" />
                           </button>
@@ -502,8 +497,8 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
           id="side-sheet-campaign-preview"
           isOpen={true}
           onClose={() => setPreviewCampaign(null)}
-          title="海外营销邮件真实渲染预览"
-          description={`活动: ${previewCampaign.name}`}
+          title={t("promo.preview.title")}
+          description={t("promo.preview.description", { name: previewCampaign.name })}
           icon={<Mail className="w-5 h-5 text-amber-600" />}
           widthClass="max-w-xl"
           footer={
@@ -512,7 +507,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
               onClick={() => setPreviewCampaign(null)}
               className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
             >
-              关闭预览
+              {t("promo.preview.close")}
             </button>
           }
         >
@@ -521,14 +516,18 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
             <div className="border border-line rounded-xl overflow-hidden bg-subtle shadow-inner">
               <div className="bg-hover p-3 border-b border-line text-fg-secondary space-y-1">
                 <div>
-                  <span className="text-fg-tertiary">发件人:</span> Novas Global Payments &lt;marketing@novaspay.com&gt;
+                  <span className="text-fg-tertiary">{t("promo.preview.from")}</span> Novas Global Payments &lt;marketing@novaspay.com&gt;
                 </div>
                 <div>
-                  <span className="text-fg-tertiary">主 题:</span>{" "}
+                  <span className="text-fg-tertiary">{t("promo.preview.subject")}</span>{" "}
                   <strong className="text-fg">{previewCampaign.emailSubject}</strong>
                 </div>
                 <div>
-                  <span className="text-fg-tertiary">目标群体:</span> {previewCampaign.targetAudience} ({previewCampaign.totalRecipients.toLocaleString()} 位客户)
+                  <span className="text-fg-tertiary">{t("promo.preview.audience")}</span>{" "}
+                  {t("promo.preview.audienceCount", {
+                    audience: t(`promo.audience.${previewCampaign.targetAudience}` as "promo.audience.ALL_USERS"),
+                    count: previewCampaign.totalRecipients.toLocaleString(),
+                  })}
                 </div>
               </div>
 
@@ -580,8 +579,8 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
           id="side-sheet-campaign-create"
           isOpen={true}
           onClose={() => setIsModalOpen(false)}
-          title="新建海外营销促销邮件活动"
-          description="面向全球目标客群精准定向派发营销促销与优惠券模版"
+          title={t("promo.sheet.createTitle")}
+          description={t("promo.sheet.description")}
           icon={<Megaphone className="w-5 h-5 text-amber-600" />}
           widthClass="max-w-lg"
           footer={
@@ -591,14 +590,14 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                 onClick={() => setIsModalOpen(false)}
                 className="px-3 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
               >
-                取消
+                {t("promo.sheet.cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
                 className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
               >
-                {formScheduleType === "NOW" ? "立即派发活动" : "保存活动排期"}
+                {formScheduleType === "NOW" ? t("promo.sheet.submitNow") : t("promo.sheet.submitSchedule")}
               </button>
             </>
           }
@@ -606,12 +605,12 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
-                活动名称 (内部识别):
+                {t("promo.sheet.nameLabel")}
               </label>
               <input
                 type="text"
                 required
-                placeholder="如：2026 黑色星期五早鸟 7 折专属优惠"
+                placeholder={t("promo.sheet.namePlaceholder")}
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
@@ -621,23 +620,23 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  目标受众客群:
+                  {t("promo.sheet.audienceLabel")}
                 </label>
                 <ShadcnSelect
                   value={formAudience}
                   onValueChange={(val) => setFormAudience(val as any)}
                   options={[
-                    { value: "ALL_USERS", label: "全量出海客户 (~4,920 人)" },
-                    { value: "TRIAL_USERS", label: "试用期未转化客户 (~1,350 人)" },
-                    { value: "CHURNED_90D", label: "90天未登录流失召回 (~940 人)" },
-                    { value: "VIP_ENTERPRISE", label: "高净值企业 VIP (~380 人)" },
+                    { value: "ALL_USERS", label: t("promo.sheet.audienceAll") },
+                    { value: "TRIAL_USERS", label: t("promo.sheet.audienceTrial") },
+                    { value: "CHURNED_90D", label: t("promo.sheet.audienceChurned") },
+                    { value: "VIP_ENTERPRISE", label: t("promo.sheet.audienceVip") },
                   ]}
                 />
               </div>
 
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  绑定优惠折扣码:
+                  {t("promo.sheet.couponLabel")}
                 </label>
                 <ShadcnSelect
                   value={formDiscountCode}
@@ -652,29 +651,29 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
-                选择基础邮件模版:
+                {t("promo.sheet.templateLabel")}
               </label>
               <SearchableSelect
                 value={formTemplateId}
                 onValueChange={(val) => setFormTemplateId(val)}
-                options={templates.map((t) => ({
-                  value: t.id,
-                  label: `${t.name} (${t.id})`,
+                options={templates.map((tmpl) => ({
+                  value: tmpl.id,
+                  label: `${tmpl.name} (${tmpl.id})`,
                 }))}
-                placeholder="输入关键字查找并选择邮件模版..."
-                searchPlaceholder="搜索模版名称 / ID..."
-                emptyText="未找到匹配的邮件模版"
+                placeholder={t("promo.sheet.templatePlaceholder")}
+                searchPlaceholder={t("promo.sheet.templateSearch")}
+                emptyText={t("promo.sheet.templateEmpty")}
               />
             </div>
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
-                邮件标题 / 主题 (Subject):
+                {t("promo.sheet.subjectLabel")}
               </label>
               <input
                 type="text"
                 required
-                placeholder="如：🔥 Black Friday Early Access: Save 30% Today!"
+                placeholder={t("promo.sheet.subjectPlaceholder")}
                 value={formSubject}
                 onChange={(e) => setFormSubject(e.target.value)}
                 className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:bg-surface font-mono focus:outline-none focus:ring-1 focus:ring-line"
@@ -683,7 +682,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
-                发送时间设定:
+                {t("promo.sheet.scheduleLabel")}
               </label>
               <div className="flex items-center gap-2">
                 <label className="flex items-center gap-1.5 cursor-pointer">
@@ -693,7 +692,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                     checked={formScheduleType === "NOW"}
                     onChange={() => setFormScheduleType("NOW")}
                   />
-                  <span>审核后立即发送</span>
+                  <span>{t("promo.sheet.scheduleNow")}</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
@@ -702,7 +701,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
                     checked={formScheduleType === "SCHEDULED"}
                     onChange={() => setFormScheduleType("SCHEDULED")}
                   />
-                  <span>定时预约发送</span>
+                  <span>{t("promo.sheet.scheduleLater")}</span>
                 </label>
               </div>
 

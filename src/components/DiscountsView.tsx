@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -37,6 +38,39 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
   paymentChannels = [],
   onSaveDiscount,
 }) => {
+  const { t } = useTranslation(["products", "common"]);
+  const typeFilters = useMemo(
+    () => [
+      { key: "ALL", label: t("discounts.filters.typeAll") },
+      { key: "PERCENTAGE", label: t("discounts.filters.typePercentage") },
+      { key: "FIXED_AMOUNT", label: t("discounts.filters.typeFixed") },
+    ],
+    [t]
+  );
+  const statusFilters = useMemo(
+    () => [
+      { key: "ALL", label: t("discounts.filters.statusAll") },
+      { key: "ACTIVE", label: t("discounts.filters.statusActive") },
+      { key: "EXPIRED", label: t("discounts.filters.statusExpired") },
+      { key: "DISABLED", label: t("discounts.filters.statusDisabled") },
+    ],
+    [t]
+  );
+  const formScopeOptions = useMemo(
+    () => [
+      { value: "ALL", label: t("discounts.sheet.scopeAll") },
+      { value: "SUBSCRIPTION_ONLY", label: t("discounts.sheet.scopeSubscription") },
+      { value: "BU_SPECIFIC", label: t("discounts.sheet.scopeBu") },
+    ],
+    [t]
+  );
+  const formTypeOptions = useMemo(
+    () => [
+      { value: "PERCENTAGE", label: t("discounts.sheet.typePercentage") },
+      { value: "FIXED_AMOUNT", label: t("discounts.sheet.typeFixed") },
+    ],
+    [t]
+  );
   const [discountList, setDiscountList] = useState<DiscountConfig[]>(discounts);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
@@ -116,7 +150,10 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     const updated: DiscountConfig = { ...d, status: nextStatus };
     setDiscountList((prev) => prev.map((item) => (item.id === d.id ? updated : item)));
     onSaveDiscount(updated);
-    showToast(`折扣码【${d.code}】已${nextStatus === "ACTIVE" ? "重新启用" : "停用"}`);
+    showToast(t("discounts.toast.toggled", {
+      code: d.code,
+      status: nextStatus === "ACTIVE" ? t("discounts.toast.enabled") : t("discounts.toast.disabled"),
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -139,7 +176,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
       };
       setDiscountList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       onSaveDiscount(updated);
-      showToast(`优惠折扣【${updated.code}】修改成功！`);
+      showToast(t("discounts.toast.updated", { code: updated.code }));
     } else {
       const newDiscount: DiscountConfig = {
         id: `disc_${Date.now().toString().slice(-6)}`,
@@ -160,7 +197,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
       };
       setDiscountList((prev) => [newDiscount, ...prev]);
       onSaveDiscount(newDiscount);
-      showToast(`新折扣码【${newDiscount.code}】创建成功！`);
+      showToast(t("discounts.toast.created", { code: newDiscount.code }));
     }
     setIsModalOpen(false);
   };
@@ -203,11 +240,11 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               <Tag className="w-5 h-5" />
             </span>
             <h1 className="text-xl font-bold text-fg tracking-tight">
-              海外折扣与优惠码配置 (Discounts & Coupons)
+              {t("discounts.title")}
             </h1>
           </div>
           <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
-            配置全场百分比折扣（如 20% OFF）或固定立减优惠券（如 -$50），支持限制使用次数、最低订单门槛与生效期限，全渠道收银台实时校验。
+            {t("discounts.subtitle")}
           </p>
         </div>
 
@@ -217,7 +254,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>新建优惠券 / 折扣码</span>
+            <span>{t("discounts.addDiscount")}</span>
           </button>
         </div>
       </div>
@@ -226,47 +263,43 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>生效中折扣方案</span>
+            <span>{t("discounts.metrics.activePlans")}</span>
             <Tag className="w-4 h-4 text-rose-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {activeCount} <span className="text-xs font-normal text-fg-tertiary">/ {discountList.length} 条</span>
+            {t("discounts.metrics.activeCount", { active: activeCount, total: discountList.length })}
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">支持独立站结账页实时输入校验</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("discounts.metrics.activeHint")}</div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>海外用户累计核销次数</span>
+            <span>{t("discounts.metrics.redeemed")}</span>
             <TrendingUp className="w-4 h-4 text-blue-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {totalRedeemed.toLocaleString()} <span className="text-xs font-normal text-fg-tertiary">次使用</span>
+            {totalRedeemed.toLocaleString()} <span className="text-xs font-normal text-fg-tertiary">{t("discounts.metrics.redeemedCount")}</span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">有效提升海外结账转化率与客单价</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("discounts.metrics.redeemedHint")}</div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>促销活动结合联动</span>
+            <span>{t("discounts.metrics.promoLink")}</span>
             <Sparkles className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            100% <span className="text-xs font-normal text-fg-tertiary">支持邮件一键绑定</span>
+            100% <span className="text-xs font-normal text-fg-tertiary">{t("discounts.metrics.emailBind")}</span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">可直接挂载至多语言促销邮件营销推送</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("discounts.metrics.promoHint")}</div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
       <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-          <span className="text-fg-tertiary text-xs">类型筛选:</span>
-          {[
-            { key: "ALL", label: "全部折扣" },
-            { key: "PERCENTAGE", label: "百分比折扣 (%)" },
-            { key: "FIXED_AMOUNT", label: "固定立减 ($/€)" },
-          ].map((tab) => (
+          <span className="text-fg-tertiary text-xs">{t("discounts.filters.typeLabel")}</span>
+          {typeFilters.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setTypeFilter(tab.key)}
@@ -282,13 +315,8 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
 
           <span className="text-zinc-300 mx-1">|</span>
 
-          <span className="text-fg-tertiary text-xs">状态:</span>
-          {[
-            { key: "ALL", label: "全部" },
-            { key: "ACTIVE", label: "进行中" },
-            { key: "EXPIRED", label: "已过期" },
-            { key: "DISABLED", label: "已停用" },
-          ].map((tab) => (
+          <span className="text-fg-tertiary text-xs">{t("discounts.filters.statusLabel")}</span>
+          {statusFilters.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setStatusFilter(tab.key)}
@@ -307,7 +335,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
-            placeholder="搜索优惠码 / 方案名称..."
+            placeholder={t("discounts.filters.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
@@ -321,15 +349,15 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           <table className="min-w-[1100px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-2 px-3 w-[220px]">优惠码 (Promo Code)</th>
-                <th className="py-2 px-3 min-w-[200px]">折扣名称 & 适用范围</th>
-                <th className="py-2 px-3 w-[130px]">优惠力度</th>
-                <th className="py-2 px-3 w-[120px]">门槛条件</th>
-                <th className="py-2 px-3 w-[160px]">使用进度 (已用 / 限额)</th>
-                <th className="py-2 px-3 w-[170px]">有效期限</th>
-                <th className="py-2 px-3 w-[100px]">状态</th>
+                <th className="py-2 px-3 w-[220px]">{t("discounts.table.code")}</th>
+                <th className="py-2 px-3 min-w-[200px]">{t("discounts.table.nameScope")}</th>
+                <th className="py-2 px-3 w-[130px]">{t("discounts.table.value")}</th>
+                <th className="py-2 px-3 w-[120px]">{t("discounts.table.threshold")}</th>
+                <th className="py-2 px-3 w-[160px]">{t("discounts.table.usage")}</th>
+                <th className="py-2 px-3 w-[170px]">{t("discounts.table.validity")}</th>
+                <th className="py-2 px-3 w-[100px]">{t("discounts.table.status")}</th>
                 <th className="py-2 px-3 w-[140px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                  操作
+                  {t("discounts.table.actions")}
                 </th>
               </tr>
             </thead>
@@ -347,7 +375,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                         <button
                           onClick={() => handleCopyCode(d.code)}
                           className="p-1 text-fg-tertiary hover:text-fg-secondary rounded transition-colors"
-                          title="复制优惠码"
+                          title={t("discounts.table.copyCode")}
                         >
                           {isCopied ? (
                             <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -362,10 +390,10 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                       <div className="font-semibold text-fg line-clamp-1">{d.name}</div>
                       <div className="text-[10px] text-fg-tertiary mt-0.5 line-clamp-1">
                         {d.applicableScope === "ALL"
-                          ? "全场所有商品与订阅"
+                          ? t("discounts.table.scopeAll")
                           : d.applicableScope === "SUBSCRIPTION_ONLY"
-                          ? "仅限周期性订阅方案 (Subscription Only)"
-                          : "仅限指定业务单元"}
+                          ? t("discounts.table.scopeSubscription")
+                          : t("discounts.table.scopeBu")}
                       </div>
                       {d.boundChannelIds && d.boundChannelIds.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
@@ -387,11 +415,13 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                     <td className="py-3.5 px-3 w-[130px] whitespace-nowrap">
                       <div className="font-bold font-mono text-fg">
                         {d.type === "PERCENTAGE" ? (
-                          <span className="text-rose-600">{d.value}% 折扣</span>
+                          <span className="text-rose-600">{t("discounts.table.percentOff", { value: d.value })}</span>
                         ) : (
                           <span className="text-emerald-600">
-                            立减 {d.currency === "USD" ? "$" : d.currency}
-                            {d.value}
+                            {t("discounts.table.fixedOff", {
+                              currency: d.currency === "USD" ? "$" : d.currency,
+                              value: d.value,
+                            })}
                           </span>
                         )}
                       </div>
@@ -400,10 +430,10 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                     <td className="py-3.5 px-3 w-[120px] whitespace-nowrap text-fg-secondary">
                       {d.minOrderAmount > 0 ? (
                         <span>
-                          满 ${d.minOrderAmount} 可用
+                          {t("discounts.table.minOrder", { amount: d.minOrderAmount })}
                         </span>
                       ) : (
-                        <span className="text-fg-tertiary">无门槛</span>
+                        <span className="text-fg-tertiary">{t("discounts.table.noThreshold")}</span>
                       )}
                     </td>
 
@@ -427,7 +457,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                     </td>
 
                     <td className="py-3.5 px-3 w-[170px] whitespace-nowrap text-[11px] font-mono text-fg-secondary">
-                      <div>{d.startDate} 至</div>
+                      <div>{t("discounts.table.dateRange", { start: d.startDate })}</div>
                       <div>{d.endDate}</div>
                     </td>
 
@@ -451,10 +481,10 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                           }`}
                         />
                         {d.status === "ACTIVE"
-                          ? "生效中"
+                          ? t("discounts.table.statusActive")
                           : d.status === "EXPIRED"
-                          ? "已过期"
-                          : "已停用"}
+                          ? t("discounts.table.statusExpired")
+                          : t("discounts.table.statusDisabled")}
                       </span>
                     </td>
 
@@ -464,7 +494,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                         <button
                           onClick={() => handleOpenEdit(d)}
                           className="p-1.5 text-fg-secondary hover:text-fg hover:bg-hover rounded-lg transition-colors"
-                          title="编辑折扣配置"
+                          title={t("discounts.table.editTitle")}
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -475,9 +505,9 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                               ? "text-fg-tertiary hover:text-rose-600 hover:bg-rose-50"
                               : "text-fg-tertiary hover:text-emerald-600 hover:bg-emerald-50"
                           }`}
-                          title={d.status === "ACTIVE" ? "停用该券" : "启用该券"}
+                          title={d.status === "ACTIVE" ? t("discounts.table.disableTitle") : t("discounts.table.enableTitle")}
                         >
-                          {d.status === "ACTIVE" ? "停用" : "启用"}
+                          {d.status === "ACTIVE" ? t("discounts.table.disable") : t("discounts.table.enable")}
                         </button>
                       </div>
                     </td>
@@ -496,8 +526,8 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           id="side-sheet-discount-edit"
           isOpen={true}
           onClose={() => setIsModalOpen(false)}
-          title={editingDiscount ? `编辑优惠码: ${editingDiscount.code}` : "创建新折扣方案"}
-          description="设定出海收银台优惠兑换码、折扣额度与适用规则"
+          title={editingDiscount ? t("discounts.sheet.editTitle", { code: editingDiscount.code }) : t("discounts.sheet.createTitle")}
+          description={t("discounts.sheet.description")}
           icon={<Tag className="w-5 h-5 text-rose-600" />}
           widthClass="max-w-lg"
           footer={
@@ -507,14 +537,14 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                 onClick={() => setIsModalOpen(false)}
                 className="px-3 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
               >
-                取消
+                {t("common:actions.cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
                 className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
               >
-                {editingDiscount ? "保存更新" : "确认创建"}
+                {editingDiscount ? t("discounts.sheet.save") : t("discounts.sheet.confirm")}
               </button>
             </>
           }
@@ -523,12 +553,12 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  优惠兑换码 (Promo Code):
+                  {t("discounts.sheet.codeLabel")}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="如：BLACKFRIDAY30"
+                  placeholder={t("discounts.sheet.codePlaceholder")}
                   value={formCode}
                   onChange={(e) => setFormCode(e.target.value.toUpperCase())}
                   className="w-full p-2 bg-subtle border border-line rounded-lg font-mono font-bold text-xs focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
@@ -536,27 +566,24 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               </div>
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  折扣类型:
+                  {t("discounts.sheet.typeLabel")}
                 </label>
                 <ShadcnSelect
                   value={formType}
                   onValueChange={(val) => setFormType(val as DiscountType)}
-                  options={[
-                    { value: "PERCENTAGE", label: "百分比折扣 (Percentage %)" },
-                    { value: "FIXED_AMOUNT", label: "固定金额立减 (Fixed Amount)" },
-                  ]}
+                  options={formTypeOptions}
                 />
               </div>
             </div>
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
-                折扣名称 / 活动标题:
+                {t("discounts.sheet.nameLabel")}
               </label>
               <input
                 type="text"
                 required
-                placeholder="如：2026 黑五大促 7 折狂欢"
+                placeholder={t("discounts.sheet.namePlaceholder")}
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
@@ -566,7 +593,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  {formType === "PERCENTAGE" ? "折扣比例 (%)" : "立减金额 ($)"}:
+                  {formType === "PERCENTAGE" ? t("discounts.sheet.percentValue") : t("discounts.sheet.fixedValue")}
                 </label>
                 <input
                   type="number"
@@ -580,7 +607,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               </div>
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  最低消费门槛 ($):
+                  {t("discounts.sheet.minOrderLabel")}
                 </label>
                 <input
                   type="number"
@@ -588,7 +615,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                   min="0"
                   value={formMinOrder}
                   onChange={(e) => setFormMinOrder(parseFloat(e.target.value) || 0)}
-                  placeholder="0 表示无门槛"
+                  placeholder={t("discounts.sheet.minOrderPlaceholder")}
                   className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
                 />
               </div>
@@ -597,7 +624,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  总限量使用次数:
+                  {t("discounts.sheet.maxUsageLabel")}
                 </label>
                 <input
                   type="number"
@@ -610,16 +637,12 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               </div>
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  适用业务范围:
+                  {t("discounts.sheet.scopeLabel")}
                 </label>
                 <ShadcnSelect
                   value={formScope}
                   onValueChange={(val) => setFormScope(val as any)}
-                  options={[
-                    { value: "ALL", label: "全场所有商品与订阅" },
-                    { value: "SUBSCRIPTION_ONLY", label: "仅限周期订阅 (Subscription)" },
-                    { value: "BU_SPECIFIC", label: "所属业务单元专属" },
-                  ]}
+                  options={formScopeOptions}
                 />
               </div>
             </div>
@@ -627,7 +650,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  生效开始时间:
+                  {t("discounts.sheet.startDateLabel")}
                 </label>
                 <input
                   type="date"
@@ -639,7 +662,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
               </div>
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  失效截止时间:
+                  {t("discounts.sheet.endDateLabel")}
                 </label>
                 <input
                   type="date"
@@ -653,13 +676,13 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
-                绑定渠道账号:
+                {t("discounts.sheet.channelsLabel")}
               </label>
               <MultiSelect
                 value={formBoundChannels}
                 onValueChange={setFormBoundChannels}
                 options={channelOptions}
-                placeholder="选择该折扣可使用的渠道账号（可多选）..."
+                placeholder={t("discounts.sheet.channelsPlaceholder")}
               />
             </div>
           </form>

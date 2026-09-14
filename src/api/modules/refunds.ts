@@ -1,25 +1,14 @@
-import { USE_MOCK, getCurrentApiEnv, randomMockDelay } from "../config";
+import { USE_MOCK, randomMockDelay } from "../config";
 import { http } from "../request";
 import type { RefundRecord, ChargebackRecord } from "../../types/payment";
-import {
-  INITIAL_REFUNDS,
-  INITIAL_CHARGEBACKS,
-  SANDBOX_REFUNDS,
-} from "../../data/mockData";
+import { INITIAL_REFUNDS, INITIAL_CHARGEBACKS } from "../../data/mockData";
 
 function mockResolve<T>(data: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(data), randomMockDelay()));
 }
 
-function pickRefunds(list: RefundRecord[]): RefundRecord[] {
-  const env = getCurrentApiEnv();
-  const base = list.filter((r) => (env === "sandbox" ? r.environment === "sandbox" : r.environment !== "sandbox"));
-  if (env === "sandbox") return [...base, ...SANDBOX_REFUNDS];
-  return base;
-}
-
 export async function getRefunds(): Promise<RefundRecord[]> {
-  if (USE_MOCK) return mockResolve(pickRefunds(INITIAL_REFUNDS));
+  if (USE_MOCK) return mockResolve(INITIAL_REFUNDS);
   return http.get<RefundRecord[]>("/refunds");
 }
 

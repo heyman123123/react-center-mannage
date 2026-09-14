@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Wallet,
   Search,
@@ -26,17 +27,8 @@ import { exportToCSV } from "../lib/utils";
 import { settlementsApi } from "../api";
 
 interface SettlementsViewProps {
-  /** 兼容旧 props 接口；传入时直接使用，未传入时走 API 层获取 */
   batches?: SettlementBatch[];
 }
-
-const TENANT_LABEL: Record<TenantId, string> = {
-  group_hq: "全球总部",
-  bu_na_ecom: "北美电商",
-  bu_eu_saas: "欧洲SaaS",
-  bu_apac_japan: "亚太日本",
-  bu_latam: "拉美新兴",
-};
 
 const CHANNEL_LABEL: Record<string, string> = {
   stripe: "Stripe",
@@ -47,33 +39,11 @@ const CHANNEL_LABEL: Record<string, string> = {
   apple_pay: "Apple Pay",
 };
 
-const STATUS_META: Record<SettlementStatus, { label: string; badge: string; icon: React.ReactNode }> = {
-  PENDING: {
-    label: "待结算",
-    badge: "bg-amber-50 text-amber-700 border-amber-200",
-    icon: <Hourglass className="w-3 h-3" />,
-  },
-  SETTLING: {
-    label: "结算中",
-    badge: "bg-blue-50 text-blue-700 border-blue-200",
-    icon: <Loader2 className="w-3 h-3 animate-spin" />,
-  },
-  PAID: {
-    label: "已出金",
-    badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    icon: <CheckCircle2 className="w-3 h-3" />,
-  },
-  FAILED: {
-    label: "失败",
-    badge: "bg-rose-50 text-rose-700 border-rose-200",
-    icon: <XCircle className="w-3 h-3" />,
-  },
-};
-
 const fmt = (n: number, currency: string) =>
   `${currency} ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => {
+  const { t } = useTranslation(["commerce", "common"]);
   const [rows, setRows] = useState<SettlementBatch[]>(batches ?? []);
   const [dataLoading, setDataLoading] = useState<boolean>(!batches);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -89,7 +59,27 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
   useEffect(() => { reset(); }, [statusFilter, searchQuery, reset]);
 
-  // P2: 未传入 props 时通过 API 层取数（按当前环境分桶，带模拟延迟）
+  const TENANT_LABEL = useMemo(
+    (): Record<TenantId, string> => ({
+      group_hq: t("settlements.tenants.group_hq"),
+      bu_na_ecom: t("settlements.tenants.bu_na_ecom"),
+      bu_eu_saas: t("settlements.tenants.bu_eu_saas"),
+      bu_apac_japan: t("settlements.tenants.bu_apac_japan"),
+      bu_latam: t("settlements.tenants.bu_latam"),
+    }),
+    [t]
+  );
+
+  const STATUS_META = useMemo(
+    (): Record<SettlementStatus, { label: string; badge: string; icon: React.ReactNode }> => ({
+      PENDING: { label: t("settlements.status.PENDING"), badge: "bg-amber-50 text-amber-700 border-amber-200", icon: <Hourglass className="w-3 h-3" /> },
+      SETTLING: { label: t("settlements.status.SETTLING"), badge: "bg-blue-50 text-blue-700 border-blue-200", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+      PAID: { label: t("settlements.status.PAID"), badge: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
+      FAILED: { label: t("settlements.status.FAILED"), badge: "bg-rose-50 text-rose-700 border-rose-200", icon: <XCircle className="w-3 h-3" /> },
+    }),
+    [t]
+  );
+
   useEffect(() => {
     if (batches) { setRows(batches); setDataLoading(false); return; }
     let cancelled = false;
@@ -107,15 +97,25 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
         (TENANT_LABEL[b.tenantId] || "").toLowerCase().includes(searchQuery.toLowerCase());
       return matchStatus && matchSearch;
     });
-  }, [rows, statusFilter, searchQuery]);
+  }, [rows, statusFilter, searchQuery, TENANT_LABEL]);
 
   const pendingBatches = rows.filter((b) => b.status === "PENDING");
   const selectedBatch = rows.find((b) => b.id === payoutBatchId) || null;
 
   const handleExport = () => {
     exportToCSV(
-      "结算批次表",
-      ["批次号", "商户", "渠道", "应收金额", "手续费", "净结金额", "状态", "结算周期", "创建时间"],
+      t("settlements.exportFilename"),
+      [
+        t("settlements.exportHeaders.batchId"),
+        t("settlements.exportHeaders.merchant"),
+        t("settlements.exportHeaders.channel"),
+        t("settlements.exportHeaders.receivable"),
+        t("settlements.exportHeaders.fee"),
+        t("settlements.exportHeaders.net"),
+        t("settlements.exportHeaders.status"),
+        t("settlements.exportHeaders.cycle"),
+        t("settlements.exportHeaders.createdAt"),
+      ],
       filtered.map((b) => [
         b.id, TENANT_LABEL[b.tenantId], CHANNEL_LABEL[b.channel] || b.channel,
         b.receivableAmount, b.fee, b.netAmount, STATUS_META[b.status].label, b.cycle, b.createdAt,
@@ -136,14 +136,12 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
   const handleSubmitPayout = () => {
     if (!payoutBatchId) return;
     setSubmitting(true);
-    // 提交后状态 -> 结算中
     setRows((prev) => prev.map((r) => (r.id === payoutBatchId ? { ...r, status: "SETTLING" } : r)));
     setTimeout(() => {
-      // 模拟 1.5s 后 -> 已出金
       setRows((prev) => prev.map((r) => (r.id === payoutBatchId ? { ...r, status: "PAID" } : r)));
       setSubmitting(false);
       setPayoutOpen(false);
-      setToast(`批次 ${payoutBatchId} 出金已成功到账`);
+      setToast(t("settlements.toastPayoutSuccess", { id: payoutBatchId }));
       setTimeout(() => setToast(null), 4000);
     }, 1500);
   };
@@ -154,34 +152,24 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
               <Wallet className="w-5 h-5" />
             </span>
-            <h1 className="text-xl font-bold text-fg tracking-tight">结算与出金管理</h1>
+            <h1 className="text-xl font-bold text-fg tracking-tight">{t("settlements.title")}</h1>
           </div>
-          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
-            多币种结算批次归集、渠道费/汇兑损溢/平台服务费明细核算，并支持跨境银行出金申请与状态跟踪。
-          </p>
+          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">{t("settlements.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 self-start md:self-auto">
-          <button
-            onClick={handleExport}
-            className="inline-flex items-center gap-1.5 px-3 py-2 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-semibold transition-colors"
-          >
+          <button onClick={handleExport} className="inline-flex items-center gap-1.5 px-3 py-2 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-semibold transition-colors">
             <Download className="w-4 h-4" />
-            导出 CSV
+            {t("commerce:common.exportCsv")}
           </button>
-          <button
-            onClick={() => openPayout()}
-            disabled={pendingBatches.length === 0}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors disabled:opacity-40"
-          >
+          <button onClick={() => openPayout()} disabled={pendingBatches.length === 0} className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors disabled:opacity-40">
             <PlusCircle className="w-4 h-4" />
-            发起出金
+            {t("settlements.initiatePayout")}
           </button>
         </div>
       </div>
@@ -196,49 +184,35 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
         </div>
       )}
 
-      {/* Filter bar */}
       <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-          <span className="text-fg-tertiary text-xs">状态:</span>
+          <span className="text-fg-tertiary text-xs">{t("commerce:common.statusLabel")}</span>
           {(["ALL", "PENDING", "SETTLING", "PAID", "FAILED"] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
-                statusFilter === s ? "bg-primary text-primary-foreground" : "bg-hover text-fg-secondary hover:bg-hover"
-              }`}
-            >
-              {s === "ALL" ? "全部" : STATUS_META[s].label}
+            <button key={s} onClick={() => setStatusFilter(s)} className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-hover text-fg-secondary hover:bg-hover"}`}>
+              {s === "ALL" ? t("commerce:common.all") : STATUS_META[s].label}
             </button>
           ))}
         </div>
         <div className="relative w-full md:w-64">
           <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
-          <input
-            type="text"
-            placeholder="搜索批次号 / 商户..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
-          />
+          <input type="text" placeholder={t("settlements.searchPlaceholder")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs" />
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-surface rounded-2xl border border-line/80 shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-[1100px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-2 px-3">批次号</th>
-                <th className="py-2 px-3">商户</th>
-                <th className="py-2 px-3">渠道</th>
-                <th className="py-2 px-3 text-right">应收金额</th>
-                <th className="py-2 px-3 text-right">手续费</th>
-                <th className="py-2 px-3 text-right">净结金额</th>
-                <th className="py-2 px-3">状态</th>
-                <th className="py-2 px-3">结算周期</th>
-                <th className="py-2 px-3">创建时间</th>
+                <th className="py-2 px-3">{t("settlements.table.batchId")}</th>
+                <th className="py-2 px-3">{t("settlements.table.merchant")}</th>
+                <th className="py-2 px-3">{t("settlements.table.channel")}</th>
+                <th className="py-2 px-3 text-right">{t("settlements.table.receivable")}</th>
+                <th className="py-2 px-3 text-right">{t("settlements.table.fee")}</th>
+                <th className="py-2 px-3 text-right">{t("settlements.table.net")}</th>
+                <th className="py-2 px-3">{t("settlements.table.status")}</th>
+                <th className="py-2 px-3">{t("settlements.table.cycle")}</th>
+                <th className="py-2 px-3">{t("settlements.table.createdAt")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle">
@@ -248,39 +222,19 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
                   <ContextMenu
                     key={b.id}
                     items={[
-                      { key: "view", label: "查看详情", icon: <Eye className="w-3.5 h-3.5" />, onClick: () => setDetailBatch(b) },
-                      {
-                        key: "payout",
-                        label: "发起出金",
-                        icon: <ArrowRightLeft className="w-3.5 h-3.5" />,
-                        disabled: b.status !== "PENDING",
-                        onClick: () => openPayout(b.id),
-                      },
-                      {
-                        key: "refresh",
-                        label: "刷新",
-                        icon: <RefreshCw className="w-3.5 h-3.5" />,
-                        onClick: () => setRows((prev) => [...prev]),
-                      },
+                      { key: "view", label: t("settlements.menu.viewDetail"), icon: <Eye className="w-3.5 h-3.5" />, onClick: () => setDetailBatch(b) },
+                      { key: "payout", label: t("settlements.menu.initiatePayout"), icon: <ArrowRightLeft className="w-3.5 h-3.5" />, disabled: b.status !== "PENDING", onClick: () => openPayout(b.id) },
+                      { key: "refresh", label: t("settlements.menu.refresh"), icon: <RefreshCw className="w-3.5 h-3.5" />, onClick: () => setRows((prev) => [...prev]) },
                     ]}
                     trigger={
                       <tr className="hover:bg-subtle/80 transition-colors cursor-pointer">
-                        <td className="py-3 px-3">
-                          <div className="font-mono font-medium text-fg truncate max-w-[180px]" title={b.id}>{b.id}</div>
-                        </td>
+                        <td className="py-3 px-3"><div className="font-mono font-medium text-fg truncate max-w-[180px]" title={b.id}>{b.id}</div></td>
                         <td className="py-3 px-3 whitespace-nowrap text-fg-secondary">{TENANT_LABEL[b.tenantId]}</td>
-                        <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px] text-fg-secondary uppercase">
-                          {CHANNEL_LABEL[b.channel] || b.channel}
-                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px] text-fg-secondary uppercase">{CHANNEL_LABEL[b.channel] || b.channel}</td>
                         <td className="py-3 px-3 text-right font-mono text-fg">{fmt(b.receivableAmount, b.currency)}</td>
                         <td className="py-3 px-3 text-right font-mono text-fg-secondary">{fmt(b.fee, b.currency)}</td>
                         <td className="py-3 px-3 text-right font-mono font-semibold text-emerald-600">{fmt(b.netAmount, b.currency)}</td>
-                        <td className="py-3 px-3 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border ${sm.badge}`}>
-                            {sm.icon}
-                            {sm.label}
-                          </span>
-                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap"><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border ${sm.badge}`}>{sm.icon}{sm.label}</span></td>
                         <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px] text-fg-secondary">{b.cycle}</td>
                         <td className="py-3 px-3 font-mono text-[11px] text-fg-secondary whitespace-nowrap">{b.createdAt}</td>
                       </tr>
@@ -294,52 +248,44 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
         <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
 
-      {/* Detail SideSheet */}
       <SideSheet
         id="settlement-detail"
         isOpen={!!detailBatch}
         onClose={() => setDetailBatch(null)}
-        title={detailBatch ? `结算批次详情 - ${detailBatch.id}` : "结算批次详情"}
+        title={detailBatch ? t("settlements.detail.title", { id: detailBatch.id }) : t("settlements.detail.titleFallback")}
         description={detailBatch ? `${CHANNEL_LABEL[detailBatch.channel] || detailBatch.channel} · ${detailBatch.cycle} · ${STATUS_META[detailBatch.status].label}` : ""}
         icon={<FileSpreadsheet className="w-5 h-5 text-fg" />}
         widthClass="max-w-2xl max-md:max-w-none"
-        footer={
-          <button onClick={() => setDetailBatch(null)} className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer">
-            关闭
-          </button>
-        }
+        footer={<button onClick={() => setDetailBatch(null)} className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer">{t("common:actions.close")}</button>}
       >
         {detailBatch && (
           <div className="space-y-4 text-xs">
-            {/* Summary */}
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-subtle p-3 rounded-xl border border-line">
-                <div className="text-[11px] text-fg-tertiary">应收金额</div>
+                <div className="text-[11px] text-fg-tertiary">{t("settlements.detail.receivable")}</div>
                 <div className="font-mono font-semibold text-fg mt-1">{fmt(detailBatch.receivableAmount, detailBatch.currency)}</div>
               </div>
               <div className="bg-subtle p-3 rounded-xl border border-line">
-                <div className="text-[11px] text-fg-tertiary">手续费合计</div>
+                <div className="text-[11px] text-fg-tertiary">{t("settlements.detail.feeTotal")}</div>
                 <div className="font-mono font-semibold text-fg-secondary mt-1">-{fmt(detailBatch.fee, detailBatch.currency)}</div>
               </div>
               <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200">
-                <div className="text-[11px] text-emerald-700">净结金额</div>
+                <div className="text-[11px] text-emerald-700">{t("settlements.detail.net")}</div>
                 <div className="font-mono font-semibold text-emerald-700 mt-1">{fmt(detailBatch.netAmount, detailBatch.currency)}</div>
               </div>
             </div>
-
-            {/* Transaction detail */}
             <div>
               <div className="font-semibold text-fg mb-2 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-fg-tertiary" /> 交易明细
+                <Clock className="w-3.5 h-3.5 text-fg-tertiary" /> {t("settlements.detail.txDetail")}
               </div>
               <div className="border border-line rounded-xl overflow-hidden">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="bg-subtle border-b border-line text-fg-secondary text-[11px]">
-                      <th className="py-2 px-3">关联交易号</th>
-                      <th className="py-2 px-3">商品</th>
-                      <th className="py-2 px-3 text-right">金额</th>
-                      <th className="py-2 px-3 text-right">手续费</th>
+                      <th className="py-2 px-3">{t("settlements.detail.txTable.tradeNo")}</th>
+                      <th className="py-2 px-3">{t("settlements.detail.txTable.product")}</th>
+                      <th className="py-2 px-3 text-right">{t("settlements.detail.txTable.amount")}</th>
+                      <th className="py-2 px-3 text-right">{t("settlements.detail.txTable.fee")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line-subtle">
@@ -355,15 +301,13 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
                 </table>
               </div>
             </div>
-
-            {/* Fee breakdown */}
             <div>
-              <div className="font-semibold text-fg mb-2">费用明细</div>
+              <div className="font-semibold text-fg mb-2">{t("settlements.detail.feeBreakdown")}</div>
               <div className="space-y-1.5">
                 {[
-                  { label: "渠道费", value: detailBatch.fees.channelFee },
-                  { label: "汇兑损溢", value: detailBatch.fees.fxGainLoss },
-                  { label: "平台服务费", value: detailBatch.fees.platformFee },
+                  { label: t("settlements.detail.fees.channel"), value: detailBatch.fees.channelFee },
+                  { label: t("settlements.detail.fees.fx"), value: detailBatch.fees.fxGainLoss },
+                  { label: t("settlements.detail.fees.platform"), value: detailBatch.fees.platformFee },
                 ].map((f) => (
                   <div key={f.label} className="flex items-center justify-between bg-subtle px-3 py-2 rounded-lg border border-line">
                     <span className="text-fg-secondary">{f.label}</span>
@@ -372,17 +316,15 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
                 ))}
               </div>
             </div>
-
-            {/* Payout account */}
             {detailBatch.payoutAccount && (
               <div>
                 <div className="font-semibold text-fg mb-2 flex items-center gap-1.5">
-                  <Landmark className="w-3.5 h-3.5 text-fg-tertiary" /> 出金账户
+                  <Landmark className="w-3.5 h-3.5 text-fg-tertiary" /> {t("settlements.detail.payoutAccount")}
                 </div>
                 <div className="bg-subtle p-3 rounded-xl border border-line flex items-center justify-between">
                   <div>
                     <div className="font-semibold text-fg">{detailBatch.payoutAccount.bankName}</div>
-                    <div className="text-[11px] text-fg-tertiary font-mono mt-0.5">尾号 {detailBatch.payoutAccount.accountLast4}</div>
+                    <div className="text-[11px] text-fg-tertiary font-mono mt-0.5">{t("settlements.detail.last4", { last4: detailBatch.payoutAccount.accountLast4 })}</div>
                   </div>
                   <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-hover text-fg-secondary border border-line">{detailBatch.payoutAccount.currency}</span>
                 </div>
@@ -395,34 +337,27 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
         )}
       </SideSheet>
 
-      {/* Payout SideSheet */}
       <SideSheet
         id="settlement-payout"
         isOpen={payoutOpen}
         onClose={() => setPayoutOpen(false)}
-        title="发起出金申请"
-        description="选择待结算批次与出金账户，提交后进入结算中，约 1.5 秒后完成出金"
+        title={t("settlements.payout.title")}
+        description={t("settlements.payout.description")}
         icon={<ArrowRightLeft className="w-5 h-5 text-fg" />}
         widthClass="max-w-xl max-md:max-w-none"
         footer={
           <>
-            <button onClick={() => setPayoutOpen(false)} className="px-3 py-2 rounded-lg text-xs font-medium text-fg-secondary hover:bg-hover cursor-pointer">
-              取消
-            </button>
-            <button
-              onClick={handleSubmitPayout}
-              disabled={submitting || !payoutBatchId}
-              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors disabled:opacity-40 inline-flex items-center gap-1.5"
-            >
+            <button onClick={() => setPayoutOpen(false)} className="px-3 py-2 rounded-lg text-xs font-medium text-fg-secondary hover:bg-hover cursor-pointer">{t("common:actions.cancel")}</button>
+            <button onClick={handleSubmitPayout} disabled={submitting || !payoutBatchId} className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors disabled:opacity-40 inline-flex items-center gap-1.5">
               {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              {submitting ? "出金处理中..." : "确认出金"}
+              {submitting ? t("settlements.payout.processing") : t("settlements.payout.confirm")}
             </button>
           </>
         }
       >
         <div className="space-y-3 text-xs">
           <div>
-            <label className="block text-fg-secondary mb-1.5 font-medium">结算批次</label>
+            <label className="block text-fg-secondary mb-1.5 font-medium">{t("settlements.payout.batch")}</label>
             <ShadcnSelect
               value={payoutBatchId}
               onValueChange={(v) => {
@@ -433,48 +368,36 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
               }}
               options={pendingBatches.map((b) => ({
                 value: b.id,
-                label: `${b.id} · ${TENANT_LABEL[b.tenantId]} · 净结 ${fmt(b.netAmount, b.currency)}`,
+                label: t("settlements.payout.batchOption", { id: b.id, tenant: TENANT_LABEL[b.tenantId], amount: fmt(b.netAmount, b.currency) }),
               }))}
-              placeholder="选择待结算批次"
+              placeholder={t("settlements.payout.batchPlaceholder")}
             />
           </div>
           <div>
-            <label className="block text-fg-secondary mb-1.5 font-medium">出金账户</label>
+            <label className="block text-fg-secondary mb-1.5 font-medium">{t("settlements.payout.account")}</label>
             <ShadcnSelect
               value={payoutAccount}
               onValueChange={setPayoutAccount}
               options={[
-                { value: "JPMorgan Chase *4471", label: "JPMorgan Chase (尾号 4471)" },
-                { value: "Deutsche Bank *8821", label: "Deutsche Bank (尾号 8821)" },
-                { value: "Barclays *3305", label: "Barclays (尾号 3305)" },
-                { value: "三菱 UFJ 銀行 *7720", label: "三菱 UFJ 銀行 (尾号 7720)" },
+                { value: "JPMorgan Chase *4471", label: "JPMorgan Chase (4471)" },
+                { value: "Deutsche Bank *8821", label: "Deutsche Bank (8821)" },
+                { value: "Barclays *3305", label: "Barclays (3305)" },
               ]}
-              placeholder="选择出金银行账户"
+              placeholder={t("settlements.payout.accountPlaceholder")}
             />
           </div>
           <div>
-            <label className="block text-fg-secondary mb-1.5 font-medium">出金金额</label>
-            <input
-              type="number"
-              value={payoutAmount}
-              onChange={(e) => setPayoutAmount(e.target.value)}
-              className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-xs font-mono"
-            />
+            <label className="block text-fg-secondary mb-1.5 font-medium">{t("settlements.payout.amount")}</label>
+            <input type="number" value={payoutAmount} onChange={(e) => setPayoutAmount(e.target.value)} className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-xs font-mono" />
             {selectedBatch && (
               <div className="text-[11px] text-fg-tertiary mt-1">
-                默认净结金额 {fmt(selectedBatch.netAmount, selectedBatch.currency)}，不可超过此值
+                {t("settlements.payout.amountHint", { amount: fmt(selectedBatch.netAmount, selectedBatch.currency) })}
               </div>
             )}
           </div>
           <div>
-            <label className="block text-fg-secondary mb-1.5 font-medium">备注</label>
-            <textarea
-              value={payoutNote}
-              onChange={(e) => setPayoutNote(e.target.value)}
-              rows={3}
-              placeholder="出金用途 / 备注信息..."
-              className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-xs resize-none"
-            />
+            <label className="block text-fg-secondary mb-1.5 font-medium">{t("settlements.payout.note")}</label>
+            <textarea value={payoutNote} onChange={(e) => setPayoutNote(e.target.value)} rows={3} placeholder={t("settlements.payout.notePlaceholder")} className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-xs resize-none" />
           </div>
         </div>
       </SideSheet>

@@ -1,0 +1,296 @@
+{
+  "permissions": {
+    "title": "RBAC 权限矩阵与角色策略",
+    "subtitle": "为各系统角色配置菜单树访问权限、应用级数据隔离与功能操作授权，支持克隆与批量保存。",
+    "searchPlaceholder": "搜索角色名称 / 描述...",
+    "roleList": "角色列表",
+    "addRole": "新建角色",
+    "editRole": "编辑角色",
+    "deleteRole": "删除角色",
+    "savePermissions": "保存权限变更",
+    "menuTree": "菜单树权限",
+    "appScope": "应用数据隔离",
+    "selectAllApps": "全选应用",
+    "clearApps": "清空选择",
+    "builtinTag": "内置",
+    "customTag": "自定义",
+    "form": {
+      "createTitle": "新建系统角色",
+      "editTitle": "编辑角色信息",
+      "name": "角色名称",
+      "description": "角色描述",
+      "copyFrom": "从现有角色克隆权限",
+      "createHint": "创建后可立即在右侧为该角色配置菜单树与应用权限；可复制现有角色权限作为起点。"
+    },
+    "toast": {
+      "saved": "角色【{{name}}】权限策略已成功保存！",
+      "created": "新系统角色【{{name}}】创建成功！",
+      "deleted": "角色【{{name}}】已删除",
+      "nameRequired": "请填写角色名称",
+      "permissionsSaved": "【{{name}}】菜单与应用权限已更新",
+      "refreshed": "角色列表已刷新",
+      "menuPermissionsSaved": "角色【{{name}}】的菜单树与应用权限已保存"
+    },
+    "confirm": {
+      "deleteTitle": "确认删除角色【{{name}}】？",
+      "deleteDesc": "删除后该角色的用户将失去对应权限，此操作不可撤销。"
+    }
+  },
+  "users": {
+    "title": "租户用户管理",
+    "subtitle": "管理当前业务单元下的运营、财务与商户协作账号，支持角色分配与启停。",
+    "addUser": "邀请用户",
+    "searchPlaceholder": "搜索姓名 / 邮箱...",
+    "invite": "发送邀请",
+    "table": {
+      "name": "用户",
+      "email": "邮箱",
+      "role": "角色",
+      "department": "部门",
+      "status": "状态",
+      "lastLogin": "最近登录",
+      "operations": "操作",
+      "edit": "编辑",
+      "disable": "停用",
+      "enable": "启用"
+    },
+    "status": {
+      "ACTIVE": "正常",
+      "DISABLED": "已停用",
+      "PENDING": "待激活"
+    },
+    "sheet": {
+      "editTitle": "编辑用户: {{name}}",
+      "inviteTitle": "邀请新用户",
+      "nameLabel": "姓名:",
+      "emailLabel": "邮箱:",
+      "roleLabel": "角色:",
+      "deptLabel": "部门:",
+      "save": "保存",
+      "invite": "发送邀请"
+    },
+    "toast": {
+      "invited": "已向 {{email}} 发送邀请",
+      "updated": "用户【{{name}}】已更新",
+      "disabled": "【{{name}}】已停用",
+      "enabled": "【{{name}}】已启用",
+      "emailRequired": "请填写邮箱",
+      "nameRequired": "请填写姓名"
+    }
+  },
+  "endUsers": {
+    "title": "海外终端客户与行为大盘 (End Users & Lifecycle)",
+    "subtitle": "跨出海应用实时跟踪海外终端付费客户，深度穿透所有行为轨迹（登录时间与设备、密码重置变更、订阅流转、支付卡绑定与发票下载等）。",
+    "exportCsv": "导出客户列表 (CSV)",
+    "addUser": "录入新出海客户档案",
+    "addUserDesc": "手动建档并将客户直接纳入全流程生命周期审计流",
+    "profileFallback": "客户档案",
+    "metrics": {
+      "totalCustomers": "海外客户建档总数",
+      "uniqueUsers": "位独立用户",
+      "globalAudience": "跨北美、西欧及亚太全球受众",
+      "activeSubscriptionRate": "有效订阅率 (Active)",
+      "activeSubscribers": "{{count}} 位订户自动续费运转中",
+      "totalLtv": "累计客户贡献总值 (LTV)",
+      "avgOrderValue": "平均客单值: ${{amount}}",
+      "actionEvents": "行为事件穿透采集",
+      "records": "条记录",
+      "actionCoverage": "端到端涵盖登录/改密/扣费/升级"
+    },
+    "filter": {
+      "subscriptionStatus": "订阅状态:",
+      "allCustomers": "全部客户",
+      "activeSubscription": "生效中订阅 (Active)",
+      "canceledSubscription": "已取消订阅 (Canceled)",
+      "region": "地区:",
+      "allCountries": "全部国家/地区"
+    },
+    "searchPlaceholder": "按客户姓名 / 邮箱 / ID / 方案搜索...",
+    "table": {
+      "idAndName": "客户 ID & 姓名",
+      "country": "国家 / 地区",
+      "subscription": "当前订阅方案 & 状态",
+      "paymentMethod": "绑定扣款方式",
+      "ltv": "终生价值 (LTV)",
+      "lastLogin": "最近登录时间 & IP",
+      "operations": "操作",
+      "nextBilling": "下次到期: {{date}}",
+      "orderCount": "共 {{count}} 笔交易",
+      "viewTimeline": "查看轨迹 ({{count}})"
+    },
+    "actionBadge": {
+      "LOGIN": "终端登录 (Login)",
+      "CHANGE_PASSWORD": "修改密码 (Password)",
+      "SUBSCRIBE": "开通订阅 (Subscribe)",
+      "UPGRADE_PLAN": "套餐升级 (Upgrade)",
+      "CANCEL_SUBSCRIPTION": "取消续订 (Cancel)",
+      "UPDATE_PAYMENT_METHOD": "更新支付卡 (Card)",
+      "DOWNLOAD_INVOICE": "下载发票 (Invoice)",
+      "REGISTER": "注册建档 (Register)"
+    },
+    "detail": {
+      "closePanel": "关闭面板",
+      "cancelSubscription": "暂停/取消订阅续订",
+      "resumeSubscription": "恢复自动续订",
+      "currentPlan": "当前订阅套餐",
+      "defaultCard": "默认扣款卡",
+      "cardExpiry": "有效期: {{expiry}}",
+      "lifetimeSpend": "累计终生消费 (LTV)",
+      "billingOrderCount": "共 {{count}} 笔扣费订单",
+      "quickActions": "快捷操作",
+      "resetPasswordTitle": "发送重置密码邮件",
+      "resetPassword": "密码重置",
+      "resendInvoiceTitle": "重新发送电子发票",
+      "resendInvoice": "补发发票",
+      "actionTimeline": "用户全生命周期动作流水 ({{count}})",
+      "allActions": "全部动作",
+      "billingActions": "订阅与扣费",
+      "securityActions": "安全与登录",
+      "noActionsInCategory": "暂无该分类的动作记录"
+    },
+    "form": {
+      "fullName": "客户全名 / 姓名 *",
+      "fullNamePlaceholder": "例如: Jonathan Vance",
+      "email": "客户邮箱 (Email) *",
+      "emailPlaceholder": "例如: j.vance@techventures.io",
+      "country": "所在国家/地区",
+      "countryPlaceholder": "选择国家/地区",
+      "currency": "结算货币",
+      "currencyPlaceholder": "选择结算货币",
+      "plan": "开通订阅方案",
+      "planPlaceholder": "例如: Novas AI 商业专业版 (年付)",
+      "initialAmount": "首期金额",
+      "cardBrand": "支付卡品牌",
+      "cardBrandPlaceholder": "选择卡品牌",
+      "cardLast4": "卡号后4位",
+      "confirmCreate": "确认建档",
+      "countries": {
+        "US": "🇺🇸 美国 (United States)",
+        "UK": "🇬🇧 英国 (United Kingdom)",
+        "DE": "🇩🇪 德国 (Germany)",
+        "JP": "🇯🇵 日本 (Japan)",
+        "FR": "🇫🇷 法国 (France)",
+        "CA": "🇨🇦 加拿大 (Canada)",
+        "AU": "🇦🇺 澳大利亚 (Australia)",
+        "SG": "🇸🇬 新加坡 (Singapore)"
+      },
+      "currencies": {
+        "USD": "USD ($ 美元)",
+        "EUR": "EUR (€ 欧元)",
+        "JPY": "JPY (¥ 日元)",
+        "GBP": "GBP (£ 英镑)"
+      }
+    },
+    "subscriptionStatus": {
+      "ACTIVE": "生效中 (Active)",
+      "CANCELED": "已取消 (Canceled)"
+    },
+    "toast": {
+      "resetPassword": "已向 {{email}} 自动触发海外安全验证码及密码重置链接！",
+      "resendReceipt": "已向 {{email}} 投递最新账单发票收据 (PDF) 并抄送财务！",
+      "subscriptionUpdated": "客户【{{name}}】订阅状态已成功更新为: {{status}}",
+      "exportSuccess": "已成功导出 {{count}} 位海外终端客户数据档案为 CSV 表格！",
+      "nameEmailRequired": "请填写客户姓名与有效邮箱！",
+      "userCreated": "新客户【{{name}}】({{email}}) 档案建立成功！"
+    },
+    "csvHeaders": {
+      "id": "客户ID",
+      "name": "姓名",
+      "email": "邮箱",
+      "country": "国家地区",
+      "plan": "订阅方案",
+      "status": "订阅状态",
+      "currency": "币种",
+      "ltv": "终生价值(LTV)",
+      "orderCount": "订单总数",
+      "lastLogin": "最后登录时间"
+    }
+  },
+  "systemUsers": {
+    "title": "用户管理 (User & Access Control)",
+    "subtitle": "管理系统内控账户：角色（多选，非必选）、所属部门（多选，继承部门角色权限）与出海应用授权范围。",
+    "addUser": "新增系统用户",
+    "searchPlaceholder": "搜索用户名、企业邮箱、部门...",
+    "filter": {
+      "allDepartments": "全部所属部门",
+      "filterByDept": "按部门筛选",
+      "allRoles": "全部角色权限",
+      "filterByRole": "按角色筛选",
+      "allApps": "全部应用权限范围",
+      "filterByApp": "按应用权限筛选",
+      "allStatus": "全部账号状态",
+      "filterByStatus": "按状态筛选"
+    },
+    "table": {
+      "userContact": "用户与联系方式",
+      "departments": "所属部门（多选）",
+      "roles": "角色权限（多选）",
+      "appScope": "应用授权范围",
+      "status": "账号状态",
+      "lastLogin": "最后登录",
+      "operations": "操作",
+      "currentOperator": "当前操作者",
+      "noDepartment": "未分配部门",
+      "noRole": "未分配角色",
+      "allApps": "全部出海应用 ({{count}} 款)",
+      "noApps": "未分配任何应用",
+      "noLoginRecord": "暂未登录记录",
+      "empty": "未查找到符合条件的系统用户记录"
+    },
+    "status": {
+      "ACTIVE": "正常在职",
+      "DISABLED": "已停用",
+      "ACTIVE_FORM": "已启用 (正常访问系统)",
+      "DISABLED_FORM": "已停用 (禁止登录授权)"
+    },
+    "confirm": {
+      "enableTitle": "启用用户「{{name}}」？",
+      "enableDesc": "启用后该用户可恢复登录并正常访问授权范围内功能。",
+      "disableTitle": "停用用户「{{name}}」？",
+      "disableDesc": "停用后该用户将立即失去登录与访问权限，其历史操作记录仍会保留。",
+      "confirmEnable": "确认启用",
+      "confirmDisable": "确认停用",
+      "enableHint": "点击启用该用户",
+      "disableHint": "点击停用该用户",
+      "deleteTitle": "删除用户「{{name}}」？",
+      "deleteDesc": "删除后该用户将无法登录系统，历史操作记录保留但账号不可恢复。"
+    },
+    "sheet": {
+      "editTitle": "配置用户权限: {{name}}",
+      "createTitle": "新增系统用户与权限授权",
+      "description": "角色可多选且非必选；所属部门可多选，成员将继承部门绑定角色的权限；应用授权范围支持多选。",
+      "savePermissions": "保存用户权限",
+      "createAndAuthorize": "创建并授权用户",
+      "basicInfo": "基本信息与员工档案",
+      "nameLabel": "员工姓名",
+      "namePlaceholder": "例如: Eddie Lake",
+      "emailLabel": "企业工作邮箱",
+      "emailPlaceholder": "name@novaspay.global",
+      "phoneLabel": "联系电话",
+      "phonePlaceholder": "+1 (555) 019-2831",
+      "statusLabel": "账号启用状态",
+      "departmentsTitle": "所属部门（多选）",
+      "departmentsPlaceholder": "选择该用户所属的部门（可多选）...",
+      "departmentsHint": "用户将继承所选部门绑定角色的权限；在部门管理中可配置各部门绑定的角色。",
+      "inheritedRoles": "所选部门绑定角色：",
+      "inheritedRolesSuffix": "，用户自动继承这些角色对应的菜单与应用权限。",
+      "rolesTitle": "角色权限配置（多选，非必选）",
+      "rolesPlaceholder": "选择分配的系统角色（可多选，可留空）...",
+      "rolesHint": "角色决定该用户在系统中可操作的功能模块与读写权限；可不分配角色，仅通过部门继承权限。",
+      "appsTitle": "出海应用授权范围（多选）",
+      "appsPlaceholder": "选择授权访问的出海应用（可多选）...",
+      "appsHint": "被授权的应用代表该用户仅能查阅和处理这些出海业务线的专属交易流水、商品价格体系与支付网关。",
+      "editRolesTitle": "配置角色 / 部门 / 应用权限",
+      "deleteUserTitle": "删除用户"
+    },
+    "unassignedRole": "未分配角色",
+    "justCreated": "刚刚创建 (尚未登录)",
+    "toast": {
+      "nameEmailRequired": "请填写完整的姓名与企业工作邮箱",
+      "updated": "系统用户【{{name}}】权限与资料已保存！",
+      "created": "新系统用户【{{name}}】已成功创建并分配权限！",
+      "enabled": "用户【{{name}}】已成功启用",
+      "disabled": "用户【{{name}}】已停用账号访问权限"
+    }
+  }
+}

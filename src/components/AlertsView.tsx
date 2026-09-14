@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BellRing,
   Search,
@@ -38,12 +39,7 @@ interface AlertsViewProps {
   histories: AlertHistory[];
 }
 
-const MONITOR_LABEL: Record<AlertMonitorObject, string> = {
-  CHANNEL_ABNORMAL: "渠道异常",
-  RECON_DIFF: "对账差异",
-  FAIL_RATE: "失败率阈值",
-  PAYOUT_FAIL: "出金失败",
-};
+// MONITOR_LABEL moved inside component
 
 const SEVERITY_META: Record<AlertSeverity, { label: string; badge: string }> = {
   P0: { label: "P0", badge: "bg-rose-50 text-rose-700 border-rose-200" },
@@ -51,18 +47,9 @@ const SEVERITY_META: Record<AlertSeverity, { label: string; badge: string }> = {
   P2: { label: "P2", badge: "bg-blue-50 text-blue-700 border-blue-200" },
 };
 
-const CHANNEL_META: Record<NotifyChannel, { label: string; icon: React.ReactNode }> = {
-  IN_APP: { label: "站内", icon: <MessageSquare className="w-3 h-3" /> },
-  EMAIL: { label: "邮件", icon: <Mail className="w-3 h-3" /> },
-  WEBHOOK: { label: "Webhook", icon: <Webhook className="w-3 h-3" /> },
-};
+// CHANNEL_META moved inside component
 
-const HISTORY_STATUS_META: Record<AlertHistoryStatus, { label: string; badge: string; icon: React.ReactNode }> = {
-  UNHANDLED: { label: "未处理", badge: "bg-rose-50 text-rose-700 border-rose-200", icon: <AlertTriangle className="w-3 h-3" /> },
-  PROCESSING: { label: "处理中", badge: "bg-blue-50 text-blue-700 border-blue-200", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
-  RESOLVED: { label: "已解决", badge: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
-  IGNORED: { label: "已忽略", badge: "bg-hover text-fg-secondary border-line", icon: <XCircle className="w-3 h-3" /> },
-};
+// HISTORY_STATUS_META moved inside component
 
 const emptyForm = {
   name: "",
@@ -75,9 +62,27 @@ const emptyForm = {
 };
 
 export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
+  const { t } = useTranslation(["alerts", "common"]);
+  const MONITOR_LABEL = useMemo((): Record<AlertMonitorObject, string> => ({
+    CHANNEL_ABNORMAL: t("monitor.CHANNEL_ABNORMAL"),
+    RECON_DIFF: t("monitor.RECON_DIFF"),
+    FAIL_RATE: t("monitor.FAIL_RATE"),
+    PAYOUT_FAIL: t("monitor.PAYOUT_FAIL"),
+  }), [t]);
+  const CHANNEL_META = useMemo((): Record<NotifyChannel, { label: string; icon: React.ReactNode }> => ({
+    IN_APP: { label: t("notifyChannel.IN_APP"), icon: <MessageSquare className="w-3 h-3" /> },
+    EMAIL: { label: t("notifyChannel.EMAIL"), icon: <Mail className="w-3 h-3" /> },
+    WEBHOOK: { label: t("notifyChannel.WEBHOOK"), icon: <Webhook className="w-3 h-3" /> },
+  }), [t]);
+  const HISTORY_STATUS_META = useMemo((): Record<AlertHistoryStatus, { label: string; badge: string; icon: React.ReactNode }> => ({
+    UNHANDLED: { label: t("historyStatus.UNHANDLED"), badge: "bg-rose-50 text-rose-700 border-rose-200", icon: <AlertTriangle className="w-3 h-3" /> },
+    PROCESSING: { label: t("historyStatus.PROCESSING"), badge: "bg-blue-50 text-blue-700 border-blue-200", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+    RESOLVED: { label: t("historyStatus.RESOLVED"), badge: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
+    IGNORED: { label: t("historyStatus.IGNORED"), badge: "bg-hover text-fg-secondary border-line", icon: <XCircle className="w-3 h-3" /> },
+  }), [t]);
   const [tab, setTab] = useState<"rules" | "histories">("rules");
 
-  // ---- 通知渠道配置状态 ----
+  // ---- {t("notifyConfig")}状态 ----
   const [inAppEnabled, setInAppEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [emailRecipients, setEmailRecipients] = useState("ops@payments.io, finance@payments.io");
@@ -140,13 +145,13 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
     const payload = {
       name: form.name,
       monitorObject: form.monitorObject,
-      triggerCondition: form.triggerCondition || "按监控对象默认阈值触发",
+      triggerCondition: form.triggerCondition || t("defaultCondition"),
       severity: form.severity,
       notifyChannels: form.notifyChannels,
       status: (form.enabled ? "ENABLED" : "DISABLED") as "ENABLED" | "DISABLED",
       thresholdParams: form.thresholdValue ? { value: form.thresholdValue } : {},
       updatedAt: new Date().toISOString().replace("T", " ").substring(0, 16),
-      updatedBy: "当前用户",
+      updatedBy: t("currentUser"),
     };
     if (editingRule) {
       setRuleRows((prev) => prev.map((r) => (r.id === editingRule.id ? { ...r, ...payload } : r)));
@@ -165,14 +170,14 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
       prev.map((h) => {
         if (h.id !== id) return h;
         const record = {
-          operator: "当前用户",
+          operator: t("currentUser"),
           action: actionLabel,
           time: new Date().toISOString().replace("T", " ").substring(0, 19),
         };
         return {
           ...h,
           status,
-          assignee: status === "PROCESSING" ? "当前用户" : h.assignee,
+          assignee: status === "PROCESSING" ? t("currentUser") : h.assignee,
           handlingRecords: [...h.handlingRecords, record],
         };
       })
@@ -180,14 +185,14 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
     setDetailHistory((prev) => {
       if (!prev || prev.id !== id) return prev;
       const record = {
-        operator: "当前用户",
+        operator: t("currentUser"),
         action: actionLabel,
         time: new Date().toISOString().replace("T", " ").substring(0, 19),
       };
       return {
         ...prev,
         status,
-        assignee: status === "PROCESSING" ? "当前用户" : prev.assignee,
+        assignee: status === "PROCESSING" ? t("currentUser") : prev.assignee,
         handlingRecords: [...prev.handlingRecords, record],
       };
     });
@@ -205,28 +210,28 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
             <span className="p-1.5 bg-rose-50 text-rose-600 rounded-lg">
               <BellRing className="w-5 h-5" />
             </span>
-            <h1 className="text-xl font-bold text-fg tracking-tight">告警与通知</h1>
+            <h1 className="text-xl font-bold text-fg tracking-tight">{t("title")}</h1>
           </div>
           <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
-            配置渠道异常 / 对账差异 / 失败率 / 出金失败告警规则，跟踪告警历史并闭环处理。
+            {t("subtitle")}
           </p>
         </div>
         {tab === "rules" && (
           <button onClick={openCreate} className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors self-start md:self-auto">
-            <PlusCircle className="w-4 h-4" /> 新增规则
+            <PlusCircle className="w-4 h-4" /> {t("addRule")}
           </button>
         )}
       </div>
 
-      {/* 通知渠道配置卡片 */}
+      {/* {t("notifyConfig")}卡片 */}
       <div className="bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-fg mb-3">
-          <Webhook className="w-3.5 h-3.5 text-fg-tertiary" /> 通知渠道配置
+          <Webhook className="w-3.5 h-3.5 text-fg-tertiary" /> {t("notifyConfig")}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label className="flex items-center gap-2 text-xs text-fg-secondary">
             <input type="checkbox" checked={inAppEnabled} onChange={(e) => setInAppEnabled(e.target.checked)} className="w-4 h-4 accent-primary" />
-            <MessageSquare className="w-3.5 h-3.5" /> 站内通知（始终展示在控制台）
+            <MessageSquare className="w-3.5 h-3.5" /> {t("inAppAlways")}
           </label>
           <div>
             <label className="flex items-center gap-2 text-xs text-fg-secondary mb-1.5">
@@ -254,19 +259,19 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
       {/* Tab 切换 */}
       <div className="flex items-center gap-1 p-1 bg-surface rounded-xl border border-line/80 shadow-card w-fit">
         {([
-          { key: "rules", label: "告警规则", icon: <SlidersHorizontal className="w-3.5 h-3.5" /> },
-          { key: "histories", label: "告警历史", icon: <AlertTriangle className="w-3.5 h-3.5" /> },
-        ] as const).map((t) => (
+          { key: "rules" as const, label: t("tabs.rules"), icon: <SlidersHorizontal className="w-3.5 h-3.5" /> },
+          { key: "histories" as const, label: t("tabs.histories"), icon: <AlertTriangle className="w-3.5 h-3.5" /> },
+        ]).map((tabItem) => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tabItem.key}
+            onClick={() => setTab(tabItem.key)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              tab === t.key ? "bg-primary text-primary-foreground" : "text-fg-secondary hover:bg-hover"
+              tab === tabItem.key ? "bg-primary text-primary-foreground" : "text-fg-secondary hover:bg-hover"
             }`}
           >
-            {t.icon}
-            {t.label}
-            {t.key === "histories" && filteredHistories.filter((h) => h.status === "UNHANDLED").length > 0 && (
+            {tabItem.icon}
+            {tabItem.label}
+            {tabItem.key === "histories" && filteredHistories.filter((h) => h.status === "UNHANDLED").length > 0 && (
               <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold">
                 {filteredHistories.filter((h) => h.status === "UNHANDLED").length}
               </span>
@@ -275,23 +280,23 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
         ))}
       </div>
 
-      {/* ============ 告警规则 Tab ============ */}
+      {/* ============ {t("tabs.rules")} Tab ============ */}
       {tab === "rules" && (
         <>
           {/* Filter bar */}
           <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-              <span className="text-fg-tertiary text-xs">状态:</span>
+              <span className="text-fg-tertiary text-xs">{t("statusFilter")}</span>
               {(["ALL", "ENABLED", "DISABLED"] as const).map((s) => (
                 <button key={s} onClick={() => setRuleFilter(s)}
                   className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors ${ruleFilter === s ? "bg-primary text-primary-foreground" : "bg-hover text-fg-secondary hover:bg-hover"}`}>
-                  {s === "ALL" ? "全部" : s === "ENABLED" ? "启用" : "停用"}
+                  {s === "ALL" ? t("status.all") : s === "ENABLED" ? t("status.enabled") : t("status.disabled")}
                 </button>
               ))}
             </div>
             <div className="relative w-full md:w-64">
               <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
-              <input type="text" placeholder="搜索规则名称 / 监控对象..." value={ruleSearch}
+              <input type="text" placeholder={t("searchRules")} value={ruleSearch}
                 onChange={(e) => setRuleSearch(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs" />
             </div>
@@ -341,7 +346,7 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
                           <td className="py-3 px-3 whitespace-nowrap">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border ${r.status === "ENABLED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-hover text-fg-secondary border-line"}`}>
                               {r.status === "ENABLED" ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                              {r.status === "ENABLED" ? "启用" : "停用"}
+                              {r.status === "ENABLED" ? t("status.enabled") : t("status.disabled")}
                             </span>
                           </td>
                         </tr>
@@ -356,16 +361,16 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
         </>
       )}
 
-      {/* ============ 告警历史 Tab ============ */}
+      {/* ============ {t("tabs.histories")} Tab ============ */}
       {tab === "histories" && (
         <>
           <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-              <span className="text-fg-tertiary text-xs">状态:</span>
+              <span className="text-fg-tertiary text-xs">{t("statusFilter")}</span>
               {(["ALL", "UNHANDLED", "PROCESSING", "RESOLVED", "IGNORED"] as const).map((s) => (
                 <button key={s} onClick={() => setHistoryStatusFilter(s)}
                   className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors ${historyStatusFilter === s ? "bg-primary text-primary-foreground" : "bg-hover text-fg-secondary hover:bg-hover"}`}>
-                  {s === "ALL" ? "全部" : HISTORY_STATUS_META[s].label}
+                  {s === "ALL" ? t("status.all") : HISTORY_STATUS_META[s].label}
                 </button>
               ))}
             </div>
@@ -433,14 +438,14 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
         id="alert-rule-form"
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
-        title={editingRule ? "编辑告警规则" : "新增告警规则"}
-        description="配置监控对象、阈值、严重级别与通知渠道"
+        title={editingRule ? t("form.editTitle") : t("form.createTitle")}
+        description={t("form.description")}
         icon={<BellRing className="w-5 h-5 text-fg" />}
         widthClass="max-w-2xl max-md:max-w-none"
         footer={
           <>
-            <button onClick={() => setFormOpen(false)} className="px-3 py-2 rounded-lg text-xs font-medium text-fg-secondary hover:bg-hover cursor-pointer">取消</button>
-            <button onClick={handleSave} className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors cursor-pointer">保存</button>
+            <button onClick={() => setFormOpen(false)} className="px-3 py-2 rounded-lg text-xs font-medium text-fg-secondary hover:bg-hover cursor-pointer">{t("common:actions.cancel")}</button>
+            <button onClick={handleSave} className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors cursor-pointer">{t("common:actions.save")}</button>
           </>
         }
       >

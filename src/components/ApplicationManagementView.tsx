@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -111,7 +112,43 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
   onUpdateApp,
   onSaveApp,
 }) => {
+  const { t } = useTranslation(["apps", "common"]);
   const [appList, setAppList] = useState<PaymentApp[]>(apps);
+
+  const routingStrategies = useMemo(
+    () =>
+      [
+        {
+          key: "HIGHEST_SUCCESS_RATE" as const,
+          title: t("apps:wizard.channels.routingHighestSuccess"),
+          desc: t("apps:wizard.channels.routingHighestSuccessDesc"),
+        },
+        {
+          key: "LOWEST_FEE" as const,
+          title: t("apps:wizard.channels.routingLowestFee"),
+          desc: t("apps:wizard.channels.routingLowestFeeDesc"),
+        },
+        {
+          key: "PRIORITY_LIST" as const,
+          title: t("apps:wizard.channels.routingPriority"),
+          desc: t("apps:wizard.channels.routingPriorityDesc"),
+        },
+      ],
+    [t]
+  );
+
+  const wizardSteps = useMemo(
+    () =>
+      [
+        { step: 1, label: t("apps:wizard.steps.1"), icon: Layers },
+        { step: 2, label: t("apps:wizard.steps.2"), icon: CreditCard },
+        { step: 3, label: t("apps:wizard.steps.3"), icon: Package },
+        { step: 4, label: t("apps:wizard.steps.4"), icon: Tag },
+        { step: 5, label: t("apps:wizard.steps.5"), icon: Mail },
+        { step: 6, label: t("apps:wizard.steps.6"), icon: Languages },
+      ],
+    [t]
+  );
 
   useEffect(() => {
     setAppList(apps);
@@ -278,7 +315,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
     setAppList((prev) => prev.map((a) => (a.id === app.id ? updated : a)));
     if (onUpdateApp) onUpdateApp(updated);
     if (onSaveApp) onSaveApp(updated);
-    showToast(`已成功为应用【${app.name}】轮换生成全新 Backend Secret Key！`);
+    showToast(t("apps:toast.secretRotated", { name: app.name }));
   };
 
   const handleToggleAppStatus = (app: PaymentApp) => {
@@ -289,20 +326,25 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
     setAppList((prev) => prev.map((a) => (a.id === app.id ? updated : a)));
     if (onUpdateApp) onUpdateApp(updated);
     if (onSaveApp) onSaveApp(updated);
-    showToast(`应用【${app.name}】状态已变更为: ${updated.status === "ACTIVE" ? "活跃运行" : "暂停收单"}`);
+    showToast(
+      t("apps:toast.statusChanged", {
+        name: app.name,
+        status: t(`apps:status.${updated.status}`),
+      })
+    );
   };
 
   const handleSaveAppConfiguration = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
     if (!formName.trim()) {
-      showToast("请输入应用名称 (Application Name)");
+      showToast(t("apps:toast.nameRequired"));
       setCurrentStep(1);
       return;
     }
 
     if (!formCode.trim()) {
-      showToast("请输入应用唯一标识 (App Code)");
+      showToast(t("apps:toast.codeRequired"));
       setCurrentStep(1);
       return;
     }
@@ -337,7 +379,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
       setAppList((prev) => prev.map((a) => (a.id === updatedApp.id ? updatedApp : a)));
       if (onUpdateApp) onUpdateApp(updatedApp);
       if (onSaveApp) onSaveApp(updatedApp);
-      showToast(`应用【${updatedApp.name}】全套出海配置已成功保存！`);
+      showToast(t("apps:toast.saved", { name: updatedApp.name }));
     } else {
       const newApp: PaymentApp = {
         id: `app_${formName.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 16)}_${Date.now().toString().slice(-4)}`,
@@ -369,7 +411,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
 
       setAppList([newApp, ...appList]);
       if (onSaveApp) onSaveApp(newApp);
-      showToast(`新应用【${newApp.name}】已成功接入，通道与邮件服务已就绪！`);
+      showToast(t("apps:toast.created", { name: newApp.name }));
     }
 
     setIsConfigModalOpen(false);
@@ -380,8 +422,8 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
 
   const handleExport = () => {
     exportToCSV(
-      "接入应用表",
-      ["应用ID", "应用名称", "代码", "环境", "默认币种", "订阅数", "GMV", "状态", "创建时间"],
+      t("apps:exportFilename"),
+      t("apps:exportHeaders", { returnObjects: true }) as string[],
       appList.map((a) => [
         a.id, a.name, a.code, a.environment, a.defaultCurrency,
         a.activeSubscribersCount, a.totalGmv, a.status, a.createdAt,
@@ -414,13 +456,12 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
             <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
               <Layers className="w-5 h-5" />
             </span>
-            <h1 className="text-xl font-bold text-fg tracking-tight">
-              接入应用全配置中枢 (Client Apps & Gateway Hub)
-            </h1>
+            <h1 className="text-xl font-bold text-fg tracking-tight">{t("apps:title")}</h1>
           </div>
-          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
-            支持一站式同时配置出海应用所关联的<strong>支付渠道</strong>、<strong>支付方式</strong>、<strong>商品方案 (单币种SKU)</strong>、<strong>优惠券与折扣</strong>、<strong>出海邮件通道</strong>与<strong>多语言本地化</strong>。
-          </p>
+          <p
+            className="text-xs text-fg-secondary mt-1 max-w-2xl"
+            dangerouslySetInnerHTML={{ __html: t("apps:subtitle") }}
+          />
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -429,14 +470,14 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
             className="px-3.5 py-2 border border-line hover:bg-subtle text-fg-secondary rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>导出 CSV</span>
+            <span>{t("apps:exportCsv")}</span>
           </button>
           <button
             onClick={handleOpenCreateApp}
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>接入并完整配置新应用</span>
+            <span>{t("apps:addApp")}</span>
           </button>
         </div>
       </div>
@@ -445,48 +486,52 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>已接入客户端应用</span>
+            <span>{t("apps:metrics.connectedApps")}</span>
             <Layers className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {appList.length} <span className="text-xs font-normal text-fg-tertiary">个应用</span>
+            {appList.length}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">{t("apps:metrics.appCountUnit")}</span>
           </div>
           <div className="text-[11px] text-fg-secondary mt-0.5">
-            {appList.filter((a) => a.status === "ACTIVE").length} 个应用正常收单运行中
+            {t("apps:metrics.activeApps", {
+              count: appList.filter((a) => a.status === "ACTIVE").length,
+            })}
           </div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>全应用累计清算 GMV</span>
+            <span>{t("apps:metrics.totalGmv")}</span>
             <TrendingUp className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
             {formatCurrency(totalAppGmv, "USD")}
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">包含 Stripe / PayPal / Adyen 全渠道</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("apps:metrics.gmvHint")}</div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>活跃出海订阅用户</span>
+            <span>{t("apps:metrics.subscribers")}</span>
             <Users className="w-4 h-4 text-blue-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {totalSubscribers.toLocaleString()} <span className="text-xs font-normal text-fg-tertiary">位订户</span>
+            {totalSubscribers.toLocaleString()}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">{t("apps:metrics.subscriberCountUnit")}</span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">北美、西欧及亚太全球受众</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("apps:metrics.subscriberHint")}</div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>支持语言与国际化</span>
+            <span>{t("apps:metrics.languages")}</span>
             <Globe className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            6 <span className="text-xs font-normal text-fg-tertiary">大主流语系</span>
+            6 <span className="text-xs font-normal text-fg-tertiary">{t("apps:metrics.languageCount")}</span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">收银台与邮件多语言统一字典联动</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("apps:metrics.languageHint")}</div>
         </div>
       </div>
 
@@ -512,7 +557,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       </span>
                       {app.status === "PAUSED" && (
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-                          已暂停收单
+                          {t("apps:metrics.paused")}
                         </span>
                       )}
                     </div>
@@ -530,7 +575,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="text-[10px] text-fg-tertiary block">累计 GMV</span>
+                    <span className="text-[10px] text-fg-tertiary block">{t("apps:metrics.cumulativeGmv")}</span>
                     <span className="font-mono font-bold text-sm text-fg">
                       {formatCurrency(app.totalGmv, app.defaultCurrency || "USD")}
                     </span>
@@ -542,14 +587,14 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   {/* Publishable Key */}
                   <div>
                     <span className="text-[10px] text-fg-tertiary block font-sans">
-                      Client Publishable Key (前端公钥)
+                      {t("apps:card.publishableKey")}
                     </span>
                     <div className="flex items-center justify-between text-fg-secondary mt-0.5">
                       <span className="truncate max-w-[280px]">{app.publishableKey}</span>
                       <button
                         onClick={() => copyText(app.publishableKey, `${app.id}_pub`)}
                         className="text-fg-tertiary hover:text-fg-secondary ml-2"
-                        title="复制公钥"
+                        title={t("apps:card.copyPublishable")}
                       >
                         {copiedKey === `${app.id}_pub` ? (
                           <Check className="w-3 h-3 text-emerald-600" />
@@ -564,7 +609,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   <div className="pt-2 border-t border-line/60">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-fg-tertiary font-sans">
-                        Backend Secret Key (服务端私钥)
+                        {t("apps:card.secretKey")}
                       </span>
                       <button
                         onClick={() => toggleShowSecret(app.id)}
@@ -572,11 +617,11 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       >
                         {isSecretVisible ? (
                           <>
-                            <EyeOff className="w-3 h-3" /> 隐藏
+                            <EyeOff className="w-3 h-3" /> {t("apps:card.hide")}
                           </>
                         ) : (
                           <>
-                            <Eye className="w-3 h-3" /> 显示
+                            <Eye className="w-3 h-3" /> {t("apps:card.show")}
                           </>
                         )}
                       </button>
@@ -587,8 +632,11 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                           ? app.secretKey
                           : "np_sec_••••••••••••••••••••••••••••••••"}
                       </span>
-                      <span className="text-[9px] text-rose-400 font-sans ml-2 shrink-0" title="API Key 凭据禁止复制">
-                        禁止复制
+                      <span
+                        className="text-[9px] text-rose-400 font-sans ml-2 shrink-0"
+                        title={t("apps:card.copyForbiddenTitle")}
+                      >
+                        {t("apps:card.copyForbidden")}
                       </span>
                     </div>
                   </div>
@@ -599,7 +647,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   {/* Channels & Payment Methods */}
                   <div className="flex items-start gap-1.5 flex-wrap">
                     <span className="text-[10px] text-fg-tertiary font-semibold flex items-center gap-1">
-                      <CreditCard className="w-3 h-3 text-blue-500" /> 渠道/方式:
+                      <CreditCard className="w-3 h-3 text-blue-500" /> {t("apps:card.channelsMethods")}
                     </span>
                     {app.enabledChannels?.map((c) => (
                       <span
@@ -611,7 +659,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                     ))}
                     {app.enabledPaymentMethods && (
                       <span className="text-[10px] text-fg-secondary bg-hover px-1.5 py-0.5 rounded font-mono">
-                        +{app.enabledPaymentMethods.length} 种支付方式
+                        {t("apps:card.paymentMethodsCount", { count: app.enabledPaymentMethods.length })}
                       </span>
                     )}
                   </div>
@@ -619,25 +667,25 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   {/* Associated Products & Coupons */}
                   <div className="flex items-center gap-2 flex-wrap text-[11px]">
                     <span className="text-[10px] text-fg-tertiary font-semibold flex items-center gap-1">
-                      <Package className="w-3 h-3 text-emerald-500" /> 售卖商品:
+                      <Package className="w-3 h-3 text-emerald-500" /> {t("apps:card.products")}
                     </span>
                     <span className="text-fg-secondary font-medium">
                       {app.associatedProductCodes && app.associatedProductCodes.length > 0 ? (
-                        <>已选 {app.associatedProductCodes.length} 款独立币种方案</>
+                        t("apps:card.productsSelected", { count: app.associatedProductCodes.length })
                       ) : (
-                        <span className="text-fg-tertiary">全部通用方案</span>
+                        <span className="text-fg-tertiary">{t("apps:card.productsAll")}</span>
                       )}
                     </span>
 
                     <span className="text-zinc-300">|</span>
 
                     <span className="text-[10px] text-fg-tertiary font-semibold flex items-center gap-1">
-                      <Tag className="w-3 h-3 text-amber-500" /> 折扣优惠:
+                      <Tag className="w-3 h-3 text-amber-500" /> {t("apps:card.discounts")}
                     </span>
                     <span className="text-fg-secondary font-mono text-[10px]">
                       {app.associatedDiscountCodes && app.associatedDiscountCodes.length > 0
                         ? app.associatedDiscountCodes.join(", ")
-                        : "全场可用"}
+                        : t("apps:card.discountsAll")}
                     </span>
                   </div>
 
@@ -645,10 +693,10 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   <div className="flex items-center justify-between text-[11px] pt-1">
                     <div className="flex items-center gap-1.5 text-fg-secondary">
                       <Mail className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>{app.senderEmail || "未绑定邮件"}</span>
+                      <span>{app.senderEmail || t("apps:card.emailUnbound")}</span>
                       {app.enabledEmailEvents && (
                         <span className="text-[10px] text-fg-tertiary font-mono">
-                          ({app.enabledEmailEvents.length} 个事件)
+                          {t("apps:card.emailEventsCount", { count: app.enabledEmailEvents.length })}
                         </span>
                       )}
                     </div>
@@ -672,14 +720,16 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
 
               {/* Card Footer Actions */}
               <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-xs">
-                <span className="text-fg-tertiary text-[11px]">创建于: {app.createdAt}</span>
+                <span className="text-fg-tertiary text-[11px]">
+                  {t("apps:card.createdAt", { date: app.createdAt })}
+                </span>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setViewingDetailApp(app)}
                     className="px-2.5 py-1.5 text-fg-secondary hover:text-fg hover:bg-hover rounded-lg font-medium transition-colors"
                   >
-                    配置概览
+                    {t("apps:card.configOverview")}
                   </button>
 
                   <button
@@ -687,7 +737,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                     className="px-2.5 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium flex items-center gap-1 transition-colors"
                   >
                     <Sliders className="w-3 h-3" />
-                    <span>编辑应用配置</span>
+                    <span>{t("apps:card.editConfig")}</span>
                   </button>
                 </div>
               </div>
@@ -703,8 +753,12 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           id="side-sheet-app-config"
           isOpen={true}
           onClose={() => setIsConfigModalOpen(false)}
-          title={editingAppId ? `编辑出海应用配置: ${formName || "应用"}` : "接入出海新应用 (完整多模块配置)"}
-          description="同时配置支付渠道、支付方式、单币种商品SKU、折扣码、出海发信与多语言"
+          title={
+            editingAppId
+              ? t("apps:wizard.editTitle", { name: formName || t("common:labels.name") })
+              : t("apps:wizard.createTitle")
+          }
+          description={t("apps:wizard.description")}
           icon={<Layers className="w-5 h-5 text-indigo-600" />}
           widthClass="max-w-4xl"
           footer={
@@ -717,7 +771,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                     className="px-3.5 py-1.5 border border-line text-fg-secondary rounded-xl font-medium flex items-center gap-1 hover:bg-subtle text-xs cursor-pointer"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>上一步</span>
+                    <span>{t("apps:wizard.prev")}</span>
                   </button>
                 )}
               </div>
@@ -728,10 +782,9 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   onClick={() => setIsConfigModalOpen(false)}
                   className="px-3.5 py-1.5 border border-line text-fg-secondary rounded-xl font-medium hover:bg-subtle text-xs transition-colors cursor-pointer"
                 >
-                  取消
+                  {t("apps:wizard.cancel")}
                 </button>
 
-                {/* If in edit mode and not on the last step, allow quick saving right away */}
                 {editingAppId && currentStep < 6 && (
                   <button
                     type="button"
@@ -741,10 +794,10 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       handleSaveAppConfiguration();
                     }}
                     className="px-3.5 py-1.5 bg-hover hover:bg-hover text-fg rounded-xl font-semibold flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
-                    title="快速保存当前所做修改"
+                    title={t("apps:wizard.saveQuickTitle")}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>直接保存修改</span>
+                    <span>{t("apps:wizard.saveQuick")}</span>
                   </button>
                 )}
 
@@ -756,11 +809,11 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       e.stopPropagation();
                       if (currentStep === 1) {
                         if (!formName.trim()) {
-                          showToast("请输入应用名称 (Application Name)");
+                          showToast(t("apps:toast.nameRequired"));
                           return;
                         }
                         if (!formCode.trim()) {
-                          showToast("请输入应用唯一标识 (App Code)");
+                          showToast(t("apps:toast.codeRequired"));
                           return;
                         }
                       }
@@ -768,7 +821,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                     }}
                     className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold flex items-center gap-1 text-xs shadow-card cursor-pointer transition-colors"
                   >
-                    <span>下一步</span>
+                    <span>{t("apps:wizard.next")}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 ) : (
@@ -782,7 +835,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                     className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-bold flex items-center gap-1.5 text-xs shadow-card cursor-pointer transition-colors"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{editingAppId ? "保存更新完整配置" : "完成接入并生成应用"}</span>
+                    <span>{editingAppId ? t("apps:wizard.saveUpdate") : t("apps:wizard.finishCreate")}</span>
                   </button>
                 )}
               </div>
@@ -792,14 +845,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           <div className="space-y-4">
             {/* Step Wizard Navigator */}
             <div className="pb-3 border-b border-line-subtle flex items-center justify-between overflow-x-auto gap-2 text-xs">
-              {[
-                { step: 1, label: "1. 基础信息", icon: Layers },
-                { step: 2, label: "2. 渠道与方式", icon: CreditCard },
-                { step: 3, label: "3. 关联商品", icon: Package },
-                { step: 4, label: "4. 折扣与优惠券", icon: Tag },
-                { step: 5, label: "5. 邮件与通知", icon: Mail },
-                { step: 6, label: "6. 语言本地化", icon: Languages },
-              ].map((s) => {
+              {wizardSteps.map((s) => {
                 const Icon = s.icon;
                 const isActive = currentStep === s.step;
                 const isPassed = currentStep > s.step;
@@ -831,12 +877,12 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold">
-                        应用名称 (Application Name) <span className="text-rose-500">*</span>:
+                        {t("apps:wizard.basic.nameLabel")} <span className="text-rose-500">*</span>:
                       </label>
                       <input
                         type="text"
                         required
-                        placeholder="如：Novas AI Writer & Copilot"
+                        placeholder={t("apps:wizard.basic.namePlaceholder")}
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
                         className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg focus:bg-surface text-xs font-medium"
@@ -844,12 +890,12 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                     </div>
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold">
-                        唯一应用标识 (App Code) <span className="text-rose-500">*</span>:
+                        {t("apps:wizard.basic.codeLabel")} <span className="text-rose-500">*</span>:
                       </label>
                       <input
                         type="text"
                         required
-                        placeholder="如：APP-AI-WRITER"
+                        placeholder={t("apps:wizard.basic.codePlaceholder")}
                         value={formCode}
                         onChange={(e) => setFormCode(e.target.value.toUpperCase())}
                         className="w-full px-3 py-2 bg-subtle border border-line rounded-lg font-mono text-fg focus:bg-surface text-xs font-bold"
@@ -859,7 +905,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div>
-                      <label className="text-fg-secondary block mb-1 font-semibold">业务归属单元:</label>
+                      <label className="text-fg-secondary block mb-1 font-semibold">{t("apps:wizard.basic.tenantLabel")}</label>
                       <ShadcnSelect
                         value={formTenantId}
                         onValueChange={(val) => setFormTenantId(val)}
@@ -871,39 +917,39 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                     </div>
 
                     <div>
-                      <label className="text-fg-secondary block mb-1 font-semibold">运行环境:</label>
+                      <label className="text-fg-secondary block mb-1 font-semibold">{t("apps:wizard.basic.envLabel")}</label>
                       <ShadcnSelect
                         value={formEnv}
                         onValueChange={(val) => setFormEnv(val as any)}
                         options={[
-                          { value: "Production", label: "Production (生产环境)" },
-                          { value: "Staging", label: "Staging (沙箱测试)" },
+                          { value: "Production", label: t("apps:wizard.basic.envProduction") },
+                          { value: "Staging", label: t("apps:wizard.basic.envStaging") },
                         ]}
                       />
                     </div>
 
                     <div>
-                      <label className="text-fg-secondary block mb-1 font-semibold">默认基准结算货币:</label>
+                      <label className="text-fg-secondary block mb-1 font-semibold">{t("apps:wizard.basic.currencyLabel")}</label>
                       <ShadcnSelect
                         value={formCurrency}
                         onValueChange={(val) => setFormCurrency(val)}
                         options={[
-                          { value: "USD", label: "USD - 美元 ($)" },
-                          { value: "EUR", label: "EUR - 欧元 (€)" },
-                          { value: "JPY", label: "JPY - 日元 (¥)" },
-                          { value: "GBP", label: "GBP - 英镑 (£)" },
-                          { value: "CAD", label: "CAD - 加元 (C$)" },
-                          { value: "AUD", label: "AUD - 澳元 (A$)" },
+                          { value: "USD", label: t("apps:wizard.basic.currencyUSD") },
+                          { value: "EUR", label: t("apps:wizard.basic.currencyEUR") },
+                          { value: "JPY", label: t("apps:wizard.basic.currencyJPY") },
+                          { value: "GBP", label: t("apps:wizard.basic.currencyGBP") },
+                          { value: "CAD", label: t("apps:wizard.basic.currencyCAD") },
+                          { value: "AUD", label: t("apps:wizard.basic.currencyAUD") },
                         ]}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-fg-secondary block mb-1 font-semibold">应用定位描述:</label>
+                    <label className="text-fg-secondary block mb-1 font-semibold">{t("apps:wizard.basic.descLabel")}</label>
                     <textarea
                       rows={2}
-                      placeholder="说明该出海客户端的业务类型、主要目标受众及出海运营重点..."
+                      placeholder={t("apps:wizard.basic.descPlaceholder")}
                       value={formDesc}
                       onChange={(e) => setFormDesc(e.target.value)}
                       className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg text-xs"
@@ -912,41 +958,41 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
 
                   <div>
                     <label className="text-fg-secondary block mb-1 font-semibold">
-                      服务端 Webhook 业务回调地址 (Webhook URL):
+                      {t("apps:wizard.basic.webhookLabel")}
                     </label>
                     <input
                       type="url"
-                      placeholder="https://api.yourdomain.com/v1/billing/webhooks"
+                      placeholder={t("apps:wizard.basic.webhookPlaceholder")}
                       value={formWebhookUrl}
                       onChange={(e) => setFormWebhookUrl(e.target.value)}
                       className="w-full px-3 py-2 bg-subtle border border-line rounded-lg font-mono text-fg text-xs"
                     />
                     <span className="text-[10px] text-fg-tertiary mt-0.5 block">
-                      中台在支付成功、续订扣款、退款及催付等生命周期事件触发时，将向该端点异步推送带有 HMAC 验签的通知
+                      {t("apps:wizard.basic.webhookHint")}
                     </span>
                   </div>
 
                   {/* Generated API Keys Preview */}
                   <div className="bg-subtle rounded-xl p-3.5 border border-line space-y-2 font-mono text-xs">
                     <div className="text-[11px] font-sans font-bold text-fg-secondary flex items-center justify-between">
-                      <span>系统自动分配的专属 API 凭据</span>
+                      <span>{t("apps:wizard.basic.apiCredentials")}</span>
                       <button
                         type="button"
                         onClick={() => {
                           setFormSecretKey(`np_sec_live_${Math.random().toString(36).substring(2, 18)}${Math.random().toString(36).substring(2, 18)}`);
-                          showToast("已重新生成新的 Secret Key！");
+                          showToast(t("apps:toast.secretRegenerated"));
                         }}
                         className="text-indigo-600 hover:text-indigo-800 text-[10px] font-medium flex items-center gap-1"
                       >
-                        <RotateCcw className="w-3 h-3" /> 重新生成密钥
+                        <RotateCcw className="w-3 h-3" /> {t("apps:wizard.basic.regenerateKey")}
                       </button>
                     </div>
                     <div>
-                      <span className="text-[10px] text-fg-tertiary block font-sans">Publishable Key:</span>
+                      <span className="text-[10px] text-fg-tertiary block font-sans">{t("apps:wizard.basic.publishableKeyLabel")}</span>
                       <span className="text-fg break-all">{formPublishableKey}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-fg-tertiary block font-sans">Secret Key:</span>
+                      <span className="text-[10px] text-fg-tertiary block font-sans">{t("apps:wizard.basic.secretKeyLabel")}</span>
                       <span className="text-fg break-all">{formSecretKey}</span>
                     </div>
                   </div>
@@ -959,7 +1005,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   {/* Gateways */}
                   <div>
                     <label className="text-fg block mb-1.5 font-semibold text-xs">
-                      1. 启用的出海支付通道 (Payment Gateways):
+                      {t("apps:wizard.channels.gatewaysLabel")}
                     </label>
                     <div className="grid grid-cols-2 gap-2.5">
                       {AVAILABLE_PAYMENT_CHANNELS.map((ch) => {
@@ -1001,7 +1047,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   {/* Payment Methods */}
                   <div className="pt-2 border-t border-line-subtle">
                     <label className="text-fg block mb-1.5 font-semibold text-xs">
-                      2. 细分支付方式 (Payment Methods) 开放清单:
+                      {t("apps:wizard.channels.methodsLabel")}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       {AVAILABLE_PAYMENT_METHODS.map((pm) => {
@@ -1029,7 +1075,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                             />
                             <div className="flex-1">
                               <div>{pm.name}</div>
-                              <span className="text-[10px] text-fg-tertiary">承载: {pm.channelCategory}</span>
+                              <span className="text-[10px] text-fg-tertiary">{t("apps:wizard.channels.carrierPrefix")} {pm.channelCategory}</span>
                             </div>
                           </label>
                         );
@@ -1040,26 +1086,10 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   {/* Routing Strategy */}
                   <div className="pt-2 border-t border-line-subtle">
                     <label className="text-fg block mb-1 font-semibold text-xs">
-                      3. 智能路由与分流策略 (Routing Strategy):
+                      {t("apps:wizard.channels.routingLabel")}
                     </label>
                     <div className="grid grid-cols-3 gap-2">
-                      {[
-                        {
-                          key: "HIGHEST_SUCCESS_RATE",
-                          title: "最高成功率优先",
-                          desc: "智能根据各网关实时 3DS / 拒付率动态择优路由",
-                        },
-                        {
-                          key: "LOWEST_FEE",
-                          title: "最低交易费率优先",
-                          desc: "优先路由至通道收单费率最低的网关降低摩擦成本",
-                        },
-                        {
-                          key: "PRIORITY_LIST",
-                          title: "主备顺序容灾优先",
-                          desc: "按预先设定优先级顺序排队，遇超时阻断时自动Failover",
-                        },
-                      ].map((strat) => (
+                      {routingStrategies.map((strat) => (
                         <label
                           key={strat.key}
                           className={`p-2.5 rounded-xl border text-xs cursor-pointer ${
@@ -1095,12 +1125,8 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                 <div className="space-y-3 animate-in fade-in">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-semibold text-fg text-xs">
-                        选择该应用上架售卖的商品方案 (单币种独立 SKU)
-                      </h4>
-                      <p className="text-[11px] text-fg-tertiary mt-0.5">
-                        根据每个商品在 USD、EUR、JPY、GBP 独立配置的代码直接上架，客户端拉起收银台时仅允许结算已选商品
-                      </p>
+                      <h4 className="font-semibold text-fg text-xs">{t("apps:wizard.products.title")}</h4>
+                      <p className="text-[11px] text-fg-tertiary mt-0.5">{t("apps:wizard.products.hint")}</p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1109,7 +1135,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                         onClick={() => setFormAssociatedProductCodes(products.map((p) => p.code))}
                         className="text-xs text-indigo-600 hover:underline font-medium"
                       >
-                        全选所有商品 ({products.length})
+                        {t("apps:wizard.products.selectAll", { count: products.length })}
                       </button>
                       <span className="text-zinc-300">|</span>
                       <button
@@ -1117,7 +1143,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                         onClick={() => setFormAssociatedProductCodes([])}
                         className="text-xs text-fg-tertiary hover:underline"
                       >
-                        清空
+                        {t("common:actions.clear")}
                       </button>
                     </div>
                   </div>
@@ -1164,10 +1190,10 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                             </div>
                             <span className="text-[10px] text-fg-tertiary">
                               {p.billingInterval === "MONTHLY"
-                                ? "按月续订"
+                                ? t("apps:wizard.products.billingMonthly")
                                 : p.billingInterval === "YEARLY"
-                                ? "按年续费"
-                                : "单次购买"}
+                                ? t("apps:wizard.products.billingYearly")
+                                : t("apps:wizard.products.billingOneTime")}
                             </span>
                           </div>
                         </label>
@@ -1176,11 +1202,23 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   </div>
 
                   <div className="p-2.5 bg-hover rounded-lg text-fg-secondary text-[11px] flex items-center justify-between">
-                    <span>
-                      当前已为该应用勾选 <strong>{formAssociatedProductCodes.length}</strong> 款商品方案
-                    </span>
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: t("apps:wizard.products.selectedSummary", {
+                          count: formAssociatedProductCodes.length,
+                        }),
+                      }}
+                    />
                     <span className="text-fg-tertiary font-mono">
-                      覆盖 {Array.from(new Set(visibleProducts.filter((p) => formAssociatedProductCodes.includes(p.code)).map((p) => p.currency || "USD"))).length} 种货币
+                      {t("apps:wizard.products.currencyCoverage", {
+                        count: Array.from(
+                          new Set(
+                            visibleProducts
+                              .filter((p) => formAssociatedProductCodes.includes(p.code))
+                              .map((p) => p.currency || "USD")
+                          )
+                        ).length,
+                      })}
                     </span>
                   </div>
                 </div>
@@ -1191,12 +1229,8 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                 <div className="space-y-3 animate-in fade-in">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-semibold text-fg text-xs">
-                        关联允许在此应用收银台兑换的优惠券与折扣码
-                      </h4>
-                      <p className="text-[11px] text-fg-tertiary mt-0.5">
-                        绑定后，海外终端用户在该应用的前端 Checkout 页面输入指定 Code 可享受减免
-                      </p>
+                      <h4 className="font-semibold text-fg text-xs">{t("apps:wizard.discounts.title")}</h4>
+                      <p className="text-[11px] text-fg-tertiary mt-0.5">{t("apps:wizard.discounts.hint")}</p>
                     </div>
 
                     <button
@@ -1204,7 +1238,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       onClick={() => setFormAssociatedDiscountCodes(discounts.map((d) => d.code))}
                       className="text-xs text-indigo-600 hover:underline font-medium"
                     >
-                      关联所有可用优惠券 ({discounts.length})
+                      {t("apps:wizard.discounts.linkAll", { count: discounts.length })}
                     </button>
                   </div>
 
@@ -1241,7 +1275,6 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                                 <span>{d.code}</span>
                               </div>
                               <div className="text-[11px] text-fg-secondary mt-0.5">{d.name}</div>
-                              <p className="text-[10px] text-fg-tertiary mt-1">{d.description}</p>
                             </div>
                           </div>
 
@@ -1263,7 +1296,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold text-xs">
-                        绑定发信邮件渠道 (Email Channel):
+                        {t("apps:wizard.email.channelLabel")}
                       </label>
                       <ShadcnSelect
                         value={formEmailChannelId}
@@ -1277,11 +1310,11 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
 
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold text-xs">
-                        发件人显示名称 (Sender Name):
+                        {t("apps:wizard.email.senderNameLabel")}
                       </label>
                       <input
                         type="text"
-                        placeholder="如：Novas AI Billing Operations"
+                        placeholder={t("apps:wizard.email.senderNamePlaceholder")}
                         value={formSenderName}
                         onChange={(e) => setFormSenderName(e.target.value)}
                         className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg text-xs"
@@ -1291,24 +1324,24 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
 
                   <div>
                     <label className="text-fg-secondary block mb-1 font-semibold text-xs">
-                      发件人专属邮箱地址 (Sender Email):
+                      {t("apps:wizard.email.senderEmailLabel")}
                     </label>
                     <input
                       type="email"
-                      placeholder="billing@yourbrand.global"
+                      placeholder={t("apps:wizard.email.senderEmailPlaceholder")}
                       value={formSenderEmail}
                       onChange={(e) => setFormSenderEmail(e.target.value)}
                       className="w-full px-3 py-2 bg-subtle border border-line rounded-lg font-mono text-fg text-xs"
                     />
                     <span className="text-[10px] text-fg-tertiary mt-0.5 block">
-                      客户收到付款发票与系统通知时展示的 From 邮箱，需与 SPF/DKIM 认证域名一致
+                      {t("apps:wizard.email.senderEmailHint")}
                     </span>
                   </div>
 
                   {/* Lifecycle Email Events */}
                   <div className="pt-2 border-t border-line-subtle">
                     <label className="text-fg block mb-2 font-semibold text-xs">
-                      启用的生命周期业务邮件自动化事件 (Email Triggers):
+                      {t("apps:wizard.email.triggersLabel")}
                     </label>
                     <div className="space-y-2">
                       {EMAIL_TRIGGER_EVENTS.map((evt) => {
@@ -1351,7 +1384,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                 <div className="space-y-4 animate-in fade-in">
                   <div>
                     <label className="text-fg block mb-1 font-semibold text-xs">
-                      1. 设定收银台与邮件默认基准语言 (Default Language):
+                      {t("apps:wizard.languages.defaultLabel")}
                     </label>
                     <ShadcnSelect
                       value={formDefaultLanguage}
@@ -1362,13 +1395,13 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       }))}
                     />
                     <span className="text-[10px] text-fg-tertiary mt-0.5 block">
-                      当海外客户浏览器未匹配到特定语言时，默认呈现的基准国际化文案
+                      {t("apps:wizard.languages.defaultHint")}
                     </span>
                   </div>
 
                   <div className="pt-2 border-t border-line-subtle">
                     <label className="text-fg block mb-2 font-semibold text-xs">
-                      2. 勾选面向海外市场开放的语种支持 (Supported Locales):
+                      {t("apps:wizard.languages.supportedLabel")}
                     </label>
                     <div className="grid grid-cols-2 gap-2.5">
                       {AVAILABLE_LANGUAGES.map((l) => {
@@ -1390,7 +1423,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                                   setFormSupportedLanguages([...formSupportedLanguages, l.code]);
                                 } else {
                                   if (formSupportedLanguages.length <= 1) {
-                                    showToast("至少需要保留一种支持语言");
+                                    showToast(t("apps:toast.minLanguageRequired"));
                                     return;
                                   }
                                   setFormSupportedLanguages(
@@ -1414,7 +1447,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   </div>
 
                   <div className="p-3 bg-subtle border border-line rounded-xl text-fg-secondary text-[11px] leading-relaxed">
-                    💡 多语言将统一自动联动【多语言邮件模版】与【系统字典中心】中对应的 i18n 键值翻译，无需针对每个业务事件重复配置。
+                    {t("apps:wizard.languages.linkHint")}
                   </div>
                 </div>
               )}
@@ -1430,7 +1463,10 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           isOpen={true}
           onClose={() => setViewingDetailApp(null)}
           title={viewingDetailApp.name}
-          description={`唯一代码: ${viewingDetailApp.code} | 运行环境: ${viewingDetailApp.environment}`}
+          description={t("apps:detail.codeEnv", {
+            code: viewingDetailApp.code,
+            env: viewingDetailApp.environment,
+          })}
           icon={<Layers className="w-5 h-5 text-indigo-600" />}
           widthClass="max-w-lg"
           footer={
@@ -1444,20 +1480,20 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                 className="flex-1 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-medium flex items-center justify-center gap-1.5 text-xs cursor-pointer shadow-card"
               >
                 <Edit2 className="w-3.5 h-3.5" />
-                <span>编辑配置</span>
+                <span>{t("apps:detail.editConfig")}</span>
               </button>
               <button
                 onClick={() => handleToggleAppStatus(viewingDetailApp)}
                 className="px-3.5 py-2 border border-line hover:bg-subtle text-fg-secondary rounded-xl font-medium text-xs cursor-pointer"
               >
-                {viewingDetailApp.status === "ACTIVE" ? "暂停收单" : "恢复上线"}
+                {viewingDetailApp.status === "ACTIVE" ? t("apps:detail.pauseBilling") : t("apps:detail.resumeBilling")}
               </button>
               <button
                 onClick={() => handleRotateKey(viewingDetailApp)}
                 className="px-3.5 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl font-medium text-xs cursor-pointer"
-                title="重置刷新密钥"
+                title={t("apps:detail.rotateKeyTitle")}
               >
-                轮换密钥
+                {t("apps:detail.rotateKey")}
               </button>
             </div>
           }
@@ -1466,7 +1502,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
             {/* 1. Basic Info */}
             <div className="bg-subtle rounded-xl p-3.5 border border-line space-y-2">
               <div className="font-bold text-fg flex items-center justify-between">
-                <span>基础运行参数</span>
+                <span>{t("apps:detail.basicParams")}</span>
                 <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-mono font-bold">
                   {viewingDetailApp.environment}
                 </span>
@@ -1474,7 +1510,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
               <div className="text-[11px] text-fg-secondary">{viewingDetailApp.description}</div>
               <div className="pt-2 border-t border-line/60 font-mono text-[11px] space-y-1">
                 <div>
-                  <span className="text-fg-tertiary">默认货币: </span>
+                  <span className="text-fg-tertiary">{t("apps:detail.defaultCurrency")} </span>
                   <strong className="text-fg">{viewingDetailApp.defaultCurrency}</strong>
                 </div>
                 <div>
@@ -1489,10 +1525,12 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
               <div className="font-bold text-fg flex items-center justify-between gap-1.5">
                 <span className="flex items-center gap-1.5">
                   <CreditCard className="w-3.5 h-3.5 text-blue-500" />
-                  支付通道与渠道账号
+                  {t("apps:detail.gatewaysTitle")}
                 </span>
                 <span className="text-[10px] font-mono text-fg-tertiary font-normal">
-                  启用 {(viewingDetailApp.enabledChannels || []).length} 个
+                  {t("apps:detail.gatewaysEnabled", {
+                    count: (viewingDetailApp.enabledChannels || []).length,
+                  })}
                 </span>
               </div>
               {viewingDetailApp.enabledChannels && viewingDetailApp.enabledChannels.length > 0 ? (
@@ -1509,31 +1547,25 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                             {c}
                           </div>
                           <div className="text-[11px] text-fg-secondary truncate">
-                            {cfg ? cfg.name : "渠道未接入账号"}
+                            {cfg ? cfg.name : t("apps:detail.channelNotConnected")}
                           </div>
                         </div>
                         <div className="shrink-0 flex items-center gap-1.5">
                           {cfg ? (
                             <>
-                              <span
-                                className={`px-1.5 py-0.5 rounded text-[9px] font-bold font-mono ${
-                                  cfg.mode === "live"
-                                    ? "bg-emerald-100 text-emerald-700"
-                                    : "bg-amber-100 text-amber-700"
-                                }`}
-                              >
-                                {cfg.mode === "live" ? "LIVE" : "TEST"}
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-hover text-fg-secondary">
+                                {cfg.mode}
                               </span>
                               <span
                                 className="px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[9px] font-semibold max-w-[120px] truncate"
                                 title={cfg.accountName || cfg.name}
                               >
-                                {cfg.accountName || "默认账号"}
+                                {cfg.accountName || t("apps:detail.defaultAccount")}
                               </span>
                             </>
                           ) : (
                             <span className="px-1.5 py-0.5 bg-zinc-100 text-zinc-500 rounded text-[9px] font-semibold">
-                              未接入
+                              {t("apps:detail.notConnected")}
                             </span>
                           )}
                         </div>
@@ -1542,10 +1574,11 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                   })}
                 </div>
               ) : (
-                <div className="text-[11px] text-fg-tertiary">该应用未启用任何支付渠道</div>
+                <div className="text-[11px] text-fg-tertiary">{t("apps:detail.noChannels")}</div>
               )}
               <div className="text-[11px] text-fg-secondary pt-1">
-                路由策略: <strong>{viewingDetailApp.routingStrategy || "HIGHEST_SUCCESS_RATE"}</strong>
+                {t("apps:detail.routingStrategy")}{" "}
+                <strong>{viewingDetailApp.routingStrategy || "HIGHEST_SUCCESS_RATE"}</strong>
               </div>
             </div>
 
@@ -1553,7 +1586,11 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
             <div className="bg-subtle rounded-xl p-3.5 border border-line space-y-2">
               <div className="font-bold text-fg flex items-center gap-1.5">
                 <Package className="w-3.5 h-3.5 text-emerald-500" />
-                <span>上架商品 SKU ({viewingDetailApp.associatedProductCodes?.length || 0})</span>
+                <span>
+                  {t("apps:detail.productsTitle", {
+                    count: viewingDetailApp.associatedProductCodes?.length || 0,
+                  })}
+                </span>
               </div>
               <div className="space-y-1 max-h-36 overflow-y-auto font-mono text-[11px]">
                 {viewingDetailApp.associatedProductCodes && viewingDetailApp.associatedProductCodes.length > 0 ? (
@@ -1572,7 +1609,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                     );
                   })
                 ) : (
-                  <span className="text-fg-tertiary font-sans text-xs">默认全量在售商品均可结算</span>
+                  <span className="text-fg-tertiary font-sans text-xs">{t("apps:detail.productsAll")}</span>
                 )}
               </div>
             </div>
@@ -1581,7 +1618,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
             <div className="bg-subtle rounded-xl p-3.5 border border-line space-y-2">
               <div className="font-bold text-fg flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-amber-500" />
-                <span>生效优惠券与促销码</span>
+                <span>{t("apps:detail.discountsTitle")}</span>
               </div>
               <div className="flex flex-wrap gap-1.5 font-mono text-[11px]">
                 {viewingDetailApp.associatedDiscountCodes && viewingDetailApp.associatedDiscountCodes.length > 0 ? (
@@ -1591,7 +1628,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                     </span>
                   ))
                 ) : (
-                  <span className="text-fg-tertiary font-sans text-xs">全场折扣码均可兑换</span>
+                  <span className="text-fg-tertiary font-sans text-xs">{t("apps:detail.discountsAll")}</span>
                 )}
               </div>
             </div>
@@ -1600,13 +1637,15 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
             <div className="bg-subtle rounded-xl p-3.5 border border-line space-y-2">
               <div className="font-bold text-fg flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-indigo-500" />
-                <span>出海邮件服务</span>
+                <span>{t("apps:detail.emailTitle")}</span>
               </div>
               <div className="text-[11px] text-fg-secondary">
-                发件邮箱: <strong>{viewingDetailApp.senderEmail || "billing@domain.com"}</strong>
+                {t("apps:detail.senderEmail")}{" "}
+                <strong>{viewingDetailApp.senderEmail || "billing@domain.com"}</strong>
               </div>
               <div className="text-[11px] text-fg-secondary">
-                发信通道: {viewingDetailApp.emailChannelId || "默认主通道"}
+                {t("apps:detail.emailChannel")}{" "}
+                {viewingDetailApp.emailChannelId || t("apps:detail.defaultChannel")}
               </div>
               <div className="pt-1 flex flex-wrap gap-1 text-[10px]">
                 {viewingDetailApp.enabledEmailEvents?.map((evt) => (
@@ -1621,7 +1660,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
             <div className="bg-subtle rounded-xl p-3.5 border border-line space-y-2">
               <div className="font-bold text-fg flex items-center gap-1.5">
                 <Languages className="w-3.5 h-3.5 text-fg-secondary" />
-                <span>支持语言与默认基准</span>
+                <span>{t("apps:detail.languagesTitle")}</span>
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
                 {viewingDetailApp.supportedLanguages?.map((lang) => {
@@ -1635,7 +1674,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       <span>{item?.label}</span>
                       {viewingDetailApp.defaultLanguage === lang && (
                         <span className="text-[9px] bg-indigo-100 text-indigo-700 px-1 rounded font-bold">
-                          默认
+                          {t("apps:detail.defaultBadge")}
                         </span>
                       )}
                     </span>

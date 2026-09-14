@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import {
@@ -16,6 +17,9 @@ import {
   Trash2,
   UserPlus,
   RefreshCw,
+  ArrowRightLeft,
+  Search,
+  X,
 } from "lucide-react";
 import { RbacRole, SystemMenuItem, PaymentApp } from "../types/payment";
 import { MenuPermissionTree } from "./MenuPermissionTree";
@@ -38,11 +42,13 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
   onSaveRole,
   onDeleteRole,
 }) => {
+  const { t } = useTranslation(["rbac", "common"]);
   const [roleList, setRoleList] = useState<RbacRole[]>(roles);
   const [selectedRoleId, setSelectedRoleId] = useState<string>(
     roles[0]?.id || roles[0]?.key || ""
   );
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // 角色表单（新增 / 编辑）
   const [isRoleSheetOpen, setIsRoleSheetOpen] = useState(false);
@@ -52,6 +58,14 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
   const [copyFromRoleId, setCopyFromRoleId] = useState<string>("");
   // 待删除角色（右键 → 二次确认）
   const [pendingDeleteRole, setPendingDeleteRole] = useState<RbacRole | null>(null);
+
+  const filteredRoles = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return roleList;
+    return roleList.filter(
+      (r) => r.name.toLowerCase().includes(q) || (r.description || "").toLowerCase().includes(q)
+    );
+  }, [roleList, searchQuery]);
 
   const selectedRole = useMemo(
     () => roleList.find((r) => (r.id || r.key) === selectedRoleId) || roleList[0],
@@ -111,7 +125,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
       prev.map((r) => ((r.id || r.key) === selectedRoleId ? updated : r))
     );
     onSaveRole(updated);
-    showToast(`角色【${updated.name}】的菜单树权限与应用权限已保存`);
+    showToast(t("permissions.toast.menuPermissionsSaved", { name: updated.name }));
   };
 
   // ===== 角色 CRUD（右键菜单触发）=====
@@ -135,7 +149,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
   const handleSubmitRole = () => {
     const name = formRoleName.trim();
     if (!name) {
-      showToast("角色名称不能为空");
+      showToast(t("permissions.toast.nameRequired"));
       return;
     }
 
@@ -196,6 +210,11 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
     showToast(`角色【${role.name}】已删除`);
   };
 
+  const handleRefresh = () => {
+    setRoleList(roles);
+    setToastMessage(t("permissions.toast.refreshed"));
+  };
+
   if (roleList.length === 0) {
     return (
       <div className="p-12 text-center text-sm text-fg-tertiary space-y-3">
@@ -203,7 +222,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
         <button
           type="button"
           onClick={openCreateRole}
-          className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-colors cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           新增角色
@@ -226,35 +245,102 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
   if (loading) return <TableSkeleton rows={8} />;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto font-sans p-4 md:p-8">
+    <div className="space-y-3 font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Header Banner */}
-      <div className="bg-surface border border-line rounded-2xl p-4 shadow-2xs">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold">
-            <KeyRound className="w-5 h-5 text-amber-400" />
+      {/* ===== 顶部操作栏（截图风格） ===== */}
+      <div className="bg-surface border border-line rounded-md shadow-card px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            title={t("common:actions.refresh")}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            刷新
+          </button>
+
+          <button
+            type="button"
+            onClick={openCreateRole}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            新增角色
+          </button>
+
+          <button
+            type="button"
+            disabled
+            className="px-3 py-1.5 border border-rose-200 text-rose-600 rounded text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="先在右侧列表中选择要删除的角色"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            删除
+          </button>
+
+          <button
+            type="button"
+            disabled
+            className="px-3 py-1.5 border border-emerald-200 text-emerald-600 rounded text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="转移角色权限"
+          >
+            <ArrowRightLeft className="w-3.5 h-3.5" />
+            转移
+          </button>
+
+          <div className="w-px h-5 bg-hover mx-1" />
+
+          <button
+            type="button"
+            onClick={handleSave}
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Save className="w-3.5 h-3.5" />
+            保存权限配置
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <div className="relative w-56">
+            <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder={t("permissions.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-primary"
+            />
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-fg">
-              权限管理 (Permission Management)
-            </h1>
-            <p className="text-xs text-fg-secondary mt-0.5">
-              权限完全基于「系统菜单管理」中的菜单树进行配置：勾选菜单节点即授予该角色的访问权限，并可进一步限定可访问的出海应用。在左侧角色上<strong>右键</strong>可新增 / 编辑 / 删除角色。
-            </p>
-          </div>
+          <button
+            type="button"
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Search className="w-3.5 h-3.5" />
+            搜索
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 items-start">
-        {/* 左侧：角色列表（右键增删改查） */}
-        <div className="bg-surface border border-line rounded-2xl shadow-2xs overflow-hidden lg:sticky lg:top-6">
+      {/* ===== 说明卡片（精简） ===== */}
+      <div className="bg-surface border border-line rounded-md shadow-card px-3 py-2 flex items-start gap-2 text-xs text-fg-secondary">
+        <KeyRound className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+        <span>
+          <strong className="text-fg">权限管理 (Permission Management)</strong>
+          ：权限完全基于「系统菜单管理」中的菜单树进行配置 — 勾选菜单节点即授予该角色的访问权限，并可进一步限定可访问的出海应用。在右侧角色上<strong>右键</strong>可新增 / 编辑 / 删除角色。
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-3 items-start">
+        {/* 左侧：{t("permissions.roleList")}（右键增删改查） */}
+        <div className="bg-surface border border-line rounded-md shadow-card overflow-hidden lg:sticky lg:top-4">
           <div className="px-3 py-2 bg-subtle border-b border-line text-xs font-semibold text-fg-secondary flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" />
@@ -263,15 +349,15 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
             <button
               type="button"
               onClick={openCreateRole}
-              className="flex items-center gap-0.5 px-2 py-1 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-[10px] font-semibold transition-colors cursor-pointer"
-              title="新增角色（也可右键角色列表空白处）"
+              className="flex items-center gap-0.5 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-semibold transition-colors cursor-pointer"
+              title={t("permissions.addRole")}
             >
               <Plus className="w-3 h-3" />
               新增角色
             </button>
           </div>
           <div className="p-2.5 space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
-            {roleList.map((role) => {
+            {filteredRoles.map((role) => {
               const roleId = role.id || role.key || "";
               const isActive = roleId === selectedRoleId;
               const menuCount = (role.permissions?.menuPermissionIds || []).length;
@@ -304,7 +390,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                       icon: <RefreshCw className="w-3.5 h-3.5" />,
                       onClick: () => {
                         setRoleList(roles);
-                        setToastMessage("角色列表已刷新");
+                        setToastMessage(t("permissions.toast.refreshed"));
                       },
                     },
                   ]}
@@ -312,7 +398,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => switchRole(role)}
-                      className={`relative w-full text-left px-3.5 py-3 rounded-xl border transition-all cursor-pointer ${
+                      className={`relative w-full text-left px-3.5 py-3 rounded border transition-all cursor-pointer ${
                         isActive
                           ? "bg-blue-50/90 border-blue-200 shadow-sm"
                           : "bg-surface border-line hover:border-blue-300/60 hover:shadow-card"
@@ -324,7 +410,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                       )}
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                          className={`w-7 h-7 rounded flex items-center justify-center shrink-0 transition-colors ${
                             isActive ? "bg-blue-500" : "bg-subtle border border-line-subtle"
                           }`}
                         >
@@ -370,17 +456,17 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
           </div>
         </div>
 
-        {/* 右侧：菜单树权限 + 应用权限 */}
-        <div className="space-y-5 min-w-0">
-          {/* 菜单树权限 */}
-          <div className="bg-surface border border-line rounded-2xl shadow-2xs p-4">
+        {/* 右侧：{t("permissions.menuTree")} + 应用权限 */}
+        <div className="space-y-3 min-w-0">
+          {/* {t("permissions.menuTree")} */}
+          <div className="bg-surface border border-line rounded-md shadow-card p-3">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-bold text-fg flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-center">
+                  <span className="w-6 h-6 rounded bg-blue-50 border border-blue-200 flex items-center justify-center">
                     <FolderTree className="w-3.5 h-3.5 text-blue-600" />
                   </span>
-                  菜单树权限配置
+                  {t("permissions.menuTree")}配置
                 </h3>
                 <p className="text-xs text-fg-secondary mt-1">
                   勾选该角色可访问的菜单节点（与左侧侧边栏 / 菜单管理数据一致，父子联动）
@@ -413,11 +499,11 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
           </div>
 
           {/* 应用权限 */}
-          <div className="bg-surface border border-line rounded-2xl shadow-2xs p-4">
+          <div className="bg-surface border border-line rounded-md shadow-card p-3">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-bold text-fg flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-center">
+                  <span className="w-6 h-6 rounded bg-blue-50 border border-blue-200 flex items-center justify-center">
                     <Layers className="w-3.5 h-3.5 text-blue-600" />
                   </span>
                   应用权限配置 (Application Permissions)
@@ -447,7 +533,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                     <div
                       key={app.id}
                       onClick={() => toggleApp(app.id)}
-                      className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start justify-between ${
+                      className={`p-3 rounded border transition-all cursor-pointer flex items-start justify-between ${
                         isChecked
                           ? "border-blue-200 bg-blue-50/70 shadow-sm"
                           : "border-line bg-surface hover:border-blue-300/60"
@@ -483,7 +569,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
           </div>
 
           {/* 保存区 */}
-          <div className="bg-surface border border-line rounded-2xl shadow-2xs p-3 flex items-center justify-between gap-2">
+          <div className="bg-surface border border-line rounded-md shadow-card p-3 flex items-center justify-between gap-2">
             <div className="flex items-start gap-2 text-xs text-fg-secondary">
               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <span>
@@ -494,7 +580,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
             <button
               type="button"
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-colors cursor-pointer shrink-0"
             >
               <Save className="w-3.5 h-3.5" />
               保存权限配置
@@ -510,7 +596,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
           onClick={() => setPendingDeleteRole(null)}
         >
           <div
-            className="w-80 rounded-2xl border border-line bg-surface p-3 shadow-2xl animate-in zoom-in-95"
+            className="w-80 rounded border border-line bg-surface p-3 shadow-2xl animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-2.5">
@@ -530,7 +616,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setPendingDeleteRole(null)}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-fg-secondary hover:bg-hover transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded text-[11px] font-medium text-fg-secondary hover:bg-hover transition-colors cursor-pointer"
               >
                 取消
               </button>
@@ -540,7 +626,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
                   handleDeleteRole(pendingDeleteRole);
                   setPendingDeleteRole(null);
                 }}
-                className="px-3.5 py-1.5 rounded-lg text-[11px] font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-card transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 rounded text-[11px] font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer"
               >
                 确认删除
               </button>
@@ -558,7 +644,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
         description={
           editingRole
             ? "修改角色基础信息，权限配置请在右侧菜单树 / 应用权限中调整。"
-            : "创建后可立即在右侧为该角色配置菜单树权限与应用权限；可复制现有角色权限作为起点。"
+            : t("permissions.form.createHint")
         }
         icon={<ShieldCheck className="w-5 h-5 text-amber-500" />}
         widthClass="max-w-xl"
@@ -567,14 +653,14 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
             <button
               type="button"
               onClick={() => setIsRoleSheetOpen(false)}
-              className="px-3 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary rounded hover:bg-hover font-semibold cursor-pointer"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSubmitRole}
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold cursor-pointer"
             >
               {editingRole ? "保存角色" : "创建角色"}
             </button>
@@ -584,7 +670,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
         <div className="space-y-4 text-xs">
           <div>
             <label className="font-semibold text-fg-secondary block mb-1">
-              角色名称 <span className="text-rose-500">*</span>
+              {t("permissions.form.name")} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -592,19 +678,19 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
               placeholder="如：海外运营专员"
               value={formRoleName}
               onChange={(e) => setFormRoleName(e.target.value)}
-              className="w-full p-2 bg-surface border border-line rounded-xl text-xs focus:border-line focus:outline-none focus:ring-1 focus:ring-line"
+              className="w-full p-2 bg-surface border border-line rounded text-xs focus:border-line focus:outline-none focus:ring-1 focus:ring-line"
             />
           </div>
           <div>
             <label className="font-semibold text-fg-secondary block mb-1">
-              角色描述
+              {t("permissions.form.description")}
             </label>
             <textarea
               rows={3}
               placeholder="说明该角色的职责与权限范围..."
               value={formRoleDesc}
               onChange={(e) => setFormRoleDesc(e.target.value)}
-              className="w-full p-2 bg-surface border border-line rounded-xl text-xs focus:border-line focus:outline-none focus:ring-1 focus:ring-line"
+              className="w-full p-2 bg-surface border border-line rounded text-xs focus:border-line focus:outline-none focus:ring-1 focus:ring-line"
             />
           </div>
           {!editingRole && (
@@ -615,7 +701,7 @@ export const PermissionsView: React.FC<PermissionsViewProps> = ({
               <select
                 value={copyFromRoleId}
                 onChange={(e) => setCopyFromRoleId(e.target.value)}
-                className="w-full p-2 bg-surface border border-line rounded-xl text-xs focus:border-line focus:outline-none focus:ring-1 focus:ring-line cursor-pointer"
+                className="w-full p-2 bg-surface border border-line rounded text-xs focus:border-line focus:outline-none focus:ring-1 focus:ring-line cursor-pointer"
               >
                 <option value="">不复制（从空权限开始）</option>
                 {roleList.map((r) => (

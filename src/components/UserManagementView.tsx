@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -54,6 +55,7 @@ const COUNTRY_FLAGS: Record<string, string> = {
 };
 
 export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, onSaveUser }) => {
+  const { t } = useTranslation(["rbac", "common"]);
   const [userList, setUserList] = useState<EndUser[]>(users);
   const [selectedUser, setSelectedUser] = useState<EndUser | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -99,61 +101,64 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
   });
 
   const getActionBadge = (type: UserActionType) => {
+    const badgeClass =
+      "px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1";
+    const label = t(`endUsers.actionBadge.${type}`, { defaultValue: type });
     switch (type) {
       case "LOGIN":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+          <span className={`${badgeClass} bg-blue-50 text-blue-700 border border-blue-200`}>
             <Clock className="w-2.5 h-2.5" />
-            终端登录 (Login)
+            {label}
           </span>
         );
       case "CHANGE_PASSWORD":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+          <span className={`${badgeClass} bg-amber-50 text-amber-700 border border-amber-200`}>
             <Key className="w-2.5 h-2.5" />
-            修改密码 (Password)
+            {label}
           </span>
         );
       case "SUBSCRIBE":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+          <span className={`${badgeClass} bg-emerald-50 text-emerald-700 border border-emerald-200`}>
             <CreditCard className="w-2.5 h-2.5" />
-            开通订阅 (Subscribe)
+            {label}
           </span>
         );
       case "UPGRADE_PLAN":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+          <span className={`${badgeClass} bg-purple-50 text-purple-700 border border-purple-200`}>
             <Sparkles className="w-2.5 h-2.5" />
-            套餐升级 (Upgrade)
+            {label}
           </span>
         );
       case "CANCEL_SUBSCRIPTION":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+          <span className={`${badgeClass} bg-rose-50 text-rose-700 border border-rose-200`}>
             <XCircle className="w-2.5 h-2.5" />
-            取消续订 (Cancel)
+            {label}
           </span>
         );
       case "UPDATE_PAYMENT_METHOD":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1">
+          <span className={`${badgeClass} bg-indigo-50 text-indigo-700 border border-indigo-200`}>
             <CreditCard className="w-2.5 h-2.5" />
-            更新支付卡 (Card)
+            {label}
           </span>
         );
       case "DOWNLOAD_INVOICE":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-hover text-fg-secondary border border-line flex items-center gap-1">
+          <span className={`${badgeClass} bg-hover text-fg-secondary border border-line`}>
             <Download className="w-2.5 h-2.5" />
-            下载发票 (Invoice)
+            {label}
           </span>
         );
       case "REGISTER":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+          <span className={`${badgeClass} bg-emerald-50 text-emerald-700 border border-emerald-200`}>
             <Users className="w-2.5 h-2.5" />
-            注册建档 (Register)
+            {label}
           </span>
         );
       default:
@@ -183,11 +188,11 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
   });
 
   const handleAdminResetPassword = (user: EndUser) => {
-    showToast(`已向 ${user.email} 自动触发海外安全验证码及密码重置链接！`);
+    showToast(t("endUsers.toast.resetPassword", { email: user.email }));
   };
 
   const handleAdminResendReceipt = (user: EndUser) => {
-    showToast(`已向 ${user.email} 投递最新账单发票收据 (PDF) 并抄送财务！`);
+    showToast(t("endUsers.toast.resendReceipt", { email: user.email }));
   };
 
   const handleToggleSubscriptionStatus = (user: EndUser) => {
@@ -217,11 +222,27 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
     setUserList((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
     setSelectedUser(updated);
     if (onSaveUser) onSaveUser(updated);
-    showToast(`客户【${user.name}】订阅状态已成功更新为: ${nextStatus === "ACTIVE" ? "生效中 (Active)" : "已取消 (Canceled)"}`);
+    showToast(
+      t("endUsers.toast.subscriptionUpdated", {
+        name: user.name,
+        status: t(`endUsers.subscriptionStatus.${nextStatus}`),
+      })
+    );
   };
 
   const handleExportCsv = () => {
-    const headers = ["客户ID", "姓名", "邮箱", "国家地区", "订阅方案", "订阅状态", "币种", "终生价值(LTV)", "订单总数", "最后登录时间"];
+    const headers = [
+      t("endUsers.csvHeaders.id"),
+      t("endUsers.csvHeaders.name"),
+      t("endUsers.csvHeaders.email"),
+      t("endUsers.csvHeaders.country"),
+      t("endUsers.csvHeaders.plan"),
+      t("endUsers.csvHeaders.status"),
+      t("endUsers.csvHeaders.currency"),
+      t("endUsers.csvHeaders.ltv"),
+      t("endUsers.csvHeaders.orderCount"),
+      t("endUsers.csvHeaders.lastLogin"),
+    ];
     const rows = filteredUsers.map((u) => [
       u.id,
       u.name,
@@ -246,13 +267,13 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast(`已成功导出 ${filteredUsers.length} 位海外终端客户数据档案为 CSV 表格！`);
+    showToast(t("endUsers.toast.exportSuccess", { count: filteredUsers.length }));
   };
 
   const handleCreateNewUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formEmail.trim()) {
-      showToast("请填写客户姓名与有效邮箱！");
+      showToast(t("endUsers.toast.nameEmailRequired"));
       return;
     }
 
@@ -308,7 +329,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
 
     setUserList([newUser, ...userList]);
     if (onSaveUser) onSaveUser(newUser);
-    showToast(`新客户【${newUser.name}】(${newUser.email}) 档案建立成功！`);
+    showToast(t("endUsers.toast.userCreated", { name: newUser.name, email: newUser.email }));
     setIsAddModalOpen(false);
   };
 
@@ -341,11 +362,11 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
               <Users className="w-5 h-5" />
             </span>
             <h1 className="text-xl font-bold text-fg tracking-tight">
-              海外终端客户与行为大盘 (End Users & Lifecycle)
+              {t("endUsers.title")}
             </h1>
           </div>
           <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
-            跨出海应用实时跟踪海外终端付费客户，深度穿透所有行为轨迹（登录时间与设备、密码重置变更、订阅流转、支付卡绑定与发票下载等）。
+            {t("endUsers.subtitle")}
           </p>
         </div>
 
@@ -355,7 +376,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
             className="px-3 py-2 border border-line hover:bg-subtle text-fg-secondary rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-fg-secondary" />
-            <span>导出客户列表 (CSV)</span>
+            <span>{t("endUsers.exportCsv")}</span>
           </button>
 
           <button
@@ -373,7 +394,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>录入新出海客户档案</span>
+            <span>{t("endUsers.addUser")}</span>
           </button>
         </div>
       </div>
@@ -382,55 +403,69 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>海外客户建档总数</span>
+            <span>{t("endUsers.metrics.totalCustomers")}</span>
             <Users className="w-4 h-4 text-blue-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {userList.length} <span className="text-xs font-normal text-fg-tertiary">位独立用户</span>
+            {userList.length}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">
+              {t("endUsers.metrics.uniqueUsers")}
+            </span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">跨北美、西欧及亚太全球受众</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">
+            {t("endUsers.metrics.globalAudience")}
+          </div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>有效订阅率 (Active)</span>
+            <span>{t("endUsers.metrics.activeSubscriptionRate")}</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
             {Math.round((totalSubscribersActive / (userList.length || 1)) * 100)}%
           </div>
           <div className="text-[11px] text-fg-secondary mt-0.5">
-            {totalSubscribersActive} 位订户自动续费运转中
+            {t("endUsers.metrics.activeSubscribers", { count: totalSubscribersActive })}
           </div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>累计客户贡献总值 (LTV)</span>
+            <span>{t("endUsers.metrics.totalLtv")}</span>
             <DollarSign className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
             {formatCurrency(totalSpendSum, "USD")}
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">平均客单值: ${(totalSpendSum / (userList.length || 1)).toFixed(0)}</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">
+            {t("endUsers.metrics.avgOrderValue", {
+              amount: (totalSpendSum / (userList.length || 1)).toFixed(0),
+            })}
+          </div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>行为事件穿透采集</span>
+            <span>{t("endUsers.metrics.actionEvents")}</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {userList.reduce((acc, u) => acc + u.actions.length, 0)} <span className="text-xs font-normal text-fg-tertiary">条记录</span>
+            {userList.reduce((acc, u) => acc + u.actions.length, 0)}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">
+              {t("endUsers.metrics.records")}
+            </span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">端到端涵盖登录/改密/扣费/升级</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">
+            {t("endUsers.metrics.actionCoverage")}
+          </div>
         </div>
       </div>
 
       {/* Filter and Search */}
       <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-nowrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 flex-1 min-w-0 flex-nowrap overflow-x-auto">
-          <span className="text-fg-tertiary text-xs">订阅状态:</span>
+          <span className="text-fg-tertiary text-xs">{t("endUsers.filter.subscriptionStatus")}</span>
           {["ALL", "ACTIVE", "CANCELED"].map((status) => (
             <button
               key={status}
@@ -441,19 +476,25 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                   : "bg-hover text-fg-secondary hover:bg-hover"
               }`}
             >
-              {status === "ALL" ? "全部客户" : status === "ACTIVE" ? "生效中订阅 (Active)" : "已取消订阅 (Canceled)"}
+              {status === "ALL"
+                ? t("endUsers.filter.allCustomers")
+                : status === "ACTIVE"
+                  ? t("endUsers.filter.activeSubscription")
+                  : t("endUsers.filter.canceledSubscription")}
             </button>
           ))}
 
           <span className="text-zinc-300 ml-2">|</span>
 
-          <span className="text-fg-tertiary text-xs ml-1 whitespace-nowrap">地区:</span>
+          <span className="text-fg-tertiary text-xs ml-1 whitespace-nowrap">
+            {t("endUsers.filter.region")}
+          </span>
           <div className="w-40">
             <ShadcnSelect
               value={countryFilter}
               onValueChange={(val) => setCountryFilter(val)}
               options={[
-                { value: "ALL", label: "全部国家/地区" },
+                { value: "ALL", label: t("endUsers.filter.allCountries") },
                 ...countriesList.map((c) => ({ value: c, label: c })),
               ]}
             />
@@ -464,7 +505,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
           <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
-            placeholder="按客户姓名 / 邮箱 / ID / 方案搜索..."
+            placeholder={t("endUsers.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
@@ -478,14 +519,14 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
           <table className="min-w-[1100px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-2 px-3 min-w-[220px]">客户 ID & 姓名</th>
-                <th className="py-2 px-3 w-[130px]">国家 / 地区</th>
-                <th className="py-2 px-3 w-[200px]">当前订阅方案 & 状态</th>
-                <th className="py-2 px-3 w-[200px]">绑定扣款方式</th>
-                <th className="py-2 px-3 w-[140px]">终生价值 (LTV)</th>
-                <th className="py-2 px-3 w-[180px]">最近登录时间 & IP</th>
+                <th className="py-2 px-3 min-w-[220px]">{t("endUsers.table.idAndName")}</th>
+                <th className="py-2 px-3 w-[130px]">{t("endUsers.table.country")}</th>
+                <th className="py-2 px-3 w-[200px]">{t("endUsers.table.subscription")}</th>
+                <th className="py-2 px-3 w-[200px]">{t("endUsers.table.paymentMethod")}</th>
+                <th className="py-2 px-3 w-[140px]">{t("endUsers.table.ltv")}</th>
+                <th className="py-2 px-3 w-[180px]">{t("endUsers.table.lastLogin")}</th>
                 <th className="py-2 px-3 w-[150px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                  操作
+                  {t("endUsers.table.operations")}
                 </th>
               </tr>
             </thead>
@@ -530,7 +571,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                           {user.currentSubscription.planName}
                         </span>
                         <span className="text-[10px] text-fg-tertiary font-mono whitespace-nowrap">
-                          下次到期: {user.currentSubscription.nextBillingDate}
+                          {t("endUsers.table.nextBilling", {
+                            date: user.currentSubscription.nextBillingDate,
+                          })}
                         </span>
                       </div>
                     </td>
@@ -547,7 +590,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                     <td className="py-3.5 px-3 w-[140px] font-mono font-bold text-fg whitespace-nowrap">
                       {formatCurrency(user.totalSpend, user.currentSubscription.currency)}
                       <span className="text-[10px] text-fg-tertiary font-normal block">
-                        共 {user.totalOrdersCount} 笔交易
+                        {t("endUsers.table.orderCount", { count: user.totalOrdersCount })}
                       </span>
                     </td>
 
@@ -568,7 +611,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                         className="px-2.5 py-1.5 bg-hover hover:bg-hover text-fg-secondary rounded-lg font-medium text-xs flex items-center gap-1 ml-auto transition-colors"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>查看轨迹 ({user.actions.length})</span>
+                        <span>
+                          {t("endUsers.table.viewTimeline", { count: user.actions.length })}
+                        </span>
                       </button>
                     </td>
                   </tr>
@@ -586,7 +631,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
           id="side-sheet-user-detail"
           isOpen={!!selectedUser}
           onClose={() => setSelectedUser(null)}
-          title={`${selectedUser.name || "客户档案"} (${selectedUser.country})`}
+          title={`${selectedUser.name || t("endUsers.profileFallback")} (${selectedUser.country})`}
           description={`${selectedUser.id} • ${selectedUser.email}`}
           icon={<Users className="w-5 h-5 text-fg" />}
           widthClass="max-w-3xl"
@@ -596,7 +641,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
               onClick={() => setSelectedUser(null)}
               className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
             >
-              关闭面板
+              {t("endUsers.detail.closePanel")}
             </button>
           }
         >
@@ -612,15 +657,17 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                 }`}
               >
                 {selectedUser.currentSubscription.status === "ACTIVE"
-                  ? "暂停/取消订阅续订"
-                  : "恢复自动续订"}
+                  ? t("endUsers.detail.cancelSubscription")
+                  : t("endUsers.detail.resumeSubscription")}
               </button>
             </div>
 
             {/* Overview Chips */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div className="bg-subtle rounded-xl p-3 border border-line-subtle">
-                <span className="text-[10px] text-fg-tertiary block font-medium">当前订阅套餐</span>
+                <span className="text-[10px] text-fg-tertiary block font-medium">
+                  {t("endUsers.detail.currentPlan")}
+                </span>
                 <span className="font-bold text-xs text-fg block truncate mt-0.5">
                   {selectedUser.currentSubscription.planName}
                 </span>
@@ -630,41 +677,51 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
               </div>
 
               <div className="bg-subtle rounded-xl p-3 border border-line-subtle">
-                <span className="text-[10px] text-fg-tertiary block font-medium">默认扣款卡</span>
+                <span className="text-[10px] text-fg-tertiary block font-medium">
+                  {t("endUsers.detail.defaultCard")}
+                </span>
                 <span className="font-bold text-xs text-fg block mt-0.5">
                   {selectedUser.defaultPaymentMethod.brand} •••• {selectedUser.defaultPaymentMethod.last4}
                 </span>
                 <span className="text-[10px] text-fg-tertiary font-mono">
-                  有效期: {selectedUser.defaultPaymentMethod.expiry || "09/28"}
+                  {t("endUsers.detail.cardExpiry", {
+                    expiry: selectedUser.defaultPaymentMethod.expiry || "09/28",
+                  })}
                 </span>
               </div>
 
               <div className="bg-subtle rounded-xl p-3 border border-line-subtle">
-                <span className="text-[10px] text-fg-tertiary block font-medium">累计终生消费 (LTV)</span>
+                <span className="text-[10px] text-fg-tertiary block font-medium">
+                  {t("endUsers.detail.lifetimeSpend")}
+                </span>
                 <span className="font-bold text-xs font-mono text-fg block mt-0.5">
                   {formatCurrency(selectedUser.totalSpend, selectedUser.currentSubscription.currency)}
                 </span>
                 <span className="text-[10px] text-fg-tertiary font-mono">
-                  共 {selectedUser.totalOrdersCount} 笔扣费订单
+                  {t("endUsers.detail.billingOrderCount", {
+                    count: selectedUser.totalOrdersCount,
+                  })}
                 </span>
               </div>
 
               <div className="bg-subtle rounded-xl p-3 border border-line-subtle">
-                <span className="text-[10px] text-fg-tertiary block font-medium">快捷操作</span>
+                <span className="text-[10px] text-fg-tertiary block font-medium">
+                  {t("endUsers.detail.quickActions")}
+                </span>
                 <div className="flex items-center gap-1.5 mt-1">
                   <button
                     onClick={() => handleAdminResetPassword(selectedUser)}
                     className="p-1 bg-surface border border-line hover:bg-hover rounded text-fg-secondary text-[10px] flex items-center gap-1 font-medium"
-                    title="发送重置密码邮件"
+                    title={t("endUsers.detail.resetPasswordTitle")}
                   >
-                    <Key className="w-2.5 h-2.5" /> 密码重置
+                    <Key className="w-2.5 h-2.5" /> {t("endUsers.detail.resetPassword")}
                   </button>
                   <button
                     onClick={() => handleAdminResendReceipt(selectedUser)}
                     className="p-1 bg-surface border border-line hover:bg-hover rounded text-fg-secondary text-[10px] flex items-center gap-1 font-medium"
-                    title="重新发送电子发票"
+                    title={t("endUsers.detail.resendInvoiceTitle")}
                   >
-                    <Send className="w-2.5 h-2.5" /> 补发发票
+                    <Send className="w-2.5 h-2.5" /> {t("endUsers.detail.resendInvoice")}
                   </button>
                 </div>
               </div>
@@ -674,7 +731,11 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
             <div className="flex items-center justify-between border-b border-line-subtle pb-2 pt-2">
               <span className="font-bold text-fg text-xs flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-blue-500" />
-                <span>用户全生命周期动作流水 ({filteredActions?.length || 0})</span>
+                <span>
+                  {t("endUsers.detail.actionTimeline", {
+                    count: filteredActions?.length || 0,
+                  })}
+                </span>
               </span>
 
               <div className="flex items-center gap-1.5">
@@ -688,7 +749,11 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                         : "bg-hover text-fg-secondary hover:bg-hover"
                     }`}
                   >
-                    {cat === "ALL" ? "全部动作" : cat === "BILLING" ? "订阅与扣费" : "安全与登录"}
+                    {cat === "ALL"
+                      ? t("endUsers.detail.allActions")
+                      : cat === "BILLING"
+                        ? t("endUsers.detail.billingActions")
+                        : t("endUsers.detail.securityActions")}
                   </button>
                 ))}
               </div>
@@ -744,7 +809,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-fg-tertiary">暂无该分类的动作记录</div>
+                  <div className="text-center py-8 text-fg-tertiary">
+                    {t("endUsers.detail.noActionsInCategory")}
+                  </div>
                 )}
               </div>
             </div>
@@ -757,8 +824,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
         id="side-sheet-add-user"
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="录入新出海客户档案"
-        description="手动建档并将客户直接纳入全流程生命周期审计流"
+        title={t("endUsers.addUser")}
+        description={t("endUsers.addUserDesc")}
         icon={<Users className="w-5 h-5 text-fg" />}
         widthClass="max-w-md"
         footer={
@@ -768,14 +835,14 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
               onClick={() => setIsAddModalOpen(false)}
               className="px-3.5 py-1.5 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
-              取消
+              {t("common:actions.cancel")}
             </button>
             <button
               type="submit"
               form="form-add-end-user"
               className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold cursor-pointer"
             >
-              确认建档
+              {t("endUsers.form.confirmCreate")}
             </button>
           </>
         }
@@ -783,11 +850,13 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
         {isAddModalOpen && (
           <form id="form-add-end-user" onSubmit={handleCreateNewUser} className="space-y-3 text-xs">
               <div>
-                <label className="text-fg-secondary block mb-1 font-semibold">客户全名 / 姓名 *</label>
+                <label className="text-fg-secondary block mb-1 font-semibold">
+                  {t("endUsers.form.fullName")}
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="例如: Jonathan Vance"
+                  placeholder={t("endUsers.form.fullNamePlaceholder")}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
@@ -795,11 +864,13 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
               </div>
 
               <div>
-                <label className="text-fg-secondary block mb-1 font-semibold">客户邮箱 (Email) *</label>
+                <label className="text-fg-secondary block mb-1 font-semibold">
+                  {t("endUsers.form.email")}
+                </label>
                 <input
                   type="email"
                   required
-                  placeholder="例如: j.vance@techventures.io"
+                  placeholder={t("endUsers.form.emailPlaceholder")}
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
@@ -808,45 +879,51 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-fg-secondary block mb-1 font-semibold">所在国家/地区</label>
+                  <label className="text-fg-secondary block mb-1 font-semibold">
+                    {t("endUsers.form.country")}
+                  </label>
                   <ShadcnSelect
                     value={formCountry}
                     onValueChange={setFormCountry}
                     options={[
-                      { value: "🇺🇸 United States (US)", label: "🇺🇸 美国 (United States)" },
-                      { value: "🇬🇧 United Kingdom (UK)", label: "🇬🇧 英国 (United Kingdom)" },
-                      { value: "🇩🇪 Germany (DE)", label: "🇩🇪 德国 (Germany)" },
-                      { value: "🇯🇵 Japan (JP)", label: "🇯🇵 日本 (Japan)" },
-                      { value: "🇫🇷 France (FR)", label: "🇫🇷 法国 (France)" },
-                      { value: "🇨🇦 Canada (CA)", label: "🇨🇦 加拿大 (Canada)" },
-                      { value: "🇦🇺 Australia (AU)", label: "🇦🇺 澳大利亚 (Australia)" },
-                      { value: "🇸🇬 Singapore (SG)", label: "🇸🇬 新加坡 (Singapore)" },
+                      { value: "🇺🇸 United States (US)", label: t("endUsers.form.countries.US") },
+                      { value: "🇬🇧 United Kingdom (UK)", label: t("endUsers.form.countries.UK") },
+                      { value: "🇩🇪 Germany (DE)", label: t("endUsers.form.countries.DE") },
+                      { value: "🇯🇵 Japan (JP)", label: t("endUsers.form.countries.JP") },
+                      { value: "🇫🇷 France (FR)", label: t("endUsers.form.countries.FR") },
+                      { value: "🇨🇦 Canada (CA)", label: t("endUsers.form.countries.CA") },
+                      { value: "🇦🇺 Australia (AU)", label: t("endUsers.form.countries.AU") },
+                      { value: "🇸🇬 Singapore (SG)", label: t("endUsers.form.countries.SG") },
                     ]}
-                    placeholder="选择国家/地区"
+                    placeholder={t("endUsers.form.countryPlaceholder")}
                   />
                 </div>
 
                 <div>
-                  <label className="text-fg-secondary block mb-1 font-semibold">结算货币</label>
+                  <label className="text-fg-secondary block mb-1 font-semibold">
+                    {t("endUsers.form.currency")}
+                  </label>
                   <ShadcnSelect
                     value={formCurrency}
                     onValueChange={setFormCurrency}
                     options={[
-                      { value: "USD", label: "USD ($ 美元)" },
-                      { value: "EUR", label: "EUR (€ 欧元)" },
-                      { value: "JPY", label: "JPY (¥ 日元)" },
-                      { value: "GBP", label: "GBP (£ 英镑)" },
+                      { value: "USD", label: t("endUsers.form.currencies.USD") },
+                      { value: "EUR", label: t("endUsers.form.currencies.EUR") },
+                      { value: "JPY", label: t("endUsers.form.currencies.JPY") },
+                      { value: "GBP", label: t("endUsers.form.currencies.GBP") },
                     ]}
-                    placeholder="选择结算货币"
+                    placeholder={t("endUsers.form.currencyPlaceholder")}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-fg-secondary block mb-1 font-semibold">开通订阅方案</label>
+                <label className="text-fg-secondary block mb-1 font-semibold">
+                  {t("endUsers.form.plan")}
+                </label>
                 <input
                   type="text"
-                  placeholder="例如: Novas AI 商业专业版 (年付)"
+                  placeholder={t("endUsers.form.planPlaceholder")}
                   value={formPlan}
                   onChange={(e) => setFormPlan(e.target.value)}
                   className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
@@ -855,7 +932,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-fg-secondary block mb-1 font-semibold">首期金额</label>
+                  <label className="text-fg-secondary block mb-1 font-semibold">
+                    {t("endUsers.form.initialAmount")}
+                  </label>
                   <input
                     type="number"
                     value={formPrice}
@@ -864,7 +943,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                   />
                 </div>
                 <div>
-                  <label className="text-fg-secondary block mb-1 font-semibold">支付卡品牌</label>
+                  <label className="text-fg-secondary block mb-1 font-semibold">
+                    {t("endUsers.form.cardBrand")}
+                  </label>
                   <ShadcnSelect
                     value={formCardBrand}
                     onValueChange={setFormCardBrand}
@@ -874,11 +955,13 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
                       { value: "American Express", label: "Amex" },
                       { value: "JCB", label: "JCB" },
                     ]}
-                    placeholder="选择卡品牌"
+                    placeholder={t("endUsers.form.cardBrandPlaceholder")}
                   />
                 </div>
                 <div>
-                  <label className="text-fg-secondary block mb-1 font-semibold">卡号后4位</label>
+                  <label className="text-fg-secondary block mb-1 font-semibold">
+                    {t("endUsers.form.cardLast4")}
+                  </label>
                   <input
                     type="text"
                     maxLength={4}

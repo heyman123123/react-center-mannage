@@ -1,0 +1,77 @@
+{
+  "title": "企业级实时交易对账中心",
+  "subtitle": "支持业务订单流、聚合支付路由流水与银行/渠道清算账单（三方对账模型），实现T+0差错拦截与T+1自动扎帐。",
+  "runEngine": "运行自动化对账引擎",
+  "running": "正在执行三方对账 ({{progress}}%)...",
+  "exportCsv": "导出 CSV",
+  "rbacDenied": "RBAC权限受限：需要对账专员或财务总监角色",
+  "nodes": {
+    "orders": "1. 业务订单侧",
+    "gateway": "2. 聚合支付网关",
+    "bills": "3. 银行与渠道对账单",
+    "realtime": "实时接入",
+    "dualTrack": "双轨监听",
+    "t1": "T+1 自动回盘",
+    "orderCount": "已接入业务单数:",
+    "gatewayCount": "网关路由回执:",
+    "matchRate": "平账率：",
+    "orderHint": "涵盖连锁零售门店、SaaS订阅、跨境订单与医院挂号",
+    "gatewayHint": "智能路由至微信、支付宝、银联、数字人民币与SWIFT",
+    "discrepancyPending": "差错待调账: {{count}} 笔 (差异 ¥10,450.00)"
+  },
+  "workbench": {
+    "title": "差错账协同工作台",
+    "pending": "{{count}} 笔待处理",
+    "reviewer": "RBAC审核人:",
+    "emptyTitle": "全渠道流水平账完毕，无待决差错！",
+    "emptyDesc": "所有业务订单与银行清算账单金额、手续费及到账状态均 100% 吻合。",
+    "fee": "手续费:",
+    "merchant": "商户:",
+    "channelNo": "渠道单号:",
+    "occurredAt": "发生时间:",
+    "resolve": "处理调账",
+    "amountMismatch": "金额不符",
+    "statusMismatch": "状态不一致"
+  },
+  "batches": {
+    "title": "近期对账批次记录",
+    "cronHint": "自动对账任务每日 02:00 定时归集",
+    "batchId": "批次编号",
+    "tenant": "归属业务单元",
+    "channel": "结算渠道",
+    "totalCount": "总流水笔数",
+    "matchedCount": "平账笔数",
+    "discrepancyCount": "差错笔数",
+    "totalAmount": "总清算金额",
+    "status": "状态",
+    "actions": "操作",
+    "groupSummary": "集团全渠道汇总",
+    "statusCompleted": "全部平账",
+    "statusPending": "差异待核",
+    "verify": "核验凭证",
+    "verifyAlert": "批次 [{{batchNo}}] 对账凭证核验通过，轧差吻合！"
+  },
+  "toast": {
+    "engineComplete": "自动化三方对账引擎运行完毕，已匹配平账全部合格流水！"
+  },
+  "errors": {
+    "permissionDenied": "权限不足：当前登录角色无权发起跨租户或自动化对账任务！"
+  },
+  "export": {
+    "filename": "对账差异表",
+    "headers": {
+      "id": "交易流水号",
+      "tenant": "归属租户",
+      "channel": "渠道",
+      "channelNo": "渠道单号",
+      "amount": "交易金额",
+      "currency": "货币",
+      "status": "对账状态",
+      "reason": "差异原因",
+      "time": "时间"
+    }
+  },
+  "units": {
+    "count": "笔"
+  }
+}

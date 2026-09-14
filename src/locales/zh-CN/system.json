@@ -1,0 +1,227 @@
+{
+  "exchangeRates": {
+    "title": "汇率管理",
+    "subtitle": "配置多币种对买入/卖出汇率、生效时间与启停状态，点击行查看最近 30 天汇率走势。",
+    "addRate": "新增汇率",
+    "settleCurrency": "当前平台结算货币：",
+    "settleCurrencyHint": "（读取自字典 CURRENCY 分类）",
+    "statusLabel": "状态:",
+    "searchPlaceholder": "搜索币种对，如 USD/EUR",
+    "table": {
+      "pair": "币种对",
+      "bid": "买入价 (Bid)",
+      "ask": "卖出价 (Ask)",
+      "mid": "中间价",
+      "effectiveFrom": "生效时间",
+      "status": "状态",
+      "remark": "备注"
+    },
+    "status": {
+      "enabled": "启用",
+      "disabled": "停用"
+    },
+    "menu": {
+      "edit": "编辑",
+      "viewTrend": "查看走势",
+      "enable": "启用",
+      "disable": "停用",
+      "refresh": "刷新"
+    },
+    "detail": {
+      "title": "汇率走势 - {{base}}/{{target}}",
+      "titleFallback": "汇率走势",
+      "description": "买入 {{bid}} · 卖出 {{ask}} · 最近 30 个交易日",
+      "bid": "买入价",
+      "ask": "卖出价",
+      "range": "区间最低/最高",
+      "chartTitle": "最近 30 天走势（中间价）",
+      "day30": "-30 天",
+      "day15": "-15 天",
+      "today": "今天",
+      "effectiveFrom": "生效时间",
+      "updatedAt": "最近更新",
+      "remark": "备注"
+    },
+    "form": {
+      "editTitle": "编辑汇率",
+      "createTitle": "新增汇率",
+      "description": "配置币种对、买入价与卖出价（1 单位基础币兑换的目标币数量）",
+      "baseCurrency": "基础币种",
+      "targetCurrency": "目标币种",
+      "bid": "买入价 (Bid)",
+      "ask": "卖出价 (Ask)",
+      "effectiveFrom": "生效时间",
+      "remark": "备注",
+      "remarkPlaceholder": "汇率策略说明..."
+    }
+  },
+  "audit": {
+    "title": "操作审计日志",
+    "subtitle": "全量记录后台操作人、动作类型、操作对象与来源 IP，含 RBAC 拦截与安全告警，支持完整 JSON 追溯。",
+    "exportCsv": "导出 CSV",
+    "exportFilename": "操作审计日志",
+    "timeRange": "时间范围:",
+    "searchPlaceholder": "搜索操作对象 / 详情关键词...",
+    "operatorLabel": "操作人",
+    "actionTypeLabel": "操作类型",
+    "allOperators": "全部操作人",
+    "allTypes": "全部类型",
+    "systemOperator": "系统",
+    "timeRanges": {
+      "today": "今天",
+      "7d": "近7天",
+      "30d": "近30天",
+      "all": "全部"
+    },
+    "status": {
+      "success": "成功",
+      "rbacBlocked": "RBAC 拦截",
+      "warning": "告警"
+    },
+    "table": {
+      "operator": "操作人",
+      "action": "操作类型 (Action)",
+      "target": "操作对象",
+      "ip": "IP 地址",
+      "time": "时间",
+      "status": "状态"
+    },
+    "menu": {
+      "viewDetail": "查看详情",
+      "refresh": "刷新"
+    },
+    "detail": {
+      "title": "审计详情 - {{id}}",
+      "titleFallback": "审计详情",
+      "operator": "操作人",
+      "actionType": "操作类型",
+      "status": "状态",
+      "jsonTitle": "完整记录 JSON"
+    },
+    "exportHeaders": {
+      "time": "时间",
+      "operator": "操作人",
+      "role": "角色",
+      "action": "动作",
+      "target": "操作对象",
+      "targetId": "目标ID",
+      "details": "详情",
+      "ip": "来源IP",
+      "tenant": "租户",
+      "status": "状态"
+    }
+  },
+  "financialReports": {
+    "title": "财务结算与渠道通道费率报表 (Financial Settlement & Fee Analytics)",
+    "subtitle": "租户归属: {{tenant}} • 结算专户对账凭据与全周期财务扎账报表",
+    "exportAll": "导出全周期财务清算汇总",
+    "exportAlert": "已生成当前租户的加密审计财务账单包 (ZIP/Excel)",
+    "sectionTitle": "通道清算流水与手续费率明细 (Channel Clearing & Merchant Fees)",
+    "table": {
+      "channel": "结算渠道名称",
+      "totalVolume": "总清算流水金额",
+      "count": "有效交易笔数",
+      "feeRate": "签约基准费率",
+      "feePaid": "通道手续费扣减",
+      "settlementCycle": "清算到账周期",
+      "operations": "操作"
+    },
+    "countUnit": "{{count}} 笔",
+    "downloadReceipt": "下载回执",
+    "exportRowAlert": "已导出【{{channel}}】结算回执与费率对账单"
+  },
+  "systemConfig": {
+    "title": "系统参数与定时任务",
+    "subtitle": "管理支付/邮件/风控/结算/系统级参数，以及对账、结算、汇率同步等定时任务调度与执行日志。",
+    "addParam": "新增参数",
+    "tabs": { "params": "系统参数", "tasks": "定时任务" },
+    "categories": {
+      "payment": "支付", "email": "邮件", "risk": "风控", "settlement": "结算", "system": "系统", "all": "全部"
+    },
+    "params": {
+      "categoryLabel": "分类:",
+      "searchPlaceholder": "搜索参数键 / 描述...",
+      "table": {
+        "key": "参数键 (Key)", "value": "参数值 (Value)", "description": "描述",
+        "category": "分类", "updatedAt": "更新时间", "updatedBy": "操作人"
+      },
+      "menu": { "edit": "编辑", "delete": "删除", "refresh": "刷新" }
+    },
+    "tasks": {
+      "summary": "共 {{count}} 个任务，双击行查看执行日志",
+      "searchPlaceholder": "搜索任务名称 / 类型...",
+      "table": {
+        "name": "任务名称", "type": "任务类型", "cron": "Cron 表达式",
+        "lastRun": "上次执行", "lastStatus": "上次状态", "nextRun": "下次执行", "status": "状态"
+      },
+      "menu": { "view": "查看详情", "enable": "启用", "disable": "停用", "trigger": "手动触发", "refresh": "刷新" },
+      "enabled": "启用", "disabled": "停用"
+    },
+    "runStatus": { "SUCCESS": "成功", "FAILED": "失败", "RUNNING": "运行中" },
+    "paramSheet": {
+      "editTitle": "编辑系统参数", "createTitle": "新增系统参数",
+      "description": "键值对形式配置系统级参数，key 全局唯一",
+      "key": "参数键 (Key)", "keyPlaceholder": "如 payment.global_timeout_ms",
+      "value": "参数值 (Value)", "valuePlaceholder": "如 15000",
+      "category": "分类", "descriptionLabel": "描述", "descriptionPlaceholder": "参数用途说明",
+      "remark": "备注", "remarkPlaceholder": "可选备注"
+    },
+    "taskSheet": {
+      "title": "任务详情 - {{name}}", "titleFallback": "任务详情",
+      "description": "类型：{{type}} · Cron：{{cron}}",
+      "triggerTitle": "确认手动触发该任务？", "triggerDescription": "将立即执行一次，约 1.5 秒后返回结果。",
+      "triggerConfirm": "立即触发", "triggering": "执行中...", "trigger": "手动触发",
+      "cron": "Cron 表达式", "nextRun": "下次执行", "logs": "执行日志",
+      "logTable": { "time": "时间", "status": "状态", "duration": "耗时", "summary": "输出摘要" }
+    },
+    "taskLog": {
+      "running": "手动触发执行中...", "success": "手动触发执行完成，处理正常",
+      "failed": "手动触发执行失败：模拟随机错误", "successShort": "手动触发执行完成", "failedShort": "手动触发执行失败"
+    },
+    "currentUser": "当前用户"
+  },
+  "riskRules": {
+    "title": "风控规则与黑名单",
+    "subtitle": "3DS 强制、失败率阈值、异常金额与频次规则，以及卡 BIN / IP / 邮箱黑名单管理。",
+    "addRule": "新增规则", "addBlacklist": "加入黑名单",
+    "tabs": { "rules": "风控规则", "blacklist": "黑名单管理" },
+    "ruleTypes": { "THREE_DS": "3DS 强制", "FAILURE_RATE": "失败率阈值", "ABNORMAL_AMOUNT": "异常金额", "ABNORMAL_FREQ": "异常频次" },
+    "actions": { "BLOCK": "拦截", "ALERT": "告警", "MANUAL_REVIEW": "人工审核" },
+    "ruleStatus": { "ENABLED": "启用", "DISABLED": "停用" },
+    "blacklistTypes": { "CARD_BIN": "卡 BIN", "IP": "IP 地址", "EMAIL": "邮箱" },
+    "blacklistStatus": { "ACTIVE": "生效", "EXPIRED": "已过期" },
+    "rulesTab": {
+      "statusLabel": "状态:", "all": "全部",
+      "table": { "name": "规则名称", "type": "类型", "condition": "触发条件", "action": "动作", "params": "阈值参数", "status": "状态" },
+      "menu": { "edit": "编辑", "enable": "启用", "disable": "停用", "delete": "删除", "refresh": "刷新" }
+    },
+    "blacklistTab": {
+      "typeLabel": "类型:", "all": "全部", "searchPlaceholder": "搜索黑名单值 / 原因...",
+      "table": { "type": "类型", "value": "黑名单值", "reason": "原因", "expiresAt": "有效期", "createdAt": "添加时间", "status": "状态" },
+      "menu": { "remove": "移除黑名单", "refresh": "刷新" }
+    },
+    "conditions": {
+      "threeDs": "{{region}} 区域交易强制 3DS 验证",
+      "failureRate": "{{window}} 分钟内失败率超过 {{percent}}%",
+      "abnormalAmount": "单笔交易超过 {{amount}} USD",
+      "abnormalFreq": "每分钟超过 {{count}} 笔"
+    },
+    "ruleSheet": {
+      "editTitle": "编辑风控规则", "createTitle": "新增风控规则", "description": "根据规则类型动态展示对应阈值参数",
+      "deleteTitle": "确认删除该风控规则？", "deleteDescription": "规则「{{name}}」删除后不再生效。",
+      "deleteConfirm": "确认删除", "deleteButton": "删除规则",
+      "name": "规则名称", "namePlaceholder": "如：欧洲强 3DS 验证",
+      "type": "规则类型", "action": "动作", "region": "适用区域",
+      "failurePercent": "失败率阈值 (%)", "failureWindow": "时间窗口 (分钟)",
+      "amountLimit": "单笔上限 (USD)", "freqLimit": "每分钟最大笔数", "enableRule": "启用该规则"
+    },
+    "blacklistSheet": {
+      "title": "加入黑名单", "description": "添加卡 BIN / IP / 邮箱黑名单，命中后交易将被拦截",
+      "type": "类型", "value": "黑名单值",
+      "valuePlaceholderCardBin": "如 40000027", "valuePlaceholderIp": "如 185.220.101.45", "valuePlaceholderEmail": "如 bad@tempmail.io",
+      "reason": "原因", "reasonPlaceholder": "拉黑原因说明", "expiresAt": "有效期", "expiresHint": "留空表示永久拉黑",
+      "blockHint": "黑名单命中后将在收银台直接拦截交易", "submit": "添加"
+    },
+    "defaults": { "manualAdd": "手动添加", "permanent": "永久" }
+  }
+}

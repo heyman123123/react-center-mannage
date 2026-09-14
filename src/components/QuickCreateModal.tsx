@@ -1,11 +1,6 @@
-import React, { useState } from "react";
-import {
-  Sparkles,
-  Receipt,
-  Building,
-  CreditCard,
-  CheckCircle2,
-} from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Sparkles } from "lucide-react";
 import {
   Tenant,
   SystemUser,
@@ -32,6 +27,7 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
   onClose,
   onCreateTransaction,
 }) => {
+  const { t } = useTranslation(["transactions", "common"]);
   const [selectedTenantId, setSelectedTenantId] = useState<TenantId>(
     currentTenant.id === "group_hq" ? "bu_na_ecom" : currentTenant.id
   );
@@ -44,8 +40,20 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
   const [status, setStatus] = useState<ReconciliationStatus>("in_process");
   const [paymentMethod, setPaymentMethod] = useState<string>("Visa Credit (*4242)");
 
-  const selectedTenant = tenants.find((t) => t.id === selectedTenantId) || currentTenant;
+  const selectedTenant = tenants.find((tx) => tx.id === selectedTenantId) || currentTenant;
   const currency = selectedTenant.currency || "USD";
+
+  const channelOptions = useMemo(
+    () => [
+      { value: "stripe", label: t("quickCreate.channels.stripe") },
+      { value: "paypal", label: t("quickCreate.channels.paypal") },
+      { value: "adyen", label: t("quickCreate.channels.adyen") },
+      { value: "apple_pay", label: t("quickCreate.channels.apple_pay") },
+      { value: "klarna", label: t("quickCreate.channels.klarna") },
+      { value: "sepa", label: t("quickCreate.channels.sepa") },
+    ],
+    [t]
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,22 +119,13 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
     onClose();
   };
 
-  const channelOptions = [
-    { value: "stripe", label: "Stripe (国际信用卡 / Apple Pay)" },
-    { value: "paypal", label: "PayPal (全球数字钱包)" },
-    { value: "adyen", label: "Adyen (欧洲本地清算 / 全渠道)" },
-    { value: "apple_pay", label: "Apple Pay / Google Pay" },
-    { value: "klarna", label: "Klarna (欧洲先买后付 BNPL)" },
-    { value: "sepa", label: "SEPA (泛欧银行直接借记)" },
-  ];
-
   return (
     <SideSheet
       id="side-sheet-quick-create"
       isOpen={true}
       onClose={onClose}
-      title="模拟录入海外交易流水"
-      description="快速生成一笔出海多币种流水并注入对账与清算管道中。"
+      title={t("quickCreate.title")}
+      description={t("quickCreate.description")}
       icon={<Sparkles className="w-5 h-5 text-amber-500" />}
       widthClass="max-w-lg"
       footer={
@@ -136,23 +135,22 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
             onClick={onClose}
             className="px-3 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
           >
-            取消
+            {t("common:actions.cancel")}
           </button>
           <button
             type="button"
             onClick={handleSubmit}
             className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer"
           >
-            确认生成海外流水
+            {t("quickCreate.confirm")}
           </button>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-        {/* Title */}
         <div>
           <label className="font-semibold text-fg-secondary block mb-1">
-            海外订单标题 / 订阅服务描述:
+            {t("quickCreate.orderTitle")}
           </label>
           <input
             type="text"
@@ -163,10 +161,9 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
           />
         </div>
 
-        {/* Merchant */}
         <div>
           <label className="font-semibold text-fg-secondary block mb-1">
-            签约主体商户名:
+            {t("quickCreate.merchantName")}
           </label>
           <input
             type="text"
@@ -177,11 +174,10 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
           />
         </div>
 
-        {/* Channel & Amount Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label className="font-semibold text-fg-secondary block mb-1">
-              海外支付通道 (Gateway):
+              {t("quickCreate.gateway")}
             </label>
             <ShadcnSelect
               value={channel}
@@ -192,7 +188,7 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
 
           <div>
             <label className="font-semibold text-fg-secondary block mb-1">
-              交易金额 ({currency}):
+              {t("quickCreate.amount", { currency })}
             </label>
             <input
               type="number"
@@ -205,10 +201,9 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
           </div>
         </div>
 
-        {/* Initial Status */}
         <div>
           <label className="font-semibold text-fg-secondary block mb-1.5">
-            初始平账状态:
+            {t("quickCreate.initialStatus")}
           </label>
           <div className="grid grid-cols-3 gap-2">
             <button
@@ -220,7 +215,7 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
                   : "bg-subtle text-fg-secondary border-line hover:bg-hover"
               }`}
             >
-              清算中
+              {t("quickCreate.status.inProcess")}
             </button>
             <button
               type="button"
@@ -231,7 +226,7 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
                   : "bg-subtle text-fg-secondary border-line hover:bg-hover"
               }`}
             >
-              已平账
+              {t("quickCreate.status.done")}
             </button>
             <button
               type="button"
@@ -242,7 +237,7 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
                   : "bg-subtle text-rose-600 border-line hover:bg-rose-50"
               }`}
             >
-              注入差错
+              {t("quickCreate.status.discrepancy")}
             </button>
           </div>
         </div>

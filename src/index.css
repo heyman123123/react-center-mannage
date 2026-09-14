@@ -4,6 +4,7 @@
    设计 Token 层 — CREEM 风格浅色商务后台 + 深色模式
    切换机制：根节点 <html data-theme="light|dark">
    不使用 Tailwind dark: 前缀，全部通过 CSS 变量覆盖实现
+   同时兼容 shadcn/ui 的标准 token 命名（background/foreground/border 等）
    ============================================================ */
 
 :root {
@@ -14,14 +15,31 @@
   --bg-hover: #f4f4f5; /* hover / 选中行填充 */
   --bg-input: #fafafa; /* 输入框背景 */
 
+  /* shadcn 兼容：背景与表面 */
+  --bg-background: #ffffff;        /* shadcn background（映射 surface） */
+  --bg-muted: #f4f4f5;             /* shadcn muted 表面（映射 hover） */
+  --bg-accent: #f4f4f5;            /* shadcn accent 表面（映射 hover） */
+  --bg-secondary: #f4f4f5;         /* shadcn secondary 表面 */
+  --bg-popover: #ffffff;           /* shadcn popover 表面 */
+  --bg-destructive: #dc2626;       /* shadcn destructive */
+
   /* 边框 */
   --border-default: #e4e4e7;
   --border-subtle: #ececee;
-
+  --border-input: #e4e4e7;         /* shadcn input 边框（映射 default） */
+  --border-ring: #18181b;          /* shadcn focus ring（映射 brand） */
   /* 文字 */
   --text-primary: #18181b; /* 一级文字 */
   --text-secondary: #52525b; /* 二级文字 */
   --text-tertiary: #a1a1aa; /* 三级文字 / 占位 / 禁用 */
+
+  /* shadcn 兼容：文字层级 */
+  --text-foreground: #18181b;              /* shadcn 主前景 */
+  --text-muted: #71717a;                   /* shadcn muted 文字 */
+  --text-accent-foreground: #18181b;       /* shadcn accent 文字 */
+  --text-secondary-foreground: #18181b;    /* shadcn secondary 文字 */
+  --text-popover-foreground: #18181b;
+  --text-destructive-foreground: #ffffff;
 
   /* 主色（主按钮 / 链接 / 选中态） */
   --brand: #18181b; /* 浅色下为深色按钮 */
@@ -36,6 +54,7 @@
   /* 阴影 */
   --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.04), 0 1px 3px rgba(24, 24, 27, 0.05);
   --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.03);
+  --shadow-xs: 0 1px 2px rgba(24, 24, 27, 0.04);
 
   /* 骨架屏 */
   --skeleton-base: #e9e9eb;
@@ -51,12 +70,28 @@
   --bg-hover: #3f3f46;
   --bg-input: #1f1f23;
 
+  --bg-background: #09090b;
+  --bg-muted: #27272a;
+  --bg-accent: #27272a;
+  --bg-secondary: #27272a;
+  --bg-popover: #18181b;
+  --bg-destructive: #b91c1c;
+
   --border-default: #3f3f46;
   --border-subtle: #2c2c31;
+  --border-input: #3f3f46;
+  --border-ring: #fafafa;
 
   --text-primary: #fafafa;
   --text-secondary: #d4d4d8;
   --text-tertiary: #71717a;
+
+  --text-foreground: #fafafa;
+  --text-muted: #a1a1aa;
+  --text-accent-foreground: #fafafa;
+  --text-secondary-foreground: #fafafa;
+  --text-popover-foreground: #fafafa;
+  --text-destructive-foreground: #fafafa;
 
   --brand: #fafafa; /* 深色下主按钮反转为浅色 */
   --brand-hover: #ffffff;
@@ -64,6 +99,7 @@
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.45);
 
   --skeleton-base: #27272a;
   --skeleton-highlight: #3f3f46;
@@ -77,7 +113,6 @@
   --color-surface: var(--bg-surface);
   --color-subtle: var(--bg-subtle);
   --color-hover: var(--bg-hover);
-  --color-input: var(--bg-input);
   --color-line: var(--border-default);
   --color-line-subtle: var(--border-subtle);
   --color-fg: var(--text-primary);
@@ -86,8 +121,28 @@
   --color-primary: var(--brand);
   --color-primary-hover: var(--brand-hover);
   --color-primary-foreground: var(--brand-fg);
+  /* shadcn 兼容色（组件类用） */
+  --color-background: var(--bg-background);
+  --color-foreground: var(--text-foreground);
+  --color-muted: var(--bg-muted);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--bg-accent);
+  --color-accent-foreground: var(--text-accent-foreground);
+  --color-destructive: var(--bg-destructive);
+  --color-destructive-foreground: var(--text-destructive-foreground);
+  --color-secondary: var(--bg-secondary);
+  --color-secondary-foreground: var(--text-secondary-foreground);
+  --color-border: var(--border-default);
+  --color-input: var(--border-input);
+  --color-ring: var(--border-ring);
+  --color-popover: var(--bg-popover);
+  --color-popover-foreground: var(--text-popover-foreground);
   --shadow-card: var(--shadow-card);
   --shadow-sm: var(--shadow-sm);
+  --shadow-xs: var(--shadow-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
 }
 
 /* 根节点背景兜底，避免首屏未挂载时白闪 */
@@ -125,4 +180,3 @@ table td {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-

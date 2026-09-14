@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import * as Popover from "@radix-ui/react-popover";
 import { AlertTriangle, X } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -25,15 +26,18 @@ export interface PopconfirmProps {
 export const Popconfirm: React.FC<PopconfirmProps> = ({
   title,
   description,
-  confirmText = "确认删除",
-  cancelText = "取消",
+  confirmText,
+  cancelText,
   onConfirm,
   children,
   okClassName,
   align = "end",
   side = "top",
 }) => {
+  const { t } = useTranslation("shell");
   const [open, setOpen] = useState(false);
+  const resolvedConfirmText = confirmText ?? t("popconfirm.confirmDelete");
+  const resolvedCancelText = cancelText ?? t("popconfirm.cancel");
 
   const handleConfirm = () => {
     setOpen(false);
@@ -74,7 +78,7 @@ export const Popconfirm: React.FC<PopconfirmProps> = ({
               onClick={() => setOpen(false)}
               className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-fg-secondary hover:bg-hover transition-colors cursor-pointer"
             >
-              {cancelText}
+              {resolvedCancelText}
             </button>
             <button
               type="button"
@@ -84,13 +88,13 @@ export const Popconfirm: React.FC<PopconfirmProps> = ({
                 okClassName
               )}
             >
-              {confirmText}
+              {resolvedConfirmText}
             </button>
           </div>
 
           <Popover.Close
             className="absolute right-2 top-2 p-0.5 text-zinc-300 hover:text-fg-secondary rounded transition-colors cursor-pointer"
-            aria-label="关闭"
+            aria-label={t("popconfirm.closeAria")}
           >
             <X className="w-3 h-3" />
           </Popover.Close>

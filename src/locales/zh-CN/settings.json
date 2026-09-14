@@ -1,0 +1,309 @@
+{
+  "roles": {
+    "title": "系统角色与权限策略",
+    "subtitle": "定义 RBAC 角色、菜单树访问权限与应用级数据隔离策略，支持内置角色与自定义角色克隆。",
+    "addRole": "新建自定义角色",
+    "listTitle": "角色列表",
+    "refresh": "刷新",
+    "refreshTitle": "刷新角色数据",
+    "add": "新增",
+    "delete": "删除",
+    "categories": {
+      "all": "全部角色",
+      "builtin": "内置角色",
+      "custom": "自定义角色"
+    },
+    "countRoles": "共 {{count}} 个角色",
+    "searchPlaceholder": "搜索名称",
+    "empty": "暂无角色数据",
+    "batchDeleteTitle": "删除选中的 {{count}} 个角色？",
+    "batchDeleteDesc": "删除后这些角色将不再可用，被授权用户将失去对应权限。",
+    "table": {
+      "name": "角色名称",
+      "key": "标识 (Key)",
+      "description": "权限说明",
+      "members": "成员数",
+      "scope": "数据范围",
+      "menuPerm": "菜单权限",
+      "actions": "操作"
+    },
+    "scope": {
+      "ALL": "全集团",
+      "READONLY": "只读脱敏",
+      "SCOPED": "指定范围"
+    },
+    "tags": {
+      "custom": "自定义",
+      "builtin": "内置"
+    },
+    "menu": {
+      "add": "新增角色",
+      "rename": "重命名",
+      "renamePrompt": "角色名称：",
+      "delete": "删除",
+      "refresh": "刷新列表"
+    },
+    "actions": {
+      "copyAsNew": "复制为新角色",
+      "edit": "编辑角色与权限",
+      "deleteTitle": "删除角色「{{name}}」？",
+      "deleteDesc": "删除后该角色将不再可用，被该角色授权的用户将失去对应权限。",
+      "deleteRole": "删除角色"
+    },
+    "cloneSuffix": " (复制角色)",
+    "cloneDesc": "基于【{{name}}】克隆自定义创建的权限策略",
+    "sheet": {
+      "editTitle": "配置角色权限: {{name}}",
+      "createTitle": "新建系统角色",
+      "description": "配置角色基本信息，并按菜单树勾选该角色可访问的菜单节点，以及可操作的应用范围。",
+      "saveEdit": "保存角色权限配置",
+      "saveCreate": "确认创建角色",
+      "nameLabel": "角色名称 (中文):",
+      "namePlaceholder": "如：海外合规与风险专员",
+      "descLabel": "岗位职能与职责描述:",
+      "descPlaceholder": "如：负责审核海外高风险扣款与抗辩拒付，查阅终端用户登录流水...",
+      "menuPermTitle": "菜单树权限分配（基于菜单管理配置）",
+      "selectAll": "全选",
+      "clearAll": "清空",
+      "appPermTitle": "应用权限范围 (Application Permissions)",
+      "toggleAllApps": "取消全部应用",
+      "selectAllApps": "全选全部应用",
+      "noApps": "暂无可授权应用"
+    },
+    "toast": {
+      "duplicated": "角色【{{name}}】已成功克隆！",
+      "deleted": "角色【{{name}}】已删除",
+      "batchDeleted": "已删除 {{count}} 个角色",
+      "nameRequired": "请填写角色名称",
+      "updated": "角色【{{name}}】权限策略已成功更新！",
+      "created": "新系统角色【{{name}}】创建成功！",
+      "refreshed": "角色数据已刷新",
+      "renamed": "角色已重命名",
+      "listRefreshed": "角色列表已刷新"
+    }
+  },
+  "menus": {
+    "title": "系统菜单树管理",
+    "subtitle": "维护后台导航菜单的无限级树结构、路由路径、图标与排序，支持展开/收起与快速挂载子节点。",
+    "addRoot": "添加一级菜单",
+    "expandAll": "展开全部",
+    "collapseAll": "收起全部",
+    "expandNode": "展开子节点",
+    "collapseNode": "收起子节点",
+    "titleFull": "系统菜单树结构管理 (Menu Management)",
+    "searchPlaceholder": "搜索菜单名称、路由路径...",
+    "treeHeader": "层级节点名称 / 路由路径",
+    "treeActions": "操作",
+    "childCount": "{{count}} 个子菜单项",
+    "empty": "暂无菜单数据，点击右上角「新增菜单节点」创建第一个菜单",
+    "menu": {
+      "addChild": "添加子菜单",
+      "edit": "编辑菜单节点",
+      "deleteTitle": "删除菜单节点「{{title}}」？",
+      "deleteDesc": "该节点及其全部子节点将从侧边栏菜单树中移除，且无法恢复。",
+      "deleteNode": "删除节点（含子节点）"
+    },
+    "sheet": {
+      "editTitle": "编辑菜单节点: {{title}}",
+      "createTitle": "新增系统树级菜单",
+      "description": "配置菜单名称、挂载的上级父节点、路由路径与图标。菜单管理不再绑定角色权限，权限在「权限管理」中按菜单树配置。",
+      "saveEdit": "保存菜单变更",
+      "saveCreate": "创建并挂载节点",
+      "titleLabel": "菜单标题",
+      "titlePlaceholder": "例如: 财务分析报表",
+      "parentLabel": "挂载上级节点 (Parent Node)",
+      "parentRoot": "作为顶级根节点 (无上级)",
+      "parentPlaceholder": "选择上级菜单节点",
+      "parentHint": "选择上级节点后，该菜单将以树状子节点缩进形式嵌套在其下方展示，支持无限层级。",
+      "pathLabel": "路由路径 (Route Path)",
+      "orderLabel": "排序权重 (Order)",
+      "descLabel": "功能用途说明",
+      "descPlaceholder": "简要阐述此菜单节点的职责边界与涉及的海外支付能力..."
+    },
+    "toast": {
+      "expandedAll": "已展开全部树级菜单",
+      "collapsedAll": "已收起全部树级菜单",
+      "titleRequired": "请填写菜单标题",
+      "updated": "菜单节点【{{title}}】已成功更新！",
+      "created": "新子菜单【{{title}}】已成功挂载到树节点！",
+      "deleted": "菜单节点【{{title}}】及其子节点已成功删除"
+    }
+  },
+  "departments": {
+    "allDepts": "全部部门",
+    "refreshTitle": "刷新部门数据",
+    "batchDeleteTitle": "删除选中的 {{count}} 个部门？",
+    "batchDeleteDesc": "删除后这些部门及其成员关联关系将一并解除，且无法恢复。",
+    "deleteTitle": "删除部门「{{name}}」？",
+    "deleteDesc": "删除后该部门及其成员关联关系将一并解除，且无法恢复。",
+    "deleteConfirm": "确认删除部门【{{name}}】及其下级？",
+    "tabs": {
+      "deptList": "部门列表",
+      "members": "查看成员"
+    },
+    "searchPlaceholder": "搜索部门名称 / 编码",
+    "treeSearchPlaceholder": "搜索部门名称...",
+    "orgStructure": "组织架构",
+    "all": "全部",
+    "viewTitle": {
+      "dept": "部门列表",
+      "member": "部门成员"
+    },
+    "table": {
+      "name": "部门名称",
+      "code": "编码",
+      "parent": "上级部门",
+      "roles": "绑定角色（多选）",
+      "members": "成员数",
+      "sort": "排序",
+      "actions": "操作"
+    },
+    "empty": "暂无部门数据",
+    "leader": "负责人：{{name}}",
+    "topLevel": "顶级部门",
+    "noRoles": "未绑定角色",
+    "memberTable": {
+      "user": "用户",
+      "dept": "所属部门",
+      "roles": "角色权限（多选）",
+      "apps": "应用授权范围",
+      "status": "账号状态"
+    },
+    "memberSummary": "部门「{{name}}」及其子部门共 {{count}} 名成员",
+    "memberHint": "成员角色继承自部门绑定角色与个人角色",
+    "noMembers": "该部门暂无成员",
+    "unassigned": "未分配",
+    "unassignedRole": "未分配角色",
+    "allApps": "全部应用",
+    "appCount": "{{count}} 款应用",
+    "status": {
+      "disabled": "已停用",
+      "active": "正常在职"
+    },
+    "menu": {
+      "addChild": "新增子部门",
+      "rename": "重命名",
+      "renamePrompt": "部门名称：",
+      "delete": "删除",
+      "refresh": "刷新列表"
+    },
+    "sheet": {
+      "editTitle": "编辑部门: {{name}}",
+      "createTitle": "新增部门",
+      "description": "配置部门基本信息并绑定角色（多选）；部门成员将继承该部门绑定角色的权限。",
+      "saveEdit": "保存部门",
+      "saveCreate": "创建部门",
+      "nameLabel": "部门名称",
+      "namePlaceholder": "例如: 出海运营中心",
+      "codeLabel": "部门编码",
+      "codePlaceholder": "例如: OPS-NA",
+      "parentLabel": "上级部门",
+      "parentRoot": "作为顶级部门（无上级）",
+      "sortLabel": "排序权重",
+      "leaderLabel": "负责人",
+      "leaderPlaceholder": "部门负责人姓名",
+      "descLabel": "部门描述",
+      "descPlaceholder": "部门职责说明",
+      "rolesLabel": "绑定角色（多选）",
+      "rolesHint": "部门成员将继承所选角色的权限",
+      "rolesPlaceholder": "选择该部门绑定的角色...",
+      "inheritHint": "该部门将继承上级部门绑定角色："
+    },
+    "toast": {
+      "nameRequired": "请填写部门名称",
+      "updated": "部门【{{name}}】已保存更新！",
+      "created": "新部门【{{name}}】创建成功！",
+      "hasChildren": "部门【{{name}}】下存在子部门，请先删除子部门",
+      "deleted": "部门【{{name}}】已删除",
+      "batchHasChildren": "存在包含子部门的项，请先处理子部门",
+      "batchDeleted": "已删除 {{count}} 个部门",
+      "batchTransfer": "已将 {{count}} 个部门标记为待转移",
+      "refreshed": "部门数据已刷新",
+      "nodeDeleted": "已删除部门【{{name}}】",
+      "transferStarted": "已发起部门【{{name}}】转移流程"
+    }
+  },
+  "profile": {
+    "title": "个人中心与账户安全",
+    "description": "管理个人名片、头像、时区语言及修改系统安全登录凭证",
+    "tabs": {
+      "profile": "基本资料 & 头像",
+      "security": "安全与密码",
+      "notifications": "风控告警通知"
+    },
+    "theme": {
+      "label": "外观主题",
+      "hint": "选择浅色或深色界面，立即全局生效并自动记忆",
+      "light": "浅色",
+      "dark": "深色"
+    },
+    "avatar": {
+      "label": "选择或上传用户头像:",
+      "presets": "推荐预设头像："
+    },
+    "fields": {
+      "name": "姓名 / 昵称:",
+      "jobTitle": "职位 / 角色描述:",
+      "timezone": "业务主时区:",
+      "locale": "操作界面语言:",
+      "org": "当前所属体系: 全球跨境支付中台",
+      "currentPassword": "当前旧密码:",
+      "newPassword": "新密码:",
+      "confirmPassword": "确认新密码:",
+      "passwordPlaceholder": "至少 8 位，包含大写字母与数字",
+      "confirmPlaceholder": "再次输入新密码",
+      "passwordStrength": "密码强度:"
+    },
+    "passwordStrength": {
+      "weak": "弱 (Weak)",
+      "medium": "中等 (Medium)",
+      "strong": "极高强 (Strong)"
+    },
+    "twoFactor": {
+      "title": "双因子身份验证 (2FA Authenticator)",
+      "hint": "使用 Google Authenticator 或 1Password 进行登录二次验证"
+    },
+    "localeOptions": {
+      "zhCN": "简体中文 (zh-CN)",
+      "enUS": "English (US)",
+      "jaJP": "日本語 (ja-JP)"
+    },
+    "jobTitleDefaults": {
+      "admin": "全球技术总监 / VP of Engineering",
+      "operator": "高级海外收单与结算运营"
+    },
+    "notifications": {
+      "paymentFailure": {
+        "title": "大额交易失败告警",
+        "hint": "单笔交易额超过 $1,000 扣款被拒时发送即时通知"
+      },
+      "discrepancy": {
+        "title": "自动平账差错异常通知",
+        "hint": "每日对账完成后发现未平账差异订单即刻预警"
+      },
+      "chargeback": {
+        "title": "Visa / Mastercard 拒付争议 (Chargeback)",
+        "hint": "收到发卡行调单或欺诈申诉时通知风控专员"
+      },
+      "saved": "风控告警通知偏好已保存！",
+      "save": "保存通知偏好"
+    },
+    "logout": {
+      "title": "退出当前账号",
+      "hint": "退出后需重新登录才能访问中台。",
+      "button": "退出登录"
+    },
+    "toast": {
+      "profileSaved": "基本资料与时区配置已成功更新！",
+      "passwordCurrentRequired": "请输入当前登录密码进行安全验证",
+      "passwordMinLength": "新密码长度必须至少为 8 位字符",
+      "passwordMismatch": "两次输入的新密码不一致，请核对",
+      "passwordReset": "系统安全登录凭证已重置成功！"
+    },
+    "actions": {
+      "cancel": "取消",
+      "saveProfile": "保存资料修改",
+      "updatePassword": "更新安全密码"
+    }
+  }
+}

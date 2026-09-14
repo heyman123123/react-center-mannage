@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -59,30 +60,30 @@ export const SUPPORTED_LANG_CONFIG: {
   { code: "fr-FR", label: "Français (fr-FR)", flag: "🇫🇷", nativeName: "Français" },
 ];
 
-const CATEGORY_MAP: Record<EmailCategory, { label: string; bg: string; text: string; border: string }> = {
-  BILLING: { label: "支付账单收据", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-  LIFECYCLE: { label: "订阅全周期", bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
-  SECURITY: { label: "账号安全验证", bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
-  PROMOTION: { label: "营销立减优惠", bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
-  SYSTEM: { label: "系统运维通知", bg: "bg-subtle", text: "text-fg-secondary", border: "border-line" },
-  RISK: { label: "风控合规预警", bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" },
+const CATEGORY_STYLES: Record<EmailCategory, { bg: string; text: string; border: string }> = {
+  BILLING: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+  LIFECYCLE: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+  SECURITY: { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
+  PROMOTION: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
+  SYSTEM: { bg: "bg-subtle", text: "text-fg-secondary", border: "border-line" },
+  RISK: { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" },
 };
 
-const COMMON_DYNAMIC_TAGS = [
-  { tag: "{{customer_name}}", label: "客户姓名", sample: "Alex Wright" },
-  { tag: "{{app_name}}", label: "应用名称", sample: "NovasAI Studio" },
-  { tag: "{{plan_name}}", label: "订购套餐", sample: "Enterprise Annual Plan" },
-  { tag: "{{amount}}", label: "实付金额", sample: "199.00" },
-  { tag: "{{currency}}", label: "交易币种", sample: "USD" },
-  { tag: "{{order_id}}", label: "订单单号", sample: "ord_live_890281" },
-  { tag: "{{payment_method}}", label: "支付卡别", sample: "Visa •••• 4242" },
-  { tag: "{{billing_period}}", label: "计费周期", sample: "2026/09/01 - 2027/09/01" },
-  { tag: "{{next_renewal_date}}", label: "下次扣费日", sample: "2027-09-01" },
-  { tag: "{{billing_portal_url}}", label: "账务门户链接", sample: "https://billing.novaspay.global/portal" },
-  { tag: "{{security_code}}", label: "安全验证码", sample: "849201" },
-  { tag: "{{coupon_code}}", label: "专属折扣码", sample: "VIP25OFF" },
-  { tag: "{{discount_rate}}", label: "折扣比率", sample: "25" },
-  { tag: "{{expiry_date}}", label: "截止日期", sample: "2026-09-30" },
+const DYNAMIC_TAG_SAMPLES: { tag: string; key: string; sample: string }[] = [
+  { tag: "{{customer_name}}", key: "customer_name", sample: "Alex Wright" },
+  { tag: "{{app_name}}", key: "app_name", sample: "NovasAI Studio" },
+  { tag: "{{plan_name}}", key: "plan_name", sample: "Enterprise Annual Plan" },
+  { tag: "{{amount}}", key: "amount", sample: "199.00" },
+  { tag: "{{currency}}", key: "currency", sample: "USD" },
+  { tag: "{{order_id}}", key: "order_id", sample: "ord_live_890281" },
+  { tag: "{{payment_method}}", key: "payment_method", sample: "Visa •••• 4242" },
+  { tag: "{{billing_period}}", key: "billing_period", sample: "2026/09/01 - 2027/09/01" },
+  { tag: "{{next_renewal_date}}", key: "next_renewal_date", sample: "2027-09-01" },
+  { tag: "{{billing_portal_url}}", key: "billing_portal_url", sample: "https://billing.novaspay.global/portal" },
+  { tag: "{{security_code}}", key: "security_code", sample: "849201" },
+  { tag: "{{coupon_code}}", key: "coupon_code", sample: "VIP25OFF" },
+  { tag: "{{discount_rate}}", key: "discount_rate", sample: "25" },
+  { tag: "{{expiry_date}}", key: "expiry_date", sample: "2026-09-30" },
 ];
 
 export const EmailTemplatesView: React.FC<EmailTemplatesViewProps> = ({
@@ -91,6 +92,87 @@ export const EmailTemplatesView: React.FC<EmailTemplatesViewProps> = ({
   onSaveTemplate,
   onDeleteTemplate,
 }) => {
+  const { t } = useTranslation(["email", "common"]);
+
+  const categoryMap = useMemo(
+    () =>
+      (Object.keys(CATEGORY_STYLES) as EmailCategory[]).reduce(
+        (acc, code) => ({
+          ...acc,
+          [code]: {
+            ...CATEGORY_STYLES[code],
+            label: t(`templates.categories.${code}`),
+          },
+        }),
+        {} as Record<EmailCategory, { label: string; bg: string; text: string; border: string }>
+      ),
+    [t]
+  );
+
+  const commonDynamicTags = useMemo(
+    () =>
+      DYNAMIC_TAG_SAMPLES.map((item) => ({
+        tag: item.tag,
+        label: t(`templates.dynamicTags.${item.key}`),
+        sample: item.sample,
+      })),
+    [t]
+  );
+
+  const categoryOptionLabel = useCallback(
+    (code: EmailCategory) =>
+      t("templates.filters.categoryWithCode", {
+        label: t(`templates.categories.${code}`),
+        code,
+      }),
+    [t]
+  );
+
+  const editorCategoryOptions = useMemo(
+    () =>
+      (["BILLING", "LIFECYCLE", "SECURITY", "PROMOTION", "SYSTEM"] as EmailCategory[]).map((code) => ({
+        value: code,
+        label: categoryOptionLabel(code),
+      })),
+    [categoryOptionLabel]
+  );
+
+  const filterCategoryOptions = useMemo(
+    () => [
+      { value: "ALL", label: t("templates.filters.categoryAllFull") },
+      ...editorCategoryOptions,
+    ],
+    [t, editorCategoryOptions]
+  );
+
+  const filterStatusOptions = useMemo(
+    () => [
+      { value: "ALL", label: t("templates.filters.statusAllFull") },
+      { value: "ACTIVE", label: t("templates.filters.statusActiveFull") },
+      { value: "DRAFT", label: t("templates.filters.statusDraftFull") },
+      { value: "DISABLED", label: t("templates.filters.statusDisabledFull") },
+    ],
+    [t]
+  );
+
+  const editorStatusOptions = useMemo(
+    () =>
+      (["ACTIVE", "DRAFT", "DISABLED"] as const).map((status) => ({
+        value: status,
+        label: t(`templates.editorStatus.${status}`),
+      })),
+    [t]
+  );
+
+  const testSendChannelOptions = useMemo(
+    () => [
+      { value: "SENDGRID", label: t("templates.testSend.channelSendgrid") },
+      { value: "AWS_SES", label: t("templates.testSend.channelAwsSes") },
+      { value: "RESEND", label: t("templates.testSend.channelResend") },
+    ],
+    [t]
+  );
+
   const [templateList, setTemplateList] = useState<EmailTemplate[]>(templates);
   const [searchQuery, setSearchQuery] = useState("");
   const [langFilter, setLangFilter] = useState<string>("ALL");
@@ -151,8 +233,8 @@ export const EmailTemplatesView: React.FC<EmailTemplatesViewProps> = ({
   });
 
   // Calculate stats
-  const activeCount = templateList.filter((t) => t.status === "ACTIVE").length;
-  const coveredLanguages: SupportedLanguage[] = Array.from(new Set(templateList.map((t) => t.language)));
+  const activeCount = templateList.filter((tmpl) => tmpl.status === "ACTIVE").length;
+  const coveredLanguages: SupportedLanguage[] = Array.from(new Set(templateList.map((tmpl) => tmpl.language)));
 
   // Open Edit Modal for a single independent email
   const handleOpenEdit = (email: EmailTemplate) => {
@@ -214,8 +296,8 @@ The {{app_name}} Team`,
     };
 
     setTemplateList((prev) => {
-      const exists = prev.some((t) => t.id === updated.id);
-      return exists ? prev.map((t) => (t.id === updated.id ? updated : t)) : [updated, ...prev];
+      const exists = prev.some((tmpl) => tmpl.id === updated.id);
+      return exists ? prev.map((tmpl) => (tmpl.id === updated.id ? updated : tmpl)) : [updated, ...prev];
     });
 
     if (onSaveTemplate) {
@@ -223,7 +305,7 @@ The {{app_name}} Team`,
     }
 
     setIsEditingModalOpen(false);
-    showToast(`独立邮件【${updated.name}】已成功保存！当前独立归属语种：${updated.language}`);
+    showToast(t("templates.toast.savedStandalone", { name: updated.name, language: updated.language }));
   };
 
   // Toggle single email active/disabled
@@ -235,16 +317,24 @@ The {{app_name}} Team`,
       updatedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
     };
 
-    setTemplateList((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    setTemplateList((prev) => prev.map((tmpl) => (tmpl.id === updated.id ? updated : tmpl)));
     if (onSaveTemplate) onSaveTemplate(updated);
-    showToast(`邮件【${email.name}】状态已变更为【${nextStatus === "ACTIVE" ? "已启用上线" : "已停用"}】`);
+    showToast(
+      t("templates.toast.statusChanged", {
+        name: email.name,
+        status:
+          nextStatus === "ACTIVE"
+            ? t("templates.toast.statusActiveOnline")
+            : t("templates.status.DISABLED"),
+      })
+    );
   };
 
   // Delete single email
   const handleDelete = (id: string, name: string) => {
-    setTemplateList((prev) => prev.filter((t) => t.id !== id));
+    setTemplateList((prev) => prev.filter((tmpl) => tmpl.id !== id));
     if (onDeleteTemplate) onDeleteTemplate(id);
-    showToast(`独立邮件【${name}】已成功移除`);
+    showToast(t("templates.toast.removedStandalone", { name }));
   };
 
   // Execute clone to another language
@@ -272,7 +362,12 @@ The {{app_name}} Team`,
     setTemplateList((prev) => [cloned, ...prev]);
     if (onSaveTemplate) onSaveTemplate(cloned);
     setCloningSourceEmail(null);
-    showToast(`已成功将【${cloningSourceEmail.name}】复制为新独立邮件【${cloned.name}】(草稿状态)，请点击编辑微调文案！`);
+    showToast(
+      t("templates.toast.clonedStandalone", {
+        sourceName: cloningSourceEmail.name,
+        clonedName: cloned.name,
+      })
+    );
     // Automatically open for editing
     setEditingEmail(cloned);
     setIsEditingModalOpen(true);
@@ -293,7 +388,7 @@ The {{app_name}} Team`,
         durationMs: 342,
         log: `HTTP 202 Accepted. Channel [${testSendChannel}] dispatched. SPF/DKIM/DMARC PASS. Recipient: ${testEmailAddress}. Language: ${testSendingEmail.language}.`,
       });
-      showToast(`测试信已成功发送至 ${testEmailAddress}，送达耗时 342ms！`);
+      showToast(t("templates.toast.testSent", { email: testEmailAddress, durationMs: 342 }));
     }, 900);
   };
 
@@ -302,7 +397,7 @@ The {{app_name}} Team`,
     let text = rawMarkdown;
 
     // 1. Resolve dynamic sample tags
-    COMMON_DYNAMIC_TAGS.forEach((tag) => {
+    commonDynamicTags.forEach((tag) => {
       text = text.replaceAll(tag.tag, `**${tag.sample}**`);
     });
 
@@ -346,13 +441,13 @@ The {{app_name}} Team`,
               <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
                 <Languages className="w-5 h-5" />
               </span>
-              <h1 className="text-xl font-bold text-fg tracking-tight">多语言邮件管理</h1>
+              <h1 className="text-xl font-bold text-fg tracking-tight">{t("templates.pageTitle")}</h1>
               <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-xs font-semibold">
-                独立单一邮件架构
+                {t("templates.architectureBadge")}
               </span>
             </div>
             <p className="text-xs text-fg-secondary mt-1 max-w-3xl">
-              系统的每封邮件均为<strong>独立单一实体</strong>，支持独立指定归属语言、触发器、发信人与正文。内置与【字典管理】联动的全局多语言共享词条插槽，保障全球统一合规与本地化表达。
+              {t("templates.pageSubtitle")}
             </p>
           </div>
 
@@ -362,7 +457,7 @@ The {{app_name}} Team`,
               className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
             >
               <Plus className="w-4 h-4" />
-              新建独立邮件
+              {t("templates.createStandalone")}
             </button>
           </div>
         </div>
@@ -372,21 +467,22 @@ The {{app_name}} Team`,
           <div className="bg-subtle/80 p-3 rounded-xl border border-line/60">
             <div className="text-[11px] text-fg-secondary font-medium flex items-center gap-1">
               <Mail className="w-3.5 h-3.5 text-fg-tertiary" />
-              独立邮件总数
+              {t("templates.kpi.totalEmails")}
             </div>
             <div className="text-lg font-bold text-fg mt-0.5">
-              {templateList.length} <span className="text-xs font-normal text-fg-tertiary">封独立邮件</span>
+              {templateList.length}{" "}
+              <span className="text-xs font-normal text-fg-tertiary">{t("templates.kpi.totalUnit")}</span>
             </div>
           </div>
 
           <div className="bg-subtle/80 p-3 rounded-xl border border-line/60">
             <div className="text-[11px] text-fg-secondary font-medium flex items-center gap-1">
               <Globe className="w-3.5 h-3.5 text-blue-500" />
-              覆盖出海语种
+              {t("templates.kpi.coveredLangs")}
             </div>
             <div className="text-lg font-bold text-fg mt-0.5 flex items-center gap-1.5">
               {coveredLanguages.length}{" "}
-              <span className="text-xs text-fg-tertiary font-normal">个目标市场</span>
+              <span className="text-xs text-fg-tertiary font-normal">{t("templates.kpi.targetMarkets")}</span>
               <div className="flex -space-x-1 ml-1">
                 {coveredLanguages.slice(0, 5).map((l) => (
                   <span key={l} className="text-xs" title={l}>
@@ -400,23 +496,25 @@ The {{app_name}} Team`,
           <div className="bg-subtle/80 p-3 rounded-xl border border-line/60">
             <div className="text-[11px] text-fg-secondary font-medium flex items-center gap-1">
               <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-              已启用上线 (Active)
+              {t("templates.kpi.activeOnline")}
             </div>
             <div className="text-lg font-bold text-emerald-700 mt-0.5">
               {activeCount}{" "}
-              <span className="text-xs font-normal text-fg-tertiary">/ {templateList.length} 生产就绪</span>
+              <span className="text-xs font-normal text-fg-tertiary">
+                / {templateList.length} {t("templates.kpi.productionReady")}
+              </span>
             </div>
           </div>
 
           <div className="bg-subtle/80 p-3 rounded-xl border border-line/60">
             <div className="text-[11px] text-fg-secondary font-medium flex items-center gap-1">
               <BookOpen className="w-3.5 h-3.5 text-violet-500" />
-              字典变量共享引用
+              {t("templates.kpi.dictRefSharing")}
             </div>
             <div className="text-lg font-bold text-violet-700 mt-0.5 flex items-center gap-1">
               100%{" "}
               <span className="text-[10px] text-violet-600 bg-violet-100 px-1.5 py-0.2 rounded font-normal">
-                已接入字典管理
+                {t("templates.kpi.dictConnected")}
               </span>
             </div>
           </div>
@@ -428,7 +526,7 @@ The {{app_name}} Team`,
         {/* Language Tabs / Filter Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs scrollbar-none">
           <span className="text-fg-tertiary font-semibold flex items-center gap-1 text-[11px] shrink-0">
-            <Filter className="w-3.5 h-3.5" /> 筛选语种:
+            <Filter className="w-3.5 h-3.5" /> {t("templates.filters.langFilterLabel")}
           </span>
           <button
             onClick={() => setLangFilter("ALL")}
@@ -438,10 +536,10 @@ The {{app_name}} Team`,
                 : "bg-hover text-fg-secondary hover:bg-hover"
             }`}
           >
-            全部语言 ({templateList.length})
+            {t("templates.filters.allLangsCount", { count: templateList.length })}
           </button>
           {SUPPORTED_LANG_CONFIG.map((lang) => {
-            const count = templateList.filter((t) => t.language === lang.code).length;
+            const count = templateList.filter((tmpl) => tmpl.language === lang.code).length;
             const isSelected = langFilter === lang.code;
             return (
               <button
@@ -469,7 +567,7 @@ The {{app_name}} Team`,
             <Search className="w-4 h-4 text-fg-tertiary absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="搜索邮件名称、唯一代码、邮件主题、发件人或正文关键词..."
+              placeholder={t("templates.filters.searchStandalonePlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 bg-subtle border border-line rounded-xl text-xs focus:bg-surface focus:outline-hidden focus:border-indigo-500 transition-colors"
@@ -482,14 +580,7 @@ The {{app_name}} Team`,
               <ShadcnSelect
                 value={categoryFilter}
                 onValueChange={(val) => setCategoryFilter(val)}
-                options={[
-                  { value: "ALL", label: "全部分类 (All Categories)" },
-                  { value: "BILLING", label: "支付账单收据 (BILLING)" },
-                  { value: "LIFECYCLE", label: "订阅全周期 (LIFECYCLE)" },
-                  { value: "SECURITY", label: "账号安全验证 (SECURITY)" },
-                  { value: "PROMOTION", label: "营销立减优惠 (PROMOTION)" },
-                  { value: "SYSTEM", label: "系统运维通知 (SYSTEM)" },
-                ]}
+                options={filterCategoryOptions}
               />
             </div>
 
@@ -498,12 +589,7 @@ The {{app_name}} Team`,
               <ShadcnSelect
                 value={statusFilter}
                 onValueChange={(val) => setStatusFilter(val)}
-                options={[
-                  { value: "ALL", label: "全部状态" },
-                  { value: "ACTIVE", label: "已启用 (ACTIVE)" },
-                  { value: "DRAFT", label: "草稿 (DRAFT)" },
-                  { value: "DISABLED", label: "已停用 (DISABLED)" },
-                ]}
+                options={filterStatusOptions}
               />
             </div>
           </div>
@@ -516,14 +602,14 @@ The {{app_name}} Team`,
           <table className="min-w-[1100px] w-full text-left border-collapse">
             <thead>
               <tr className="bg-subtle/90 text-[11px] font-semibold text-fg-secondary border-b border-line/70">
-                <th className="py-2 px-3 w-[240px]">独立邮件信息 / 唯一编号</th>
-                <th className="py-2 px-3 w-[160px]">归属语言</th>
-                <th className="py-2 px-3 w-[180px]">业务分类 & 触发器</th>
-                <th className="py-2 px-3 min-w-[260px]">发件人 & 邮件主题 (Subject)</th>
-                <th className="py-2 px-3 w-[110px]">状态</th>
-                <th className="py-2 px-3 w-[110px]">最近更新</th>
+                <th className="py-2 px-3 w-[240px]">{t("templates.tableStandalone.emailInfo")}</th>
+                <th className="py-2 px-3 w-[160px]">{t("templates.tableStandalone.language")}</th>
+                <th className="py-2 px-3 w-[180px]">{t("templates.tableStandalone.categoryTrigger")}</th>
+                <th className="py-2 px-3 min-w-[260px]">{t("templates.tableStandalone.senderSubject")}</th>
+                <th className="py-2 px-3 w-[110px]">{t("templates.tableStandalone.status")}</th>
+                <th className="py-2 px-3 w-[110px]">{t("templates.tableStandalone.updatedAt")}</th>
                 <th className="py-2 px-3 w-[160px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                  操作
+                  {t("templates.tableStandalone.actions")}
                 </th>
               </tr>
             </thead>
@@ -532,7 +618,7 @@ The {{app_name}} Team`,
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-fg-tertiary">
                     <Mail className="w-8 h-8 mx-auto text-zinc-300 mb-2" />
-                    <p className="text-xs">未找到符合条件的独立邮件</p>
+                    <p className="text-xs">{t("templates.empty.noResults")}</p>
                     <button
                       onClick={() => {
                         setSearchQuery("");
@@ -542,14 +628,14 @@ The {{app_name}} Team`,
                       }}
                       className="mt-2 text-xs text-indigo-600 hover:underline font-medium"
                     >
-                      清空所有筛选条件
+                      {t("templates.empty.clearFilters")}
                     </button>
                   </td>
                 </tr>
               ) : (
                 paginate<EmailTemplate>(filteredEmails, currentPage, pageSize).map((email) => {
                   const langMeta = getLanguageMeta(email.language);
-                  const catStyle = CATEGORY_MAP[email.category] || CATEGORY_MAP.SYSTEM;
+                  const catStyle = categoryMap[email.category] || categoryMap.SYSTEM;
 
                   return (
                     <tr key={email.id} className="hover:bg-subtle/80 transition-colors group">
@@ -620,7 +706,7 @@ The {{app_name}} Team`,
                               ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
                               : "bg-hover text-fg-secondary border-line hover:bg-hover"
                           }`}
-                          title="点击切换启用/停用状态"
+                          title={t("templates.actions.toggleStatusTitle")}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
@@ -631,7 +717,7 @@ The {{app_name}} Team`,
                                 : "bg-hover"
                             }`}
                           />
-                          {email.status === "ACTIVE" ? "已启用" : email.status === "DRAFT" ? "草稿" : "已停用"}
+                          {t(`templates.status.${email.status}`)}
                         </button>
                       </td>
 
@@ -647,7 +733,7 @@ The {{app_name}} Team`,
                           <button
                             onClick={() => setPreviewEmail(email)}
                             className="p-1.5 text-fg-secondary hover:text-fg hover:bg-hover rounded-lg transition-colors"
-                            title="设备预览"
+                            title={t("templates.actions.previewDevice")}
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
@@ -656,7 +742,7 @@ The {{app_name}} Team`,
                           <button
                             onClick={() => handleOpenEdit(email)}
                             className="p-1.5 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors"
-                            title="编辑此独立邮件"
+                            title={t("templates.actions.editStandalone")}
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
@@ -670,7 +756,7 @@ The {{app_name}} Team`,
                               if (remaining) setCloneTargetLang(remaining.code);
                             }}
                             className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="克隆为新语种独立邮件"
+                            title={t("templates.actions.cloneLang")}
                           >
                             <CopyPlus className="w-3.5 h-3.5" />
                           </button>
@@ -682,21 +768,21 @@ The {{app_name}} Team`,
                               setTestSendResult(null);
                             }}
                             className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition-colors"
-                            title="模拟测试发送"
+                            title={t("templates.actions.testSend")}
                           >
                             <Send className="w-3.5 h-3.5" />
                           </button>
 
                           {/* Delete Button */}
                           <Popconfirm
-                            title={`删除独立邮件「${email.name}」？`}
-                            description="删除后对应触发事件将不再投递该语言版本，且无法恢复。"
+                            title={t("templates.confirm.deleteStandaloneTitle", { name: email.name })}
+                            description={t("templates.confirm.deleteStandaloneDesc")}
                             onConfirm={() => handleDelete(email.id, email.name)}
                           >
                             <button
                               type="button"
                               className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
-                              title="删除邮件"
+                              title={t("templates.actions.deleteEmail")}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -719,8 +805,8 @@ The {{app_name}} Team`,
           id="side-sheet-email-edit"
           isOpen={true}
           onClose={() => setIsEditingModalOpen(false)}
-          title={`编辑独立单一邮件: ${editingEmail.code}`}
-          description="当前配置只针对当前单一邮件实体生效，具备独立主题、发件人与正文内容"
+          title={t("templates.editor.title", { code: editingEmail.code })}
+          description={t("templates.editor.description")}
           icon={<Edit3 className="w-5 h-5 text-indigo-600" />}
           widthClass="max-w-5xl"
           headerExtra={
@@ -732,7 +818,7 @@ The {{app_name}} Team`,
                   activeTabInEditor === "EDIT" ? "bg-surface text-fg shadow-card" : "text-fg-secondary"
                 }`}
               >
-                纯表单模式
+                {t("templates.editor.tabForm")}
               </button>
               <button
                 type="button"
@@ -741,7 +827,7 @@ The {{app_name}} Team`,
                   activeTabInEditor === "SPLIT_PREVIEW" ? "bg-surface text-fg shadow-card" : "text-fg-secondary"
                 }`}
               >
-                双栏实时对照
+                {t("templates.editor.tabSplit")}
               </button>
             </div>
           }
@@ -752,7 +838,7 @@ The {{app_name}} Team`,
                 onClick={() => setIsEditingModalOpen(false)}
                 className="px-3 py-2 border border-line hover:bg-hover text-fg-secondary rounded-xl text-xs font-semibold cursor-pointer"
               >
-                取消
+                {t("common:actions.cancel")}
               </button>
               <button
                 type="button"
@@ -760,7 +846,7 @@ The {{app_name}} Team`,
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card cursor-pointer"
               >
                 <Save className="w-4 h-4" />
-                保存独立邮件
+                {t("templates.editor.saveStandalone")}
               </button>
             </>
           }
@@ -778,7 +864,7 @@ The {{app_name}} Team`,
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-subtle/50 p-3 rounded-xl border border-line/60">
                   <div>
                     <label className="block text-xs font-semibold text-fg-secondary mb-1">
-                      邮件名称 <span className="text-rose-500">*</span>
+                      {t("templates.editor.nameLabel")} <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -791,7 +877,7 @@ The {{app_name}} Team`,
 
                   <div>
                     <label className="block text-xs font-semibold text-fg-secondary mb-1">
-                      唯一系统代码 (Code) <span className="text-rose-500">*</span>
+                      {t("templates.editor.codeLabel")} <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -805,7 +891,7 @@ The {{app_name}} Team`,
                   {/* Single Independent Language Selector */}
                   <div>
                     <label className="block text-xs font-semibold text-fg-secondary mb-1">
-                      独立归属语言 (Language) <span className="text-rose-500">*</span>
+                      {t("templates.editor.languageLabel")} <span className="text-rose-500">*</span>
                     </label>
                     <ShadcnSelect
                       value={editingEmail.language}
@@ -825,7 +911,7 @@ The {{app_name}} Team`,
                   {/* Category */}
                   <div>
                     <label className="block text-xs font-semibold text-fg-secondary mb-1">
-                      业务场景分类 <span className="text-rose-500">*</span>
+                      {t("templates.editor.categoryLabel")} <span className="text-rose-500">*</span>
                     </label>
                     <ShadcnSelect
                       value={editingEmail.category}
@@ -835,31 +921,29 @@ The {{app_name}} Team`,
                           category: val as EmailCategory,
                         })
                       }
-                      options={[
-                        { value: "BILLING", label: "支付账单收据 (BILLING)" },
-                        { value: "LIFECYCLE", label: "订阅全周期 (LIFECYCLE)" },
-                        { value: "SECURITY", label: "账号安全验证 (SECURITY)" },
-                        { value: "PROMOTION", label: "营销立减优惠 (PROMOTION)" },
-                        { value: "SYSTEM", label: "系统运维通知 (SYSTEM)" },
-                      ]}
+                      options={editorCategoryOptions}
                     />
                   </div>
 
                   {/* Trigger Event */}
                   <div>
-                    <label className="block text-xs font-semibold text-fg-secondary mb-1">触发事件 (Webhook Trigger)</label>
+                    <label className="block text-xs font-semibold text-fg-secondary mb-1">
+                      {t("templates.editor.triggerLabel")}
+                    </label>
                     <input
                       type="text"
                       value={editingEmail.triggerEvent}
                       onChange={(e) => setEditingEmail({ ...editingEmail, triggerEvent: e.target.value })}
                       className="w-full px-3 py-2 bg-surface border border-line rounded-xl text-xs font-mono text-fg-secondary focus:border-indigo-500 focus:outline-hidden"
-                      placeholder="例如 charge.succeeded"
+                      placeholder={t("templates.editor.triggerPlaceholder")}
                     />
                   </div>
 
                   {/* Status */}
                   <div>
-                    <label className="block text-xs font-semibold text-fg-secondary mb-1">生效状态</label>
+                    <label className="block text-xs font-semibold text-fg-secondary mb-1">
+                      {t("templates.editor.statusLabel")}
+                    </label>
                     <ShadcnSelect
                       value={editingEmail.status}
                       onValueChange={(val) =>
@@ -868,11 +952,7 @@ The {{app_name}} Team`,
                           status: val as "ACTIVE" | "DRAFT" | "DISABLED",
                         })
                       }
-                      options={[
-                        { value: "ACTIVE", label: "已启用上线 (ACTIVE)" },
-                        { value: "DRAFT", label: "暂存草稿 (DRAFT)" },
-                        { value: "DISABLED", label: "已停用 (DISABLED)" },
-                      ]}
+                      options={editorStatusOptions}
                     />
                   </div>
                 </div>
@@ -881,7 +961,9 @@ The {{app_name}} Team`,
                   <div className="space-y-3 bg-subtle/50 p-3 rounded-xl border border-line/60">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-xs font-semibold text-fg-secondary mb-1">发件人显示名称</label>
+                        <label className="block text-xs font-semibold text-fg-secondary mb-1">
+                          {t("templates.editor.senderNameLabel")}
+                        </label>
                         <input
                           type="text"
                           value={editingEmail.senderName}
@@ -891,7 +973,9 @@ The {{app_name}} Team`,
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-fg-secondary mb-1">发件人地址</label>
+                        <label className="block text-xs font-semibold text-fg-secondary mb-1">
+                          {t("templates.editor.senderEmailLabel")}
+                        </label>
                         <input
                           type="email"
                           value={editingEmail.senderEmail}
@@ -903,7 +987,7 @@ The {{app_name}} Team`,
 
                     <div>
                       <label className="block text-xs font-semibold text-fg-secondary mb-1">
-                        独立邮件主题 (Subject) <span className="text-rose-500">*</span>
+                        {t("templates.editor.subjectLabel")} <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -915,13 +999,15 @@ The {{app_name}} Team`,
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-fg-secondary mb-1">邮件摘要预热文本 (Preheader)</label>
+                      <label className="block text-xs font-semibold text-fg-secondary mb-1">
+                        {t("templates.editor.preheaderLabel")}
+                      </label>
                       <input
                         type="text"
                         value={editingEmail.previewText}
                         onChange={(e) => setEditingEmail({ ...editingEmail, previewText: e.target.value })}
                         className="w-full px-3 py-2 bg-surface border border-line rounded-xl text-xs text-fg-secondary focus:border-indigo-500 focus:outline-hidden"
-                        placeholder="在收件箱列表中展示的一句话预览摘要"
+                        placeholder={t("templates.editor.preheaderPlaceholder")}
                       />
                     </div>
                   </div>
@@ -931,20 +1017,18 @@ The {{app_name}} Team`,
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-xs font-semibold text-fg-secondary flex items-center gap-1.5">
                         <FileText className="w-3.5 h-3.5 text-indigo-500" />
-                        邮件正文内容 (Markdown / HTML)
+                        {t("templates.editor.bodyLabel")}
                       </label>
-                      <span className="text-[11px] text-fg-tertiary">
-                        支持 Markdown 排版、HTML 标签及插槽变量
-                      </span>
+                      <span className="text-[11px] text-fg-tertiary">{t("templates.editor.bodyHint")}</span>
                     </div>
 
                     {/* Quick Variable Insertion Bar */}
                     <div className="bg-hover p-2 rounded-t-xl border border-line border-b-0 space-y-1.5">
                       <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
                         <span className="text-[10px] text-fg-secondary font-semibold flex items-center gap-1">
-                          <Tag className="w-3 h-3 text-amber-500" /> 常用动态插槽:
+                          <Tag className="w-3 h-3 text-amber-500" /> {t("templates.editor.dynamicTagsLabel")}
                         </span>
-                        {COMMON_DYNAMIC_TAGS.slice(0, 6).map((item) => (
+                        {commonDynamicTags.slice(0, 6).map((item) => (
                           <button
                             key={item.tag}
                             type="button"
@@ -956,7 +1040,7 @@ The {{app_name}} Team`,
                               copyToClipboard(item.tag, item.tag);
                             }}
                             className="px-1.5 py-0.5 bg-surface hover:bg-hover text-fg-secondary rounded text-[10px] font-mono border border-line flex items-center gap-1"
-                            title={`点击插入 ${item.label}`}
+                            title={t("templates.actions.insertTag", { label: item.label })}
                           >
                             <span>{item.tag}</span>
                             {copiedKey === item.tag && <Check className="w-2.5 h-2.5 text-emerald-600" />}
@@ -967,7 +1051,7 @@ The {{app_name}} Team`,
                       {/* Dictionary Reference Tags */}
                       <div className="flex items-center gap-1.5 flex-wrap text-[11px] pt-1 border-t border-line">
                         <span className="text-[10px] text-violet-700 font-semibold flex items-center gap-1">
-                          <BookOpen className="w-3 h-3 text-violet-500" /> 统一字典引用:
+                          <BookOpen className="w-3 h-3 text-violet-500" /> {t("templates.editor.dictTagsLabel")}
                         </span>
                         {dictionary.slice(0, 4).map((d) => (
                           <button
@@ -982,7 +1066,7 @@ The {{app_name}} Team`,
                               copyToClipboard(placeholder, d.id);
                             }}
                             className="px-1.5 py-0.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded text-[10px] font-mono border border-violet-200 flex items-center gap-1"
-                            title={`点击插入字典: ${d.description}`}
+                            title={t("templates.actions.insertDict", { description: d.description })}
                           >
                             <span>{`{{dict.${d.key}}}`}</span>
                             {copiedKey === d.id && <Check className="w-2.5 h-2.5 text-emerald-600" />}
@@ -1006,10 +1090,10 @@ The {{app_name}} Team`,
                     <div className="flex items-center justify-between pb-3 border-b border-line mb-3">
                       <span className="text-xs font-bold text-fg flex items-center gap-1.5">
                         <Eye className="w-3.5 h-3.5 text-indigo-500" />
-                        实时渲染效果 ({editingEmail.language})
+                        {t("templates.editor.livePreview", { language: editingEmail.language })}
                       </span>
                       <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> 动态插槽与字典自动换算
+                        <CheckCircle2 className="w-3 h-3" /> {t("templates.editor.livePreviewHint")}
                       </span>
                     </div>
 
@@ -1017,17 +1101,17 @@ The {{app_name}} Team`,
                       {/* Email Header Preview */}
                       <div className="pb-3 border-b border-line-subtle text-fg-secondary space-y-1 text-[11px]">
                         <div>
-                          <span className="text-fg-tertiary">发件人：</span>{" "}
+                          <span className="text-fg-tertiary">{t("templates.editor.previewFrom")}</span>{" "}
                           <span className="font-semibold text-fg">{editingEmail.senderName}</span> &lt;
                           {editingEmail.senderEmail}&gt;
                         </div>
                         <div>
-                          <span className="text-fg-tertiary">主题：</span>{" "}
+                          <span className="text-fg-tertiary">{t("templates.editor.previewSubject")}</span>{" "}
                           <span className="font-bold text-fg">{editingEmail.subject}</span>
                         </div>
                         {editingEmail.previewText && (
                           <div className="text-fg-tertiary text-[10px] italic">
-                            Preheader: {editingEmail.previewText}
+                            {t("templates.editor.preheaderPrefix")} {editingEmail.previewText}
                           </div>
                         )}
                       </div>
@@ -1068,7 +1152,7 @@ The {{app_name}} Team`,
                   previewDevice === "desktop" ? "bg-surface text-fg shadow-card" : "text-fg-secondary"
                 }`}
               >
-                <Laptop className="w-3.5 h-3.5" /> 桌面端 (640px)
+                <Laptop className="w-3.5 h-3.5" /> {t("templates.preview.desktop")}
               </button>
               <button
                 type="button"
@@ -1077,14 +1161,14 @@ The {{app_name}} Team`,
                   previewDevice === "mobile" ? "bg-surface text-fg shadow-card" : "text-fg-secondary"
                 }`}
               >
-                <Smartphone className="w-3.5 h-3.5" /> 移动端 (375px)
+                <Smartphone className="w-3.5 h-3.5" /> {t("templates.preview.mobile")}
               </button>
             </div>
           }
           footer={
             <div className="flex items-center justify-between w-full">
               <div className="text-[11px] text-fg-secondary">
-                当前语言已关联字典：
+                {t("templates.preview.dictLinked")}
                 {previewEmail.dictReferences && previewEmail.dictReferences.length > 0 ? (
                   previewEmail.dictReferences.map((r) => (
                     <span key={r} className="ml-1 font-mono text-violet-700 bg-violet-50 px-1 py-0.5 rounded">
@@ -1092,7 +1176,7 @@ The {{app_name}} Team`,
                     </span>
                   ))
                 ) : (
-                  <span className="text-fg-tertiary ml-1">直接文本</span>
+                  <span className="text-fg-tertiary ml-1">{t("templates.preview.directText")}</span>
                 )}
               </div>
 
@@ -1106,14 +1190,14 @@ The {{app_name}} Team`,
                   }}
                   className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium flex items-center gap-1 cursor-pointer"
                 >
-                  <Send className="w-3.5 h-3.5" /> 发送测试邮件
+                  <Send className="w-3.5 h-3.5" /> {t("templates.preview.sendTest")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setPreviewEmail(null)}
                   className="px-3 py-1.5 border border-line hover:bg-hover rounded-lg text-xs font-medium cursor-pointer"
                 >
-                  关闭
+                  {t("common:actions.close")}
                 </button>
               </div>
             </div>
@@ -1129,7 +1213,7 @@ The {{app_name}} Team`,
               {/* Simulated Email Envelope Header */}
               <div className="border-b border-line-subtle pb-4 mb-4 text-xs space-y-1.5">
                 <div className="flex items-center justify-between text-[11px] text-fg-tertiary">
-                  <span>From:</span>
+                  <span>{t("templates.preview.fromLabel")}</span>
                   <span className="font-mono">NovasPay Cloud Relays</span>
                 </div>
                 <div className="font-bold text-fg text-sm">{previewEmail.subject}</div>
@@ -1137,7 +1221,7 @@ The {{app_name}} Team`,
                   <span>
                     {previewEmail.senderName} &lt;{previewEmail.senderEmail}&gt;
                   </span>
-                  <span className="text-[10px] text-fg-tertiary">刚刚送达</span>
+                  <span className="text-[10px] text-fg-tertiary">{t("templates.preview.justDelivered")}</span>
                 </div>
                 {previewEmail.previewText && (
                   <div className="text-fg-tertiary text-[11px] italic bg-subtle p-1.5 rounded">
@@ -1167,8 +1251,12 @@ The {{app_name}} Team`,
           id="side-sheet-email-clone"
           isOpen={true}
           onClose={() => setCloningSourceEmail(null)}
-          title="克隆为新语种独立邮件"
-          description={`将当前邮件【${cloningSourceEmail.name}】（${getLanguageMeta(cloningSourceEmail.language).flag} ${getLanguageMeta(cloningSourceEmail.language).nativeName}）复制为全新实体。`}
+          title={t("templates.clone.title")}
+          description={t("templates.clone.description", {
+            name: cloningSourceEmail.name,
+            flag: getLanguageMeta(cloningSourceEmail.language).flag,
+            language: getLanguageMeta(cloningSourceEmail.language).nativeName,
+          })}
           icon={<CopyPlus className="w-5 h-5 text-blue-600" />}
           widthClass="max-w-lg"
           footer={
@@ -1178,25 +1266,25 @@ The {{app_name}} Team`,
                 onClick={() => setCloningSourceEmail(null)}
                 className="px-3 py-2 border border-line hover:bg-hover rounded-xl text-xs font-semibold text-fg-secondary cursor-pointer"
               >
-                取消
+                {t("common:actions.cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleExecuteClone}
                 className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card cursor-pointer"
               >
-                <CopyPlus className="w-3.5 h-3.5" /> 确认克隆并立即编辑
+                <CopyPlus className="w-3.5 h-3.5" /> {t("templates.clone.confirm")}
               </button>
             </>
           }
         >
           <div className="space-y-4">
-            <p className="text-xs text-fg-secondary">
-              复制为一个全新的独立邮件实体，便于针对其他出海国家单独撰写或本地化微调。
-            </p>
+            <p className="text-xs text-fg-secondary">{t("templates.clone.intro")}</p>
 
             <div>
-              <label className="block text-xs font-semibold text-fg-secondary mb-1">选择目标出海语言</label>
+              <label className="block text-xs font-semibold text-fg-secondary mb-1">
+                {t("templates.clone.targetLangLabel")}
+              </label>
               <ShadcnSelect
                 value={cloneTargetLang}
                 onValueChange={(val) => setCloneTargetLang(val as SupportedLanguage)}
@@ -1208,7 +1296,7 @@ The {{app_name}} Team`,
             </div>
 
             <div className="bg-subtle p-3.5 rounded-xl border border-line text-xs space-y-1.5">
-              <div className="text-[11px] text-fg-secondary font-medium">自动生成的独立编号与名称：</div>
+              <div className="text-[11px] text-fg-secondary font-medium">{t("templates.clone.autoGeneratedLabel")}</div>
               <div className="font-mono text-fg font-bold text-xs">
                 {cloningSourceEmail.code.replace(/_[A-Z]{2}$/, "")}_{cloneTargetLang.split("-")[0].toUpperCase()}
               </div>
@@ -1227,8 +1315,12 @@ The {{app_name}} Team`,
           id="side-sheet-email-test-send"
           isOpen={true}
           onClose={() => setTestSendingEmail(null)}
-          title="模拟真实测试发送"
-          description={`使用海外通道向指定邮箱投递【${testSendingEmail.name}】（${getLanguageMeta(testSendingEmail.language).flag} ${testSendingEmail.language}）`}
+          title={t("templates.testSend.title")}
+          description={t("templates.testSend.description", {
+            name: testSendingEmail.name,
+            flag: getLanguageMeta(testSendingEmail.language).flag,
+            language: testSendingEmail.language,
+          })}
           icon={<Send className="w-5 h-5 text-emerald-600" />}
           widthClass="max-w-lg"
           footer={
@@ -1238,7 +1330,7 @@ The {{app_name}} Team`,
                 onClick={() => setTestSendingEmail(null)}
                 className="px-3 py-2 border border-line hover:bg-hover rounded-xl text-xs font-semibold text-fg-secondary cursor-pointer"
               >
-                关闭
+                {t("common:actions.close")}
               </button>
               <button
                 type="button"
@@ -1249,11 +1341,11 @@ The {{app_name}} Team`,
                 {isSending ? (
                   <>
                     <Clock className="w-3.5 h-3.5 animate-spin" />
-                    发信投递中...
+                    {t("templates.testSend.sending")}
                   </>
                 ) : (
                   <>
-                    <Send className="w-3.5 h-3.5" /> 发起投递
+                    <Send className="w-3.5 h-3.5" /> {t("templates.testSend.dispatch")}
                   </>
                 )}
               </button>
@@ -1261,33 +1353,31 @@ The {{app_name}} Team`,
           }
         >
           <div className="space-y-4">
-            <p className="text-xs text-fg-secondary">
-              系统将使用已配置的海外 SMTP / API 通道，向指定收件邮箱投递当前独立邮件。
-            </p>
+            <p className="text-xs text-fg-secondary">{t("templates.testSend.intro")}</p>
 
             <div>
-              <label className="block text-xs font-semibold text-fg-secondary mb-1">测试收件人邮箱</label>
+              <label className="block text-xs font-semibold text-fg-secondary mb-1">
+                {t("templates.testSend.recipientLabel")}
+              </label>
               <input
                 type="email"
                 value={testEmailAddress}
                 onChange={(e) => setTestEmailAddress(e.target.value)}
                 className="w-full px-3 py-2 bg-surface border border-line rounded-xl text-xs font-mono focus:border-emerald-500 focus:outline-hidden"
-                placeholder="name@example.com"
+                placeholder={t("templates.testSend.recipientPlaceholder")}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-fg-secondary mb-1">海外发信通道选择</label>
+              <label className="block text-xs font-semibold text-fg-secondary mb-1">
+                {t("templates.testSend.channelLabel")}
+              </label>
               <ShadcnSelect
                 value={testSendChannel}
                 onValueChange={(val) =>
                   setTestSendChannel(val as "SENDGRID" | "AWS_SES" | "RESEND")
                 }
-                options={[
-                  { value: "SENDGRID", label: "SendGrid v3 API (US-East Primary Cluster)" },
-                  { value: "AWS_SES", label: "Amazon SES Europe (eu-central-1 Frankfurt)" },
-                  { value: "RESEND", label: "Resend Edge Global Delivery (Tokyo / Oregon)" },
-                ]}
+                options={testSendChannelOptions}
               />
             </div>
 
@@ -1295,10 +1385,10 @@ The {{app_name}} Team`,
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-1">
                 <div className="text-emerald-800 font-bold flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  投递响应成功
+                  {t("templates.testSend.successTitle")}
                 </div>
                 <div className="text-[11px] font-mono text-emerald-700">
-                  Message-ID: {testSendResult.messageId}
+                  {t("templates.testSend.messageIdLabel")} {testSendResult.messageId}
                 </div>
                 <div className="text-[10px] text-fg-secondary">{testSendResult.log}</div>
               </div>

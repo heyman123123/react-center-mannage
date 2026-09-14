@@ -1,0 +1,60 @@
+{
+  "userMenu": {
+    "account": "账户设置",
+    "billing": "账单结算",
+    "notifications": "消息通知",
+    "upgradePro": "升级专业版",
+    "logout": "退出登录",
+    "openMenu": "账户菜单"
+  },
+  "header": {
+    "brand": "聚合支付中台",
+    "toggleSidebar": "折叠/展开导航",
+    "routePathTitle": "当前路由物理路径"
+  },
+  "breadcrumb": {
+    "home": "首页"
+  },
+  "mobile": {
+    "dashboard": "看板",
+    "transactions": "交易",
+    "settlements": "结算",
+    "refunds": "退款",
+    "me": "我的"
+  },
+  "pageTitle": {
+    "dashboard": "集团出海聚合支付监控看板",
+    "transactions": "全渠道交易流水与订单状态流",
+    "reconciliation": "跨境资金对账与长短款稽核",
+    "products": "海外商品方案与周期订阅配置",
+    "discounts": "折扣策略与全场优惠券配置",
+    "promo_campaigns": "出海促销邮件营销活动派发",
+    "payment_channels": "海外支付渠道配置 (Stripe / PayPal / Adyen)",
+    "payment_webhooks": "支付 Webhook 回调监听与全量接收调度",
+    "apps": "接入应用与密钥管理 (Client Apps)",
+    "email_channels": "海外邮件渠道配置 (SendGrid / SES / Resend)",
+    "email_webhooks": "邮件投递回执与反垃圾邮件信誉审计",
+    "email_templates": "多语言邮件管理 (独立单一邮件与多语种配置)",
+    "dictionary": "字典管理 (全局多语言统一共享字典)",
+    "users": "海外终端客户与全周期行为大盘",
+    "departments": "部门管理 (组织部门树结构、成员与绑定角色)",
+    "roles": "角色管理 (Roles)",
+    "permissions": "权限管理 (基于菜单树的角色与权限配置)",
+    "menus": "系统菜单与导航节点管理",
+    "system_users": "用户管理 (角色权限与应用权限)",
+    "settlements": "结算与出金管理",
+    "refunds": "退款与拒付管理",
+    "audit_logs": "操作审计日志",
+    "exchange_rates": "汇率管理",
+    "fee_rules": "费率规则引擎",
+    "risk_rules": "风控规则与黑名单",
+    "merchant_review": "商户 / KYB 审核",
+    "alerts": "告警与通知",
+    "system_config": "系统参数与定时任务",
+    "default": "海外聚合支付中台"
+  },
+  "audit": {
+    "profileWithPassword": "更新个人基本资料、头像并安全修改登录密码",
+    "profileBasic": "更新个人基本资料与头像图片"
+  }
+}

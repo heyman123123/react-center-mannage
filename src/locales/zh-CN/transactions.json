@@ -1,0 +1,160 @@
+{
+  "list": {
+    "title": "海外全渠道实时交易流水监控 (Global Transactions)",
+    "subtitle": "当前业务单元: {{tenant}} • 聚合全球支付网关（Stripe、PayPal、Adyen、Klarna）毫秒级资金流水与对账审计，点击任意行可穿透查看完整流程节点与时间轴。",
+    "searchPlaceholder": "搜索流水号/渠道交易单号...",
+    "exportDenied": "权限不足：当前角色无权导出含有敏感商户资金信息的财务流水账单！",
+    "resultCount": "检索到 {{count}} 笔海外流水",
+    "exportCsv": "导出加密财务对账单 (CSV)",
+    "drillDown": "流程穿透",
+    "empty": "暂无符合条件的海外交易记录",
+    "badge": {
+      "done": "平账成功",
+      "inProcess": "网关结算中",
+      "discrepancy": "存在差错",
+      "pending": "待大额复核"
+    },
+    "resolveBtn": "差错调账",
+    "timelineBtn": "全流程时间轴",
+    "channelsExtra": {
+      "apple_pay": "Apple Pay / Google Pay"
+    },
+    "channels": {
+      "all": "全部海外支付渠道",
+      "stripe": "Stripe (信用卡 / 周期订阅)",
+      "paypal": "PayPal (全球钱包 / 订阅扣款)",
+      "adyen": "Adyen (欧洲多币种清算)",
+      "klarna": "Klarna (欧洲先买后付 BNPL)"
+    },
+    "status": {
+      "all": "全部平账状态",
+      "done": "已平账 (Done)",
+      "inProcess": "网关清算中 (In Process)",
+      "discrepancy": "存在资金差错 (Discrepancy)",
+      "pending": "待复核 (Pending)"
+    },
+    "table": {
+      "id": "流水号 / 渠道单号",
+      "order": "订单描述 & 签约商户",
+      "channel": "海外网关 & 支付方式",
+      "gross": "交易金额 (Gross)",
+      "fee": "网关手续费 (Fee)",
+      "net": "实际净结 (Net)",
+      "status": "对账平账状态",
+      "time": "交易发生时间",
+      "actions": "操作"
+    },
+    "viewDetail": "查看详情",
+    "resolveDiscrepancy": "调账处理",
+    "empty": "未找到匹配的海外流水记录",
+    "csvHeaders": "流水号,归属租户,交易描述,商户名称,渠道,渠道单号,交易金额,货币,手续费,净额,状态,时间"
+  },
+  "detail": {
+    "description": "交易流水号: {{id}} • 通道流水: {{channelTradeNo}}",
+    "reviewer": "审核经办:",
+    "resolveCenter": "调账处理中心",
+    "currentStatus": "当前清算状态:",
+    "closeDetail": "关闭详情",
+    "gatewayFee": "网关费率: {{fee}}",
+    "tabs": {
+      "timeline": "全链路时间轴",
+      "payload": "网关报文载荷",
+      "risk": "风控与反欺诈"
+    },
+    "copyJson": "复制 JSON",
+    "copiedJson": "已复制报文",
+    "riskScore": "Risk Score: 12 (Low)",
+    "issuerCountryValue": "美国 Chase 摩根大通 (US)",
+    "status": {
+      "done": "清算平账完成 (Done)",
+      "inProcess": "网关划账中 (In Process)",
+      "discrepancy": "存在差错疑账 (Discrepancy)",
+      "pending": "待大额复核 (Pending)"
+    },
+    "fields": {
+      "gateway": "收单网关通道",
+      "paymentMethod": "支付工具 / 卡号",
+      "merchant": "商户签约主体",
+      "netSettle": "实际净结算额"
+    },
+    "timeline": {
+      "title": "订单全生命周期事件流 (Event Stream):",
+      "discrepancyReason": "系统检测到差错疑账原因:"
+    },
+    "payload": {
+      "title": "海外收单网关原始 JSON 响应报文:"
+    },
+    "risk": {
+      "title": "Stripe Radar 评分与欺诈风险分析",
+      "threeDS": "3D Secure 2.0 验证:",
+      "threeDSValue": "免密通过 (Frictionless Authentication)",
+      "cvcAvs": "CVC / AVS 账单地址验证:",
+      "cvcAvsValue": "全部通过 (Matched)",
+      "ipRegion": "客户端 IP 属地:",
+      "ipRegionValue": "美国加利福尼亚州 (US - CA)",
+      "issuerCountry": "发卡行国家:"
+    }
+  },
+  "discrepancy": {
+    "title": "差错疑账调账处置中心",
+    "description": "对流水号 {{id}} 存在的账实差异执行人工复核、补差抹平或冲正退款。",
+    "defaultNote": "根据商户代金券核验单据，准予系统平账补差入账。",
+    "defaultReason": "业务订单金额与银行清算账单存在不一致，请核验差额原因并选择处置方式。",
+    "errors": {
+      "noResolve": "RBAC权限拒绝：当前角色无权执行差错调账或平账决策！",
+      "noRefund": "RBAC权限拒绝：渠道资金退款冲正属于高危资金操作，需财务总监或超级管理员权限！"
+    },
+    "processing": "正在提交财务调账...",
+    "confirm": "确认执行调账",
+    "amounts": {
+      "order": "业务系统应收",
+      "channel": "支付渠道实收",
+      "diff": "平账差额"
+    },
+    "actionLabel": "选择调账解决方案 (Action Type):",
+    "actions": {
+      "balance": {
+        "title": "自动抹平入账",
+        "desc": "补入平台营销补差池，完成Done平账"
+      },
+      "refund": {
+        "title": "渠道冲正退款",
+        "desc": "向支付网关下发退款冲正指令 (需总监权限)"
+      },
+      "escrow": {
+        "title": "单边挂账待核",
+        "desc": "暂挂至集团待清算暂收款科目"
+      }
+    },
+    "noteLabel": "调账审批凭证备注 (Audit Approval Note):",
+    "operator": "当前操作人:",
+    "operatorFallback": "操作人",
+    "roleFallback": "系统审核员",
+    "approvalLabel": "审批效力:",
+    "canResolve": "具备调账审批权限",
+    "cannotResolve": "受限角色 (无调账权)"
+  },
+  "quickCreate": {
+    "title": "模拟录入海外交易流水",
+    "description": "快速生成一笔出海多币种流水并注入对账与清算管道中。",
+    "confirm": "确认生成海外流水",
+    "orderTitle": "海外订单标题 / 订阅服务描述:",
+    "merchantName": "签约主体商户名:",
+    "gateway": "海外支付通道 (Gateway):",
+    "amount": "交易金额 ({{currency}}):",
+    "initialStatus": "初始平账状态:",
+    "status": {
+      "inProcess": "清算中",
+      "done": "已平账",
+      "discrepancy": "注入差错"
+    },
+    "channels": {
+      "stripe": "Stripe (国际信用卡 / Apple Pay)",
+      "paypal": "PayPal (全球数字钱包)",
+      "adyen": "Adyen (欧洲本地清算 / 全渠道)",
+      "apple_pay": "Apple Pay / Google Pay",
+      "klarna": "Klarna (欧洲先买后付 BNPL)",
+      "sepa": "SEPA (泛欧银行直接借记)"
+    }
+  }
+}

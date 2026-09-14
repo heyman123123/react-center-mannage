@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, X, ListFilter } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import { cn } from "../../lib/utils";
@@ -32,7 +33,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   value,
   onValueChange,
   options,
-  placeholder = "请选择（可多选）...",
+  placeholder,
   className,
   triggerClassName,
   contentClassName,
@@ -40,7 +41,10 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   showToolbar = true,
   maxTags = 3,
 }) => {
+  const { t } = useTranslation("shell");
   const [open, setOpen] = useState(false);
+
+  const resolvedPlaceholder = placeholder ?? t("multiSelect.placeholder");
 
   const normalizedOptions: MultiSelectOption[] = options.map((opt) =>
     typeof opt === "string" ? { value: opt, label: opt } : opt
@@ -49,8 +53,8 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   const selectedOptions = normalizedOptions.filter((o) => value.includes(o.value));
 
   const toggleValue = (val: string) => {
-    onValueChange((prev: string[]) =>
-      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]
+    onValueChange(
+      value.includes(val) ? value.filter((v) => v !== val) : [...value, val]
     );
   };
 
@@ -69,7 +73,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
         >
           <div className="flex flex-wrap items-center gap-1 min-w-0">
             {selectedOptions.length === 0 ? (
-              <span className="text-fg-tertiary truncate">{placeholder}</span>
+              <span className="text-fg-tertiary truncate">{resolvedPlaceholder}</span>
             ) : (
               <>
                 {selectedOptions.slice(0, maxTags).map((opt) => (
@@ -121,19 +125,19 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-line-subtle">
               <span className="text-[11px] text-fg-tertiary font-medium flex items-center gap-1">
                 <ListFilter className="w-3 h-3" />
-                已选 {value.length} 项
+                {t("multiSelect.selectedCount", { count: value.length })}
               </span>
               <div className="flex items-center gap-2 text-[11px]">
                 <button
                   type="button"
                   onClick={() =>
-                    onValueChange((prev: string[]) => [
-                      ...new Set([...prev, ...normalizedOptions.map((o) => o.value)]),
+                    onValueChange([
+                      ...new Set([...value, ...normalizedOptions.map((o) => o.value)]),
                     ])
                   }
                   className="text-fg-secondary hover:text-fg font-medium cursor-pointer"
                 >
-                  全选
+                  {t("multiSelect.selectAll")}
                 </button>
                 <span className="text-zinc-200">|</span>
                 <button
@@ -141,7 +145,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                   onClick={() => onValueChange([])}
                   className="text-fg-secondary hover:text-fg font-medium cursor-pointer"
                 >
-                  清空
+                  {t("multiSelect.clear")}
                 </button>
               </div>
             </div>
@@ -150,7 +154,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
           <div className="max-h-64 overflow-y-auto p-1.5 space-y-0.5">
             {normalizedOptions.length === 0 ? (
               <div className="py-6 text-center text-xs text-fg-tertiary">
-                暂无可选项
+                {t("multiSelect.empty")}
               </div>
             ) : (
               normalizedOptions.map((opt) => {
@@ -185,7 +189,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
 
           <Popover.Close
             className="absolute right-2 top-2 p-1 text-fg-tertiary hover:text-fg-secondary rounded transition-colors cursor-pointer"
-            aria-label="关闭"
+            aria-label={t("sideSheet.close")}
           >
             <X className="w-3.5 h-3.5" />
           </Popover.Close>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { LayoutDashboard, Receipt, Wallet, RotateCcw, User } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
@@ -34,6 +35,7 @@ import { SystemConfigView } from "./components/SystemConfigView";
 import { UserSettingsModal } from "./components/UserSettingsModal";
 import { QuickCreateModal } from "./components/QuickCreateModal";
 import { DiscrepancyModal } from "./components/DiscrepancyModal";
+import LoginPage from "./components/LoginPage";
 import {
   Tenant,
   SystemUser,
@@ -66,9 +68,9 @@ import {
   AlertHistory,
   SystemConfigParam,
   ScheduledTask,
-  AppEnvironment,
 } from "./types/payment";
 import { getStoredTheme, applyTheme } from "./lib/theme";
+import { isAuthenticated, setAuthenticated, clearAuth } from "./lib/auth";
 import {
   INITIAL_TENANTS,
   SYSTEM_USERS,
@@ -100,13 +102,10 @@ import {
   INITIAL_ALERT_HISTORY,
   INITIAL_SYSTEM_CONFIGS,
   INITIAL_SCHEDULED_TASKS,
-  SANDBOX_TRANSACTIONS,
-  SANDBOX_SETTLEMENTS,
-  SANDBOX_REFUNDS,
 } from "./data/mockData";
-import { setCurrentApiEnv } from "./api";
 
 export default function App() {
+  const { t } = useTranslation("nav");
   const [tenants, setTenants] = useState<Tenant[]>(INITIAL_TENANTS);
   const [currentTenant, setCurrentTenant] = useState<Tenant>(INITIAL_TENANTS[0]);
   const [allUsers, setAllUsers] = useState<SystemUser[]>(SYSTEM_USERS);
@@ -145,43 +144,11 @@ export default function App() {
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>(INITIAL_BLACKLIST);
   const [merchantApps, setMerchantApps] = useState<MerchantApplication[]>(INITIAL_MERCHANT_APPLICATIONS);
 
-  // P2: 告警与通知 / 系统参数与定时任务（系统管理类，不随环境分桶）
+  // P2: 告警与通知 / 系统参数与定时任务
   const [alertRules, setAlertRules] = useState<AlertRule[]>(INITIAL_ALERT_RULES);
   const [alertHistories, setAlertHistories] = useState<AlertHistory[]>(INITIAL_ALERT_HISTORY);
   const [systemConfigs, setSystemConfigs] = useState<SystemConfigParam[]>(INITIAL_SYSTEM_CONFIGS);
   const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>(INITIAL_SCHEDULED_TASKS);
-
-  // P2: 沙箱/生产环境隔离
-  const [currentEnv, setCurrentEnv] = useState<AppEnvironment>("live");
-
-  // 环境切换时同步到 API 层全局，供已接入 API 的视图按环境取数
-  useEffect(() => {
-    setCurrentApiEnv(currentEnv);
-  }, [currentEnv]);
-
-  // P2: 按当前环境过滤业务数据（environment 缺省视为 live；sandbox 仅显示 sandbox 并叠加独立数据集）
-  const isLiveEnv = currentEnv === "live";
-  const filteredTransactions = useMemo(() => {
-    const base = transactions.filter((t) => (isLiveEnv ? t.environment !== "sandbox" : t.environment === "sandbox"));
-    return isLiveEnv ? base : [...base, ...SANDBOX_TRANSACTIONS];
-  }, [transactions, isLiveEnv]);
-  const filteredSettlements = useMemo(() => {
-    const base = settlements.filter((s) => (isLiveEnv ? s.environment !== "sandbox" : s.environment === "sandbox"));
-    return isLiveEnv ? base : [...base, ...SANDBOX_SETTLEMENTS];
-  }, [settlements, isLiveEnv]);
-  const filteredRefunds = useMemo(() => {
-    const base = refunds.filter((r) => (isLiveEnv ? r.environment !== "sandbox" : r.environment === "sandbox"));
-    return isLiveEnv ? base : [...base, ...SANDBOX_REFUNDS];
-  }, [refunds, isLiveEnv]);
-  const filteredChannels = useMemo(
-    () => paymentChannels.filter((c) => (isLiveEnv ? c.environment !== "sandbox" : c.environment === "sandbox")),
-    [paymentChannels, isLiveEnv]
-  );
-  const filteredApps = useMemo(
-    // PaymentApp 既有 environment 字段：Production=live, Staging=sandbox
-    () => paymentApps.filter((a) => (isLiveEnv ? a.environment === "Production" : a.environment === "Staging")),
-    [paymentApps, isLiveEnv]
-  );
 
   // Current View & Modals
   const VALID_TABS = [
@@ -195,18 +162,39 @@ export default function App() {
   ];
   const tabFromHash = (): string => {
     const raw = (window.location.hash || "").replace(/^#\/?/, "");
+    if (raw === "login") return "login";
     return VALID_TABS.includes(raw) ? raw : "dashboard";
   };
-  const [currentTab, setCurrentTab] = useState<string>(tabFromHash);
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    if (!isAuthenticated()) return "login";
+    return tabFromHash();
+  });
   const [refreshTick, setRefreshTick] = useState<number>(0);
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
   const [quickCreateOpen, setQuickCreateOpen] = useState<boolean>(false);
   const [activeDiscrepancyTx, setActiveDiscrepancyTx] = useState<TransactionRecord | null>(null);
   const [userSettingsOpen, setUserSettingsOpen] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [loggedIn, setLoggedIn] = useState<boolean>(() => isAuthenticated());
 
   // 切换页面：更新 state 并同步 URL hash
   const navigateToTab = (tab: string) => {
+    if (tab === "login") {
+      setCurrentTab("login");
+      setMobileMenuOpen(false);
+      if (window.location.hash !== `#/login`) {
+        window.history.replaceState(null, "", `#/login`);
+      }
+      return;
+    }
+    if (!loggedIn) {
+      setCurrentTab("login");
+      setMobileMenuOpen(false);
+      if (window.location.hash !== `#/login`) {
+        window.history.replaceState(null, "", `#/login`);
+      }
+      return;
+    }
     if (!VALID_TABS.includes(tab)) tab = "dashboard";
     setCurrentTab(tab);
     setMobileMenuOpen(false);
@@ -215,12 +203,51 @@ export default function App() {
     }
   };
 
+  // 登录成功 → 进入仪表盘（凭证由服务端 Cookie 下发；Mock 仅翻内存门禁）
+  const handleLoginSuccess = () => {
+    setAuthenticated();
+    setLoggedIn(true);
+    setCurrentTab("dashboard");
+    window.history.replaceState(null, "", `#/dashboard`);
+  };
+
+  // 退出登录 → 清门禁并回到登录页（生产须先调 POST /auth/logout 清 Cookie）
+  const handleLogout = () => {
+    clearAuth();
+    setLoggedIn(false);
+    setUserSettingsOpen(false);
+    setMobileMenuOpen(false);
+    setQuickCreateOpen(false);
+    setActiveDiscrepancyTx(null);
+    setCurrentTab("login");
+    window.history.replaceState(null, "", `#/login`);
+  };
+
   // 初始化：读取持久化主题并挂载到根节点
   useEffect(() => {
     applyTheme(getStoredTheme());
     // 监听 hash 变化（地址栏改 hash / 前进后退）切换页面
-    const onHashChange = () => setCurrentTab(tabFromHash());
+    const onHashChange = () => {
+      if (!isAuthenticated()) {
+        setLoggedIn(false);
+        setCurrentTab("login");
+        if (window.location.hash !== `#/login`) {
+          window.history.replaceState(null, "", `#/login`);
+        }
+        return;
+      }
+      setLoggedIn(true);
+      setCurrentTab(tabFromHash());
+    };
     window.addEventListener("hashchange", onHashChange);
+    // 未登录时强制落在登录页
+    if (!isAuthenticated()) {
+      setLoggedIn(false);
+      setCurrentTab("login");
+      if (window.location.hash !== `#/login`) {
+        window.history.replaceState(null, "", `#/login`);
+      }
+    }
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
@@ -394,8 +421,8 @@ export default function App() {
   };
 
   // Handle Quick Auto-resolve done
-  const handleQuickDone = (tx: TransactionRecord) => {
-    handleResolveDiscrepancy(tx.id, "ACCEPT_CHANNEL_REPORT", "仪表盘快捷处置：以网关结算单为准自动平账");
+  const handleQuickDone = (txId: string) => {
+    handleResolveDiscrepancy(txId, "ACCEPT_CHANNEL_REPORT", "仪表盘快捷处置：以网关结算单为准自动平账");
   };
 
   // Auto reconcile all
@@ -438,8 +465,8 @@ export default function App() {
       timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
       targetId: updatedUser.id,
       details: profile.newPassword
-        ? "更新个人基本资料、头像并安全修改登录密码"
-        : "更新个人基本资料与头像图片",
+        ? t("audit.profileWithPassword")
+        : t("audit.profileBasic"),
       ipAddress: "127.0.0.1",
       status: "SUCCESS",
     };
@@ -447,67 +474,19 @@ export default function App() {
   };
 
   const getTabTitle = () => {
-    switch (currentTab) {
-      case "dashboard":
-        return "集团出海聚合支付监控看板";
-      case "transactions":
-        return "全渠道交易流水与订单状态流";
-      case "reconciliation":
-        return "跨境资金对账与长短款稽核";
-      case "products":
-        return "海外商品方案与周期订阅配置";
-      case "discounts":
-        return "折扣策略与全场优惠券配置";
-      case "promo_campaigns":
-        return "出海促销邮件营销活动派发";
-      case "payment_channels":
-        return "海外支付渠道配置 (Stripe / PayPal / Adyen)";
-      case "payment_webhooks":
-        return "支付 Webhook 回调监听与全量接收调度";
-      case "apps":
-        return "接入应用与密钥管理 (Client Apps)";
-      case "email_channels":
-        return "海外邮件渠道配置 (SendGrid / SES / Resend)";
-      case "email_webhooks":
-        return "邮件投递回执与反垃圾邮件信誉审计";
-      case "email_templates":
-        return "多语言邮件管理 (独立单一邮件与多语种配置)";
-      case "dictionary":
-        return "字典管理 (全局多语言统一共享字典)";
-      case "users":
-        return "海外终端客户与全周期行为大盘";
-      case "departments":
-        return "部门管理 (组织部门树结构、成员与绑定角色)";
-      case "roles":
-        return "角色管理 (Roles)";
-      case "permissions":
-        return "权限管理 (基于菜单树的角色与权限配置)";
-      case "menus":
-        return "系统菜单与导航节点管理";
-      case "system_users":
-        return "用户管理 (角色权限与应用权限)";
-      case "settlements":
-        return "结算与出金管理";
-      case "refunds":
-        return "退款与拒付管理";
-      case "audit_logs":
-        return "操作审计日志";
-      case "exchange_rates":
-        return "汇率管理";
-      case "fee_rules":
-        return "费率规则引擎";
-      case "risk_rules":
-        return "风控规则与黑名单";
-      case "merchant_review":
-        return "商户 / KYB 审核";
-      case "alerts":
-        return "告警与通知";
-      case "system_config":
-        return "系统参数与定时任务";
-      default:
-        return "海外聚合支付中台";
-    }
+    const key = `pageTitle.${currentTab}`;
+    const translated = t(key);
+    return translated === key ? t("pageTitle.default") : translated;
   };
+
+  // 登录路由 / 未登录：直接渲染登录页（绕过主框架）
+  if (!loggedIn || currentTab === "login") {
+    return (
+      <LoginPage
+        onLogin={handleLoginSuccess}
+      />
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-page font-sans text-fg antialiased selection:bg-primary selection:text-primary-foreground">
@@ -520,6 +499,7 @@ export default function App() {
           currentUser={currentUser}
           onOpenUserSettings={() => setUserSettingsOpen(true)}
           onOpenQuickCreate={() => setQuickCreateOpen(true)}
+          onLogout={handleLogout}
         />
       </div>
 
@@ -542,6 +522,7 @@ export default function App() {
                 setMobileMenuOpen(false);
               }}
               onOpenQuickCreate={() => setQuickCreateOpen(true)}
+              onLogout={handleLogout}
             />
           </div>
         </div>
@@ -551,18 +532,8 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
         <Header
-          currentTenant={currentTenant}
-          currentUser={currentUser}
-          isSimulating={isSimulating}
-          setIsSimulating={setIsSimulating}
-          onRefreshData={() => {
-            // 刷新当前页数据：重挂载当前视图以重新触发骨架屏与数据加载，停留当前页
-            setRefreshTick((n) => n + 1);
-          }}
-          onToggleSidebar={() => setMobileMenuOpen((v) => !v)}
           currentViewTitle={getTabTitle()}
-          currentEnv={currentEnv}
-          onEnvChange={(env) => setCurrentEnv(env)}
+          onToggleSidebar={() => setMobileMenuOpen((v) => !v)}
         />
 
         {/* Dynamic View Scroll Container (key 随当前页+刷新计数变化，刷新即重挂载重跑骨架屏) */}
@@ -571,7 +542,7 @@ export default function App() {
             <DashboardView
               currentTenant={currentTenant}
               currentUser={currentUser}
-              transactions={filteredTransactions}
+              transactions={transactions}
               onOpenDiscrepancy={(tx) => setActiveDiscrepancyTx(tx)}
               onResolveQuickDone={handleQuickDone}
             />
@@ -581,7 +552,7 @@ export default function App() {
             <TransactionsView
               currentTenant={currentTenant}
               currentUser={currentUser}
-              transactions={filteredTransactions}
+              transactions={transactions}
               onOpenDiscrepancy={(tx) => setActiveDiscrepancyTx(tx)}
             />
           )}
@@ -590,7 +561,7 @@ export default function App() {
             <ReconciliationView
               currentTenant={currentTenant}
               currentUser={currentUser}
-              transactions={filteredTransactions}
+              transactions={transactions}
               onOpenDiscrepancy={(tx) => setActiveDiscrepancyTx(tx)}
               onAutoReconcileAll={handleAutoReconcileAll}
             />
@@ -600,7 +571,7 @@ export default function App() {
             <ProductsView
               products={products}
               currentTenant={currentTenant}
-              paymentChannels={filteredChannels}
+              paymentChannels={paymentChannels}
               onSaveProduct={(updated) => {
                 setProducts((prev) => {
                   const exists = prev.some((p) => p.id === updated.id);
@@ -616,7 +587,7 @@ export default function App() {
             <DiscountsView
               discounts={discounts}
               currentTenant={currentTenant}
-              paymentChannels={filteredChannels}
+              paymentChannels={paymentChannels}
               onSaveDiscount={(updated) => {
                 setDiscounts((prev) => {
                   const exists = prev.some((d) => d.id === updated.id);
@@ -647,8 +618,8 @@ export default function App() {
 
           {currentTab === "payment_channels" && (
             <PaymentChannelsView
-              channels={filteredChannels}
-              apps={filteredApps}
+              channels={paymentChannels}
+              apps={paymentApps}
               dictionary={dictionary}
               onSaveChannel={(updated) => {
                 setPaymentChannels((prev) =>
@@ -675,8 +646,8 @@ export default function App() {
 
           {currentTab === "apps" && (
             <ApplicationManagementView
-              apps={filteredApps}
-              paymentChannels={filteredChannels}
+              apps={paymentApps}
+              paymentChannels={paymentChannels}
               emailChannels={emailChannels}
               products={products}
               discounts={discounts}
@@ -797,7 +768,6 @@ export default function App() {
           {currentTab === "menus" && (
             <MenusView
               menus={menus}
-              currentTenant={currentTenant}
               onSaveMenu={(updated) => {
                 setMenus((prev) => {
                   const exists = prev.some((m) => m.id === updated.id);
@@ -909,11 +879,11 @@ export default function App() {
       {/* Mobile bottom tab bar (<md only) */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-surface border-t border-line flex items-stretch h-16 px-1 pb-[env(safe-area-inset-bottom)]">
         {[
-          { key: "dashboard", label: "看板", icon: LayoutDashboard, tab: "dashboard" as const },
-          { key: "transactions", label: "交易", icon: Receipt, tab: "transactions" as const },
-          { key: "settlements", label: "结算", icon: Wallet, tab: "settlements" as const },
-          { key: "refunds", label: "退款", icon: RotateCcw, tab: "refunds" as const },
-          { key: "me", label: "我的", icon: User, tab: null },
+          { key: "dashboard", labelKey: "mobile.dashboard", icon: LayoutDashboard, tab: "dashboard" as const },
+          { key: "transactions", labelKey: "mobile.transactions", icon: Receipt, tab: "transactions" as const },
+          { key: "settlements", labelKey: "mobile.settlements", icon: Wallet, tab: "settlements" as const },
+          { key: "refunds", labelKey: "mobile.refunds", icon: RotateCcw, tab: "refunds" as const },
+          { key: "me", labelKey: "mobile.me", icon: User, tab: null },
         ].map((item) => {
           const active = item.tab ? currentTab === item.tab : false;
           const IconCmp = item.icon;
@@ -930,7 +900,7 @@ export default function App() {
               }`}
             >
               <IconCmp className={`w-5 h-5 ${active ? "text-primary" : "text-fg-tertiary"}`} />
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </button>
           );
         })}
@@ -942,6 +912,7 @@ export default function App() {
         onClose={() => setUserSettingsOpen(false)}
         currentUser={currentUser}
         onSaveProfile={handleSaveUserProfile}
+        onLogout={handleLogout}
       />
 
       {/* Quick Create Modal */}

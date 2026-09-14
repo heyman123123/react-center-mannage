@@ -2,7 +2,7 @@
  * 统一 API 导出入口
  */
 export * from "./types";
-export { USE_MOCK, API_BASE_URL, setCurrentApiEnv, getCurrentApiEnv } from "./config";
+export { USE_MOCK, API_BASE_URL } from "./config";
 export { request, http } from "./request";
 
 export * as transactionsApi from "./modules/transactions";

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { DashboardSkeleton } from "./ui/Skeletons";
 import {
@@ -44,6 +45,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenDiscrepancy,
   onResolveQuickDone,
 }) => {
+  const { t } = useTranslation(["dashboard", "common"]);
   const [timeRange, setTimeRange] = useState<"3m" | "30d" | "7d">("3m");
   const [activeTableTab, setActiveTableTab] = useState<
     "all" | "in_process" | "discrepancy" | "done"
@@ -141,14 +143,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [tenantScopedTransactions]);
 
   const channelBadges: Record<string, { label: string; bg: string }> = {
-    stripe: { label: "Stripe 国际卡", bg: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    paypal: { label: "PayPal 钱包", bg: "bg-blue-50 text-blue-700 border-blue-200" },
-    adyen: { label: "Adyen 欧洲清算", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    checkout: { label: "Checkout.com", bg: "bg-purple-50 text-purple-700 border-purple-200" },
-    apple_pay: { label: "Apple Pay", bg: "bg-hover text-fg border-line" },
-    google_pay: { label: "Google Pay", bg: "bg-amber-50 text-amber-800 border-amber-200" },
-    klarna: { label: "Klarna 先买后付", bg: "bg-pink-50 text-pink-700 border-pink-200" },
-    sepa: { label: "SEPA 欧洲借记", bg: "bg-sky-50 text-sky-700 border-sky-200" },
+    stripe: { label: t("channels.stripe"), bg: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+    paypal: { label: t("channels.paypal"), bg: "bg-blue-50 text-blue-700 border-blue-200" },
+    adyen: { label: t("channels.adyen"), bg: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    checkout: { label: t("channels.checkout"), bg: "bg-purple-50 text-purple-700 border-purple-200" },
+    apple_pay: { label: t("channels.apple_pay"), bg: "bg-hover text-fg border-line" },
+    google_pay: { label: t("channels.google_pay"), bg: "bg-amber-50 text-amber-800 border-amber-200" },
+    klarna: { label: t("channels.klarna"), bg: "bg-pink-50 text-pink-700 border-pink-200" },
+    sepa: { label: t("channels.sepa"), bg: "bg-sky-50 text-sky-700 border-sky-200" },
   };
 
   const loading = useViewLoading();
@@ -164,7 +166,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
-            <span>Total Revenue</span>
+            <span>{t("kpi.totalRevenue")}</span>
             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
               <TrendingUp className="w-3 h-3" />
               <span>+12.5%</span>
@@ -174,11 +176,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {formatCurrency(totalRevenue, currentTenant.currency)}
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
-            <span>Trending up this month</span>
+            <span>{t("kpi.trendingUpMonth")}</span>
             <ArrowUpRight className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
           <div className="text-[11px] text-fg-tertiary mt-0.5">
-            Visitors & transactions for the last 6 months
+            {t("kpi.visitorsHint")}
           </div>
         </div>
 
@@ -188,7 +190,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
-            <span>New Customers</span>
+            <span>{t("kpi.newCustomers")}</span>
             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
               <TrendingDown className="w-3 h-3" />
               <span>-20%</span>
@@ -198,11 +200,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             1,234
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
-            <span>Down 20% this period</span>
+            <span>{t("kpi.downPeriod")}</span>
             <TrendingDown className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
           <div className="text-[11px] text-fg-tertiary mt-0.5">
-            Acquisition needs attention
+            {t("kpi.acquisitionHint")}
           </div>
         </div>
 
@@ -212,7 +214,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
-            <span>Active Accounts</span>
+            <span>{t("kpi.activeAccounts")}</span>
             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
               <TrendingUp className="w-3 h-3" />
               <span>+12.5%</span>
@@ -222,11 +224,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             45,678
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
-            <span>Strong user retention</span>
+            <span>{t("kpi.retentionStrong")}</span>
             <TrendingUp className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
           <div className="text-[11px] text-fg-tertiary mt-0.5">
-            Engagement exceed targets
+            {t("kpi.engagementHint")}
           </div>
         </div>
 
@@ -236,7 +238,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
-            <span>Growth Rate</span>
+            <span>{t("kpi.growthRate")}</span>
             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
               <TrendingUp className="w-3 h-3" />
               <span>+4.5%</span>
@@ -246,11 +248,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             4.5%
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
-            <span>Steady performance increase</span>
+            <span>{t("kpi.steadyIncrease")}</span>
             <TrendingUp className="w-3.5 h-3.5 text-fg-secondary" />
           </div>
           <div className="text-[11px] text-fg-tertiary mt-0.5">
-            Meets growth projections
+            {t("kpi.growthHint")}
           </div>
         </div>
       </div>
@@ -280,7 +282,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   : "text-fg-secondary hover:text-fg hover:bg-subtle"
               }`}
             >
-              Outline
+              {t("tabs.all")}
             </button>
             <button
               id="table-tab-past-perf"
@@ -291,7 +293,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   : "text-fg-secondary hover:text-fg hover:bg-subtle"
               }`}
             >
-              <span>Past Performance</span>
+              <span>{t("tabs.inProcess")}</span>
               <span className="w-4 h-4 rounded-full bg-hover text-fg text-[10px] font-semibold flex items-center justify-center">
                 {pendingCount || 3}
               </span>
@@ -305,7 +307,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   : "text-fg-secondary hover:text-fg hover:bg-subtle"
               }`}
             >
-              <span>Key Personnel</span>
+              <span>{t("tabs.discrepancy")}</span>
               <span className="w-4 h-4 rounded-full bg-red-100 text-red-700 text-[10px] font-semibold flex items-center justify-center">
                 {discrepancyCount || 2}
               </span>
@@ -319,7 +321,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   : "text-fg-secondary hover:text-fg hover:bg-subtle"
               }`}
             >
-              Focus Documents
+              {t("tabs.done")}
             </button>
           </div>
 
@@ -332,7 +334,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索单号/商户..."
+                placeholder={t("table.searchPlaceholder")}
                 className="pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs w-36 sm:w-44 focus:outline-hidden focus:bg-surface focus:ring-1 focus:ring-line transition-all"
               />
             </div>
@@ -345,7 +347,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-fg-secondary hover:text-fg bg-surface hover:bg-subtle border border-line rounded-lg transition-colors"
               >
                 <Columns3 className="w-3.5 h-3.5 text-fg-secondary" />
-                <span>Customize Columns</span>
+                <span>{t("table.customizeColumns")}</span>
               </button>
 
               {customColsOpen && (
@@ -359,14 +361,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     className="absolute right-0 mt-1.5 w-48 bg-surface border border-line rounded-xl shadow-lg p-2 z-40 text-xs text-fg-secondary animate-in fade-in zoom-in-95"
                   >
                     <div className="font-semibold text-fg pb-1.5 border-b border-line-subtle mb-1">
-                      选择显示字段
+                      {t("table.selectFields")}
                     </div>
                     {Object.entries(visibleColumns).map(([col, isVisible]) => (
                       <label
                         key={col}
                         className="flex items-center justify-between p-1.5 hover:bg-subtle rounded cursor-pointer"
                       >
-                        <span className="capitalize">{col}</span>
+                        <span>{t(`columns.${col as keyof typeof visibleColumns}`)}</span>
                         <input
                           type="checkbox"
                           checked={isVisible}
@@ -402,26 +404,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </th>
                 <th className="w-8 px-1 py-2 text-center"></th>
                 {visibleColumns.header && (
-                  <th className="px-3 py-2 min-w-[200px] font-semibold text-fg-secondary">Header</th>
+                  <th className="px-3 py-2 min-w-[200px] font-semibold text-fg-secondary">{t("table.header")}</th>
                 )}
                 {visibleColumns.sectionType && (
-                  <th className="px-3 py-2 w-[140px] font-semibold text-fg-secondary">Section Type</th>
+                  <th className="px-3 py-2 w-[140px] font-semibold text-fg-secondary">{t("table.sectionType")}</th>
                 )}
                 {visibleColumns.status && (
-                  <th className="px-3 py-2 w-[130px] font-semibold text-fg-secondary">Status</th>
+                  <th className="px-3 py-2 w-[130px] font-semibold text-fg-secondary">{t("table.status")}</th>
                 )}
                 {visibleColumns.target && (
-                  <th className="px-3 py-2 w-[100px] font-semibold text-fg-secondary">Target</th>
+                  <th className="px-3 py-2 w-[100px] font-semibold text-fg-secondary">{t("table.target")}</th>
                 )}
                 {visibleColumns.limit && (
-                  <th className="px-3 py-2 w-[100px] font-semibold text-fg-secondary">Limit</th>
+                  <th className="px-3 py-2 w-[100px] font-semibold text-fg-secondary">{t("table.limit")}</th>
                 )}
                 {visibleColumns.reviewer && (
-                  <th className="px-3 py-2 w-[150px] font-semibold text-fg-secondary">Reviewer</th>
+                  <th className="px-3 py-2 w-[150px] font-semibold text-fg-secondary">{t("table.reviewer")}</th>
                 )}
                 {visibleColumns.actions && (
                   <th className="w-[90px] px-3 py-2 sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                    操作
+                    {t("table.actions")}
                   </th>
                 )}
               </tr>
@@ -430,7 +432,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-12 text-center text-fg-tertiary text-sm">
-                    未找到匹配的流水记录
+                    {t("table.empty")}
                   </td>
                 </tr>
               ) : (
@@ -499,13 +501,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           {tx.status === "done" && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              <span>Done</span>
+                              <span>{t("status.done")}</span>
                             </span>
                           )}
                           {tx.status === "in_process" && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
                               <Clock className="w-3 h-3 text-amber-600 animate-spin" />
-                              <span>In Process</span>
+                              <span>{t("status.inProcess")}</span>
                             </span>
                           )}
                           {tx.status === "discrepancy" && (
@@ -515,16 +517,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 onOpenDiscrepancy(tx);
                               }}
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors"
-                              title="点击查看并处理差错"
+                              title={t("status.viewDiscrepancy")}
                             >
                               <AlertTriangle className="w-3 h-3 text-rose-600" />
-                              <span>Discrepancy</span>
+                              <span>{t("status.discrepancy")}</span>
                             </button>
                           )}
                           {tx.status === "pending_check" && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-hover text-fg-secondary border border-line">
                               <Clock className="w-3 h-3 text-fg-secondary" />
-                              <span>Pending</span>
+                              <span>{t("status.pending")}</span>
                             </span>
                           )}
                         </td>
@@ -549,10 +551,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <td className="px-3 py-2 w-[150px] whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <div className="w-5 h-5 rounded-full bg-hover text-fg-secondary flex items-center justify-center text-[10px] font-bold">
-                              {tx.reviewer?.name ? tx.reviewer.name.slice(0, 1) : "平"}
+                              {tx.reviewer?.name ? tx.reviewer.name.slice(0, 1) : t("reviewer.fallbackInitial")}
                             </div>
                             <span className="text-fg font-medium truncate max-w-[100px]">
-                              {tx.reviewer?.name || "系统自动平账"}
+                              {tx.reviewer?.name || t("reviewer.autoReconcile")}
                             </span>
                           </div>
                         </td>
@@ -570,7 +572,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 }}
                                 className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-[11px] font-medium transition-colors"
                               >
-                                调账
+                                {t("actions.adjust")}
                               </button>
                             ) : tx.status === "in_process" ? (
                               <button
@@ -580,7 +582,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 }}
                                 className="px-2 py-1 bg-primary hover:bg-primary-hover text-primary-foreground rounded text-[11px] font-medium transition-colors"
                               >
-                                平账
+                                {t("actions.reconcile")}
                               </button>
                             ) : (
                               <button
@@ -607,15 +609,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Table Bottom Footer Pagination Info */}
         <div className="px-3 py-2 border-t border-line/80 bg-subtle/50 flex items-center justify-between text-xs text-fg-secondary">
           <div>
-            已选 <span className="font-semibold text-fg">{selectedTxIds.length}</span> 条流水 / 共{" "}
-            <span className="font-semibold text-fg">
-              {filteredTransactions.length}
-            </span>{" "}
-            条记录 (租户: {currentTenant?.name || "当前业务单元"})
+            {t("footer.selected", {
+              selected: selectedTxIds.length,
+              total: filteredTransactions.length,
+              tenant: currentTenant?.name || t("footer.currentTenant"),
+            })}
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-tertiary">
-              RBAC数据保护已开启 • T+1三方自动对账
+              {t("footer.rbacHint")}
             </span>
           </div>
         </div>

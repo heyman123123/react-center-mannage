@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -34,6 +35,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
   onUpdateChannel,
   onAddChannel,
 }) => {
+  const { t } = useTranslation(["channels", "common"]);
   const [channelList, setChannelList] = useState<EmailChannelConfig[]>(channels);
   const { currentPage, setCurrentPage, reset: _ecr, pageSize } = usePagination(10);
   const [testModalChannel, setTestModalChannel] = useState<EmailChannelConfig | null>(null);
@@ -44,7 +46,17 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   // 新增发件渠道表单
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
-  const [newForm, setNewForm] = useState({
+  const [newForm, setNewForm] = useState<{
+    providerKey: EmailChannelConfig["providerKey"];
+    name: string;
+    description: string;
+    senderName: string;
+    senderEmail: string;
+    apiKey: string;
+    smtpHost: string;
+    smtpPort: number;
+    dailyQuota: number;
+  }>({
     providerKey: "sendgrid",
     name: "",
     description: "",
@@ -80,14 +92,14 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
   const handleAddChannel = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newForm.name.trim() || !newForm.senderEmail.trim()) {
-      showToast("请填写渠道名称与发件人邮箱");
+      showToast(t("email.toast.fillRequired"));
       return;
     }
     const newChannel: EmailChannelConfig = {
       id: `ec_custom_${Date.now()}`,
       providerKey: newForm.providerKey,
       name: newForm.name.trim(),
-      description: newForm.description.trim() || "新增海外事务邮件发信通道",
+      description: newForm.description.trim() || t("email.defaults.description"),
       enabled: true,
       isPrimary: channelList.length === 0,
       senderEmail: newForm.senderEmail.trim(),
@@ -99,12 +111,12 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
       sentToday: 0,
       verifiedDomain: newForm.senderEmail.split("@")[1] || "",
       spfDkimStatus: "PENDING",
-      lastTestedAt: "未测试",
+      lastTestedAt: t("email.defaults.notTested"),
     };
     setChannelList((prev) => [newChannel, ...prev]);
     if (onAddChannel) onAddChannel(newChannel);
     setIsCreateSheetOpen(false);
-    showToast(`发件渠道【${newChannel.name}】已成功添加`);
+    showToast(t("email.toast.added", { name: newChannel.name }));
   };
 
   const handleSendTestEmail = (e: React.FormEvent) => {
@@ -116,7 +128,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
     setTimeout(() => {
       setIsSendingTest(false);
       setTestFeedback(
-        `✅ 测试邮件投递成功！已通过 ${testModalChannel.name} 发往 ${testRecipient}，耗时 320ms，TLSv1.3 加密完成。`
+        t("email.testSheet.success", { channel: testModalChannel.name, recipient: testRecipient })
       );
       setTimeout(() => {
         setTestFeedback(null);
@@ -152,11 +164,11 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               <Mail className="w-5 h-5" />
             </span>
             <h1 className="text-xl font-bold text-fg tracking-tight">
-              海外邮件发信渠道配置
+              {t("email.title")}
             </h1>
           </div>
           <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
-            维护出海交易类通知邮件基建（SendGrid、AWS SES、Resend、Postmark），保障订阅开通确认单、催付告警、电子发票收据与验证码 99.9% 进箱率。
+            {t("email.subtitle")}
           </p>
         </div>
 
@@ -166,7 +178,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>添加发件渠道</span>
+            <span>{t("email.addChannel")}</span>
           </button>
         </div>
       </div>
@@ -202,7 +214,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                         </h3>
                         {channel.isPrimary && (
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
-                            主力通道 (Primary)
+                            {t("email.primary")}
                           </span>
                         )}
                       </div>
@@ -218,7 +230,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                         onClick={() => handleTogglePrimary(channel.id)}
                         className="text-[11px] text-fg-secondary hover:text-fg underline px-1"
                       >
-                        设为主力
+                        {t("email.setPrimary")}
                       </button>
                     )}
                   </div>
@@ -227,33 +239,33 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 {/* Configuration details */}
                 <div className="bg-subtle rounded-xl p-3.5 border border-line-subtle space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-fg-tertiary">发件人地址:</span>
+                    <span className="text-fg-tertiary">{t("email.senderAddress")}</span>
                     <span className="font-mono text-fg font-medium">
                       "{channel.senderName}" &lt;{channel.senderEmail}&gt;
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-fg-tertiary">SMTP 服务器:</span>
+                    <span className="text-fg-tertiary">{t("email.smtpServer")}</span>
                     <span className="font-mono text-fg-secondary">
                       {channel.smtpHost}:{channel.smtpPort}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-fg-tertiary">SPF / DKIM 域名认证:</span>
+                    <span className="text-fg-tertiary">{t("email.spfDkim")}</span>
                     <span className="inline-flex items-center gap-1 font-semibold text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                       <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      {channel.verifiedDomain} (已通过校验)
+                      {channel.verifiedDomain} {t("email.verified")}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-fg-tertiary">API Key 凭据:</span>
+                    <span className="text-fg-tertiary">{t("email.apiKey")}</span>
                     <div className="flex items-center gap-1 font-mono text-fg-secondary">
                       <span>{channel.apiKey.substring(0, 8)}••••••••</span>
-                      <span className="text-[9px] text-rose-400 font-sans ml-1" title="API Key 凭据禁止复制">
-                        禁止复制
+                      <span className="text-[9px] text-rose-400 font-sans ml-1" title={t("email.copyForbiddenTitle")}>
+                        {t("email.copyForbidden")}
                       </span>
                     </div>
                   </div>
@@ -262,9 +274,13 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 {/* Quota Progress */}
                 <div className="space-y-1 text-xs">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-fg-secondary">今日发信配额使用率</span>
+                    <span className="text-fg-secondary">{t("email.quotaUsage")}</span>
                     <span className="font-mono font-medium text-fg-secondary">
-                      {channel.sentToday.toLocaleString()} / {channel.dailyQuota.toLocaleString()} 封 ({quotaPercent}%)
+                      {t("email.quotaCount", {
+                        sent: channel.sentToday.toLocaleString(),
+                        total: channel.dailyQuota.toLocaleString(),
+                        percent: quotaPercent,
+                      })}
                     </span>
                   </div>
                   <div className="w-full h-2 bg-hover rounded-full overflow-hidden">
@@ -281,7 +297,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               {/* Actions Footer */}
               <div className="mt-5 pt-3.5 border-t border-line-subtle flex items-center justify-between text-xs">
                 <span className="text-fg-tertiary font-mono text-[11px]">
-                  最近测试: {channel.lastTestedAt}
+                  {t("email.lastTested", { time: channel.lastTestedAt })}
                 </span>
 
                 <div className="flex items-center gap-2">
@@ -293,14 +309,14 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                     className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg font-medium flex items-center gap-1 transition-colors"
                   >
                     <Send className="w-3 h-3" />
-                    <span>发测试信</span>
+                    <span>{t("email.sendTest")}</span>
                   </button>
                   <button
                     onClick={() => setEditingChannel(channel)}
                     className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg font-medium flex items-center gap-1 transition-colors"
                   >
                     <Edit2 className="w-3 h-3" />
-                    <span>配置</span>
+                    <span>{t("email.configure")}</span>
                   </button>
                 </div>
               </div>
@@ -315,8 +331,8 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         id="side-sheet-test-email"
         isOpen={!!testModalChannel}
         onClose={() => setTestModalChannel(null)}
-        title={testModalChannel ? `发送连通性测试邮件 - ${testModalChannel.name}` : "发送连通性测试邮件"}
-        description="向指定邮箱即时发出标准海外订阅账单收据测试样本，验证发信通道连通性。"
+        title={testModalChannel ? t("email.testSheet.titleWithChannel", { name: testModalChannel.name }) : t("email.testSheet.title")}
+        description={t("email.testSheet.description")}
         icon={<Send className="w-4 h-4 text-fg" />}
         widthClass="max-w-md"
         footer={
@@ -327,7 +343,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 onClick={() => setTestModalChannel(null)}
                 className="px-3.5 py-1.5 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
               >
-                取消
+                {t("common:actions.cancel")}
               </button>
               <button
                 type="submit"
@@ -338,12 +354,12 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 {isSendingTest ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>投递发送中...</span>
+                    <span>{t("email.testSheet.sending")}</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-3.5 h-3.5" />
-                    <span>立即发送测试信</span>
+                    <span>{t("email.testSheet.sendNow")}</span>
                   </>
                 )}
               </button>
@@ -354,7 +370,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               onClick={() => setTestModalChannel(null)}
               className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium cursor-pointer"
             >
-              完成
+              {t("email.testSheet.done")}
             </button>
           )
         }
@@ -368,7 +384,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             <form id="form-test-email" onSubmit={handleSendTestEmail} className="space-y-4 text-xs">
               <div>
                 <label className="text-fg-secondary block mb-1 font-medium">
-                  接收测试邮件的邮箱地址
+                  {t("email.testSheet.recipientLabel")}
                 </label>
                 <input
                   type="email"
@@ -378,17 +394,23 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                   required
                 />
                 <p className="text-[11px] text-fg-tertiary mt-1">
-                  系统将从 {testModalChannel.senderEmail} 即时发出标准海外订阅账单收据测试样本。
+                  {t("email.testSheet.senderHint", { email: testModalChannel.senderEmail })}
                 </p>
               </div>
 
               <div className="p-3 bg-subtle rounded-xl border border-line/80 space-y-1 text-fg-secondary">
-                <div className="font-medium text-fg">邮件投递路由预检:</div>
+                <div className="font-medium text-fg">{t("email.testSheet.routePreview")}</div>
                 <div className="text-[11px] font-mono text-fg-secondary">
-                  Host: {testModalChannel.smtpHost}:{testModalChannel.smtpPort}
+                  {t("email.testSheet.routeHost", {
+                    host: testModalChannel.smtpHost,
+                    port: testModalChannel.smtpPort,
+                  })}
                 </div>
                 <div className="text-[11px] font-mono text-fg-secondary">
-                  Sender: "{testModalChannel.senderName}" &lt;{testModalChannel.senderEmail}&gt;
+                  {t("email.testSheet.routeSender", {
+                    name: testModalChannel.senderName,
+                    email: testModalChannel.senderEmail,
+                  })}
                 </div>
               </div>
             </form>
@@ -408,8 +430,8 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         id="side-sheet-add-email-channel"
         isOpen={isCreateSheetOpen}
         onClose={() => setIsCreateSheetOpen(false)}
-        title="添加发件渠道"
-        description="新增海外事务邮件发信通道，配置服务商、发件人与 SMTP 投递参数后即可启用。"
+        title={t("email.createSheet.title")}
+        description={t("email.createSheet.description")}
         icon={<Mail className="w-5 h-5 text-fg" />}
         widthClass="max-w-lg"
         footer={
@@ -419,14 +441,14 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               onClick={() => setIsCreateSheetOpen(false)}
               className="px-3 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
-              取消
+              {t("common:actions.cancel")}
             </button>
             <button
               type="submit"
               form="form-add-email-channel"
               className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
             >
-              确认添加渠道
+              {t("email.createSheet.confirm")}
             </button>
           </>
         }
@@ -439,28 +461,33 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-fg-secondary block mb-1 font-medium">
-                服务商 (Provider)
+                {t("email.createSheet.provider")}
               </label>
               <ShadcnSelect
                 value={newForm.providerKey}
-                onValueChange={(val) => setNewForm((f) => ({ ...f, providerKey: val }))}
+                onValueChange={(val) =>
+                  setNewForm((f) => ({
+                    ...f,
+                    providerKey: val as EmailChannelConfig["providerKey"],
+                  }))
+                }
                 options={[
-                  { value: "sendgrid", label: "Twilio SendGrid" },
-                  { value: "ses", label: "Amazon SES" },
-                  { value: "resend", label: "Resend" },
-                  { value: "postmark", label: "Postmark" },
-                  { value: "mailgun", label: "Mailgun" },
+                  { value: "sendgrid", label: t("email.providers.sendgrid") },
+                  { value: "ses", label: t("email.providers.ses") },
+                  { value: "resend", label: t("email.providers.resend") },
+                  { value: "postmark", label: t("email.providers.postmark") },
+                  { value: "mailgun", label: t("email.providers.mailgun") },
                 ]}
               />
             </div>
             <div>
               <label className="text-fg-secondary block mb-1 font-medium">
-                渠道名称 <span className="text-rose-500">*</span>
+                {t("email.createSheet.name")} <span className="text-rose-500">{t("email.createSheet.nameRequired")}</span>
               </label>
               <input
                 type="text"
                 required
-                placeholder="如：SendGrid 主通道"
+                placeholder={t("email.createSheet.namePlaceholder")}
                 value={newForm.name}
                 onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))}
                 className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
@@ -469,10 +496,10 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           </div>
 
           <div>
-            <label className="text-fg-secondary block mb-1 font-medium">渠道说明</label>
+            <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.descriptionLabel")}</label>
             <input
               type="text"
-              placeholder="该通道的用途与适用场景..."
+              placeholder={t("email.createSheet.descriptionPlaceholder")}
               value={newForm.description}
               onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))}
               className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
@@ -482,11 +509,11 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-fg-secondary block mb-1 font-medium">
-                发件人昵称 (From Name)
+                {t("email.createSheet.fromName")}
               </label>
               <input
                 type="text"
-                placeholder="如：Novas Notifications"
+                placeholder={t("email.createSheet.fromNamePlaceholder")}
                 value={newForm.senderName}
                 onChange={(e) => setNewForm((f) => ({ ...f, senderName: e.target.value }))}
                 className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
@@ -494,12 +521,12 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             </div>
             <div>
               <label className="text-fg-secondary block mb-1 font-medium">
-                发件人邮箱 (From Email) <span className="text-rose-500">*</span>
+                {t("email.createSheet.fromEmail")} <span className="text-rose-500">{t("email.createSheet.nameRequired")}</span>
               </label>
               <input
                 type="email"
                 required
-                placeholder="billing@yourdomain.com"
+                placeholder={t("email.createSheet.fromEmailPlaceholder")}
                 value={newForm.senderEmail}
                 onChange={(e) => setNewForm((f) => ({ ...f, senderEmail: e.target.value }))}
                 className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
@@ -508,10 +535,10 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           </div>
 
           <div>
-            <label className="text-fg-secondary block mb-1 font-medium">API Key 凭据密钥</label>
+            <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.apiKey")}</label>
             <input
               type="text"
-              placeholder="服务商控制台生成的 API 密钥"
+              placeholder={t("email.createSheet.apiKeyPlaceholder")}
               value={newForm.apiKey}
               onChange={(e) => setNewForm((f) => ({ ...f, apiKey: e.target.value }))}
               className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
@@ -520,7 +547,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-fg-secondary block mb-1 font-medium">SMTP 主机地址</label>
+              <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.smtpHost")}</label>
               <input
                 type="text"
                 value={newForm.smtpHost}
@@ -529,7 +556,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               />
             </div>
             <div>
-              <label className="text-fg-secondary block mb-1 font-medium">SMTP 端口</label>
+              <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.smtpPort")}</label>
               <input
                 type="number"
                 value={newForm.smtpPort}
@@ -542,7 +569,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           </div>
 
           <div>
-            <label className="text-fg-secondary block mb-1 font-medium">每日投递配额</label>
+            <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.dailyQuota")}</label>
             <input
               type="number"
               value={newForm.dailyQuota}
@@ -560,8 +587,8 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         id="side-sheet-edit-email-channel"
         isOpen={!!editingChannel}
         onClose={() => setEditingChannel(null)}
-        title={editingChannel ? `配置发信通道 - ${editingChannel.name}` : "配置发信通道"}
-        description="维护发件人信息、SMTP 服务器与每日投递配额。"
+        title={editingChannel ? t("email.editSheet.titleWithChannel", { name: editingChannel.name }) : t("email.editSheet.title")}
+        description={t("email.editSheet.description")}
         icon={<Mail className="w-5 h-5 text-fg" />}
         widthClass="max-w-lg"
         footer={
@@ -571,14 +598,14 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               onClick={() => setEditingChannel(null)}
               className="px-3 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
-              取消
+              {t("common:actions.cancel")}
             </button>
             <button
               type="submit"
               form="form-edit-email-channel"
               className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-medium shadow-card cursor-pointer"
             >
-              保存通道配置
+              {t("email.editSheet.save")}
             </button>
           </>
         }
@@ -597,7 +624,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
             className="space-y-3 text-xs"
           >
               <div>
-                <label className="text-fg-secondary block mb-1 font-medium">发信渠道名称</label>
+                <label className="text-fg-secondary block mb-1 font-medium">{t("email.editSheet.channelName")}</label>
                 <input
                   type="text"
                   value={editingChannel.name}
@@ -611,7 +638,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-fg-secondary block mb-1 font-medium">发件人昵称 (From Name)</label>
+                  <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.fromName")}</label>
                   <input
                     type="text"
                     value={editingChannel.senderName}
@@ -623,7 +650,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-fg-secondary block mb-1 font-medium">发件人邮箱 (From Email)</label>
+                  <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.fromEmail")}</label>
                   <input
                     type="email"
                     value={editingChannel.senderEmail}
@@ -637,7 +664,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               </div>
 
               <div>
-                <label className="text-fg-secondary block mb-1 font-medium">API Key 凭据密钥</label>
+                <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.apiKey")}</label>
                 <input
                   type="text"
                   value={editingChannel.apiKey}
@@ -651,7 +678,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-fg-secondary block mb-1 font-medium">SMTP 主机地址</label>
+                  <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.smtpHost")}</label>
                   <input
                     type="text"
                     value={editingChannel.smtpHost}
@@ -662,7 +689,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-fg-secondary block mb-1 font-medium">SMTP 端口</label>
+                  <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.smtpPort")}</label>
                   <input
                     type="number"
                     value={editingChannel.smtpPort}
@@ -675,7 +702,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
               </div>
 
               <div>
-                <label className="text-fg-secondary block mb-1 font-medium">每日最大投递配额 (Quota)</label>
+                <label className="text-fg-secondary block mb-1 font-medium">{t("email.editSheet.dailyQuotaMax")}</label>
                 <input
                   type="number"
                   value={editingChannel.dailyQuota}

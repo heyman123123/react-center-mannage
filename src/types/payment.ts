@@ -86,8 +86,6 @@ export interface TransactionRecord {
   riskScore?: number; // Radar 风控评分 0-100
   timeline?: TransactionTimelineStep[]; // 全流程时间线节点 (带精确时间戳与处理阶段)
   lifecycle?: any[];
-  /** P2: 环境隔离标记，缺省视为 live */
-  environment?: AppEnvironment;
   flowSteps?: Array<{
     stepId: string;
     stepName: string;
@@ -105,7 +103,7 @@ export interface PaymentChannelConfig {
   accountName?: string; // 渠道账号名称（接入渠道账号时填写）
   description: string;
   enabled: boolean;
-  mode: "live" | "sandbox";
+  mode: string;
   apiPublicKey: string;
   apiSecretKey: string;
   webhookSecret: string;
@@ -116,8 +114,6 @@ export interface PaymentChannelConfig {
   lastTestedAt: string;
   testStatus: "HEALTHY" | "DEGRADED" | "DOWN";
   latencyMs: number;
-  /** P2: 环境隔离标记，缺省视为 live */
-  environment?: AppEnvironment;
 }
 
 // 邮件渠道配置
@@ -268,7 +264,6 @@ export interface PaymentApp {
   totalGmv: number;
   status: "ACTIVE" | "PAUSED";
   createdAt: string;
-  // P2: 环境隔离复用既有 environment 字段（Production=live, Staging=sandbox）
 }
 
 // 多语言邮件管理 - 独立单一邮件结构
@@ -598,8 +593,6 @@ export interface SettlementBatch {
   fees: SettlementFeeBreakdown; // 费用明细
   payoutAccount?: PayoutAccount; // 出金账户
   remark?: string;
-  /** P2: 环境隔离标记，缺省视为 live */
-  environment?: AppEnvironment;
 }
 
 // ============================================================
@@ -621,8 +614,6 @@ export interface RefundRecord {
   refundType: "PARTIAL" | "FULL"; // 部分 / 全额退款
   note?: string;
   createdAt: string;
-  /** P2: 环境隔离标记，缺省视为 live */
-  environment?: AppEnvironment;
 }
 
 export type ChargebackReason = "欺诈" | "未收到商品" | "商品不符" | "其他";
@@ -835,8 +826,3 @@ export interface ScheduledTask {
   status: "ENABLED" | "DISABLED";
   logs: TaskExecutionLog[];
 }
-
-// ============================================================
-// P2: 沙箱/生产环境隔离标记（可选字段，缺省视为 live）
-// ============================================================
-export type AppEnvironment = "live" | "sandbox";

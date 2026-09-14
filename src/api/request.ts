@@ -37,6 +37,7 @@ export async function request<T = unknown>(path: string, options: RequestOptions
     const resp = await fetch(buildUrl(path, query), {
       method,
       signal: controller.signal,
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",

@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -27,6 +28,8 @@ export const SideSheet: React.FC<SideSheetProps> = ({
   widthClass = "max-w-2xl",
   id,
 }) => {
+  const { t } = useTranslation("shell");
+
   // Lock body scroll when open and handle ESC key
   useEffect(() => {
     if (!isOpen) return;
@@ -87,7 +90,7 @@ export const SideSheet: React.FC<SideSheetProps> = ({
             <button
               type="button"
               onClick={onClose}
-              title="关闭 (Esc)"
+              title={t("sideSheet.closeHint")}
               className="p-1.5 text-fg-tertiary hover:text-fg-secondary hover:bg-hover rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />

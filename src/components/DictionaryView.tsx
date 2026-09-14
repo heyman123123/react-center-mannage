@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import {
@@ -27,6 +28,7 @@ import {
   Link2,
   Settings2,
   FolderTree,
+  ArrowRightLeft,
 } from "lucide-react";
 import {
   DictionaryEntry,
@@ -179,17 +181,16 @@ export const AVAILABLE_LANGUAGES: {
   { code: "zu-ZA", label: "祖鲁语 (zu-ZA)", flag: "🌐", nativeName: "祖鲁语" },
 ];
 
-export const PLATFORM_OPTIONS: {
+const PLATFORM_OPTION_META: {
   key: ProjectPlatform;
-  label: string;
   icon: React.ElementType;
   color: string;
 }[] = [
-  { key: "CHECKOUT", label: "收银台 (Web Checkout)", icon: LayoutTemplate, color: "text-blue-600 bg-blue-50 border-blue-200" },
-  { key: "PORTAL", label: "商户管理后台 (Portal)", icon: Monitor, color: "text-violet-600 bg-violet-50 border-violet-200" },
-  { key: "GATEWAY_API", label: "网关API与错误码", icon: Server, color: "text-amber-600 bg-amber-50 border-amber-200" },
-  { key: "MOBILE_SDK", label: "移动端原生SDK/App", icon: Smartphone, color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-  { key: "EMAIL_NOTIFY", label: "邮件与消息通知", icon: Mail, color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
+  { key: "CHECKOUT", icon: LayoutTemplate, color: "text-blue-600 bg-blue-50 border-blue-200" },
+  { key: "PORTAL", icon: Monitor, color: "text-violet-600 bg-violet-50 border-violet-200" },
+  { key: "GATEWAY_API", icon: Server, color: "text-amber-600 bg-amber-50 border-amber-200" },
+  { key: "MOBILE_SDK", icon: Smartphone, color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+  { key: "EMAIL_NOTIFY", icon: Mail, color: "text-indigo-600 text-indigo-700 border-indigo-200" },
 ];
 
 // 出海全项目标准常用词条预设模板
@@ -286,36 +287,31 @@ const PROJECT_PRESET_ENTRIES: {
   },
 ];
 
-const CATEGORY_LABELS: { key: DictionaryCategory; label: string }[] = [
-  { key: "COMMON", label: "通用词汇" },
-  { key: "BILLING", label: "交易与账单" },
-  { key: "LIFECYCLE", label: "订阅周期" },
-  { key: "PROMOTION", label: "营销促销" },
-  { key: "SECURITY", label: "账号安全" },
-  { key: "CHECKOUT", label: "海外收银台" },
-  { key: "PORTAL", label: "商户管理后台" },
-  { key: "GATEWAY_ERRORS", label: "网关与错误码" },
-  { key: "CURRENCY", label: "结算货币" },
-  { key: "PAYMENT_CHANNEL", label: "支付渠道" },
+const CATEGORY_KEYS: DictionaryCategory[] = [
+  "COMMON",
+  "BILLING",
+  "LIFECYCLE",
+  "PROMOTION",
+  "SECURITY",
+  "CHECKOUT",
+  "PORTAL",
+  "GATEWAY_ERRORS",
+  "CURRENCY",
+  "PAYMENT_CHANNEL",
 ];
 
-// 字典词条 → 关联位置（多语言关联映射：收银台/商户后台/网关/移动端/通知邮件模板）
-export const DICT_REFERENCE_POINTS: {
-  keyPrefix: string;
-  label: string;
-  scope: string;
-}[] = [
-  { keyPrefix: "checkout.", label: "海外收银台", scope: "收银台按钮/提示文案" },
-  { keyPrefix: "payment.receipt", label: "交易通知邮件", scope: "收据邮件主题与正文" },
-  { keyPrefix: "subscription.", label: "订阅周期邮件", scope: "续费/扣款通知" },
-  { keyPrefix: "security.", label: "安全验证通知", scope: "验证码/风控邮件" },
-  { keyPrefix: "account.", label: "账号安全", scope: "密码重置/登录通知" },
-  { keyPrefix: "email.footer", label: "邮件页脚", scope: "退订与偏好链接" },
-  { keyPrefix: "support.", label: "技术支持", scope: "客服联系链接" },
-  { keyPrefix: "currency.", label: "结算货币", scope: "收银台币种/账单/对账单" },
-  { keyPrefix: "gateway.error", label: "网关错误码", scope: "API 响应与错误提示" },
-  { keyPrefix: "portal.", label: "商户管理后台", scope: "后台导航与指标卡片" },
-];
+const DICT_REFERENCE_POINT_KEYS = [
+  { keyPrefix: "checkout.", refKey: "checkout" },
+  { keyPrefix: "payment.receipt", refKey: "paymentReceipt" },
+  { keyPrefix: "subscription.", refKey: "subscription" },
+  { keyPrefix: "security.", refKey: "security" },
+  { keyPrefix: "account.", refKey: "account" },
+  { keyPrefix: "email.footer", refKey: "emailFooter" },
+  { keyPrefix: "support.", refKey: "support" },
+  { keyPrefix: "currency.", refKey: "currency" },
+  { keyPrefix: "gateway.error", refKey: "gatewayError" },
+  { keyPrefix: "portal.", refKey: "portal" },
+] as const;
 
 export const DictionaryView: React.FC<DictionaryViewProps> = ({
   dictionary,
@@ -323,6 +319,36 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   onSaveEntry,
   onDeleteEntry,
 }) => {
+  const { t } = useTranslation(["dictionary", "common"]);
+
+  const categoryLabels = useMemo(
+    () =>
+      CATEGORY_KEYS.map((key) => ({
+        key,
+        label: t(`dictionary:categories.${key}`),
+      })),
+    [t]
+  );
+
+  const dictReferencePoints = useMemo(
+    () =>
+      DICT_REFERENCE_POINT_KEYS.map((item) => ({
+        keyPrefix: item.keyPrefix,
+        label: t(`dictionary:references.${item.refKey}.label`),
+        scope: t(`dictionary:references.${item.refKey}.scope`),
+      })),
+    [t]
+  );
+
+  const platformOptions = useMemo(
+    () =>
+      PLATFORM_OPTION_META.map((item) => ({
+        ...item,
+        label: t(`dictionary:platforms.${item.key}`),
+      })),
+    [t]
+  );
+
   const [entryList, setEntryList] = useState<DictionaryEntry[]>(() => {
     return dictionary.map((item) => ({
       ...item,
@@ -339,24 +365,24 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const [treeKeyword, setTreeKeyword] = useState("");
 
   // ===== 左侧分类：可右键新增/删除/重命名/刷新 =====
-  const [categoryList, setCategoryList] = useState<{ key: string; label: string }[]>(CATEGORY_LABELS);
+  const [categoryList, setCategoryList] = useState<{ key: string; label: string }[]>(categoryLabels);
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [treeRefreshing, setTreeRefreshing] = useState(false);
   const { currentPage, setCurrentPage, reset: resetPage, pageSize } = usePagination(10);
 
   const handleAddCategory = () => {
-    const name = window.prompt("请输入新分类名称：");
+    const name = window.prompt(t("dictionary:tree.addPrompt"));
     if (!name || !name.trim()) return;
     const key = `CAT_${Date.now()}`;
     setCategoryList((prev) => [...prev, { key, label: name.trim() }]);
     setCategoryFilter(key);
-    showToast(`已新增分类【${name.trim()}】`);
+    showToast(t("dictionary:toast.categoryAdded", { name: name.trim() }));
   };
   const handleDeleteCategory = (key: string, label: string) => {
     setCategoryList((prev) => prev.filter((c) => c.key !== key));
     if (categoryFilter === key) setCategoryFilter("ALL");
-    showToast(`已删除分类【${label}】`);
+    showToast(t("dictionary:toast.categoryDeleted", { label }));
   };
   const startRename = (key: string, label: string) => {
     setRenamingKey(key);
@@ -365,16 +391,16 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const commitRename = () => {
     if (renamingKey && renameValue.trim()) {
       setCategoryList((prev) => prev.map((c) => (c.key === renamingKey ? { ...c, label: renameValue.trim() } : c)));
-      showToast("分类已重命名");
+      showToast(t("dictionary:toast.categoryRenamed"));
     }
     setRenamingKey(null);
   };
   const handleRefreshTree = () => {
     setTreeRefreshing(true);
     setTimeout(() => {
-      setCategoryList(CATEGORY_LABELS);
+      setCategoryList(categoryLabels);
       setTreeRefreshing(false);
-      showToast("分类列表已刷新");
+      showToast(t("dictionary:toast.treeRefreshed"));
     }, 400);
   };
   useEffect(() => { resetPage(); }, [categoryFilter, searchQuery, resetPage]);
@@ -409,15 +435,15 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
   // 基于当前语种配置构造空译文表单
   const emptyTranslations = (): Record<string, string> => {
-    const t: Record<string, string> = {};
-    languages.forEach((l) => (t[l.code] = ""));
-    return t;
+    const translationsMap: Record<string, string> = {};
+    languages.forEach((l) => (translationsMap[l.code] = ""));
+    return translationsMap;
   };
 
   // 添加语种：同步所有词条补齐该语言（默认沿用 en-US/zh-CN 兜底文案）
   const handleAddLanguage = (lang: { code: string; label: string; flag: string; nativeName: string }) => {
     if (languages.some((l) => l.code === lang.code)) {
-      showToast(`语言 ${lang.nativeName} (${lang.code}) 已在多语言配置中`);
+      showToast(t("dictionary:toast.langExists", { name: lang.nativeName, code: lang.code }));
       return;
     }
     setLanguages((prev) => [...prev, lang]);
@@ -427,13 +453,13 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         return { ...e, translations: { ...e.translations, [lang.code]: fallback } };
       })
     );
-    showToast(`已添加语言 ${lang.nativeName} (${lang.code})，所有词条已自动补齐占位译文`);
+    showToast(t("dictionary:toast.langAdded", { name: lang.nativeName, code: lang.code }));
   };
 
   // 移除语种：同步移除所有词条该语言译文
   const handleRemoveLanguage = (lang: { code: string; label: string; flag: string; nativeName: string }) => {
     if (languages.length <= 1) {
-      showToast("至少需要保留一种语言");
+      showToast(t("dictionary:toast.minLanguageRequired"));
       return;
     }
     setLanguages((prev) => prev.filter((l) => l.code !== lang.code));
@@ -445,7 +471,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       })
     );
     setPreviewLanguage((prev) => (prev === lang.code ? languages[0].code : prev));
-    showToast(`已移除语言 ${lang.nativeName} (${lang.code})`);
+    showToast(t("dictionary:toast.langRemoved", { name: lang.nativeName, code: lang.code }));
   };
 
   // 自定义添加语种
@@ -453,7 +479,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     const code = customLangCode.trim();
     const name = customLangName.trim();
     if (!code || !name) {
-      showToast("请填写语言代码与语言名称");
+      showToast(t("dictionary:toast.langFieldsRequired"));
       return;
     }
     handleAddLanguage({
@@ -498,9 +524,9 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setFormCategory(entry.category);
     setFormPlatforms(entry.platforms || ["CHECKOUT", "PORTAL", "EMAIL_NOTIFY"]);
     setFormDescription(entry.description);
-    const t: Record<string, string> = {};
-    languages.forEach((l) => (t[l.code] = entry.translations[l.code] || ""));
-    setFormTranslations(t);
+    const translationsMap: Record<string, string> = {};
+    languages.forEach((l) => (translationsMap[l.code] = entry.translations[l.code] || ""));
+    setFormTranslations(translationsMap);
     setIsModalOpen(true);
   };
 
@@ -514,7 +540,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     const baseEn = formTranslations["en-US"].trim();
 
     if (!baseZh && !baseEn) {
-      showToast("请先输入简体中文或 English 文案，再一键补齐其余语言");
+      showToast(t("dictionary:toast.autoTranslateNeedBase"));
       return;
     }
 
@@ -532,7 +558,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       languages.forEach((l) => {
         newTranslations[l.code] = matchedPreset.translations[l.code] || newTranslations["en-US"] || "";
       });
-      showToast(`已匹配出海全项目标准词典，自动补全 ${languages.length} 种语言！`);
+      showToast(t("dictionary:toast.presetMatched", { count: languages.length }));
     } else {
       const fallbackMap: Record<string, string> = {};
       languages.forEach((l) => {
@@ -547,7 +573,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       languages.forEach((l) => {
         newTranslations[l.code] = formTranslations[l.code] || fallbackMap[l.code] || "";
       });
-      showToast(`已智能补全全套 ${languages.length} 种语言文案！您可直接进行细节微调。`);
+      showToast(t("dictionary:toast.autoTranslateDone", { count: languages.length }));
     }
 
     setFormTranslations(newTranslations);
@@ -558,10 +584,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setFormCategory(preset.category);
     setFormPlatforms(preset.platforms);
     setFormDescription(preset.description);
-    const t: Record<string, string> = {};
-    languages.forEach((l) => (t[l.code] = preset.translations[l.code] || ""));
-    setFormTranslations(t);
-    showToast(`已应用【${preset.key}】全项目出海预设，已默认填充全部 ${languages.length} 种语言！`);
+    const translationsMap: Record<string, string> = {};
+    languages.forEach((l) => (translationsMap[l.code] = preset.translations[l.code] || ""));
+    setFormTranslations(translationsMap);
+    showToast(t("dictionary:toast.presetApplied", { key: preset.key, count: languages.length }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -590,7 +616,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       };
       setEntryList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       onSaveEntry(updated);
-      showToast(`全项目字典词条【${updated.key}】更新成功！各端 ${languages.length} 种语言已同步`);
+      showToast(t("dictionary:toast.entryUpdated", { key: updated.key, count: languages.length }));
     } else {
       const newEntry: DictionaryEntry = {
         id: `dict_${Date.now().toString().slice(-6)}`,
@@ -604,7 +630,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       };
       setEntryList((prev) => [newEntry, ...prev]);
       onSaveEntry(newEntry);
-      showToast(`新词条【${newEntry.key}】已加入全项目词典！默认 ${languages.length} 种语言已就绪`);
+      showToast(t("dictionary:toast.entryCreated", { key: newEntry.key, count: languages.length }));
     }
     setIsModalOpen(false);
   };
@@ -613,7 +639,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setEntryList((prev) => prev.filter((item) => item.id !== id));
     if (onDeleteEntry) onDeleteEntry(id);
     setSelectedIds((prev) => prev.filter((sid) => sid !== id));
-    showToast(`词条【${key}】已从全项目字典删除`);
+    showToast(t("dictionary:toast.entryDeleted", { key }));
   };
 
   const handleBatchDelete = () => {
@@ -621,7 +647,19 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setEntryList((prev) => prev.filter((item) => !selectedIds.includes(item.id)));
     if (onDeleteEntry) selectedIds.forEach((id) => onDeleteEntry(id));
     setSelectedIds([]);
-    showToast(`已删除 ${selectedIds.length} 个词条`);
+    showToast(t("dictionary:toast.batchDeleted", { count: selectedIds.length }));
+  };
+
+  const handleBatchTransfer = () => {
+    if (selectedIds.length === 0) return;
+    showToast(t("dictionary:toast.batchTransfer", { count: selectedIds.length }));
+  };
+
+  const handleRefresh = () => {
+    setSearchQuery("");
+    setSelectedIds([]);
+    setEntryList(dictionary.map((item) => ({ ...item, platforms: item.platforms || ["CHECKOUT", "PORTAL", "EMAIL_NOTIFY", "MOBILE_SDK"] })));
+    showToast(t("dictionary:toast.refreshed"));
   };
 
   const handleBatchAutoComplete = () => {
@@ -649,7 +687,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     });
 
     setEntryList(updated);
-    showToast(`已成功为全项目 ${completedCount} 个词条补齐全部 ${languages.length} 种多语言！`);
+    showToast(t("dictionary:toast.batchAutoComplete", { entryCount: completedCount, langCount: languages.length }));
   };
 
   const handleExportWebJSON = () => {
@@ -668,7 +706,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-    showToast("全项目前端/API 多语言包 JSON 导出成功！");
+    showToast(t("dictionary:toast.exportSuccess"));
   };
 
   const togglePlatform = (p: ProjectPlatform) => {
@@ -689,7 +727,9 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   });
 
   const currentCategoryLabel =
-    categoryFilter === "ALL" ? "全部" : CATEGORY_LABELS.find((c) => c.key === categoryFilter)?.label || "全部";
+    categoryFilter === "ALL"
+      ? t("dictionary:tree.all")
+      : categoryList.find((c) => c.key === categoryFilter)?.label || t("dictionary:tree.all");
 
   const visibleCategoryKeys = categoryList.filter((c) =>
     !treeKeyword ||
@@ -698,7 +738,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
   // 计算词条关联位置（映射到多语言关联点：邮件模板 / 收银台 / 网关等）
   const getReferencePoints = (item: DictionaryEntry) => {
-    const matched = DICT_REFERENCE_POINTS.filter((p) => item.key.startsWith(p.keyPrefix));
+    const matched = dictReferencePoints.filter((p) => item.key.startsWith(p.keyPrefix));
     return matched.length > 0 ? matched : [{ keyPrefix: item.category, label: item.category, scope: item.category }];
   };
 
@@ -706,27 +746,139 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   if (loading) return <TableSkeleton rows={9} />;
 
   return (
-    <div className="flex gap-3 items-start font-sans">
+    <div className="space-y-3 font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
+      {/* ===== 顶部操作栏（截图风格） ===== */}
+      <div className="bg-surface border border-line rounded-md shadow-card px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            title={t("dictionary:toolbar.refreshTitle")}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            {t("dictionary:toolbar.refresh")}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleOpenAdd()}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {t("dictionary:toolbar.add")}
+          </button>
+
+          {selectedIds.length === 0 ? (
+            <button
+              type="button"
+              disabled
+              className="px-3 py-1.5 border border-rose-200 text-rose-600 rounded text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {t("dictionary:toolbar.delete")}
+            </button>
+          ) : (
+            <Popconfirm
+              title={t("dictionary:batchDelete.title", { count: selectedIds.length })}
+              description={t("dictionary:batchDelete.description")}
+              onConfirm={handleBatchDelete}
+            >
+              <button
+                type="button"
+                className="px-3 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {t("dictionary:toolbar.delete")}
+              </button>
+            </Popconfirm>
+          )}
+
+          {selectedIds.length === 0 ? (
+            <button
+              type="button"
+              disabled
+              className="px-3 py-1.5 border border-emerald-200 text-emerald-600 rounded text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              {t("dictionary:toolbar.transfer")}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleBatchTransfer}
+              className="px-3 py-1.5 border border-emerald-200 hover:bg-emerald-50 text-emerald-600 rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              {t("dictionary:toolbar.transfer")}
+            </button>
+          )}
+
+          <div className="w-px h-5 bg-hover mx-1" />
+
+          <button
+            type="button"
+            onClick={handleBatchAutoComplete}
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            title={t("dictionary:toolbar.autoCompleteTitle")}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            {t("dictionary:toolbar.autoComplete", { count: languages.length })}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportWebJSON}
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            title={t("dictionary:toolbar.exportI18nTitle")}
+          >
+            <Download className="w-3.5 h-3.5 text-blue-600" />
+            {t("dictionary:toolbar.exportI18n")}
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <div className="relative w-64">
+            <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder={t("dictionary:toolbar.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <button
+            type="button"
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Search className="w-3.5 h-3.5" />
+            {t("dictionary:toolbar.search")}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-3 items-start">
       {/* ===== 左侧：类型分类栏 ===== */}
-      <div className="w-48 shrink-0 bg-surface border border-line rounded-xl shadow-card overflow-hidden lg:sticky lg:top-4">
+      <div className="w-48 shrink-0 bg-surface border border-line rounded-md shadow-card overflow-hidden lg:sticky lg:top-4">
         <div className="px-3 py-2.5 border-b border-line flex items-center justify-between">
           <span className="text-xs font-bold text-fg flex items-center gap-1.5">
             <ListFilter className="w-3.5 h-3.5 text-fg-secondary" />
-            类型
+            {t("dictionary:tree.title")}
           </span>
           <button
             type="button"
             onClick={handleRefreshTree}
-            title="刷新列表"
-            className="p-1 rounded-md text-fg-tertiary hover:bg-hover hover:text-fg transition-colors cursor-pointer"
+            title={t("dictionary:tree.refreshTitle")}
+            className="p-1 rounded text-fg-tertiary hover:bg-hover hover:text-fg transition-colors cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${treeRefreshing ? "animate-spin" : ""}`} />
           </button>
@@ -737,10 +889,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <Search className="w-3 h-3 text-fg-tertiary absolute left-2 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="搜索关键字"
+              placeholder={t("dictionary:tree.searchPlaceholder")}
               value={treeKeyword}
               onChange={(e) => setTreeKeyword(e.target.value)}
-              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
@@ -749,7 +901,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <button
             type="button"
             onClick={() => setCategoryFilter("ALL")}
-            className={`relative w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+            className={`relative w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-all border ${
               categoryFilter === "ALL"
                 ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm"
                 : "text-fg-secondary hover:bg-hover border-transparent"
@@ -763,7 +915,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             }`}>
               <BookOpen className={`w-3.5 h-3.5 ${categoryFilter === "ALL" ? "text-white" : "text-fg-tertiary"}`} />
             </span>
-            <span className="flex-1 text-left truncate">全部</span>
+            <span className="flex-1 text-left truncate">{t("dictionary:tree.all")}</span>
             <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
               categoryFilter === "ALL" ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
             }`}>{entryList.length}</span>
@@ -775,10 +927,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               <ContextMenu
                 key={c.key}
                 items={[
-                  { key: "add", label: "新增同级分类", onClick: handleAddCategory },
-                  { key: "rename", label: "重命名", onClick: () => startRename(c.key, c.label) },
-                  { key: "del", label: "删除", danger: true, onClick: () => handleDeleteCategory(c.key, c.label) },
-                  { key: "refresh", label: "刷新列表", onClick: handleRefreshTree },
+                  { key: "add", label: t("dictionary:tree.addSibling"), onClick: handleAddCategory },
+                  { key: "rename", label: t("dictionary:tree.rename"), onClick: () => startRename(c.key, c.label) },
+                  { key: "del", label: t("dictionary:tree.delete"), danger: true, onClick: () => handleDeleteCategory(c.key, c.label) },
+                  { key: "refresh", label: t("dictionary:tree.refresh"), onClick: handleRefreshTree },
                 ]}
                 trigger={
                   renamingKey === c.key ? (
@@ -791,13 +943,13 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                         if (e.key === "Enter") commitRename();
                         if (e.key === "Escape") setRenamingKey(null);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-input border border-primary text-fg"
+                      className="w-full px-2.5 py-1.5 rounded text-xs bg-subtle border border-primary text-fg"
                     />
                   ) : (
                     <button
                       type="button"
                       onClick={() => setCategoryFilter(c.key)}
-                      className={`relative w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+                      className={`relative w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-all border ${
                         categoryFilter === c.key
                           ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm"
                           : "text-fg-secondary hover:bg-hover border-transparent"
@@ -826,90 +978,19 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
       {/* ===== 右侧：字典列表 ===== */}
       <div className="flex-1 min-w-0 space-y-3">
-        {/* 标题与工具栏 */}
-        <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2 text-sm font-bold text-fg">
-            <span>字典列表</span>
-            <span className="text-fg-tertiary font-normal text-xs">（{currentCategoryLabel}）</span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedIds([]);
-                setEntryList(dictionary.map((item) => ({ ...item, platforms: item.platforms || ["CHECKOUT", "PORTAL", "EMAIL_NOTIFY", "MOBILE_SDK"] })));
-                showToast("字典数据已刷新");
-              }}
-              className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="刷新字典数据"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              刷新
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleOpenAdd()}
-              className="px-2.5 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              新增
-            </button>
-
-            {selectedIds.length === 0 ? (
-              <button
-                type="button"
-                disabled
-                className="px-2.5 py-1.5 border border-rose-200 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                删除
-              </button>
-            ) : (
-              <Popconfirm
-                title={`删除选中的 ${selectedIds.length} 个词条？`}
-                description="删除后所有关联的多语言位置将回退为键名本身，请谨慎操作。"
-                onConfirm={handleBatchDelete}
-              >
-                <button
-                  type="button"
-                  className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  删除
-                </button>
-              </Popconfirm>
-            )}            <div className="w-px h-5 bg-hover mx-1" />
-
-            <button
-              type="button"
-              onClick={handleBatchAutoComplete}
-              className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="智能补全所有词条的当前配置语种"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              智能补全 {languages.length} 语
-            </button>
-
-            <button
-              type="button"
-              onClick={handleExportWebJSON}
-              className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="导出全项目多语言包 JSON"
-            >
-              <Download className="w-3.5 h-3.5 text-blue-600" />
-              导出 i18n
-            </button>
-          </div>
+        {/* 标题 */}
+        <div className="flex items-center gap-2 text-sm font-bold text-fg px-1">
+          <span>{t("dictionary:list.title")}</span>
+          <span className="text-fg-tertiary font-normal text-xs">
+            {t("dictionary:list.categorySuffix", { label: currentCategoryLabel })}
+          </span>
         </div>
 
         {/* 语种切换 */}
-        <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2 flex items-center justify-between gap-2">
+        <div className="bg-surface border border-line rounded-md shadow-card px-3 py-2 flex items-center justify-between gap-2 flex-wrap">
           <span className="text-xs text-fg-secondary flex items-center gap-1.5">
             <Languages className="w-3.5 h-3.5 text-violet-500" />
-            巡检语种：
+            {t("dictionary:list.previewLang")}
           </span>
           <div className="flex items-center gap-1 flex-wrap">
             {languages.map((l) => (
@@ -917,9 +998,9 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 key={l.code}
                 type="button"
                 onClick={() => setPreviewLanguage(l.code)}
-                className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1 cursor-pointer ${
+                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 cursor-pointer ${
                   previewLanguage === l.code
-                    ? "bg-primary text-primary-foreground font-semibold"
+                    ? "bg-blue-600 text-white font-semibold"
                     : "bg-hover text-fg-secondary hover:bg-hover"
                 }`}
               >
@@ -930,33 +1011,17 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <button
               type="button"
               onClick={() => setIsLangModalOpen(true)}
-              className="px-2 py-1 rounded-md text-[11px] font-medium flex items-center gap-1 cursor-pointer bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 transition-colors"
-              title="配置全项目支持的多语言列表（可新增 / 移除语种）"
+              className="px-2 py-1 rounded text-[11px] font-medium flex items-center gap-1 cursor-pointer bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 transition-colors"
+              title={t("dictionary:list.manageLanguagesTitle")}
             >
               <Settings2 className="w-3 h-3" />
-              管理语种
+              {t("dictionary:list.manageLanguages")}
             </button>
           </div>
         </div>
 
         {/* 表格 */}
-        <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-line-subtle">
-            <span className="text-xs text-fg-secondary">
-              共 <b className="text-fg font-mono">{filteredEntries.length}</b> 个词条
-            </span>
-            <div className="relative w-64">
-              <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="搜索名称 / 键名 / 译文..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-          </div>
-
+        <div className="bg-surface border border-line rounded-md shadow-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-[1080px] w-full text-left text-xs border-collapse">
               <thead>
@@ -971,24 +1036,26 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                       className="rounded text-fg"
                     />
                   </th>
-                  <th className="py-2 px-3 w-[260px]">名称 (Key)</th>
-                  <th className="py-2 px-3 w-[110px]">ID</th>
+                  <th className="py-2 px-3 w-[260px]">{t("dictionary:table.nameKey")}</th>
+                  <th className="py-2 px-3 w-[110px]">{t("dictionary:table.id")}</th>
                   <th className="py-2 px-3 min-w-[240px]">
-                    值（{languages.find((l) => l.code === previewLanguage)?.flag}{" "}
-                    {languages.find((l) => l.code === previewLanguage)?.nativeName}）
+                    {t("dictionary:table.value", {
+                      flag: languages.find((l) => l.code === previewLanguage)?.flag ?? "",
+                      name: languages.find((l) => l.code === previewLanguage)?.nativeName ?? "",
+                    })}
                   </th>
-                  <th className="py-2 px-3 min-w-[180px]">备注</th>
-                  <th className="py-2 px-3 min-w-[160px]">关联位置</th>
-                  <th className="py-2 px-3 w-[100px]">创建</th>
-                  <th className="py-2 px-3 w-[80px] text-center">引用</th>
-                  <th className="py-2 px-3 w-[150px] text-right">操作</th>
+                  <th className="py-2 px-3 min-w-[180px]">{t("dictionary:table.remark")}</th>
+                  <th className="py-2 px-3 min-w-[160px]">{t("dictionary:table.references")}</th>
+                  <th className="py-2 px-3 w-[100px]">{t("dictionary:table.created")}</th>
+                  <th className="py-2 px-3 w-[80px] text-center">{t("dictionary:table.refs")}</th>
+                  <th className="py-2 px-3 w-[150px] text-right">{t("common:labels.operations")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-subtle text-fg-secondary">
                 {filteredEntries.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-12 text-center text-fg-tertiary">
-                      暂无字典词条数据
+                      {t("dictionary:table.empty")}
                     </td>
                   </tr>
                 ) : (
@@ -1021,7 +1088,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                                 type="button"
                                 onClick={() => handleCopy(item.key, item.id)}
                                 className="p-0.5 text-fg-tertiary hover:text-fg-secondary rounded transition-colors cursor-pointer"
-                                title="复制键名"
+                                title={t("dictionary:table.copyKey")}
                               >
                                 {isCopied ? (
                                   <Check className="w-3 h-3 text-emerald-600" />
@@ -1062,54 +1129,39 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               {completedCount}/{languages.length}
                             </span>
                             <div className="text-[9px] text-fg-tertiary mt-0.5">
-                              {item.referencedTemplatesCount ?? 0} 模板
+                              {t("dictionary:table.templates", {
+                                count: item.referencedTemplatesCount ?? 0,
+                              })}
                             </div>
                           </td>
                           <td className="py-2 px-3">
-                            <div className="flex items-center justify-end gap-0.5">
+                            <div className="flex items-center justify-end gap-2 text-[11px]">
                               <button
                                 type="button"
-                                onClick={() => handleOpenAdd(item.category)}
-                                className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded-md text-[11px] font-medium cursor-pointer"
-                                title="新增同分类词条"
+                                onClick={() => showToast(t("dictionary:toast.transferStarted", { key: item.key }))}
+                                className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                               >
-                                <Plus className="w-3 h-3" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenCodeHelper(item)}
-                                className="px-2 py-1 text-fg-secondary hover:bg-hover rounded-md text-[11px] font-medium cursor-pointer"
-                                title="查看各端调用示例"
-                              >
-                                <Code2 className="w-3 h-3" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => toggleExpand(item.id)}
-                                className="px-2 py-1 text-fg-secondary hover:bg-hover rounded-md text-[11px] font-medium cursor-pointer"
-                                title="展开全部语种对照"
-                              >
-                                {isExpanded ? <ChevronUp className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                {t("dictionary:table.transfer")}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleOpenEdit(item)}
-                                className="px-2 py-1 text-fg-secondary hover:bg-hover rounded-md text-[11px] font-medium cursor-pointer"
-                                title="编辑词条"
+                                className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                                title={t("dictionary:table.editTitle")}
                               >
-                                <Edit2 className="w-3 h-3" />
+                                {t("dictionary:table.edit")}
                               </button>
                               <Popconfirm
-                                title={`删除词条「${item.key}」？`}
-                                description="该词条将被移出全项目字典，所有关联的多语言位置将回退为键名本身。"
+                                title={t("dictionary:deleteEntry.title", { key: item.key })}
+                                description={t("dictionary:deleteEntry.description")}
                                 onConfirm={() => handleDelete(item.id, item.key)}
                               >
                                 <button
                                   type="button"
-                                  className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-medium cursor-pointer"
-                                  title="删除词条"
+                                  className="text-rose-500 hover:text-rose-700 font-medium cursor-pointer"
+                                  title={t("dictionary:table.deleteTitle")}
                                 >
-                                  <Trash2 className="w-3 h-3" />
+                                  {t("dictionary:table.delete")}
                                 </button>
                               </Popconfirm>
                             </div>
@@ -1120,16 +1172,16 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                         {isExpanded && (
                           <tr className="bg-violet-50/40">
                             <td colSpan={9} className="p-3 border-b border-line">
-                              <div className="bg-surface rounded-xl p-3 border border-violet-200 shadow-card space-y-3">
+                              <div className="bg-surface rounded p-3 border border-violet-200 shadow-card space-y-3">
                                 <div className="flex items-center justify-between text-xs font-bold text-fg pb-2 border-b border-line-subtle">
                                   <span className="flex items-center gap-1.5">
                                     <Languages className="w-4 h-4 text-violet-600" />
-                                    【{item.key}】全项目 {languages.length} 种多语言完整译文对照
+                                    {t("dictionary:table.expandedTitle", { key: item.key, count: languages.length })}
                                   </span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                   {languages.map((l) => (
-                                    <div key={l.code} className="bg-subtle p-2.5 rounded-lg border border-line text-xs space-y-1">
+                                    <div key={l.code} className="bg-subtle p-2.5 rounded border border-line text-xs space-y-1">
                                       <div className="flex items-center justify-between text-[11px] font-semibold text-fg-secondary">
                                         <span className="flex items-center gap-1">
                                           <span>{l.flag}</span>
@@ -1139,7 +1191,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                                       </div>
                                       <div className="text-fg font-sans text-xs bg-surface p-2 rounded border border-line/80 leading-relaxed min-h-[42px]">
                                         {item.translations[l.code] || (
-                                          <span className="text-fg-tertiary italic">未填</span>
+                                          <span className="text-fg-tertiary italic">{t("dictionary:table.notFilled")}</span>
                                         )}
                                       </div>
                                     </div>
@@ -1159,6 +1211,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <Pagination currentPage={currentPage} totalItems={filteredEntries.length} pageSize={pageSize} onPageChange={setCurrentPage} />
         </div>
       </div>
+      </div>
 
       {/* Code Snippet Helper SideSheet */}
       {isCodeModalOpen && activeCodeEntry && (
@@ -1166,26 +1219,26 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           id="side-sheet-dict-code"
           isOpen={true}
           onClose={() => setIsCodeModalOpen(false)}
-          title={`全项目调用示例: ${activeCodeEntry.key}`}
-          description="该词条可在全工程各个终端模块通过标准 i18n 客户端无缝调用"
+          title={t("dictionary:codeSheet.title", { key: activeCodeEntry.key })}
+          description={t("dictionary:codeSheet.description")}
           icon={<Code2 className="w-5 h-5 text-blue-600" />}
           widthClass="max-w-xl"
           footer={
             <button
               type="button"
               onClick={() => setIsCodeModalOpen(false)}
-              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold cursor-pointer"
+              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold cursor-pointer"
             >
-              关闭
+              {t("dictionary:codeSheet.close")}
             </button>
           }
         >
           <div className="space-y-3 text-xs">
-            <div className="bg-subtle p-3 rounded-xl border border-line space-y-1">
+            <div className="bg-subtle p-3 rounded border border-line space-y-1">
               <div className="flex items-center justify-between font-semibold text-fg-secondary">
                 <span className="flex items-center gap-1.5">
                   <LayoutTemplate className="w-3.5 h-3.5 text-blue-600" />
-                  Web 前端 (React / Vue / Next.js / 收银台组件)
+                  {t("dictionary:codeSheet.webFrontend")}
                 </span>
                 <button
                   type="button"
@@ -1193,19 +1246,19 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   className="text-blue-600 hover:text-blue-800 text-[11px] flex items-center gap-1 cursor-pointer"
                 >
                   <Copy className="w-3 h-3" />
-                  <span>复制</span>
+                  <span>{t("dictionary:codeSheet.copy")}</span>
                 </button>
               </div>
-              <pre className="bg-primary text-primary-foreground p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
+              <pre className="bg-primary text-primary-foreground p-2.5 rounded font-mono text-[11px] overflow-x-auto">
                 {`import { useTranslation } from "react-i18next";\nconst { t } = useTranslation();\n\n// 渲染国际化文本\n<Button>{t("${activeCodeEntry.key}")}</Button>`}
               </pre>
             </div>
 
-            <div className="bg-subtle p-3 rounded-xl border border-line space-y-1">
+            <div className="bg-subtle p-3 rounded border border-line space-y-1">
               <div className="flex items-center justify-between font-semibold text-fg-secondary">
                 <span className="flex items-center gap-1.5">
                   <Server className="w-3.5 h-3.5 text-amber-600" />
-                  后端 API 网关响应与错误码 (Node.js / Java / Go)
+                  {t("dictionary:codeSheet.backendApi")}
                 </span>
                 <button
                   type="button"
@@ -1215,31 +1268,31 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   className="text-blue-600 hover:text-blue-800 text-[11px] flex items-center gap-1 cursor-pointer"
                 >
                   <Copy className="w-3 h-3" />
-                  <span>复制</span>
+                  <span>{t("dictionary:codeSheet.copy")}</span>
                 </button>
               </div>
-              <pre className="bg-primary text-primary-foreground p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
+              <pre className="bg-primary text-primary-foreground p-2.5 rounded font-mono text-[11px] overflow-x-auto">
                 {`// 根据请求头 Accept-Language 或客户端参数自动本地化\nconst message = i18n.resolve(req.locale, "${activeCodeEntry.key}");\nres.status(400).json({ code: "${activeCodeEntry.key}", error: message });`}
               </pre>
             </div>
 
-            <div className="bg-subtle p-3 rounded-xl border border-line space-y-1">
+            <div className="bg-subtle p-3 rounded border border-line space-y-1">
               <div className="flex items-center justify-between font-semibold text-fg-secondary">
                 <span className="flex items-center gap-1.5">
                   <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
-                  移动端原生 SDK (iOS Swift & Android Kotlin)
+                  {t("dictionary:codeSheet.mobileSdk")}
                 </span>
               </div>
-              <pre className="bg-primary text-primary-foreground p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
+              <pre className="bg-primary text-primary-foreground p-2.5 rounded font-mono text-[11px] overflow-x-auto">
                 {`// iOS Swift:\nlet title = NSLocalizedString("${activeCodeEntry.key}", comment: "")\n\n// Android Kotlin:\nval title = getString(R.string.${activeCodeEntry.key.replace(/\./g, "_")})`}
               </pre>
             </div>
 
-            <div className="bg-subtle p-3 rounded-xl border border-line space-y-1">
+            <div className="bg-subtle p-3 rounded border border-line space-y-1">
               <div className="flex items-center justify-between font-semibold text-fg-secondary">
                 <span className="flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-indigo-600" />
-                  交易凭据与通知邮件模版插值
+                  {t("dictionary:codeSheet.emailTemplate")}
                 </span>
                 <button
                   type="button"
@@ -1247,10 +1300,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   className="text-blue-600 hover:text-blue-800 text-[11px] flex items-center gap-1 cursor-pointer"
                 >
                   <Copy className="w-3 h-3" />
-                  <span>复制</span>
+                  <span>{t("dictionary:codeSheet.copy")}</span>
                 </button>
               </div>
-              <pre className="bg-primary text-primary-foreground p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">
+              <pre className="bg-primary text-primary-foreground p-2.5 rounded font-mono text-[11px] overflow-x-auto">
                 {`<h1>{{dict.${activeCodeEntry.key}}}</h1>`}
               </pre>
             </div>
@@ -1263,17 +1316,17 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         id="side-sheet-lang-config"
         isOpen={isLangModalOpen}
         onClose={() => setIsLangModalOpen(false)}
-        title="多语言配置 (Language Settings)"
-        description="配置全项目支持哪些语种：新增语种会同步为所有词条补齐占位译文，移除语种会一并移除词条中该语言译文。所有与多语言关联的位置（收银台 / 邮件模板 / 网关提示）均以该配置为准。"
+        title={t("dictionary:langSheet.title")}
+        description={t("dictionary:langSheet.description")}
         icon={<Languages className="w-5 h-5 text-violet-600" />}
         widthClass="max-w-xl"
         footer={
           <button
             type="button"
             onClick={() => setIsLangModalOpen(false)}
-            className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold cursor-pointer"
+            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold cursor-pointer"
           >
-            完成
+            {t("dictionary:langSheet.done")}
           </button>
         }
       >
@@ -1283,7 +1336,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <div className="flex items-center justify-between mb-2">
               <span className="font-bold text-fg flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                已配置语种
+                {t("dictionary:langSheet.configured")}
                 <span className="text-[10px] text-fg-tertiary font-mono">({languages.length})</span>
               </span>
             </div>
@@ -1291,7 +1344,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               {languages.map((l) => (
                 <div
                   key={l.code}
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-line bg-surface"
+                  className="flex items-center justify-between p-2.5 rounded border border-line bg-surface"
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="text-base leading-none">{l.flag}</span>
@@ -1301,15 +1354,19 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     </div>
                   </div>
                   <Popconfirm
-                    title={`移除语言「${l.nativeName}」？`}
-                    description="将同时移除所有词条中该语言的译文，且不可恢复。"
+                    title={t("dictionary:langSheet.removeTitle", { name: l.nativeName })}
+                    description={t("dictionary:langSheet.removeDesc")}
                     onConfirm={() => handleRemoveLanguage(l)}
                   >
                     <button
                       type="button"
                       disabled={languages.length <= 1}
-                      className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded-md font-medium cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                      title={languages.length <= 1 ? "至少保留一种语言" : "移除该语言"}
+                      className="px-2 py-1 text-rose-500 hover:bg-rose-50 rounded font-medium cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={
+                        languages.length <= 1
+                          ? t("dictionary:langSheet.keepOneTitle")
+                          : t("dictionary:langSheet.removeLangTitle")
+                      }
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1323,15 +1380,15 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <div className="border-t border-line-subtle pt-4">
             <div className="font-bold text-fg mb-2 flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5 text-violet-600" />
-              从候选语种添加
+              {t("dictionary:langSheet.addFromPool")}
               <span className="text-[10px] text-fg-tertiary font-mono">（{AVAILABLE_LANGUAGES.length}）</span>
             </div>
             <input
               type="text"
               value={langPoolSearch}
               onChange={(e) => setLangPoolSearch(e.target.value)}
-              placeholder="搜索语言名称 / 代码…"
-              className="w-full px-2.5 py-1.5 mb-2 bg-subtle border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
+              placeholder={t("dictionary:langSheet.poolSearchPlaceholder")}
+              className="w-full px-2.5 py-1.5 mb-2 bg-subtle border border-line rounded text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
             />
             <div className="flex items-center gap-1.5 flex-wrap max-h-64 overflow-y-auto p-1">
               {AVAILABLE_LANGUAGES.filter((cand) => {
@@ -1346,7 +1403,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     type="button"
                     disabled={added}
                     onClick={() => handleAddLanguage(cand)}
-                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded text-[11px] font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
                       added
                         ? "bg-subtle text-zinc-300 border-line-subtle cursor-not-allowed"
                         : "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100"
@@ -1355,7 +1412,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     <span>{cand.flag}</span>
                     <span>{cand.nativeName}</span>
                     <span className="font-mono text-[9px] opacity-70">{cand.code}</span>
-                    {added && <span className="text-[9px] opacity-60">已添加</span>}
+                    {added && <span className="text-[9px] opacity-60">{t("dictionary:langSheet.alreadyAdded")}</span>}
                   </button>
                 );
               })}
@@ -1366,37 +1423,37 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <div className="border-t border-line-subtle pt-4">
             <div className="font-bold text-fg mb-2 flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-violet-600" />
-              自定义添加语种
+              {t("dictionary:langSheet.customAdd")}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <input
                 type="text"
-                placeholder="语言代码，如 ko-KR"
+                placeholder={t("dictionary:langSheet.customCodePlaceholder")}
                 value={customLangCode}
                 onChange={(e) => setCustomLangCode(e.target.value)}
-                className="px-2.5 py-1.5 bg-subtle border border-line rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-surface"
+                className="px-2.5 py-1.5 bg-subtle border border-line rounded font-mono focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-surface"
               />
               <input
                 type="text"
-                placeholder="语言名称，如 한국어"
+                placeholder={t("dictionary:langSheet.customNamePlaceholder")}
                 value={customLangName}
                 onChange={(e) => setCustomLangName(e.target.value)}
-                className="px-2.5 py-1.5 bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-surface"
+                className="px-2.5 py-1.5 bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-surface"
               />
               <input
                 type="text"
-                placeholder="国旗 Emoji（可选）"
+                placeholder={t("dictionary:langSheet.customFlagPlaceholder")}
                 value={customLangFlag}
                 onChange={(e) => setCustomLangFlag(e.target.value)}
-                className="px-2.5 py-1.5 bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-surface"
+                className="px-2.5 py-1.5 bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-violet-500 focus:bg-surface"
               />
             </div>
             <button
               type="button"
               onClick={handleAddCustomLanguage}
-              className="mt-2 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+              className="mt-2 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded text-[11px] font-semibold transition-colors cursor-pointer"
             >
-              添加自定义语种
+              {t("dictionary:langSheet.customSubmit")}
             </button>
           </div>
         </div>
@@ -1408,8 +1465,12 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           id="side-sheet-dict-edit"
           isOpen={true}
           onClose={() => setIsModalOpen(false)}
-          title={editingEntry ? `编辑全项目词条: ${editingEntry.key}` : `新增全项目字典词条 (默认配置 ${languages.length} 种语言)`}
-          description="统一字典是全工程的国际化单一事实来源，配置后自动同步给收银台、商户中台、网关API、移动端与通知邮件"
+          title={
+            editingEntry
+              ? t("dictionary:editSheet.editTitle", { key: editingEntry.key })
+              : t("dictionary:editSheet.createTitle", { count: languages.length })
+          }
+          description={t("dictionary:editSheet.description")}
           icon={<Globe className="w-5 h-5 text-violet-600" />}
           widthClass="max-w-2xl"
           footer={
@@ -1417,26 +1478,26 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-3 py-2 border border-line text-fg-secondary rounded-xl hover:bg-hover font-semibold cursor-pointer"
+                className="px-3 py-2 border border-line text-fg-secondary rounded hover:bg-hover font-semibold cursor-pointer"
               >
-                取消
+                {t("dictionary:editSheet.cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold shadow-card cursor-pointer"
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded font-semibold cursor-pointer"
               >
-                {editingEntry ? "保存全项目词条更改" : "确认添加词条 (默认 6 语种生效)"}
+                {editingEntry ? t("dictionary:editSheet.saveEdit") : t("dictionary:editSheet.saveCreate")}
               </button>
             </>
           }
         >
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             {/* Presets Bar */}
-            <div className="bg-violet-50/70 p-3 rounded-xl border border-violet-200/80 space-y-1.5">
+            <div className="bg-violet-50/70 p-3 rounded border border-violet-200/80 space-y-1.5">
               <div className="text-[11px] font-bold text-violet-900 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-violet-600" />
-                快速插入出海全工程标准词条模板（点击自动填充当前配置语种）：
+                {t("dictionary:editSheet.presetsTitle")}
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {PROJECT_PRESET_ENTRIES.map((preset) => (
@@ -1444,7 +1505,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     key={preset.key}
                     type="button"
                     onClick={() => handleApplyPreset(preset)}
-                    className="px-2 py-1 bg-surface hover:bg-violet-100 text-violet-700 rounded-lg text-[10px] font-mono border border-violet-200 transition-colors shadow-2xs cursor-pointer"
+                    className="px-2 py-1 bg-surface hover:bg-violet-100 text-violet-700 rounded text-[10px] font-mono border border-violet-200 transition-colors cursor-pointer"
                   >
                     +{preset.key}
                   </button>
@@ -1455,36 +1516,36 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  统一词条键名 (Key Identifier) <span className="text-rose-500">*</span>:
+                  {t("dictionary:editSheet.keyLabel")} <span className="text-rose-500">*</span>:
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="如：checkout.pay_now_cta 或 gateway.error.card_declined"
+                  placeholder={t("dictionary:editSheet.keyPlaceholder")}
                   value={formKey}
                   onChange={(e) => setFormKey(e.target.value)}
-                  className="w-full p-2 bg-surface border border-line rounded-xl font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  className="w-full p-2 bg-surface border border-line rounded font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                 />
               </div>
 
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  所属业务场景分类 <span className="text-rose-500">*</span>:
+                  {t("dictionary:editSheet.categoryLabel")} <span className="text-rose-500">*</span>:
                 </label>
                 <ShadcnSelect
                   value={formCategory}
                   onValueChange={(val) => setFormCategory(val as DictionaryCategory)}
                   options={[
-                    { value: "CHECKOUT", label: "海外收银台 (Web Checkout)" },
-                    { value: "GATEWAY_ERRORS", label: "支付网关响应与错误码 (Gateway Errors)" },
-                    { value: "PORTAL", label: "商户管理中台 (Merchant Portal)" },
-                    { value: "BILLING", label: "交易扣款与凭据 (Billing / Receipt)" },
-                    { value: "LIFECYCLE", label: "订阅与周期扣款 (Lifecycle)" },
-                    { value: "COMMON", label: "全项目通用 (Common / Branding)" },
-                    { value: "SECURITY", label: "账号安全与风控 (Security)" },
-                    { value: "PROMOTION", label: "营销促销 (Promotion)" },
-                    { value: "CURRENCY", label: "结算货币 (Currency / 多语言币种配置)" },
-                    { value: "PAYMENT_CHANNEL", label: "支付渠道 (Payment Channel / 可接入渠道)" },
+                    { value: "CHECKOUT", label: t("dictionary:editSheet.categoryCheckout") },
+                    { value: "GATEWAY_ERRORS", label: t("dictionary:editSheet.categoryGatewayErrors") },
+                    { value: "PORTAL", label: t("dictionary:editSheet.categoryPortal") },
+                    { value: "BILLING", label: t("dictionary:editSheet.categoryBilling") },
+                    { value: "LIFECYCLE", label: t("dictionary:editSheet.categoryLifecycle") },
+                    { value: "COMMON", label: t("dictionary:editSheet.categoryCommon") },
+                    { value: "SECURITY", label: t("dictionary:editSheet.categorySecurity") },
+                    { value: "PROMOTION", label: t("dictionary:editSheet.categoryPromotion") },
+                    { value: "CURRENCY", label: t("dictionary:editSheet.categoryCurrency") },
+                    { value: "PAYMENT_CHANNEL", label: t("dictionary:editSheet.categoryPaymentChannel") },
                   ]}
                 />
               </div>
@@ -1492,10 +1553,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1.5">
-                全项目适用终端范围 (可多选):
+                {t("dictionary:editSheet.platformsLabel")}
               </label>
               <div className="flex items-center gap-2 flex-wrap">
-                {PLATFORM_OPTIONS.map((p) => {
+                {platformOptions.map((p) => {
                   const isSelected = formPlatforms.includes(p.key);
                   const Icon = p.icon;
                   return (
@@ -1503,7 +1564,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                       type="button"
                       key={p.key}
                       onClick={() => togglePlatform(p.key)}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                      className={`px-2.5 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
                         isSelected
                           ? "bg-violet-600 text-white border-violet-600"
                           : "bg-subtle text-fg-secondary border-line hover:bg-hover"
@@ -1519,15 +1580,15 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
-                用途说明 (业务含义与开发指引):
+                {t("dictionary:editSheet.descLabel")}
               </label>
               <input
                 type="text"
                 required
-                placeholder="如：展示在全球收银台付款按钮上的文案，支持多货币与通道"
+                placeholder={t("dictionary:editSheet.descPlaceholder")}
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
-                className="w-full p-2 bg-surface border border-line rounded-xl text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                className="w-full p-2 bg-surface border border-line rounded text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               />
             </div>
 
@@ -1535,22 +1596,22 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               <div className="flex items-center justify-between mb-2">
                 <div className="font-bold text-fg flex items-center gap-1.5">
                   <Languages className="w-4 h-4 text-indigo-600" />
-                  <span>默认多语言配置 (当前 {languages.length} 种支持语种):</span>
+                  <span>{t("dictionary:editSheet.translationsTitle", { count: languages.length })}</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleAutoTranslateAll}
-                  className="px-2.5 py-1 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-lg text-xs font-semibold flex items-center gap-1 border border-violet-200 transition-colors cursor-pointer"
-                  title="输入中文或英文后，点击一键生成其他所有语言"
+                  className="px-2.5 py-1 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded text-xs font-semibold flex items-center gap-1 border border-violet-200 transition-colors cursor-pointer"
+                  title={t("dictionary:editSheet.autoTranslateTitle")}
                 >
                   <Sparkles className="w-3.5 h-3.5 text-violet-600" />
-                  <span>✨ 一键智能补齐其余多语言</span>
+                  <span>{t("dictionary:editSheet.autoTranslate")}</span>
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {languages.map((l) => (
-                  <div key={l.code} className="bg-subtle p-3 rounded-xl border border-line/90 space-y-1">
+                  <div key={l.code} className="bg-subtle p-3 rounded border border-line/90 space-y-1">
                     <div className="flex items-center justify-between text-[11px] font-bold text-fg">
                       <span className="flex items-center gap-1.5">
                         <span>{l.flag}</span>
@@ -1559,15 +1620,15 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                       </span>
                       {formTranslations[l.code] ? (
                         <span className="text-[10px] text-emerald-600 font-normal flex items-center gap-0.5">
-                          <Check className="w-3 h-3" /> 已配置
+                          <Check className="w-3 h-3" /> {t("dictionary:editSheet.configured")}
                         </span>
                       ) : (
-                        <span className="text-[10px] text-fg-tertiary font-normal">待输入</span>
+                        <span className="text-[10px] text-fg-tertiary font-normal">{t("dictionary:editSheet.pending")}</span>
                       )}
                     </div>
                     <textarea
                       rows={2}
-                      placeholder={`输入 ${l.nativeName} 对应文案...`}
+                      placeholder={t("dictionary:editSheet.translationPlaceholder", { name: l.nativeName })}
                       value={formTranslations[l.code] || ""}
                       onChange={(e) =>
                         setFormTranslations((prev) => ({
@@ -1575,7 +1636,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                           [l.code]: e.target.value,
                         }))
                       }
-                      className="w-full p-2 bg-surface border border-line rounded-lg text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      className="w-full p-2 bg-surface border border-line rounded text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                     />
                   </div>
                 ))}

@@ -1,0 +1,19 @@
+{
+  "multiSelect": {
+    "placeholder": "请选择（可多选）...",
+    "selectedCount": "已选 {{count}} 项",
+    "selectAll": "全选",
+    "clear": "清空",
+    "empty": "暂无可选项"
+  },
+  "sideSheet": {
+    "close": "关闭",
+    "closeHint": "关闭 (Esc)"
+  },
+  "popconfirm": {
+    "confirm": "确认",
+    "confirmDelete": "确认删除",
+    "cancel": "取消",
+    "closeAria": "关闭"
+  }
+}

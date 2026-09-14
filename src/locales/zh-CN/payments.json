@@ -1,0 +1,41 @@
+{
+  "webhooks": {
+    "title": "支付 Webhook 调度与监听中心",
+    "subtitle": "监听海外网关（Stripe、PayPal、Adyen）的实时扣款与退款回调，并安全向集团下游 SaaS 应用推送事件签名通知，支持自动重试与单号重放。",
+    "badge": "全事件双工自动全量接收 (全渠道独立监听)",
+    "endpointsTitle": "海外渠道专用 Webhook 监听端点列表 (各渠道独立协议，全量自动接收)：",
+    "endpointsHint": "无需配置过滤，中台全自动校验网关签名并入库",
+    "endpointLabel": "{{channel}} 专用接收端点",
+    "listening": "全事件监听中",
+    "signatureVerify": "签名验证: {{auth}}",
+    "toastRedeliver": "Webhook {{eventId}} 已成功重新投递至下游，收到 200 OK 确认响应！",
+    "filterLabel": "事件筛选:",
+    "filters": {
+      "all": "全部事件",
+      "success": "投递成功 (200)",
+      "failed": "异常与重试",
+      "subscription": "订阅生命周期",
+      "dispute": "拒付与退款"
+    },
+    "searchPlaceholder": "搜索事件ID / 应用 / 目标URL...",
+    "table": {
+      "eventId": "事件 ID & 来源渠道",
+      "eventType": "事件类型 (Event Type)",
+      "target": "下游目标应用 & 回调地址",
+      "httpStatus": "HTTP 状态",
+      "latency": "耗时 / 重试",
+      "time": "触发时间",
+      "operations": "操作"
+    },
+    "retryCount": "重试: {{count}} 次",
+    "viewPayload": "报文",
+    "redelivering": "重推中...",
+    "redeliver": "重新投递",
+    "sheetTitle": "Webhook 原始报文 - {{eventId}}",
+    "sheetTitleFallback": "Webhook 原始报文",
+    "targetHint": "推送目标与签名标头:",
+    "requestPayload": "Request Payload (JSON):",
+    "copyJson": "复制 JSON",
+    "responseBody": "下游客户端 HTTP 响应 (Response Body):"
+  }
+}

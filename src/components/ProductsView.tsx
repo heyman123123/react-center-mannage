@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -33,12 +34,12 @@ interface ProductsViewProps {
 }
 
 const SUPPORTED_CURRENCIES = [
-  { code: "USD", symbol: "$", flag: "🇺🇸", label: "美元 (USD)" },
-  { code: "EUR", symbol: "€", flag: "🇪🇺", label: "欧元 (EUR)" },
-  { code: "JPY", symbol: "¥", flag: "🇯🇵", label: "日元 (JPY)" },
-  { code: "GBP", symbol: "£", flag: "🇬🇧", label: "英镑 (GBP)" },
-  { code: "CAD", symbol: "C$", flag: "🇨🇦", label: "加元 (CAD)" },
-  { code: "AUD", symbol: "A$", flag: "🇦🇺", label: "澳元 (AUD)" },
+  { code: "USD", symbol: "$", flag: "🇺🇸", labelKey: "USD" },
+  { code: "EUR", symbol: "€", flag: "🇪🇺", labelKey: "EUR" },
+  { code: "JPY", symbol: "¥", flag: "🇯🇵", labelKey: "JPY" },
+  { code: "GBP", symbol: "£", flag: "🇬🇧", labelKey: "GBP" },
+  { code: "CAD", symbol: "C$", flag: "🇨🇦", labelKey: "CAD" },
+  { code: "AUD", symbol: "A$", flag: "🇦🇺", labelKey: "AUD" },
 ];
 
 export const ProductsView: React.FC<ProductsViewProps> = ({
@@ -47,6 +48,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   paymentChannels = [],
   onSaveProduct,
 }) => {
+  const { t } = useTranslation(["products", "common"]);
   const [productList, setProductList] = useState<ProductConfig[]>(products);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
@@ -160,7 +162,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     };
     setProductList((prev) => prev.map((item) => (item.id === p.id ? updated : item)));
     onSaveProduct(updated);
-    showToast(`商品【${p.name}】已${updated.status === "ACTIVE" ? "重新上架激活" : "归档下架"}`);
+    showToast(
+      t("products.toast.toggled", {
+        name: p.name,
+        status: updated.status === "ACTIVE" ? t("products.toast.reactivated") : t("products.toast.archivedAction"),
+      })
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -191,7 +198,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       };
       setProductList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       onSaveProduct(updated);
-      showToast(`商品【${updated.code}】配置已更新！`);
+      showToast(t("products.toast.updated", { code: updated.code }));
     } else {
       const newProd: ProductConfig = {
         id: `prod_${formCurrency.toLowerCase()}_${Date.now().toString().slice(-6)}`,
@@ -215,7 +222,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       };
       setProductList((prev) => [newProd, ...prev]);
       onSaveProduct(newProd);
-      showToast(`新币种商品【${newProd.code}】已成功创建并录入网关！`);
+      showToast(t("products.toast.created", { code: newProd.code }));
     }
     setIsModalOpen(false);
   };
@@ -261,13 +268,9 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
               <Package className="w-5 h-5" />
             </span>
-            <h1 className="text-xl font-bold text-fg tracking-tight">
-              海外商品与独立币种 SKU 配置 (Products & Multi-Currency SKUs)
-            </h1>
+            <h1 className="text-xl font-bold text-fg tracking-tight">{t("products.title")}</h1>
           </div>
-          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
-            每个商品的不同货币具有独立的唯一编号 (Code / SKU)，分别对应 USD、EUR、JPY、GBP 等独立清算价格与网关 Plan ID，支持一键派生克隆。
-          </p>
+          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">{t("products.subtitle")}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -276,7 +279,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>创建新商品 SKU</span>
+            <span>{t("products.addProduct")}</span>
           </button>
         </div>
       </div>
@@ -285,22 +288,26 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>在售独立 SKU 数</span>
+            <span>{t("products.metrics.activeSkus")}</span>
             <Package className="w-4 h-4 text-blue-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {activeCount} <span className="text-xs font-normal text-fg-tertiary">/ {productList.length} 款</span>
+            {activeCount}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">
+              {t("products.metrics.skuRatio", { total: productList.length })}
+            </span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">每条对应特定币种与唯一 Code</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("products.metrics.skuHint")}</div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>覆盖结算币种</span>
+            <span>{t("products.metrics.currencies")}</span>
             <Coins className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {uniqueCurrencies.length} <span className="text-xs font-normal text-fg-tertiary">种主要货币</span>
+            {uniqueCurrencies.length}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">{t("products.metrics.currencySuffix")}</span>
           </div>
           <div className="text-[11px] text-fg-secondary mt-0.5">
             {uniqueCurrencies.join(" · ")}
@@ -309,24 +316,26 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>周期性订阅方案 (Recurring)</span>
+            <span>{t("products.metrics.recurring")}</span>
             <Zap className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {subscriptionCount} <span className="text-xs font-normal text-fg-tertiary">个方案</span>
+            {subscriptionCount}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">{t("products.metrics.recurringSuffix")}</span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">月付/年付海外自动扣款</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("products.metrics.recurringHint")}</div>
         </div>
 
         <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card">
           <div className="flex items-center justify-between text-fg-tertiary text-xs">
-            <span>全球活跃订阅用户</span>
+            <span>{t("products.metrics.subscribers")}</span>
             <Globe className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-fg mt-1">
-            {totalSubscribers.toLocaleString()} <span className="text-xs font-normal text-fg-tertiary">位海外客户</span>
+            {totalSubscribers.toLocaleString()}{" "}
+            <span className="text-xs font-normal text-fg-tertiary">{t("products.metrics.subscriberSuffix")}</span>
           </div>
-          <div className="text-[11px] text-fg-secondary mt-0.5">跨美欧亚多地区收单</div>
+          <div className="text-[11px] text-fg-secondary mt-0.5">{t("products.metrics.subscriberHint")}</div>
         </div>
       </div>
 
@@ -334,7 +343,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
           {/* Currency Filter */}
-          <span className="text-fg-tertiary text-xs font-medium">货币筛选:</span>
+          <span className="text-fg-tertiary text-xs font-medium">{t("products.filters.currencyLabel")}</span>
           <div className="flex items-center gap-1 bg-hover p-0.5 rounded-lg">
             <button
               onClick={() => setCurrencyFilter("ALL")}
@@ -344,7 +353,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   : "text-fg-secondary hover:text-fg"
               }`}
             >
-              全部货币 ({productList.length})
+              {t("products.filters.allCurrencies", { count: productList.length })}
             </button>
             {SUPPORTED_CURRENCIES.map((curr) => {
               const count = productList.filter((p) => (p.currency || "USD") === curr.code).length;
@@ -370,12 +379,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <span className="text-zinc-300 mx-1">|</span>
 
           {/* Type Filter */}
-          <span className="text-fg-tertiary text-xs font-medium">类型:</span>
+          <span className="text-fg-tertiary text-xs font-medium">{t("products.filters.typeLabel")}</span>
           {[
-            { key: "ALL", label: "全部" },
-            { key: "SUBSCRIPTION", label: "订阅型 (SaaS)" },
-            { key: "ONE_TIME", label: "单次买断" },
-            { key: "ADDON", label: "增值包" },
+            { key: "ALL", label: t("products.filters.typeAll") },
+            { key: "SUBSCRIPTION", label: t("products.filters.typeSubscription") },
+            { key: "ONE_TIME", label: t("products.filters.typeOneTime") },
+            { key: "ADDON", label: t("products.filters.typeAddon") },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -395,7 +404,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
-            placeholder="搜索商品名称 / 唯一 Code / 描述..."
+            placeholder={t("products.filters.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
@@ -409,16 +418,16 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <table className="min-w-[1200px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-2 px-3 w-[240px]">商品唯一编号 (Code / SKU)</th>
-                <th className="py-2 px-3 min-w-[200px]">商品方案名称</th>
-                <th className="py-2 px-3 w-[140px]">结算货币 & 单价</th>
-                <th className="py-2 px-3 w-[140px]">计费模式与周期</th>
-                <th className="py-2 px-3 w-[150px]">试用期 / 特性权益</th>
-                <th className="py-2 px-3 w-[140px]">Stripe / PayPal 映射</th>
-                <th className="py-2 px-3 w-[100px]">海外订阅数</th>
-                <th className="py-2 px-3 w-[100px]">状态</th>
+                <th className="py-2 px-3 w-[240px]">{t("products.table.code")}</th>
+                <th className="py-2 px-3 min-w-[200px]">{t("products.table.name")}</th>
+                <th className="py-2 px-3 w-[140px]">{t("products.table.price")}</th>
+                <th className="py-2 px-3 w-[140px]">{t("products.table.billing")}</th>
+                <th className="py-2 px-3 w-[150px]">{t("products.table.trial")}</th>
+                <th className="py-2 px-3 w-[140px]">{t("products.table.mapping")}</th>
+                <th className="py-2 px-3 w-[100px]">{t("products.table.subscribers")}</th>
+                <th className="py-2 px-3 w-[100px]">{t("products.table.status")}</th>
                 <th className="py-2 px-3 w-[150px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                  操作
+                  {t("products.table.actions")}
                 </th>
               </tr>
             </thead>
@@ -439,7 +448,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         <button
                           onClick={() => copyCode(p.code)}
                           className="text-fg-tertiary hover:text-fg-secondary p-1 rounded"
-                          title="复制商品编号 Code"
+                          title={t("products.table.copyCodeTitle")}
                         >
                           {isCopied ? (
                             <Check className="w-3 h-3 text-emerald-600" />
@@ -482,19 +491,19 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         }`}
                       >
                         {p.type === "SUBSCRIPTION"
-                          ? "周期订阅"
+                          ? t("products.types.SUBSCRIPTION")
                           : p.type === "ONE_TIME"
-                          ? "单次买断"
-                          : "增值服务"}
+                          ? t("products.types.ONE_TIME")
+                          : t("products.types.ADDON")}
                       </span>
                       <div className="text-[10px] text-fg-tertiary mt-1">
                         {p.billingInterval === "MONTHLY"
-                          ? "按月续费 (Monthly)"
+                          ? t("products.billing.MONTHLY")
                           : p.billingInterval === "YEARLY"
-                          ? "按年续费 (Yearly)"
+                          ? t("products.billing.YEARLY")
                           : p.billingInterval === "LIFETIME"
-                          ? "永久买断 (Lifetime)"
-                          : "一次性结算"}
+                          ? t("products.billing.LIFETIME")
+                          : t("products.billing.ONE_TIME")}
                       </div>
                     </td>
 
@@ -502,13 +511,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     <td className="py-3.5 px-3 w-[150px] text-[11px] text-fg-secondary">
                       {p.trialDays ? (
                         <div className="font-semibold text-emerald-600">
-                          {p.trialDays} 天免费试用
+                          {t("products.trial.days", { days: p.trialDays })}
                         </div>
                       ) : (
-                        <div className="text-fg-tertiary">无免费试用</div>
+                        <div className="text-fg-tertiary">{t("products.trial.none")}</div>
                       )}
                       <div className="text-[10px] text-fg-tertiary truncate">
-                        {p.features?.length || 0} 项核心权益
+                        {t("products.trial.features", { count: p.features?.length || 0 })}
                       </div>
                       {p.boundChannelIds && p.boundChannelIds.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
@@ -557,7 +566,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                             p.status === "ACTIVE" ? "bg-emerald-500" : "bg-hover"
                           }`}
                         />
-                        {p.status === "ACTIVE" ? "在售" : "已归档"}
+                        {p.status === "ACTIVE" ? t("products.statusLabels.ACTIVE") : t("products.statusLabels.ARCHIVED")}
                       </span>
                     </td>
 
@@ -568,13 +577,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         <div className="relative group">
                           <button
                             className="p-1.5 text-fg-secondary hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1 text-[11px]"
-                            title="以此为蓝本派生其他货币的独立商品编号"
+                            title={t("products.derive.title")}
                           >
                             <ArrowRightLeft className="w-3.5 h-3.5" />
                           </button>
                           <div className="absolute right-0 top-full mt-1 hidden group-hover:flex flex-col bg-surface border border-line rounded-xl shadow-lg p-1.5 z-20 w-36 text-left">
                             <div className="text-[10px] text-fg-tertiary font-bold px-2 py-1">
-                              派生独立货币 Code:
+                              {t("products.derive.label")}
                             </div>
                             {SUPPORTED_CURRENCIES.filter((c) => c.code !== (p.currency || "USD")).map((c) => (
                               <button
@@ -583,7 +592,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                                 className="px-2 py-1 hover:bg-subtle rounded text-[11px] text-fg-secondary flex items-center gap-1.5 w-full text-left"
                               >
                                 <span>{c.flag}</span>
-                                <span>生成 {c.code} SKU</span>
+                                <span>{t("products.derive.generate", { code: c.code })}</span>
                               </button>
                             ))}
                           </div>
@@ -592,7 +601,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         <button
                           onClick={() => handleOpenEdit(p)}
                           className="p-1.5 text-fg-secondary hover:text-fg hover:bg-hover rounded-lg transition-colors"
-                          title="编辑配置"
+                          title={t("products.actions.editTitle")}
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -603,7 +612,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                               ? "text-fg-tertiary hover:text-rose-600 hover:bg-rose-50"
                               : "text-fg-tertiary hover:text-emerald-600 hover:bg-emerald-50"
                           }`}
-                          title={p.status === "ACTIVE" ? "归档下架" : "重新上架"}
+                          title={p.status === "ACTIVE" ? t("products.actions.archiveTitle") : t("products.actions.restoreTitle")}
                         >
                           {p.status === "ACTIVE" ? (
                             <Archive className="w-3.5 h-3.5" />
@@ -628,8 +637,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           id="side-sheet-product-edit"
           isOpen={true}
           onClose={() => setIsModalOpen(false)}
-          title={editingProduct ? `编辑商品 SKU: ${editingProduct.code}` : "创建新币种商品 / 独立 SKU"}
-          description="配置特定币种结算的独立商品包与网关定价映射"
+          title={
+            editingProduct
+              ? t("products.sheet.editTitle", { code: editingProduct.code })
+              : t("products.sheet.createTitle")
+          }
+          description={t("products.sheet.description")}
           icon={<Package className="w-5 h-5 text-blue-600" />}
           widthClass="max-w-xl"
           footer={
@@ -639,14 +652,14 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 onClick={() => setIsModalOpen(false)}
                 className="px-3 py-2 border border-line text-fg-secondary rounded-lg hover:bg-subtle font-medium cursor-pointer"
               >
-                取消
+                {t("products.sheet.cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
                 className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold shadow-card cursor-pointer"
               >
-                {editingProduct ? "保存更改" : "确认创建独立 SKU"}
+                {editingProduct ? t("products.sheet.saveEdit") : t("products.sheet.confirmCreate")}
               </button>
             </>
           }
@@ -656,7 +669,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  指定计费货币 (Currency):
+                  {t("products.sheet.currencyLabel")}
                 </label>
                 <ShadcnSelect
                   value={formCurrency}
@@ -675,25 +688,25 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   }}
                   options={SUPPORTED_CURRENCIES.map((c) => ({
                     value: c.code,
-                    label: `${c.flag} ${c.label}`,
+                    label: `${c.flag} ${t(`products.currencies.${c.labelKey}`)}`,
                   }))}
                 />
               </div>
 
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  商品唯一编号 (Code / SKU):
+                  {t("products.sheet.codeLabel")}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="如：PROD-COPILOT-USD-M"
+                  placeholder={t("products.sheet.codePlaceholder")}
                   value={formCode}
                   onChange={(e) => setFormCode(e.target.value)}
                   className="w-full p-2 bg-subtle border border-line rounded-lg font-mono text-xs focus:bg-surface font-bold text-fg focus:outline-none focus:ring-1 focus:ring-line"
                 />
                 <span className="text-[10px] text-fg-tertiary mt-0.5 block">
-                  不同货币 code 独立互不冲突，便于收银台精准定位
+                  {t("products.sheet.codeHint")}
                 </span>
               </div>
             </div>
@@ -702,12 +715,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  商品 / 方案名称:
+                  {t("products.sheet.nameLabel")}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="如：Novas AI Copilot Pro (USD)"
+                  placeholder={t("products.sheet.namePlaceholder")}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:bg-surface font-medium focus:outline-none focus:ring-1 focus:ring-line"
@@ -716,7 +729,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  当前货币单价 ({formCurrency}):
+                  {t("products.sheet.priceLabel", { currency: formCurrency })}
                 </label>
                 <div className="relative">
                   <span className="absolute left-2.5 top-2 font-mono text-fg-tertiary font-bold">
@@ -738,31 +751,31 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  业务类型:
+                  {t("products.sheet.typeLabel")}
                 </label>
                 <ShadcnSelect
                   value={formType}
                   onValueChange={(val) => setFormType(val as ProductType)}
                   options={[
-                    { value: "SUBSCRIPTION", label: "周期订阅 (Subscription)" },
-                    { value: "ONE_TIME", label: "单次购买 / 买断 (One-Time)" },
-                    { value: "ADDON", label: "增值补充包 (Add-on)" },
+                    { value: "SUBSCRIPTION", label: t("products.sheet.typeSubscription") },
+                    { value: "ONE_TIME", label: t("products.sheet.typeOneTime") },
+                    { value: "ADDON", label: t("products.sheet.typeAddon") },
                   ]}
                 />
               </div>
 
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  计费周期 (Billing Interval):
+                  {t("products.sheet.intervalLabel")}
                 </label>
                 <ShadcnSelect
                   value={formInterval}
                   onValueChange={(val) => setFormInterval(val as any)}
                   options={[
-                    { value: "MONTHLY", label: "按月计费 (Monthly)" },
-                    { value: "YEARLY", label: "按年计费 (Yearly)" },
-                    { value: "ONE_TIME", label: "单次结算 (One-Time)" },
-                    { value: "LIFETIME", label: "永久有效 (Lifetime)" },
+                    { value: "MONTHLY", label: t("products.sheet.intervalMonthly") },
+                    { value: "YEARLY", label: t("products.sheet.intervalYearly") },
+                    { value: "ONE_TIME", label: t("products.sheet.intervalOneTime") },
+                    { value: "LIFETIME", label: t("products.sheet.intervalLifetime") },
                   ]}
                 />
               </div>
@@ -772,7 +785,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  免费试用天数 (Trial Days):
+                  {t("products.sheet.trialLabel")}
                 </label>
                 <input
                   type="number"
@@ -784,7 +797,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               </div>
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  Stripe 价格 ID:
+                  {t("products.sheet.stripeLabel")}
                 </label>
                 <input
                   type="text"
@@ -796,7 +809,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               </div>
               <div>
                 <label className="font-semibold text-fg-secondary block mb-1">
-                  PayPal 计划 ID:
+                  {t("products.sheet.paypalLabel")}
                 </label>
                 <input
                   type="text"
@@ -810,39 +823,39 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
-                详细描述:
+                {t("products.sheet.descLabel")}
               </label>
               <textarea
                 rows={2}
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="说明该商品针对当前币种客户群体的方案亮点..."
+                placeholder={t("products.sheet.descPlaceholder")}
                 className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
               />
             </div>
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
-                包含核心权益清单 (每行一项):
+                {t("products.sheet.featuresLabel")}
               </label>
               <textarea
                 rows={3}
                 value={formFeatures}
                 onChange={(e) => setFormFeatures(e.target.value)}
-                placeholder="无限量代码补全&#10;128k 上下文窗口&#10;7x24 小时 SLA 响应"
+                placeholder={t("products.sheet.featuresPlaceholder")}
                 className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:bg-surface focus:outline-none focus:ring-1 focus:ring-line"
               />
             </div>
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
-                绑定渠道账号:
+                {t("products.sheet.channelsLabel")}
               </label>
               <MultiSelect
                 value={formBoundChannels}
                 onValueChange={setFormBoundChannels}
                 options={channelOptions}
-                placeholder="选择该商品可使用的渠道账号（可多选）..."
+                placeholder={t("products.sheet.channelsPlaceholder")}
               />
             </div>
           </form>

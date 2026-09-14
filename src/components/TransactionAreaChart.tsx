@@ -1,4 +1,14 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 interface TransactionAreaChartProps {
   timeRange: "3m" | "30d" | "7d";
@@ -6,363 +16,177 @@ interface TransactionAreaChartProps {
   currency: string;
 }
 
+type ChartPoint = {
+  date: string;
+  gross: number;
+  net: number;
+};
+
+function formatAxisAmount(value: number) {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
+  return String(value);
+}
+
 export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
   timeRange,
   setTimeRange,
-  currency,
 }) => {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const { t } = useTranslation("dashboard");
 
-  // Generate date points and curve heights matching the aesthetic of the screenshot
-  const dataPoints = useMemo(() => {
+  const dataPoints = useMemo<ChartPoint[]>(() => {
     if (timeRange === "7d") {
-      const dates = ["Aug 29", "Aug 30", "Aug 31", "Sep 1", "Sep 2", "Sep 3", "Sep 4"];
+      const dates = ["8/29", "8/30", "8/31", "9/1", "9/2", "9/3", "9/4"];
       return dates.map((date, i) => {
-        const val1 = 45 + Math.sin(i * 1.5) * 25 + Math.cos(i * 2.8) * 15;
-        const val2 = 25 + Math.sin(i * 1.4 + 1) * 15;
-        return {
-          date,
-          value1: Math.max(20, Math.min(90, val1)),
-          value2: Math.max(10, Math.min(val1 - 8, val2)),
-          gross: 420000 + i * 35000 + (i % 2) * 20000,
-          net: 418000 + i * 34800 + (i % 2) * 19900,
-        };
+        const gross = 420000 + i * 35000 + (i % 2) * 20000;
+        return { date, gross, net: Math.round(gross * 0.996) };
       });
     }
 
     if (timeRange === "30d") {
       const dates = [
-        "Aug 5", "Aug 8", "Aug 11", "Aug 14", "Aug 17", "Aug 20", "Aug 23", "Aug 26", "Aug 29", "Sep 1", "Sep 4"
+        "8/5", "8/8", "8/11", "8/14", "8/17", "8/20", "8/23", "8/26", "8/29", "9/1", "9/4",
       ];
       return dates.map((date, i) => {
-        const val1 = 50 + Math.sin(i * 0.9) * 30 + Math.cos(i * 2.1) * 12;
-        const val2 = 28 + Math.sin(i * 0.9 + 0.8) * 18;
-        return {
-          date,
-          value1: Math.max(25, Math.min(92, val1)),
-          value2: Math.max(12, Math.min(val1 - 10, val2)),
-          gross: 1250000 + i * 85000,
-          net: 1245000 + i * 84600,
-        };
+        const gross = 1250000 + i * 85000 + Math.sin(i * 0.9) * 40000;
+        return { date, gross: Math.round(gross), net: Math.round(gross * 0.995) };
       });
     }
 
-    // Default: 3 months (matches the exact dates in the screenshot: Apr 3 -> Jun 30)
     const dates = [
-      "Apr 3", "Apr 9", "Apr 15", "Apr 21", "Apr 27",
-      "May 3", "May 9", "May 15", "May 22", "May 29",
-      "Jun 4", "Jun 10", "Jun 16", "Jun 22", "Jun 30"
+      "4/3", "4/9", "4/15", "4/21", "4/27",
+      "5/3", "5/9", "5/15", "5/22", "5/29",
+      "6/4", "6/10", "6/16", "6/22", "6/30",
     ];
-
-    // Values crafted to mirror the exact undulating rhythm in screenshot
-    const rawRhythms = [
-      { v1: 35, v2: 18 },
-      { v1: 58, v2: 32 },
-      { v1: 42, v2: 24 },
-      { v1: 65, v2: 38 },
-      { v1: 40, v2: 20 },
-      { v1: 72, v2: 42 },
-      { v1: 38, v2: 22 },
-      { v1: 82, v2: 45 },
-      { v1: 52, v2: 30 },
-      { v1: 88, v2: 48 },
-      { v1: 44, v2: 25 },
-      { v1: 75, v2: 40 },
-      { v1: 50, v2: 28 },
-      { v1: 92, v2: 50 },
-      { v1: 60, v2: 35 },
-    ];
-
-    return dates.map((date, i) => ({
-      date,
-      value1: rawRhythms[i]?.v1 || 50,
-      value2: rawRhythms[i]?.v2 || 25,
-      gross: 1850000 + (rawRhythms[i]?.v1 || 50) * 12000,
-      net: 1842000 + (rawRhythms[i]?.v2 || 25) * 11950,
-    }));
+    const rhythms = [35, 58, 42, 65, 40, 72, 38, 82, 52, 88, 44, 75, 50, 92, 60];
+    return dates.map((date, i) => {
+      const gross = 1850000 + rhythms[i] * 12000;
+      return { date, gross, net: Math.round(gross * 0.994) };
+    });
   }, [timeRange]);
 
-  // Compute SVG smooth bezier curve paths
-  const svgWidth = 1000;
-  const svgHeight = 260;
-  const paddingX = 40;
-  const paddingY = 20;
+  const rangeLabel =
+    timeRange === "3m"
+      ? t("chart.range3m")
+      : timeRange === "30d"
+        ? t("chart.range30d")
+        : t("chart.range7d");
 
-  const points1 = useMemo(() => {
-    return dataPoints.map((d, i) => {
-      const x = paddingX + (i / (dataPoints.length - 1)) * (svgWidth - paddingX * 2);
-      const y = svgHeight - paddingY - (d.value1 / 100) * (svgHeight - paddingY * 2);
-      return { x, y };
-    });
-  }, [dataPoints]);
-
-  const points2 = useMemo(() => {
-    return dataPoints.map((d, i) => {
-      const x = paddingX + (i / (dataPoints.length - 1)) * (svgWidth - paddingX * 2);
-      const y = svgHeight - paddingY - (d.value2 / 100) * (svgHeight - paddingY * 2);
-      return { x, y };
-    });
-  }, [dataPoints]);
-
-  const generateSmoothPath = (pts: { x: number; y: number }[]) => {
-    if (pts.length === 0) return "";
-    let path = `M ${pts[0].x} ${pts[0].y}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const curr = pts[i];
-      const next = pts[i + 1];
-      const mx = (curr.x + next.x) / 2;
-      path += ` C ${mx} ${curr.y}, ${mx} ${next.y}, ${next.x} ${next.y}`;
-    }
-    return path;
-  };
-
-  const path1 = useMemo(() => generateSmoothPath(points1), [points1]);
-  const path2 = useMemo(() => generateSmoothPath(points2), [points2]);
-
-  const area1 = useMemo(() => {
-    if (points1.length === 0) return "";
-    const bottomY = svgHeight - paddingY;
-    return `${path1} L ${points1[points1.length - 1].x} ${bottomY} L ${points1[0].x} ${bottomY} Z`;
-  }, [path1, points1]);
-
-  const area2 = useMemo(() => {
-    if (points2.length === 0) return "";
-    const bottomY = svgHeight - paddingY;
-    return `${path2} L ${points2[points2.length - 1].x} ${bottomY} L ${points2[0].x} ${bottomY} Z`;
-  }, [path2, points2]);
-
-  const activePoint = hoveredIndex !== null ? dataPoints[hoveredIndex] : null;
-  const activeCoord1 = hoveredIndex !== null ? points1[hoveredIndex] : null;
+  const timeRangeOptions = [
+    { id: "3m" as const, label: t("chart.last3m") },
+    { id: "30d" as const, label: t("chart.last30d") },
+    { id: "7d" as const, label: t("chart.last7d") },
+  ] as const;
 
   return (
     <div
       id="chart-card-container"
       className="bg-surface border border-line/90 rounded-xl p-3 shadow-2xs hover:shadow-card transition-shadow duration-200 flex flex-col"
     >
-      {/* Chart Card Header（固定一行，不挤压图表） */}
       <div className="flex flex-row flex-wrap sm:flex-nowrap items-center justify-between gap-2 mb-3 shrink-0">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-fg tracking-tight whitespace-nowrap">
-            Total Transaction Volume (聚合交易流水与清算峰值)
+            {t("chart.title")}
           </h2>
-          <p className="text-xs text-fg-secondary mt-0.5">
-            {timeRange === "3m"
-              ? "Total for the last 3 months (双轨比对: 业务订单流 vs 渠道平账实收)"
-              : timeRange === "30d"
-              ? "Total for the last 30 days"
-              : "Total for the last 7 days"}
-          </p>
+          <p className="text-xs text-fg-secondary mt-0.5">{rangeLabel}</p>
         </div>
 
-        {/* Time range switcher */}
         <div className="inline-flex p-0.5 bg-hover rounded-lg border border-line text-xs font-medium self-start sm:self-auto shrink-0 whitespace-nowrap">
-          <button
-            id="timerange-3m"
-            onClick={() => setTimeRange("3m")}
-            className={`px-3 py-1 rounded-md transition-all ${
-              timeRange === "3m"
-                ? "bg-surface text-fg shadow-card font-semibold"
-                : "text-fg-secondary hover:text-fg"
-            }`}
-          >
-            Last 3 months
-          </button>
-          <button
-            id="timerange-30d"
-            onClick={() => setTimeRange("30d")}
-            className={`px-3 py-1 rounded-md transition-all ${
-              timeRange === "30d"
-                ? "bg-surface text-fg shadow-card font-semibold"
-                : "text-fg-secondary hover:text-fg"
-            }`}
-          >
-            Last 30 days
-          </button>
-          <button
-            id="timerange-7d"
-            onClick={() => setTimeRange("7d")}
-            className={`px-3 py-1 rounded-md transition-all ${
-              timeRange === "7d"
-                ? "bg-surface text-fg shadow-card font-semibold"
-                : "text-fg-secondary hover:text-fg"
-            }`}
-          >
-            Last 7 days
-          </button>
+          {timeRangeOptions.map((opt) => (
+            <button
+              key={opt.id}
+              id={`timerange-${opt.id}`}
+              type="button"
+              onClick={() => setTimeRange(opt.id)}
+              className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                timeRange === opt.id
+                  ? "bg-surface text-fg shadow-card font-semibold"
+                  : "text-fg-secondary hover:text-fg"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* SVG Canvas with screenshot's exact monochrome dual-layered aesthetic */}
-      <div className="relative w-full flex-1 min-h-[300px] overflow-hidden select-none">
-        <svg
-          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          className="w-full h-full min-h-[300px]"
-          preserveAspectRatio="none"
-          onMouseLeave={() => setHoveredIndex(null)}
-        >
-          <defs>
-            {/* Upper curve gradient */}
-            <linearGradient id="curveGradient1" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#27272a" stopOpacity="0.45" />
-              <stop offset="60%" stopColor="#52525b" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#71717a" stopOpacity="0.02" />
-            </linearGradient>
-
-            {/* Lower curve gradient */}
-            <linearGradient id="curveGradient2" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3f3f46" stopOpacity="0.55" />
-              <stop offset="80%" stopColor="#a1a1aa" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#e4e4e7" stopOpacity="0.05" />
-            </linearGradient>
-          </defs>
-
-          {/* Subtle horizontal grid guide lines */}
-          <line
-            x1={paddingX}
-            y1={svgHeight - paddingY}
-            x2={svgWidth - paddingX}
-            y2={svgHeight - paddingY}
-            stroke="#e4e4e7"
-            strokeWidth="1"
-          />
-          <line
-            x1={paddingX}
-            y1={svgHeight * 0.65}
-            x2={svgWidth - paddingX}
-            y2={svgHeight * 0.65}
-            stroke="#f4f4f5"
-            strokeDasharray="4 4"
-            strokeWidth="1"
-          />
-          <line
-            x1={paddingX}
-            y1={svgHeight * 0.35}
-            x2={svgWidth - paddingX}
-            y2={svgHeight * 0.35}
-            stroke="#f4f4f5"
-            strokeDasharray="4 4"
-            strokeWidth="1"
-          />
-
-          {/* Shaded Areas */}
-          <path d={area1} fill="url(#curveGradient1)" />
-          <path d={area2} fill="url(#curveGradient2)" />
-
-          {/* Main Stroke Curves */}
-          <path
-            d={path1}
-            fill="none"
-            stroke="#18181b"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d={path2}
-            fill="none"
-            stroke="#3f3f46"
-            strokeWidth="1.75"
-            strokeLinecap="round"
-          />
-
-          {/* Invisible hover trigger columns for silky-smooth cursor interaction */}
-          {points1.map((p, idx) => (
-            <g key={idx}>
-              <rect
-                x={p.x - 20}
-                y={0}
-                width={40}
-                height={svgHeight}
-                fill="transparent"
-                className="cursor-crosshair"
-                onMouseEnter={() => setHoveredIndex(idx)}
-              />
-              {hoveredIndex === idx && (
-                <>
-                  <line
-                    x1={p.x}
-                    y1={paddingY}
-                    x2={p.x}
-                    y2={svgHeight - paddingY}
-                    stroke="#18181b"
-                    strokeWidth="1.5"
-                    strokeDasharray="3 3"
-                  />
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r="4.5"
-                    fill="#18181b"
-                    stroke="#ffffff"
-                    strokeWidth="2"
-                  />
-                  <circle
-                    cx={points2[idx].x}
-                    cy={points2[idx].y}
-                    r="3.5"
-                    fill="#71717a"
-                    stroke="#ffffff"
-                    strokeWidth="1.5"
-                  />
-                </>
-              )}
-            </g>
-          ))}
-        </svg>
-
-        {/* Hover Tooltip Overlay */}
-        {activePoint && activeCoord1 && (
-          <div
-            className="absolute top-2 pointer-events-none bg-primary text-primary-foreground rounded-lg px-3 py-2 text-xs shadow-xl z-20 border border-line transition-all duration-75"
-            style={{
-              left: `${Math.min(
-                Math.max(activeCoord1.x - 75, 10),
-                svgWidth - 160
-              )}px`,
-            }}
+      <div className="relative w-full flex-1 min-h-[300px] select-none">
+        <ResponsiveContainer width="100%" height={300}>
+          <AreaChart
+            data={dataPoints}
+            margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
           >
-            <div className="font-semibold text-zinc-200 border-b border-line pb-1 mb-1">
-              {activePoint.date} (实时对账详情)
-            </div>
-            <div className="flex items-center justify-between gap-2 text-zinc-300">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-surface inline-block" />
-                业务应收:
-              </span>
-              <span className="font-mono font-medium text-white">
-                ¥{activePoint.gross.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-2 text-zinc-300">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-hover inline-block" />
-                渠道实收:
-              </span>
-              <span className="font-mono font-medium text-white">
-                ¥{activePoint.net.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-2 text-emerald-400 text-[11px] pt-1 mt-1 border-t border-line font-mono">
-              <span>自动平账率:</span>
-              <span>
-                {((activePoint.net / activePoint.gross) * 100).toFixed(2)}%
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* X Axis Date labels (exact match to screenshot's dates: Apr 3 ... Jun 30) */}
-      <div className="flex items-center justify-between px-3 mt-2 text-[11px] text-fg-tertiary font-mono overflow-x-auto">
-        {dataPoints.map((d, i) => (
-          <span
-            key={i}
-            className={`${
-              hoveredIndex === i ? "text-fg font-semibold" : ""
-            } transition-colors`}
-          >
-            {d.date}
-          </span>
-        ))}
+            <defs>
+              <linearGradient id="fillGross" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#27272a" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="#27272a" stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="fillNet" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#71717a" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="#71717a" stopOpacity={0.04} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tick={{ fill: "#a1a1aa", fontSize: 11 }}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              width={48}
+              tickFormatter={formatAxisAmount}
+              tick={{ fill: "#a1a1aa", fontSize: 11 }}
+            />
+            <Tooltip
+              cursor={{ stroke: "#18181b", strokeDasharray: "3 3" }}
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null;
+                const gross = Number(payload.find((p) => p.dataKey === "gross")?.value ?? 0);
+                const net = Number(payload.find((p) => p.dataKey === "net")?.value ?? 0);
+                return (
+                  <div className="rounded-lg border border-line bg-primary px-3 py-2 text-xs text-primary-foreground shadow-xl">
+                    <div className="font-semibold border-b border-line pb-1 mb-1">{label}</div>
+                    <div className="flex justify-between gap-4 text-zinc-300">
+                      <span>{t("chart.gross")}</span>
+                      <span className="font-mono text-white">¥{gross.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between gap-4 text-zinc-300">
+                      <span>{t("chart.net")}</span>
+                      <span className="font-mono text-white">¥{net.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between gap-4 text-emerald-400 pt-1 mt-1 border-t border-line font-mono text-[11px]">
+                      <span>{t("chart.matchRate")}</span>
+                      <span>{gross ? ((net / gross) * 100).toFixed(2) : "0.00"}%</span>
+                    </div>
+                  </div>
+                );
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="gross"
+              name={t("chart.gross")}
+              stroke="#18181b"
+              strokeWidth={2}
+              fill="url(#fillGross)"
+              activeDot={{ r: 4.5, stroke: "#fff", strokeWidth: 2 }}
+            />
+            <Area
+              type="monotone"
+              dataKey="net"
+              name={t("chart.net")}
+              stroke="#52525b"
+              strokeWidth={1.75}
+              fill="url(#fillNet)"
+              activeDot={{ r: 3.5, stroke: "#fff", strokeWidth: 1.5 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

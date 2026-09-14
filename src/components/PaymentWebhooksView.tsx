@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -28,6 +29,7 @@ interface PaymentWebhooksViewProps {
 }
 
 export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }) => {
+  const { t } = useTranslation(["payments", "common"]);
   const [webhookLogs, setWebhookLogs] = useState<PaymentWebhookLog[]>(logs);
   const [selectedLog, setSelectedLog] = useState<PaymentWebhookLog | null>(null);
   const [redeliveringId, setRedeliveringId] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
         responseBody: '{"received": true, "replayed_at": "' + new Date().toISOString() + '"}',
       };
       setWebhookLogs((prev) => prev.map((item) => (item.id === log.id ? updated : item)));
-      setRedeliverToast(`Webhook ${log.eventId} 已成功重新投递至下游，收到 200 OK 确认响应！`);
+      setRedeliverToast(t("payments:webhooks.toastRedeliver", { eventId: log.eventId }));
       setTimeout(() => setRedeliverToast(null), 4000);
     }, 1000);
   };
@@ -93,18 +95,18 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
               <Webhook className="w-5 h-5" />
             </span>
             <h1 className="text-xl font-bold text-fg tracking-tight">
-              支付 Webhook 调度与监听中心
+              {t("payments:webhooks.title")}
             </h1>
           </div>
           <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
-            监听海外网关（Stripe、PayPal、Adyen）的实时扣款与退款回调，并安全向集团下游 SaaS 应用推送事件签名通知，支持自动重试与单号重放。
+            {t("payments:webhooks.subtitle")}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="px-3 py-1.5 bg-sky-50 text-sky-800 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-sky-200">
             <Radio className="w-3.5 h-3.5 text-sky-600 animate-pulse" />
-            <span>全事件双工自动全量接收 (全渠道独立监听)</span>
+            <span>{t("payments:webhooks.badge")}</span>
           </div>
         </div>
       </div>
@@ -114,9 +116,9 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
         <div className="flex items-center justify-between mb-3 text-xs">
           <div className="flex items-center gap-1.5 font-bold text-fg">
             <Cpu className="w-4 h-4 text-sky-600" />
-            <span>海外渠道专用 Webhook 监听端点列表 (各渠道独立协议，全量自动接收)：</span>
+            <span>{t("payments:webhooks.endpointsTitle")}</span>
           </div>
-          <span className="text-[11px] text-fg-tertiary">无需配置过滤，中台全自动校验网关签名并入库</span>
+          <span className="text-[11px] text-fg-tertiary">{t("payments:webhooks.endpointsHint")}</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
           {[
@@ -124,35 +126,32 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
               channel: "Stripe",
               endpoint: "https://api.novaspay.global/v1/webhooks/stripe",
               auth: "Stripe-Signature (HMAC-SHA256)",
-              status: "全事件监听中",
               color: "border-violet-200 bg-violet-50/40 text-violet-800",
             },
             {
               channel: "PayPal",
               endpoint: "https://api.novaspay.global/v1/webhooks/paypal",
               auth: "PayPal-Transmission-Sig (RSA-SHA256)",
-              status: "全事件监听中",
               color: "border-blue-200 bg-blue-50/40 text-blue-800",
             },
             {
               channel: "Adyen",
               endpoint: "https://api.novaspay.global/v1/webhooks/adyen",
               auth: "HMAC-SHA256 Notification Validation",
-              status: "全事件监听中",
               color: "border-emerald-200 bg-emerald-50/40 text-emerald-800",
             },
           ].map((ep) => (
             <div key={ep.channel} className={`p-2.5 rounded-lg border ${ep.color}`}>
               <div className="flex items-center justify-between font-bold">
-                <span>{ep.channel} 专用接收端点</span>
+                <span>{t("payments:webhooks.endpointLabel", { channel: ep.channel })}</span>
                 <span className="text-[10px] bg-surface/80 px-1.5 py-0.5 rounded font-mono">
-                  {ep.status}
+                  {t("payments:webhooks.listening")}
                 </span>
               </div>
               <div className="font-mono text-[10px] text-fg-secondary truncate mt-1 select-all">
                 {ep.endpoint}
               </div>
-              <div className="text-[10px] text-fg-tertiary mt-0.5">签名验证: {ep.auth}</div>
+              <div className="text-[10px] text-fg-tertiary mt-0.5">{t("payments:webhooks.signatureVerify", { auth: ep.auth })}</div>
             </div>
           ))}
         </div>
@@ -174,7 +173,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
       {/* Filter and Search Bar */}
       <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-          <span className="text-fg-tertiary text-xs">事件筛选:</span>
+          <span className="text-fg-tertiary text-xs">{t("payments:webhooks.filterLabel")}</span>
           {["ALL", "SUCCESS", "FAILED", "subscription", "dispute"].map((tab) => (
             <button
               key={tab}
@@ -186,14 +185,14 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
               }`}
             >
               {tab === "ALL"
-                ? "全部事件"
+                ? t("payments:webhooks.filters.all")
                 : tab === "SUCCESS"
-                ? "投递成功 (200)"
+                ? t("payments:webhooks.filters.success")
                 : tab === "FAILED"
-                ? "异常与重试"
+                ? t("payments:webhooks.filters.failed")
                 : tab === "subscription"
-                ? "订阅生命周期"
-                : "拒付与退款"}
+                ? t("payments:webhooks.filters.subscription")
+                : t("payments:webhooks.filters.dispute")}
             </button>
           ))}
         </div>
@@ -202,7 +201,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
           <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
-            placeholder="搜索事件ID / 应用 / 目标URL..."
+            placeholder={t("payments:webhooks.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 bg-subtle border border-line rounded-lg text-xs"
@@ -216,14 +215,14 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
           <table className="min-w-[1100px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
-                <th className="py-2 px-3 w-[220px]">事件 ID & 来源渠道</th>
-                <th className="py-2 px-3 w-[180px]">事件类型 (Event Type)</th>
-                <th className="py-2 px-3 min-w-[220px]">下游目标应用 & 回调地址</th>
-                <th className="py-2 px-3 w-[120px]">HTTP 状态</th>
-                <th className="py-2 px-3 w-[120px]">耗时 / 重试</th>
-                <th className="py-2 px-3 w-[160px]">触发时间</th>
+                <th className="py-2 px-3 w-[220px]">{t("payments:webhooks.table.eventId")}</th>
+                <th className="py-2 px-3 w-[180px]">{t("payments:webhooks.table.eventType")}</th>
+                <th className="py-2 px-3 min-w-[220px]">{t("payments:webhooks.table.target")}</th>
+                <th className="py-2 px-3 w-[120px]">{t("payments:webhooks.table.httpStatus")}</th>
+                <th className="py-2 px-3 w-[120px]">{t("payments:webhooks.table.latency")}</th>
+                <th className="py-2 px-3 w-[160px]">{t("payments:webhooks.table.time")}</th>
                 <th className="py-2 px-3 w-[160px] sticky right-0 z-20 bg-subtle/95 backdrop-blur-xs text-right shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                  操作
+                  {t("payments:webhooks.table.operations")}
                 </th>
               </tr>
             </thead>
@@ -268,7 +267,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
 
                     <td className="py-3.5 px-3 w-[120px] whitespace-nowrap font-mono text-[11px] text-fg-secondary">
                       <div>{log.latencyMs}ms</div>
-                      <div className="text-fg-tertiary text-[10px]">重试: {log.attempts} 次</div>
+                      <div className="text-fg-tertiary text-[10px]">{t("payments:webhooks.retryCount", { count: log.attempts })}</div>
                     </td>
 
                     <td className="py-3.5 px-3 w-[160px] font-mono text-[11px] text-fg-secondary whitespace-nowrap">
@@ -283,7 +282,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
                           className="px-2 py-1 bg-hover hover:bg-hover text-fg-secondary rounded font-medium text-[11px] flex items-center gap-1"
                         >
                           <Eye className="w-3 h-3" />
-                          <span>报文</span>
+                          <span>{t("payments:webhooks.viewPayload")}</span>
                         </button>
                         <button
                           onClick={() => handleRedeliver(log)}
@@ -293,7 +292,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
                           <RefreshCw
                             className={`w-3 h-3 ${isRedelivering ? "animate-spin" : ""}`}
                           />
-                          <span>{isRedelivering ? "重推中..." : "重新投递"}</span>
+                          <span>{isRedelivering ? t("payments:webhooks.redelivering") : t("payments:webhooks.redeliver")}</span>
                         </button>
                       </div>
                     </td>
@@ -311,8 +310,8 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
         id="side-sheet-webhook-payload"
         isOpen={!!selectedLog}
         onClose={() => setSelectedLog(null)}
-        title={selectedLog ? `Webhook 原始报文 - ${selectedLog.eventId}` : "Webhook 原始报文"}
-        description={selectedLog ? `${selectedLog.eventType} · ${selectedLog.deliveryStatus}` : ""}
+        title={selectedLog ? t("payments:webhooks.sheetTitle", { eventId: selectedLog.eventId }) : t("payments:webhooks.sheetTitleFallback")}
+        description={selectedLog ? `${selectedLog.eventType} · ${selectedLog.status}` : ""}
         icon={<Webhook className="w-5 h-5 text-fg" />}
         widthClass="max-w-2xl"
         footer={
@@ -321,14 +320,14 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
             onClick={() => setSelectedLog(null)}
             className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
           >
-            关闭
+            {t("common:actions.close")}
           </button>
         }
       >
         {selectedLog && (
           <div className="space-y-3 text-xs">
             <div className="bg-subtle p-3 rounded-xl border border-line space-y-1">
-              <div className="text-fg-tertiary text-[11px]">推送目标与签名标头:</div>
+              <div className="text-fg-tertiary text-[11px]">{t("payments:webhooks.targetHint")}</div>
               <div className="font-mono text-fg break-all">{selectedLog.targetUrl}</div>
               <div className="font-mono text-[11px] text-fg-secondary pt-1">
                 X-Novas-Signature: t=1789000000,v1=9812039810293810293810293810
@@ -337,7 +336,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-fg-secondary">Request Payload (JSON):</span>
+                <span className="font-semibold text-fg-secondary">{t("payments:webhooks.requestPayload")}</span>
                 <button
                   onClick={() =>
                     copyToClipboard(JSON.stringify(selectedLog.payload, null, 2), "payload")
@@ -349,7 +348,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
                   ) : (
                     <Copy className="w-3.5 h-3.5" />
                   )}
-                  <span>复制 JSON</span>
+                  <span>{t("payments:webhooks.copyJson")}</span>
                 </button>
               </div>
               <pre className="p-3 bg-primary text-emerald-400 rounded-xl font-mono text-[11px] overflow-x-auto">
@@ -360,7 +359,7 @@ export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }
             {selectedLog.responseBody && (
               <div>
                 <span className="font-semibold text-fg-secondary block mb-1">
-                  下游客户端 HTTP 响应 (Response Body):
+                  {t("payments:webhooks.responseBody")}
                 </span>
                 <pre className="p-3 bg-hover text-fg rounded-xl font-mono text-[11px] overflow-x-auto border border-line">
                   {selectedLog.responseBody}

@@ -1,0 +1,86 @@
+{
+  "kpi": {
+    "totalRevenue": "总收入",
+    "trendingUpMonth": "本月呈上升趋势",
+    "visitorsHint": "近 6 个月访客与交易概况",
+    "newCustomers": "新增客户",
+    "downPeriod": "本期下降 20%",
+    "acquisitionHint": "获客表现需关注",
+    "activeAccounts": "活跃账户",
+    "retentionStrong": "用户留存表现强劲",
+    "engagementHint": "活跃度已超出目标",
+    "growthRate": "增长率",
+    "steadyIncrease": "业绩稳步提升",
+    "growthHint": "符合增长预期"
+  },
+  "chart": {
+    "title": "聚合交易流水与清算峰值",
+    "range3m": "近 3 个月双轨比对：业务订单流 vs 渠道实收",
+    "range30d": "近 30 天聚合交易流水",
+    "range7d": "近 7 天聚合交易流水",
+    "last3m": "近 3 个月",
+    "last30d": "近 30 天",
+    "last7d": "近 7 天",
+    "gross": "业务应收",
+    "net": "渠道实收",
+    "matchRate": "平账率"
+  },
+  "tabs": {
+    "all": "全部流水",
+    "inProcess": "处理中",
+    "discrepancy": "差错账",
+    "done": "已完成"
+  },
+  "table": {
+    "searchPlaceholder": "搜索单号/商户...",
+    "customizeColumns": "自定义列",
+    "selectFields": "选择显示字段",
+    "header": "订单信息",
+    "sectionType": "支付渠道",
+    "status": "状态",
+    "target": "金额",
+    "limit": "手续费",
+    "reviewer": "审核人",
+    "actions": "操作",
+    "empty": "未找到匹配的流水记录"
+  },
+  "footer": {
+    "rbacHint": "RBAC数据保护已开启 • T+1三方自动对账",
+    "selected": "已选 {{selected}} 条流水 / 共 {{total}} 条记录 (租户: {{tenant}})",
+    "currentTenant": "当前业务单元"
+  },
+  "status": {
+    "done": "Done",
+    "inProcess": "In Process",
+    "discrepancy": "Discrepancy",
+    "pending": "Pending",
+    "viewDiscrepancy": "点击查看并处理差错"
+  },
+  "actions": {
+    "adjust": "调账",
+    "reconcile": "平账"
+  },
+  "columns": {
+    "header": "订单信息",
+    "sectionType": "支付渠道",
+    "status": "状态",
+    "target": "金额",
+    "limit": "手续费",
+    "reviewer": "审核人",
+    "actions": "操作"
+  },
+  "reviewer": {
+    "autoReconcile": "系统自动平账",
+    "fallbackInitial": "平"
+  },
+  "channels": {
+    "stripe": "Stripe 国际卡",
+    "paypal": "PayPal 钱包",
+    "adyen": "Adyen 欧洲清算",
+    "checkout": "Checkout.com",
+    "apple_pay": "Apple Pay",
+    "google_pay": "Google Pay",
+    "klarna": "Klarna 先买后付",
+    "sepa": "SEPA 欧洲借记"
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -44,6 +45,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
   onSaveUser,
   onDeleteUser,
 }) => {
+  const { t } = useTranslation(["rbac", "common"]);
   const [userList, setUserList] = useState<SystemUser[]>(users);
   const [searchQuery, setSearchQuery] = useState("");
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
@@ -114,7 +116,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formEmail.trim()) {
-      showToast("请填写完整的姓名与企业工作邮箱");
+      showToast(t("systemUsers.toast.nameEmailRequired"));
       return;
     }
 
@@ -132,7 +134,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         name: formName.trim(),
         email: formEmail.trim(),
         roleKeys: finalRoleKeys,
-        role: roleNames.length ? roleNames.join("、") : "未分配角色",
+        role: roleNames.length ? roleNames.join("、") : t("systemUsers.unassignedRole"),
         roleKey: finalRoleKeys[0] || "UNASSIGNED",
         departmentIds: formDepartmentIds,
         department: deptNames.join(" / ") || undefined,
@@ -142,7 +144,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
       };
       setUserList((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
       onSaveUser(updated);
-      showToast(`系统用户【${updated.name}】权限与资料已保存！`);
+      showToast(t("systemUsers.toast.updated", { name: updated.name }));
     } else {
       const initials =
         formName
@@ -156,7 +158,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         name: formName.trim(),
         email: formEmail.trim(),
         roleKeys: finalRoleKeys,
-        role: roleNames.length ? roleNames.join("、") : "未分配角色",
+        role: roleNames.length ? roleNames.join("、") : t("systemUsers.unassignedRole"),
         roleKey: finalRoleKeys[0] || "UNASSIGNED",
         avatarText: initials,
         departmentIds: formDepartmentIds,
@@ -164,12 +166,12 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         phone: formPhone.trim(),
         status: formStatus,
         allowedAppIds: finalAppIds,
-        lastLogin: "刚刚创建 (尚未登录)",
+        lastLogin: t("systemUsers.justCreated"),
         createdAt: new Date().toISOString().split("T")[0],
       };
       setUserList((prev) => [newUser, ...prev]);
       onSaveUser(newUser);
-      showToast(`新系统用户【${newUser.name}】已成功创建并分配权限！`);
+      showToast(t("systemUsers.toast.created", { name: newUser.name }));
     }
     setIsSheetOpen(false);
   };
@@ -180,7 +182,9 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
     setUserList((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
     onSaveUser(updated);
     showToast(
-      `用户【${user.name}】已${nextStatus === "ACTIVE" ? "成功启用" : "已停用账号访问权限"}`
+      nextStatus === "ACTIVE"
+        ? t("systemUsers.toast.enabled", { name: user.name })
+        : t("systemUsers.toast.disabled", { name: user.name })
     );
   };
 
@@ -253,12 +257,8 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
             <Users className="w-5 h-5" />
           </span>
           <div>
-            <h1 className="text-lg font-bold text-fg">
-              用户管理 (User & Access Control)
-            </h1>
-            <p className="text-xs text-fg-secondary mt-0.5">
-              管理系统内控账户：角色（多选，非必选）、所属部门（多选，继承部门角色权限）与出海应用授权范围。
-            </p>
+            <h1 className="text-lg font-bold text-fg">{t("systemUsers.title")}</h1>
+            <p className="text-xs text-fg-secondary mt-0.5">{t("systemUsers.subtitle")}</p>
           </div>
         </div>
 
@@ -268,7 +268,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
           className="flex items-center gap-2 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors cursor-pointer self-start md:self-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>新增系统用户</span>
+          <span>{t("systemUsers.addUser")}</span>
         </button>
       </div>
 
@@ -278,7 +278,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
           <Search className="w-4 h-4 text-fg-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="搜索用户名、企业邮箱、部门..."
+            placeholder={t("systemUsers.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-1.5 text-xs bg-subtle/80 border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:bg-surface"
@@ -292,13 +292,13 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               value={deptFilter}
               onValueChange={setDeptFilter}
               options={[
-                { value: "ALL", label: "全部所属部门" },
+                { value: "ALL", label: t("systemUsers.filter.allDepartments") },
                 ...departments.map((d) => ({
                   value: d.id,
                   label: d.name,
                 })),
               ]}
-              placeholder="按部门筛选"
+              placeholder={t("systemUsers.filter.filterByDept")}
             />
           </div>
 
@@ -308,13 +308,13 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               value={roleFilter}
               onValueChange={setRoleFilter}
               options={[
-                { value: "ALL", label: "全部角色权限" },
+                { value: "ALL", label: t("systemUsers.filter.allRoles") },
                 ...roles.map((r) => ({
                   value: (r.key || r.id) as string,
                   label: r.name.split(" ")[0],
                 })),
               ]}
-              placeholder="按角色筛选"
+              placeholder={t("systemUsers.filter.filterByRole")}
             />
           </div>
 
@@ -324,13 +324,13 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               value={appFilter}
               onValueChange={setAppFilter}
               options={[
-                { value: "ALL", label: "全部应用权限范围" },
+                { value: "ALL", label: t("systemUsers.filter.allApps") },
                 ...apps.map((a) => ({
                   value: a.id,
                   label: a.name.split(" ")[0],
                 })),
               ]}
-              placeholder="按应用权限筛选"
+              placeholder={t("systemUsers.filter.filterByApp")}
             />
           </div>
 
@@ -340,11 +340,11 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               value={statusFilter}
               onValueChange={setStatusFilter}
               options={[
-                { value: "ALL", label: "全部账号状态" },
-                { value: "ACTIVE", label: "已启用 (正常)" },
-                { value: "DISABLED", label: "已停用 (锁定)" },
+                { value: "ALL", label: t("systemUsers.filter.allStatus") },
+                { value: "ACTIVE", label: t("systemUsers.status.ACTIVE_FORM") },
+                { value: "DISABLED", label: t("systemUsers.status.DISABLED_FORM") },
               ]}
-              placeholder="按状态筛选"
+              placeholder={t("systemUsers.filter.filterByStatus")}
             />
           </div>
         </div>
@@ -356,20 +356,20 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
           <table className="w-full text-left text-xs">
             <thead className="bg-subtle border-b border-line text-fg-secondary font-medium">
               <tr>
-                <th className="px-3 py-2">用户与联系方式</th>
-                <th className="px-3 py-2">所属部门（多选）</th>
-                <th className="px-3 py-2">角色权限（多选）</th>
-                <th className="px-3 py-2">应用授权范围</th>
-                <th className="px-3 py-2">账号状态</th>
-                <th className="px-3 py-2">最后登录</th>
-                <th className="px-3 py-2 text-right">操作</th>
+                <th className="px-3 py-2">{t("systemUsers.table.userContact")}</th>
+                <th className="px-3 py-2">{t("systemUsers.table.departments")}</th>
+                <th className="px-3 py-2">{t("systemUsers.table.roles")}</th>
+                <th className="px-3 py-2">{t("systemUsers.table.appScope")}</th>
+                <th className="px-3 py-2">{t("systemUsers.table.status")}</th>
+                <th className="px-3 py-2">{t("systemUsers.table.lastLogin")}</th>
+                <th className="px-3 py-2 text-right">{t("systemUsers.table.operations")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle text-fg-secondary">
               {filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-fg-tertiary">
-                    未查找到符合条件的系统用户记录
+                    {t("systemUsers.table.empty")}
                   </td>
                 </tr>
               ) : (
@@ -404,7 +404,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                               <span>{u.name}</span>
                               {isCurrent && (
                                 <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded-full font-medium">
-                                  当前操作者
+                                  {t("systemUsers.table.currentOperator")}
                                 </span>
                               )}
                             </div>
@@ -421,7 +421,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                         <div className="flex flex-wrap gap-1 max-w-[200px]">
                           {deptIds.length === 0 ? (
                             <span className="text-[11px] text-fg-tertiary italic">
-                              未分配部门
+                              {t("systemUsers.table.noDepartment")}
                             </span>
                           ) : (
                             deptIds.map((id) => (
@@ -442,7 +442,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                         <div className="flex flex-wrap gap-1 max-w-[220px]">
                           {userRoleKeys.length === 0 ? (
                             <span className="text-[11px] text-fg-tertiary italic">
-                              未分配角色
+                              {t("systemUsers.table.noRole")}
                             </span>
                           ) : (
                             userRoleKeys.map((key) => (
@@ -464,11 +464,11 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                           {isAllApps ? (
                             <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-[10px] font-medium flex items-center gap-1">
                               <Globe className="w-3 h-3 text-blue-500" />
-                              全部出海应用 ({apps.length} 款)
+                              {t("systemUsers.table.allApps", { count: apps.length })}
                             </span>
                           ) : userAppIds.length === 0 ? (
                             <span className="text-[11px] text-fg-tertiary italic">
-                              未分配任何应用
+                              {t("systemUsers.table.noApps")}
                             </span>
                           ) : (
                             userAppIds.map((appId) => {
@@ -490,13 +490,21 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                       {/* Status（点击切换账号状态，Popconfirm 二次确认） */}
                       <td className="px-3 py-2">
                         <Popconfirm
-                          title={u.status === "DISABLED" ? `启用用户「${u.name}」？` : `停用用户「${u.name}」？`}
+                          title={
+                            u.status === "DISABLED"
+                              ? t("systemUsers.confirm.enableTitle", { name: u.name })
+                              : t("systemUsers.confirm.disableTitle", { name: u.name })
+                          }
                           description={
                             u.status === "DISABLED"
-                              ? "启用后该用户可恢复登录并正常访问授权范围内功能。"
-                              : "停用后该用户将立即失去登录与访问权限，其历史操作记录仍会保留。"
+                              ? t("systemUsers.confirm.enableDesc")
+                              : t("systemUsers.confirm.disableDesc")
                           }
-                          confirmText={u.status === "DISABLED" ? "确认启用" : "确认停用"}
+                          confirmText={
+                            u.status === "DISABLED"
+                              ? t("systemUsers.confirm.confirmEnable")
+                              : t("systemUsers.confirm.confirmDisable")
+                          }
                           onConfirm={() => handleToggleStatus(u)}
                         >
                           <button
@@ -507,21 +515,27 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                                 ? "bg-hover text-fg-secondary border-line hover:bg-hover"
                                 : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
                             } ${isCurrent ? "opacity-40 cursor-not-allowed" : ""}`}
-                            title={u.status === "DISABLED" ? "点击启用该用户" : "点击停用该用户"}
+                            title={
+                              u.status === "DISABLED"
+                                ? t("systemUsers.confirm.enableHint")
+                                : t("systemUsers.confirm.disableHint")
+                            }
                           >
                             {u.status === "DISABLED" ? (
                               <UserX className="w-3 h-3 text-fg-tertiary" />
                             ) : (
                               <UserCheck className="w-3 h-3 text-emerald-600" />
                             )}
-                            {u.status === "DISABLED" ? "已停用" : "正常在职"}
+                            {u.status === "DISABLED"
+                              ? t("systemUsers.status.DISABLED")
+                              : t("systemUsers.status.ACTIVE")}
                           </button>
                         </Popconfirm>
                       </td>
 
                       {/* Last Login */}
                       <td className="px-3 py-2 text-[11px] text-fg-secondary">
-                        {u.lastLogin || "暂未登录记录"}
+                        {u.lastLogin || t("systemUsers.table.noLoginRecord")}
                       </td>
 
                       {/* Actions */}
@@ -531,21 +545,21 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                             type="button"
                             onClick={() => handleOpenEdit(u)}
                             className="p-1 text-fg-secondary hover:text-fg hover:bg-hover rounded-md transition-colors cursor-pointer"
-                            title="配置角色 / 部门 / 应用权限"
+                            title={t("systemUsers.sheet.editRolesTitle")}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
 
                           {onDeleteUser && !isCurrent && (
                             <Popconfirm
-                              title={`删除用户「${u.name}」？`}
-                              description="删除后该用户将无法登录系统，历史操作记录保留但账号不可恢复。"
+                              title={t("systemUsers.confirm.deleteTitle", { name: u.name })}
+                              description={t("systemUsers.confirm.deleteDesc")}
                               onConfirm={() => onDeleteUser(u.id)}
                             >
                               <button
                                 type="button"
                                 className="p-1 text-fg-tertiary hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
-                                title="删除用户"
+                                title={t("systemUsers.sheet.deleteUserTitle")}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -568,8 +582,12 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         id="side-sheet-system-user"
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
-        title={editingUser ? `配置用户权限: ${editingUser.name}` : "新增系统用户与权限授权"}
-        description="角色可多选且非必选；所属部门可多选，成员将继承部门绑定角色的权限；应用授权范围支持多选。"
+        title={
+          editingUser
+            ? t("systemUsers.sheet.editTitle", { name: editingUser.name })
+            : t("systemUsers.sheet.createTitle")
+        }
+        description={t("systemUsers.sheet.description")}
         icon={<Shield className="w-5 h-5 text-fg" />}
         widthClass="max-w-2xl"
         footer={
@@ -579,14 +597,16 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               onClick={() => setIsSheetOpen(false)}
               className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
-              取消
+              {t("common:actions.cancel")}
             </button>
             <button
               type="button"
               onClick={handleSave}
               className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
             >
-              {editingUser ? "保存用户权限" : "创建并授权用户"}
+              {editingUser
+                ? t("systemUsers.sheet.savePermissions")
+                : t("systemUsers.sheet.createAndAuthorize")}
             </button>
           </>
         }
@@ -596,17 +616,17 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5 border-b border-line-subtle pb-2">
               <Users className="w-3.5 h-3.5 text-fg-secondary" />
-              <span>基本信息与员工档案</span>
+              <span>{t("systemUsers.sheet.basicInfo")}</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-fg-secondary font-medium mb-1">
-                  员工姓名 <span className="text-rose-500">*</span>
+                  {t("systemUsers.sheet.nameLabel")} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="例如: Eddie Lake"
+                  placeholder={t("systemUsers.sheet.namePlaceholder")}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
@@ -615,11 +635,11 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
 
               <div>
                 <label className="block text-fg-secondary font-medium mb-1">
-                  企业工作邮箱 <span className="text-rose-500">*</span>
+                  {t("systemUsers.sheet.emailLabel")} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="email"
-                  placeholder="name@novaspay.global"
+                  placeholder={t("systemUsers.sheet.emailPlaceholder")}
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
@@ -627,10 +647,12 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               </div>
 
               <div>
-                <label className="block text-fg-secondary font-medium mb-1">联系电话</label>
+                <label className="block text-fg-secondary font-medium mb-1">
+                  {t("systemUsers.sheet.phoneLabel")}
+                </label>
                 <input
                   type="text"
-                  placeholder="+1 (555) 019-2831"
+                  placeholder={t("systemUsers.sheet.phonePlaceholder")}
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
                   className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
@@ -638,14 +660,16 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               </div>
 
               <div>
-                <label className="block text-fg-secondary font-medium mb-1">账号启用状态</label>
+                <label className="block text-fg-secondary font-medium mb-1">
+                  {t("systemUsers.sheet.statusLabel")}
+                </label>
                 <div className="w-full">
                   <ShadcnSelect
                     value={formStatus}
                     onValueChange={(val) => setFormStatus(val as "ACTIVE" | "DISABLED")}
                     options={[
-                      { value: "ACTIVE", label: "已启用 (正常访问系统)" },
-                      { value: "DISABLED", label: "已停用 (禁止登录授权)" },
+                      { value: "ACTIVE", label: t("systemUsers.status.ACTIVE_FORM") },
+                      { value: "DISABLED", label: t("systemUsers.status.DISABLED_FORM") },
                     ]}
                   />
                 </div>
@@ -657,31 +681,29 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
           <div className="space-y-2">
             <h3 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5 border-b border-line-subtle pb-2">
               <Building className="w-3.5 h-3.5 text-fg-secondary" />
-              <span>所属部门（多选）</span>
+              <span>{t("systemUsers.sheet.departmentsTitle")}</span>
             </h3>
             <MultiSelect
               value={formDepartmentIds}
               onValueChange={setFormDepartmentIds}
-              placeholder="选择该用户所属的部门（可多选）..."
+              placeholder={t("systemUsers.sheet.departmentsPlaceholder")}
               options={departments.map((d) => ({
                 value: d.id,
                 label: d.name,
               }))}
             />
-            <p className="text-[11px] text-fg-tertiary">
-              用户将继承所选部门绑定角色的权限；在部门管理中可配置各部门绑定的角色。
-            </p>
+            <p className="text-[11px] text-fg-tertiary">{t("systemUsers.sheet.departmentsHint")}</p>
             {inheritedRoleKeys.length > 0 && (
               <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 text-[11px] text-blue-800 flex items-start gap-2">
                 <Sparkles className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                 <span>
-                  所选部门绑定角色：
+                  {t("systemUsers.sheet.inheritedRoles")}
                   <b>
                     {inheritedRoleKeys
                       .map((key) => getRoleName(key).split(" ")[0])
                       .join("、")}
                   </b>
-                  ，用户自动继承这些角色对应的菜单与应用权限。
+                  {t("systemUsers.sheet.inheritedRolesSuffix")}
                 </span>
               </div>
             )}
@@ -691,32 +713,30 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
           <div className="space-y-2">
             <h3 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5 border-b border-line-subtle pb-2">
               <Shield className="w-3.5 h-3.5 text-fg-secondary" />
-              <span>角色权限配置（多选，非必选）</span>
+              <span>{t("systemUsers.sheet.rolesTitle")}</span>
             </h3>
             <MultiSelect
               value={formRoleKeys}
               onValueChange={setFormRoleKeys}
-              placeholder="选择分配的系统角色（可多选，可留空）..."
+              placeholder={t("systemUsers.sheet.rolesPlaceholder")}
               options={roles.map((r) => ({
                 value: (r.key || r.id) as string,
                 label: r.name,
               }))}
             />
-            <p className="text-[11px] text-fg-tertiary">
-              角色决定该用户在系统中可操作的功能模块与读写权限；可不分配角色，仅通过部门继承权限。
-            </p>
+            <p className="text-[11px] text-fg-tertiary">{t("systemUsers.sheet.rolesHint")}</p>
           </div>
 
           {/* Application Permission Section（多选下拉） */}
           <div className="space-y-2">
             <h3 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5 border-b border-line-subtle pb-2">
               <Layers className="w-3.5 h-3.5 text-fg-secondary" />
-              <span>出海应用授权范围（多选）</span>
+              <span>{t("systemUsers.sheet.appsTitle")}</span>
             </h3>
             <MultiSelect
               value={formAllowedAppIds}
               onValueChange={setFormAllowedAppIds}
-              placeholder="选择授权访问的出海应用（可多选）..."
+              placeholder={t("systemUsers.sheet.appsPlaceholder")}
               options={[
                 ...apps.map((a) => ({
                   value: a.id,
@@ -725,9 +745,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               ]}
               showToolbar
             />
-            <p className="text-[11px] text-fg-tertiary">
-              被授权的应用代表该用户仅能查阅和处理这些出海业务线的专属交易流水、商品价格体系与支付网关。
-            </p>
+            <p className="text-[11px] text-fg-tertiary">{t("systemUsers.sheet.appsHint")}</p>
           </div>
         </div>
       </SideSheet>
