@@ -36,6 +36,7 @@ interface DepartmentManagementViewProps {
   roles: RbacRole[];
   onSaveDepartment: (dept: Department) => void;
   onDeleteDepartment?: (id: string) => void;
+  onSaveUser?: (user: SystemUser) => void;
 }
 
 interface DeptTreeNode extends Department {
@@ -70,12 +71,26 @@ function collectDeptIds(dept: DeptTreeNode): string[] {
   return [dept.id, ...dept.children.flatMap((c) => collectDeptIds(c))];
 }
 
+/** 收集某部门 id 的所有后代（不含自身） */
+function collectDescendantIds(deptId: string, departments: Department[]): Set<string> {
+  const result = new Set<string>();
+  const walk = (parentId: string) => {
+    departments.filter((d) => d.parentId === parentId).forEach((d) => {
+      result.add(d.id);
+      walk(d.id);
+    });
+  };
+  walk(deptId);
+  return result;
+}
+
 export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> = ({
   departments,
   users,
   roles,
   onSaveDepartment,
   onDeleteDepartment,
+  onSaveUser,
 }) => {
   const { t } = useTranslation(["settings", "common"]);
   const [deptList, setDeptList] = useState<Department[]>(departments);
@@ -86,8 +101,13 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
   const [searchQuery, setSearchQuery] = useState("");
   const [treeKeyword, setTreeKeyword] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"DEPT" | "MEMBER">("DEPT");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isTransferSheetOpen, setIsTransferSheetOpen] = useState(false);
+  const [transferTargetId, setTransferTargetId] = useState("");
+  const [transferItemIds, setTransferItemIds] = useState<string[]>([]);
+  const [transferMode, setTransferMode] = useState<"DEPT" | "MEMBER">("DEPT");
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -263,10 +283,96 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
     showToast(t("departments.toast.batchDeleted", { count: selectedIds.length }));
   };
 
-  const handleBatchTransfer = () => {
-    if (selectedIds.length === 0) return;
-    showToast(t("departments.toast.batchTransfer", { count: selectedIds.length }));
+  const openTransferSheet = (ids: string[], mode: "DEPT" | "MEMBER") => {
+    if (ids.length === 0) {
+      showToast(t("departments.toast.transferNoSelection"));
+      return;
+    }
+    setTransferItemIds(ids);
+    setTransferMode(mode);
+    setTransferTargetId("");
+    setIsTransferSheetOpen(true);
   };
+
+  const handleBatchTransfer = () => {
+    if (viewMode === "MEMBER") {
+      openTransferSheet(selectedMemberIds, "MEMBER");
+    } else {
+      openTransferSheet(selectedIds, "DEPT");
+    }
+  };
+
+  const isInvalidTransferTarget = (sourceIds: string[], targetId: string): boolean => {
+    if (!targetId || sourceIds.includes(targetId)) return true;
+    return sourceIds.some((id) => collectDescendantIds(id, deptList).has(targetId));
+  };
+
+  const handleConfirmTransfer = () => {
+    if (!transferTargetId) {
+      showToast(t("departments.toast.transferNoTarget"));
+      return;
+    }
+    if (isInvalidTransferTarget(transferItemIds, transferTargetId)) {
+      showToast(t("departments.toast.transferInvalidTarget"));
+      return;
+    }
+
+    const targetName = deptList.find((d) => d.id === transferTargetId)?.name || transferTargetId;
+
+    if (transferMode === "DEPT") {
+      const updatedDepts = transferItemIds
+        .map((id) => deptList.find((d) => d.id === id))
+        .filter(Boolean) as Department[];
+      const nextList = deptList.map((d) =>
+        transferItemIds.includes(d.id) ? { ...d, parentId: transferTargetId } : d
+      );
+      setDeptList(nextList);
+      updatedDepts.forEach((dept) => {
+        onSaveDepartment({ ...dept, parentId: transferTargetId });
+      });
+      setSelectedIds([]);
+    } else {
+      if (!onSaveUser) {
+        setIsTransferSheetOpen(false);
+        return;
+      }
+      const targetDept = deptList.find((d) => d.id === transferTargetId);
+      const scopeIds = scopedDeptIds || [];
+      transferItemIds.forEach((userId) => {
+        const user = users.find((u) => u.id === userId);
+        if (!user) return;
+        const newDeptIds = Array.from(
+          new Set([
+            ...(user.departmentIds || []).filter((id) => !scopeIds.includes(id)),
+            transferTargetId,
+          ])
+        );
+        const deptNames = newDeptIds
+          .map((id) => deptList.find((d) => d.id === id)?.name)
+          .filter(Boolean);
+        const updated: SystemUser = {
+          ...user,
+          departmentIds: newDeptIds,
+          department: deptNames.join(" / ") || targetDept?.name,
+        };
+        onSaveUser(updated);
+      });
+      setSelectedMemberIds([]);
+    }
+
+    setIsTransferSheetOpen(false);
+    showToast(t("departments.toast.transferSuccess", { count: transferItemIds.length, target: targetName }));
+  };
+
+  const transferTargetOptions = useMemo(() => {
+    const exclude = new Set(transferItemIds);
+    transferItemIds.forEach((id) => {
+      collectDescendantIds(id, deptList).forEach((descId) => exclude.add(descId));
+    });
+    return deptList
+      .filter((d) => !exclude.has(d.id))
+      .map((d) => ({ value: d.id, label: d.name }));
+  }, [deptList, transferItemIds]);
 
   const handleRefresh = () => {
     setDeptList(departments);
@@ -433,7 +539,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             </Popconfirm>
           )}
 
-          {selectedIds.length === 0 ? (
+          {(viewMode === "DEPT" ? selectedIds.length : selectedMemberIds.length) === 0 ? (
             <button
               type="button"
               disabled
@@ -671,10 +777,10 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                             <div className="flex items-center justify-end gap-3 text-[11px]">
                               <button
                                 type="button"
-                                onClick={() => showToast(t("departments.toast.transferStarted", { name: dept.name }))}
+                                onClick={() => openTransferSheet([dept.id], "DEPT")}
                                 className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                               >
-                                {t("common:actions.transfer")}
+                                {t("departments.transfer.rowAction")}
                               </button>
                               <button
                                 type="button"
@@ -721,17 +827,28 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
+                    <th className="py-2 px-3 w-8">
+                      <input
+                        type="checkbox"
+                        checked={scopeMembers.length > 0 && scopeMembers.every((u) => selectedMemberIds.includes(u.id))}
+                        onChange={(e) =>
+                          setSelectedMemberIds(e.target.checked ? scopeMembers.map((u) => u.id) : [])
+                        }
+                        className="rounded text-fg"
+                      />
+                    </th>
                     <th className="py-2 px-3">{t("departments.memberTable.user")}</th>
                     <th className="py-2 px-3">{t("departments.memberTable.dept")}</th>
                     <th className="py-2 px-3">{t("departments.memberTable.roles")}</th>
                     <th className="py-2 px-3">{t("departments.memberTable.apps")}</th>
                     <th className="py-2 px-3">{t("departments.memberTable.status")}</th>
+                    <th className="py-2 px-3 text-right">{t("departments.table.actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-subtle text-fg-secondary">
                   {scopeMembers.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-12 text-center text-fg-tertiary">
+                      <td colSpan={7} className="py-12 text-center text-fg-tertiary">
 {t("departments.noMembers")}
                       </td>
                     </tr>
@@ -743,6 +860,18 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                       ).filter(Boolean);
                       return (
                         <tr key={u.id} className="hover:bg-subtle/80 transition-colors">
+                          <td className="py-2 px-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedMemberIds.includes(u.id)}
+                              onChange={(e) =>
+                                setSelectedMemberIds((prev) =>
+                                  e.target.checked ? [...prev, u.id] : prev.filter((id) => id !== u.id)
+                                )
+                              }
+                              className="rounded text-fg"
+                            />
+                          </td>
                           <td className="py-2 px-3">
                             <div className="flex items-center gap-2.5">
                               <div className="w-7 h-7 rounded-full bg-hover border border-line text-fg font-bold flex items-center justify-center text-[10px] shrink-0">
@@ -794,6 +923,15 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               {u.status === "DISABLED" ? t("departments.status.disabled") : t("departments.status.active")}
                             </span>
                           </td>
+                          <td className="py-2 px-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => openTransferSheet([u.id], "MEMBER")}
+                              className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer text-[11px]"
+                            >
+                              {t("departments.transfer.rowAction")}
+                            </button>
+                          </td>
                         </tr>
                       );
                     })
@@ -805,6 +943,58 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
         )}
       </div>
       </div>
+
+      {/* ===== 转移 SideSheet ===== */}
+      <SideSheet
+        id="side-sheet-department-transfer"
+        isOpen={isTransferSheetOpen}
+        onClose={() => setIsTransferSheetOpen(false)}
+        title={t("departments.transfer.title", {
+          mode: transferMode === "DEPT" ? t("departments.transfer.modeDept") : t("departments.transfer.modeMember"),
+        })}
+        description={
+          transferMode === "DEPT"
+            ? t("departments.transfer.descriptionDept")
+            : t("departments.transfer.descriptionMember")
+        }
+        icon={<ArrowRightLeft className="w-5 h-5 text-fg" />}
+        widthClass="max-w-md"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsTransferSheetOpen(false)}
+              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded text-xs font-semibold transition-colors cursor-pointer"
+            >
+              {t("common:actions.cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmTransfer}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors cursor-pointer"
+            >
+              {t("departments.transfer.confirm")}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          <p className="text-fg-secondary">
+            {t("departments.transfer.selectedCount", { count: transferItemIds.length })}
+          </p>
+          <div>
+            <label className="block text-fg-secondary font-medium mb-1">
+              {t("departments.transfer.targetLabel")}
+            </label>
+            <ShadcnSelect
+              value={transferTargetId}
+              onValueChange={setTransferTargetId}
+              options={transferTargetOptions}
+              placeholder={t("departments.transfer.targetPlaceholder")}
+            />
+          </div>
+        </div>
+      </SideSheet>
 
       {/* ===== 新增/编辑部门 SideSheet ===== */}
       <SideSheet

@@ -7,24 +7,54 @@
     "addRole": "新建角色",
     "editRole": "编辑角色",
     "deleteRole": "删除角色",
+    "configurePermissions": "配置权限",
     "savePermissions": "保存权限变更",
     "menuTree": "菜单树权限",
     "appScope": "应用数据隔离",
-    "selectAllApps": "全选应用",
+    "selectAllApps": "授权全部应用",
     "clearApps": "清空选择",
-    "builtinTag": "内置",
-    "customTag": "自定义",
+    "menuCountUnit": "{{count}} 项",
+    "appCountUnit": "{{count}} 项",
+    "appCountAll": "全部",
+    "memberCountUnit": "{{count}} 人",
+    "infoBanner": "权限基于「系统菜单管理」中的菜单树配置：勾选菜单节点即授予访问权限，并可进一步限定可访问的出海应用。点击表格行或「配置权限」打开权限面板。",
+    "empty": {
+      "noRoles": "暂无可配置的角色，请先创建角色。",
+      "noApps": "暂无可授权应用，请先在「接入应用管理」中创建应用"
+    },
+    "table": {
+      "name": "角色名称",
+      "description": "描述",
+      "menuCount": "菜单权限",
+      "appCount": "应用权限",
+      "memberCount": "成员数",
+      "operations": "操作"
+    },
+    "permissionSheet": {
+      "title": "配置权限：{{name}}",
+      "description": "勾选该角色可访问的菜单节点与应用范围，完成后点击保存。",
+      "menuTreeHint": "与侧边栏 / 菜单管理数据一致，父子节点联动勾选。",
+      "appScopeHint": "限定该角色可管理或查看的接入应用范围。",
+      "deselectAllApps": "取消全部应用",
+      "summary": "已勾选菜单 {{menuCount}} 项，应用 {{appScope}}。",
+      "save": "保存权限配置"
+    },
     "form": {
       "createTitle": "新建系统角色",
-      "editTitle": "编辑角色信息",
+      "editTitle": "编辑角色：{{name}}",
       "name": "角色名称",
       "description": "角色描述",
-      "copyFrom": "从现有角色克隆权限",
-      "createHint": "创建后可立即在右侧为该角色配置菜单树与应用权限；可复制现有角色权限作为起点。"
+      "namePlaceholder": "如：海外运营专员",
+      "descPlaceholder": "说明该角色的职责与权限范围...",
+      "editDescription": "修改角色基础信息；权限请在列表中点击「配置权限」。",
+      "createHint": "创建后可立即配置菜单树与应用权限。",
+      "createRole": "创建角色",
+      "saveRole": "保存角色"
     },
     "toast": {
       "saved": "角色【{{name}}】权限策略已成功保存！",
       "created": "新系统角色【{{name}}】创建成功！",
+      "updated": "角色【{{name}}】已更新",
       "deleted": "角色【{{name}}】已删除",
       "nameRequired": "请填写角色名称",
       "permissionsSaved": "【{{name}}】菜单与应用权限已更新",
@@ -281,8 +311,14 @@
       "appsPlaceholder": "选择授权访问的出海应用（可多选）...",
       "appsHint": "被授权的应用代表该用户仅能查阅和处理这些出海业务线的专属交易流水、商品价格体系与支付网关。",
       "editRolesTitle": "配置角色 / 部门 / 应用权限",
-      "deleteUserTitle": "删除用户"
+      "deleteUserTitle": "删除用户",
+      "initialPasswordTitle": "初始密码已生成",
+      "initialPasswordHint": "请妥善保存以下密码，关闭后将无法再次查看："
     },
+    "resetPassword": "重置密码",
+    "resetPasswordTitle": "重置用户「{{name}}」的登录密码？",
+    "resetPasswordDesc": "将生成新的随机密码，旧密码立即失效。",
+    "confirmResetPassword": "确认重置",
     "unassignedRole": "未分配角色",
     "justCreated": "刚刚创建 (尚未登录)",
     "toast": {

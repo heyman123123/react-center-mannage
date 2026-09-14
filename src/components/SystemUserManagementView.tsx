@@ -18,6 +18,7 @@ import {
   UserCheck,
   UserX,
   Sparkles,
+  KeyRound,
 } from "lucide-react";
 import { SystemUser, PaymentApp, RbacRole, Department } from "../types/payment";
 import { RBAC_ROLES } from "../data/mockData";
@@ -25,6 +26,24 @@ import { ShadcnSelect } from "./ui/select";
 import { MultiSelect } from "./ui/MultiSelect";
 import { SideSheet } from "./ui/SideSheet";
 import { Popconfirm } from "./ui/Popconfirm";
+
+function generateRandomPassword(length = 14): string {
+  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  const digits = "23456789";
+  const all = letters + digits;
+  const chars: string[] = [
+    letters[Math.floor(Math.random() * letters.length)],
+    digits[Math.floor(Math.random() * digits.length)],
+  ];
+  for (let i = chars.length; i < length; i++) {
+    chars.push(all[Math.floor(Math.random() * all.length)]);
+  }
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
 
 interface SystemUserManagementViewProps {
   users: SystemUser[];
@@ -68,6 +87,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
   const [formStatus, setFormStatus] = useState<"ACTIVE" | "DISABLED">("ACTIVE");
   const [formAllowedAppIds, setFormAllowedAppIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
 
   useEffect(() => {
     setUserList(users);
@@ -87,6 +107,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
     setFormPhone("+1 (555) ");
     setFormStatus("ACTIVE");
     setFormAllowedAppIds([]);
+    setGeneratedPassword(null);
     setIsSheetOpen(true);
   };
 
@@ -101,7 +122,13 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
     setFormAllowedAppIds(
       (user.allowedAppIds || []).filter((id) => id !== "ALL")
     );
+    setGeneratedPassword(null);
     setIsSheetOpen(true);
+  };
+
+  const handleResetPassword = (user: SystemUser) => {
+    const password = generateRandomPassword();
+    showToast(t("systemUsers.toast.passwordReset", { name: user.name, password }));
   };
 
   // 所选部门继承的角色（并集）
@@ -169,9 +196,12 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         lastLogin: t("systemUsers.justCreated"),
         createdAt: new Date().toISOString().split("T")[0],
       };
+      const initialPassword = generateRandomPassword();
       setUserList((prev) => [newUser, ...prev]);
       onSaveUser(newUser);
-      showToast(t("systemUsers.toast.created", { name: newUser.name }));
+      setGeneratedPassword(initialPassword);
+      showToast(t("systemUsers.toast.passwordGenerated", { password: initialPassword }));
+      return;
     }
     setIsSheetOpen(false);
   };
@@ -550,6 +580,21 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
 
+                          <Popconfirm
+                            title={t("systemUsers.resetPasswordTitle", { name: u.name })}
+                            description={t("systemUsers.resetPasswordDesc")}
+                            confirmText={t("systemUsers.confirmResetPassword")}
+                            onConfirm={() => handleResetPassword(u)}
+                          >
+                            <button
+                              type="button"
+                              className="p-1 text-fg-secondary hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors cursor-pointer"
+                              title={t("systemUsers.resetPassword")}
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
+                            </button>
+                          </Popconfirm>
+
                           {onDeleteUser && !isCurrent && (
                             <Popconfirm
                               title={t("systemUsers.confirm.deleteTitle", { name: u.name })}
@@ -581,7 +626,10 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
       <SideSheet
         id="side-sheet-system-user"
         isOpen={isSheetOpen}
-        onClose={() => setIsSheetOpen(false)}
+        onClose={() => {
+          setIsSheetOpen(false);
+          setGeneratedPassword(null);
+        }}
         title={
           editingUser
             ? t("systemUsers.sheet.editTitle", { name: editingUser.name })
@@ -612,6 +660,19 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         }
       >
         <div className="space-y-5 text-xs">
+          {generatedPassword && !editingUser && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs">
+              <div className="flex items-center gap-2 font-bold text-amber-800 mb-1">
+                <KeyRound className="w-4 h-4" />
+                {t("systemUsers.sheet.initialPasswordTitle")}
+              </div>
+              <p className="text-amber-700 mb-2">{t("systemUsers.sheet.initialPasswordHint")}</p>
+              <code className="block px-3 py-2 bg-white border border-amber-300 rounded-lg font-mono text-sm text-amber-900 select-all">
+                {generatedPassword}
+              </code>
+            </div>
+          )}
+
           {/* Basic Info Section */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5 border-b border-line-subtle pb-2">

@@ -29,9 +29,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       </div>
       <div className="relative hidden bg-muted lg:block">
         <img
-          src="/placeholder.svg"
+          src="/login-hero.png"
           alt={t("heroImageAlt")}
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          className="absolute inset-0 h-full w-full object-cover"
         />
       </div>
     </div>

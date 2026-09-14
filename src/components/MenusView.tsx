@@ -16,7 +16,7 @@ import {
   FolderOpen,
   Folder,
 } from "lucide-react";
-import { SystemMenuItem } from "../types/payment";
+import { SystemMenuItem, SystemMenuType } from "../types/payment";
 import { ShadcnSelect } from "./ui/select";
 import { SideSheet } from "./ui/SideSheet";
 import { IconPicker } from "./ui/IconPicker";
@@ -54,6 +54,36 @@ export const MenusView: React.FC<MenusViewProps> = ({
   const [formIcon, setFormIcon] = useState("LayoutDashboard");
   const [formOrder, setFormOrder] = useState(10);
   const [formDescription, setFormDescription] = useState("");
+  const [formMenuType, setFormMenuType] = useState<SystemMenuType>("route");
+  const [formRouteKey, setFormRouteKey] = useState("");
+
+  const menuTypeOptions: { value: SystemMenuType; label: string }[] = [
+    { value: "directory", label: t("menus.menuType.directory") },
+    { value: "route", label: t("menus.menuType.route") },
+    { value: "button", label: t("menus.menuType.button") },
+  ];
+
+  const getMenuTypeBadgeStyle = (type: SystemMenuType) => {
+    switch (type) {
+      case "directory":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      case "button":
+        return "bg-purple-50 text-purple-700 border-purple-200";
+      default:
+        return "bg-blue-50 text-blue-700 border-blue-200";
+    }
+  };
+
+  const getMenuTypeLabel = (type: SystemMenuType) => {
+    switch (type) {
+      case "directory":
+        return t("menus.menuType.directory");
+      case "button":
+        return t("menus.menuType.button");
+      default:
+        return t("menus.menuType.route");
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -135,11 +165,13 @@ export const MenusView: React.FC<MenusViewProps> = ({
   const handleOpenAdd = (parentId: string = "NONE") => {
     setEditingMenu(null);
     setFormTitle("");
-    setFormPath("/new-route");
+    setFormPath(parentId === "NONE" ? "/new-route" : "#");
     setFormParentId(parentId);
-    setFormIcon("FolderTree");
+    setFormIcon(parentId === "NONE" ? "FolderTree" : "Menu");
     setFormOrder((menuList.length + 1) * 10);
     setFormDescription("");
+    setFormMenuType(parentId === "NONE" ? "route" : "directory");
+    setFormRouteKey("");
     setIsModalOpen(true);
   };
 
@@ -151,6 +183,8 @@ export const MenusView: React.FC<MenusViewProps> = ({
     setFormIcon(m.icon);
     setFormOrder(m.order ?? m.sortOrder ?? 10);
     setFormDescription(m.description || "");
+    setFormMenuType(m.menuType || "route");
+    setFormRouteKey(m.routeKey || "");
     setIsModalOpen(true);
   };
 
@@ -161,18 +195,27 @@ export const MenusView: React.FC<MenusViewProps> = ({
       return;
     }
 
+    if (formMenuType === "route" && !formPath.trim()) {
+      showToast(t("menus.toast.pathRequired"));
+      return;
+    }
+
     const finalOrder = Number(formOrder) || 10;
     const finalParent = formParentId === "NONE" ? null : formParentId;
+    const finalPath = formPath.trim() || (formMenuType === "directory" ? "#" : "");
+    const finalRouteKey = formRouteKey.trim() || undefined;
 
     if (editingMenu) {
       const updated: SystemMenuItem = {
         ...editingMenu,
         title: formTitle.trim(),
-        path: formPath.trim(),
+        path: finalPath,
         parentId: finalParent,
         icon: formIcon,
         order: finalOrder,
         sortOrder: finalOrder,
+        menuType: formMenuType,
+        routeKey: finalRouteKey,
         visible: true,
         description: formDescription.trim(),
       };
@@ -183,11 +226,13 @@ export const MenusView: React.FC<MenusViewProps> = ({
       const newMenu: SystemMenuItem = {
         id: `menu_${Date.now().toString().slice(-6)}`,
         title: formTitle.trim(),
-        path: formPath.trim(),
+        path: finalPath,
         parentId: finalParent,
         icon: formIcon,
         order: finalOrder,
         sortOrder: finalOrder,
+        menuType: formMenuType,
+        routeKey: finalRouteKey,
         visible: true,
         description: formDescription.trim(),
       };
@@ -226,6 +271,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = expandedNodeIds.has(node.id);
     const isRoot = node.level === 0;
+    const nodeMenuType: SystemMenuType = node.menuType || "route";
 
     return (
       <React.Fragment key={node.id}>
@@ -279,6 +325,12 @@ export const MenusView: React.FC<MenusViewProps> = ({
                 }`}
               >
                 {node.title}
+              </span>
+
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border shrink-0 ${getMenuTypeBadgeStyle(nodeMenuType)}`}
+              >
+                {getMenuTypeLabel(nodeMenuType)}
               </span>
 
               {!isRoot && node.path && node.path !== "#" && (
@@ -498,14 +550,37 @@ export const MenusView: React.FC<MenusViewProps> = ({
             </p>
           </div>
 
+          <div>
+            <label className="block text-fg-secondary font-medium mb-1">
+              {t("menus.sheet.menuTypeLabel")}
+            </label>
+            <ShadcnSelect
+              value={formMenuType}
+              onValueChange={(val) => setFormMenuType(val as SystemMenuType)}
+              options={menuTypeOptions}
+            />
+            <p className="text-[11px] text-fg-tertiary mt-1">
+              {formMenuType === "directory"
+                ? t("menus.menuType.directoryHint")
+                : formMenuType === "button"
+                ? t("menus.menuType.buttonHint")
+                : t("menus.menuType.routeHint")}
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-fg-secondary font-medium mb-1">
-{t("menus.sheet.pathLabel")} <span className="text-rose-500">*</span>
+                {t("menus.sheet.pathLabel")}
+                {formMenuType === "route" ? (
+                  <span className="text-rose-500"> *</span>
+                ) : (
+                  <span className="text-fg-tertiary font-normal"> {t("menus.menuType.pathOptional")}</span>
+                )}
               </label>
               <input
                 type="text"
-                placeholder="/financial-reports"
+                placeholder={formMenuType === "button" ? "txn:export" : "/financial-reports"}
                 value={formPath}
                 onChange={(e) => setFormPath(e.target.value)}
                 className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
@@ -522,6 +597,22 @@ export const MenusView: React.FC<MenusViewProps> = ({
               />
             </div>
           </div>
+
+          {(formMenuType === "route" || formMenuType === "directory") && (
+            <div>
+              <label className="block text-fg-secondary font-medium mb-1">
+                {t("menus.menuType.routeKeyLabel")}
+                <span className="text-fg-tertiary font-normal"> {t("menus.menuType.routeKeyOptional")}</span>
+              </label>
+              <input
+                type="text"
+                placeholder={t("menus.menuType.routeKeyPlaceholder")}
+                value={formRouteKey}
+                onChange={(e) => setFormRouteKey(e.target.value)}
+                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          )}
 
           {/* 图标选择器（替代下拉框） */}
           <IconPicker value={formIcon} onChange={setFormIcon} />

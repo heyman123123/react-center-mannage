@@ -33,15 +33,12 @@ interface RolesViewProps {
   onDeleteRole?: (roleId: string) => void;
 }
 
-type RoleCategory = "ALL" | "BUILTIN" | "CUSTOM";
-
 export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSaveRole, onDeleteRole }) => {
   const { t } = useTranslation(["settings", "common"]);
   const [roleList, setRoleList] = useState<RbacRole[]>(roles);
   const [searchQuery, setSearchQuery] = useState("");
-  const [category, setCategory] = useState<RoleCategory>("ALL");
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
-  useEffect(() => { reset(); }, [searchQuery, category, reset]);
+  useEffect(() => { reset(); }, [searchQuery, reset]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<RbacRole | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -169,27 +166,15 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
     setIsModalOpen(false);
   };
 
-  const isBuiltin = (r: RbacRole) => !r.isCustom;
-
   const filteredRoles = roleList.filter((r) => {
-    const matchesCategory =
-      category === "ALL" ||
-      (category === "BUILTIN" && isBuiltin(r)) ||
-      (category === "CUSTOM" && r.isCustom);
     const q = searchQuery.toLowerCase().trim();
-    const matchesSearch =
+    return (
       !q ||
       r.name.toLowerCase().includes(q) ||
       r.description.toLowerCase().includes(q) ||
-      roleIdentifier(r).toLowerCase().includes(q);
-    return matchesCategory && matchesSearch;
+      roleIdentifier(r).toLowerCase().includes(q)
+    );
   });
-
-  const categoryCounts = {
-    ALL: roleList.length,
-    BUILTIN: roleList.filter((r) => isBuiltin(r)).length,
-    CUSTOM: roleList.filter((r) => r.isCustom).length,
-  };
 
   const totalAssignedStaff = roleList.reduce(
     (acc, curr) => acc + (curr.assignedMembersCount || 0),
@@ -197,12 +182,6 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
   );
 
   const isFormAllApps = formAppIds.includes("ALL");
-
-  const categories: { key: RoleCategory; label: string }[] = [
-    { key: "ALL", label: t("roles.categories.all") },
-    { key: "BUILTIN", label: t("roles.categories.builtin") },
-    { key: "CUSTOM", label: t("roles.categories.custom") },
-  ];
 
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={8} />;
@@ -223,24 +202,7 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
         <div className="bg-surface border border-line rounded-xl shadow-card px-3 py-2.5 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-bold text-fg">
             <span>{t("roles.listTitle")}</span>
-            {/* 分类筛选 tabs */}
-            <div className="flex items-center gap-1 ml-2">
-              {categories.map((c) => (
-                <button
-                  key={c.key}
-                  type="button"
-                  onClick={() => setCategory(c.key)}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
-                    category === c.key
-                      ? "bg-primary text-primary-foreground"
-                      : "text-fg-secondary hover:bg-hover"
-                  }`}
-                >
-                  {c.label}
-                  <span className="ml-1 opacity-70">{categoryCounts[c.key]}</span>
-                </button>
-              ))}
-            </div>
+            <span className="text-[11px] font-medium text-fg-tertiary">{roleList.length}</span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -404,17 +366,6 @@ export const RolesView: React.FC<RolesViewProps> = ({ roles, menus, apps, onSave
                             </span>
                             <div>
                               <div className="font-semibold text-fg">{role.name}</div>
-                              <div className="text-[10px] text-fg-tertiary flex items-center gap-1">
-                                {role.isCustom ? (
-                                  <span className="px-1 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[9px] font-medium">
-{t("roles.tags.custom")}
-                                  </span>
-                                ) : (
-                                  <span className="px-1 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-[9px] font-medium">
-{t("roles.tags.builtin")}
-                                  </span>
-                                )}
-                              </div>
                             </div>
                           </div>
                         </td>

@@ -95,6 +95,19 @@
     "treeHeader": "层级节点名称 / 路由路径",
     "treeActions": "操作",
     "childCount": "{{count}} 个子菜单项",
+    "menuType": {
+      "label": "菜单类型",
+      "directory": "目录",
+      "route": "路由",
+      "button": "按钮权限",
+      "directoryHint": "目录节点无需路由，仅用于分组展示子菜单",
+      "routeHint": "路由菜单需填写路径，对应侧边栏可点击跳转的页面",
+      "buttonHint": "按钮权限可在路径或说明中填写权限标识码（如 txn:export）",
+      "pathOptional": "（选填）",
+      "routeKeyLabel": "路由键 (Route Key)",
+      "routeKeyPlaceholder": "例如: transactions",
+      "routeKeyOptional": "（选填，对应 Tab 路由键）"
+    },
     "empty": "暂无菜单数据，点击右上角「新增菜单节点」创建第一个菜单",
     "menu": {
       "addChild": "添加子菜单",
@@ -115,6 +128,7 @@
       "parentRoot": "作为顶级根节点 (无上级)",
       "parentPlaceholder": "选择上级菜单节点",
       "parentHint": "选择上级节点后，该菜单将以树状子节点缩进形式嵌套在其下方展示，支持无限层级。",
+      "menuTypeLabel": "菜单类型 (Menu Type)",
       "pathLabel": "路由路径 (Route Path)",
       "orderLabel": "排序权重 (Order)",
       "descLabel": "功能用途说明",
@@ -124,6 +138,7 @@
       "expandedAll": "已展开全部树级菜单",
       "collapsedAll": "已收起全部树级菜单",
       "titleRequired": "请填写菜单标题",
+      "pathRequired": "路由类型菜单必须填写路径",
       "updated": "菜单节点【{{title}}】已成功更新！",
       "created": "新子菜单【{{title}}】已成功挂载到树节点！",
       "deleted": "菜单节点【{{title}}】及其子节点已成功删除"
@@ -220,7 +235,23 @@
       "batchTransfer": "已将 {{count}} 个部门标记为待转移",
       "refreshed": "部门数据已刷新",
       "nodeDeleted": "已删除部门【{{name}}】",
-      "transferStarted": "已发起部门【{{name}}】转移流程"
+      "transferStarted": "已发起部门【{{name}}】转移流程",
+      "transferSuccess": "已成功转移 {{count}} 项至【{{target}}】",
+      "transferInvalidTarget": "无法转移到自身或其下级部门",
+      "transferNoTarget": "请选择目标部门",
+      "transferNoSelection": "请先选择要转移的项"
+    },
+    "transfer": {
+      "title": "转移{{mode}}",
+      "modeDept": "部门",
+      "modeMember": "成员",
+      "descriptionDept": "将选中的部门挂载到新的上级部门下",
+      "descriptionMember": "将选中的成员调整至目标部门",
+      "targetLabel": "目标部门",
+      "targetPlaceholder": "选择目标部门...",
+      "selectedCount": "已选 {{count}} 项",
+      "confirm": "确认转移",
+      "rowAction": "转移"
     }
   },
   "profile": {

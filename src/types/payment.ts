@@ -448,6 +448,8 @@ export interface DictionaryEntry {
   updatedAt: string;
 }
 
+export type SystemMenuType = "directory" | "route" | "button";
+
 // 菜单配置 (纯菜单管理，与角色权限解耦)
 export interface SystemMenuItem {
   id: string;
@@ -457,6 +459,8 @@ export interface SystemMenuItem {
   parentId?: string | null;
   order?: number;
   sortOrder?: number;
+  /** 菜单类型：目录 | 路由 | 按钮权限 */
+  menuType?: SystemMenuType;
   /** 对应前端渲染的 Tab 路由键（仅叶子菜单需要） */
   routeKey?: string;
   visible: boolean;

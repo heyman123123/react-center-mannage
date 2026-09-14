@@ -795,6 +795,14 @@ export default function App() {
               onDeleteDepartment={(deptId) => {
                 setDepartments((prev) => prev.filter((d) => d.id !== deptId));
               }}
+              onSaveUser={(updatedUser) => {
+                setSystemUsers((prev) => {
+                  const exists = prev.some((u) => u.id === updatedUser.id);
+                  return exists
+                    ? prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+                    : [updatedUser, ...prev];
+                });
+              }}
             />
           )}
 

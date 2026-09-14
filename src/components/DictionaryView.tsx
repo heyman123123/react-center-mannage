@@ -802,26 +802,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             </Popconfirm>
           )}
 
-          {selectedIds.length === 0 ? (
-            <button
-              type="button"
-              disabled
-              className="px-3 py-1.5 border border-emerald-200 text-emerald-600 rounded text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
-              {t("dictionary:toolbar.transfer")}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleBatchTransfer}
-              className="px-3 py-1.5 border border-emerald-200 hover:bg-emerald-50 text-emerald-600 rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
-              {t("dictionary:toolbar.transfer")}
-            </button>
-          )}
-
           <div className="w-px h-5 bg-hover mx-1" />
 
           <button
@@ -1023,7 +1003,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         {/* 表格 */}
         <div className="bg-surface border border-line rounded-md shadow-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-[1080px] w-full text-left text-xs border-collapse">
+            <table className="min-w-[960px] w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-subtle/90 border-b border-line text-fg-secondary font-semibold text-[11px]">
                   <th className="py-2 px-3 w-8">
@@ -1036,8 +1016,8 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                       className="rounded text-fg"
                     />
                   </th>
-                  <th className="py-2 px-3 w-[260px]">{t("dictionary:table.nameKey")}</th>
-                  <th className="py-2 px-3 w-[110px]">{t("dictionary:table.id")}</th>
+                  <th className="py-2 px-3 w-[120px]">{t("dictionary:table.id")}</th>
+                  <th className="py-2 px-3 min-w-[280px]">{t("dictionary:table.nameKey")}</th>
                   <th className="py-2 px-3 min-w-[240px]">
                     {t("dictionary:table.value", {
                       flag: languages.find((l) => l.code === previewLanguage)?.flag ?? "",
@@ -1045,16 +1025,14 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                     })}
                   </th>
                   <th className="py-2 px-3 min-w-[180px]">{t("dictionary:table.remark")}</th>
-                  <th className="py-2 px-3 min-w-[160px]">{t("dictionary:table.references")}</th>
                   <th className="py-2 px-3 w-[100px]">{t("dictionary:table.created")}</th>
-                  <th className="py-2 px-3 w-[80px] text-center">{t("dictionary:table.refs")}</th>
-                  <th className="py-2 px-3 w-[150px] text-right">{t("common:labels.operations")}</th>
+                  <th className="py-2 px-3 w-[120px] text-right">{t("common:labels.operations")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-subtle text-fg-secondary">
                 {filteredEntries.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-fg-tertiary">
+                    <td colSpan={7} className="py-12 text-center text-fg-tertiary">
                       {t("dictionary:table.empty")}
                     </td>
                   </tr>
@@ -1062,7 +1040,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   paginate<DictionaryEntry>(filteredEntries, currentPage, pageSize).map((item) => {
                     const isCopied = copiedKey === item.id;
                     const isExpanded = !!expandedKeys[item.id];
-                    const completedCount = Object.values(item.translations).filter(Boolean).length;
 
                     return (
                       <React.Fragment key={item.id}>
@@ -1079,15 +1056,21 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               className="rounded text-fg"
                             />
                           </td>
+                          <td className="py-2 px-3 font-mono text-fg-tertiary text-[11px] whitespace-nowrap">
+                            {item.id}
+                          </td>
                           <td className="py-2 px-3">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-bold text-xs text-fg bg-hover px-2 py-0.5 rounded border border-line truncate max-w-[200px]" title={item.key}>
+                            <div className="flex items-start gap-1.5">
+                              <span
+                                className="font-mono font-bold text-xs text-fg bg-hover px-2 py-0.5 rounded border border-line break-all"
+                                title={item.key}
+                              >
                                 {item.key}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => handleCopy(item.key, item.id)}
-                                className="p-0.5 text-fg-tertiary hover:text-fg-secondary rounded transition-colors cursor-pointer"
+                                className="p-0.5 text-fg-tertiary hover:text-fg-secondary rounded transition-colors cursor-pointer shrink-0 mt-0.5"
                                 title={t("dictionary:table.copyKey")}
                               >
                                 {isCopied ? (
@@ -1098,7 +1081,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               </button>
                             </div>
                           </td>
-                          <td className="py-2 px-3 font-mono text-fg-tertiary text-[11px]">{item.id}</td>
                           <td className="py-2 px-3">
                             <div className="text-fg line-clamp-2 leading-relaxed" title={item.translations[previewLanguage]}>
                               {item.translations[previewLanguage] || "—"}
@@ -1107,42 +1089,11 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                           <td className="py-2 px-3 text-fg-secondary">
                             <span className="line-clamp-2" title={item.description}>{item.description}</span>
                           </td>
-                          <td className="py-2 px-3">
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {getReferencePoints(item).map((rp) => (
-                                <span
-                                  key={rp.keyPrefix}
-                                  title={rp.scope}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
-                                >
-                                  <Link2 className="w-2.5 h-2.5" />
-                                  {rp.label}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
                           <td className="py-2 px-3 whitespace-nowrap text-fg-tertiary font-mono text-[11px]">
                             {item.updatedAt.substring(0, 10)}
                           </td>
-                          <td className="py-2 px-3 text-center">
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              {completedCount}/{languages.length}
-                            </span>
-                            <div className="text-[9px] text-fg-tertiary mt-0.5">
-                              {t("dictionary:table.templates", {
-                                count: item.referencedTemplatesCount ?? 0,
-                              })}
-                            </div>
-                          </td>
                           <td className="py-2 px-3">
                             <div className="flex items-center justify-end gap-2 text-[11px]">
-                              <button
-                                type="button"
-                                onClick={() => showToast(t("dictionary:toast.transferStarted", { key: item.key }))}
-                                className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
-                              >
-                                {t("dictionary:table.transfer")}
-                              </button>
                               <button
                                 type="button"
                                 onClick={() => handleOpenEdit(item)}
@@ -1171,7 +1122,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                         {/* 展开：全部语种对照 */}
                         {isExpanded && (
                           <tr className="bg-violet-50/40">
-                            <td colSpan={9} className="p-3 border-b border-line">
+                            <td colSpan={7} className="p-3 border-b border-line">
                               <div className="bg-surface rounded p-3 border border-violet-200 shadow-card space-y-3">
                                 <div className="flex items-center justify-between text-xs font-bold text-fg pb-2 border-b border-line-subtle">
                                   <span className="flex items-center gap-1.5">
@@ -1513,69 +1464,18 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label className="font-semibold text-fg-secondary block mb-1">
-                  {t("dictionary:editSheet.keyLabel")} <span className="text-rose-500">*</span>:
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder={t("dictionary:editSheet.keyPlaceholder")}
-                  value={formKey}
-                  onChange={(e) => setFormKey(e.target.value)}
-                  className="w-full p-2 bg-surface border border-line rounded font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-fg-secondary block mb-1">
-                  {t("dictionary:editSheet.categoryLabel")} <span className="text-rose-500">*</span>:
-                </label>
-                <ShadcnSelect
-                  value={formCategory}
-                  onValueChange={(val) => setFormCategory(val as DictionaryCategory)}
-                  options={[
-                    { value: "CHECKOUT", label: t("dictionary:editSheet.categoryCheckout") },
-                    { value: "GATEWAY_ERRORS", label: t("dictionary:editSheet.categoryGatewayErrors") },
-                    { value: "PORTAL", label: t("dictionary:editSheet.categoryPortal") },
-                    { value: "BILLING", label: t("dictionary:editSheet.categoryBilling") },
-                    { value: "LIFECYCLE", label: t("dictionary:editSheet.categoryLifecycle") },
-                    { value: "COMMON", label: t("dictionary:editSheet.categoryCommon") },
-                    { value: "SECURITY", label: t("dictionary:editSheet.categorySecurity") },
-                    { value: "PROMOTION", label: t("dictionary:editSheet.categoryPromotion") },
-                    { value: "CURRENCY", label: t("dictionary:editSheet.categoryCurrency") },
-                    { value: "PAYMENT_CHANNEL", label: t("dictionary:editSheet.categoryPaymentChannel") },
-                  ]}
-                />
-              </div>
-            </div>
-
             <div>
-              <label className="font-semibold text-fg-secondary block mb-1.5">
-                {t("dictionary:editSheet.platformsLabel")}
+              <label className="font-semibold text-fg-secondary block mb-1">
+                {t("dictionary:editSheet.keyLabel")} <span className="text-rose-500">*</span>:
               </label>
-              <div className="flex items-center gap-2 flex-wrap">
-                {platformOptions.map((p) => {
-                  const isSelected = formPlatforms.includes(p.key);
-                  const Icon = p.icon;
-                  return (
-                    <button
-                      type="button"
-                      key={p.key}
-                      onClick={() => togglePlatform(p.key)}
-                      className={`px-2.5 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
-                        isSelected
-                          ? "bg-violet-600 text-white border-violet-600"
-                          : "bg-subtle text-fg-secondary border-line hover:bg-hover"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span>{p.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <input
+                type="text"
+                required
+                placeholder={t("dictionary:editSheet.keyPlaceholder")}
+                value={formKey}
+                onChange={(e) => setFormKey(e.target.value)}
+                className="w-full p-2 bg-surface border border-line rounded font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              />
             </div>
 
             <div>
