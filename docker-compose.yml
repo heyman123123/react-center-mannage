@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-novas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-novas}
+      POSTGRES_DB: ${POSTGRES_DB:-novaspay}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novas -d novaspay"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      NOVAS_MODE: ${NOVAS_MODE:-release}
+      NOVAS_POSTGRES_DSN: host=postgres user=${POSTGRES_USER:-novas} password=${POSTGRES_PASSWORD:-novas} dbname=${POSTGRES_DB:-novaspay} port=5432 sslmode=disable TimeZone=UTC
+      NOVAS_REDIS_ADDR: redis:6379
+      NOVAS_JWT_SECRET: ${NOVAS_JWT_SECRET:-dev-change-me}
+      NOVAS_COOKIE_SECURE: ${NOVAS_COOKIE_SECURE:-false}
+      NOVAS_CORS_ORIGINS: ${NOVAS_CORS_ORIGINS:-http://localhost:3000}
+      SEED_DEMO: ${SEED_DEMO:-true}
+    ports:
+      - "8080:8080"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    depends_on:
+      api: { condition: service_started }
+    ports:
+      - "3000:3000"
+
+volumes:
+  pg_data:

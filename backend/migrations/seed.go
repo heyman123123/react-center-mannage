@@ -3,6 +3,8 @@ package migrations
 import (
 	"encoding/json"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
@@ -20,10 +22,29 @@ func roleID(logical string) string {
 	return uuid.NewSHA1(uuid.NameSpaceOID, []byte("novaspay/role/"+logical)).String()
 }
 
+func seedDemoEnabled() bool {
+	v := strings.TrimSpace(os.Getenv("SEED_DEMO"))
+	if v == "" {
+		return true
+	}
+	switch strings.ToLower(v) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
 func seedDefaults(db *gorm.DB) {
 	seedLanguages(db)
 	seedMenus(db)
 	seedSuperAdmin(db)
+	if !seedDemoEnabled() {
+		log.Printf("migrations: SEED_DEMO=false, skipping demo business data")
+		seedAuditActionDict(db)
+		seedDictionaryCategories(db)
+		return
+	}
 	seedTenants(db)
 	seedPaymentApps(db)
 	seedExchangeRates(db)
