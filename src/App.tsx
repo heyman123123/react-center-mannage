@@ -28,6 +28,7 @@ import { RefundsView } from "./components/RefundsView";
 import { AuditLogsView } from "./components/AuditLogsView";
 import { ExchangeRatesView } from "./components/ExchangeRatesView";
 import { FeeRulesView } from "./components/FeeRulesView";
+import { FinancialReportsView } from "./components/FinancialReportsView";
 import { RiskRulesView } from "./components/RiskRulesView";
 import { MerchantReviewView } from "./components/MerchantReviewView";
 import { AlertsView } from "./components/AlertsView";
@@ -114,7 +115,7 @@ export default function App() {
     "promo_campaigns", "payment_channels", "payment_webhooks", "apps",
     "email_channels", "email_webhooks", "email_templates", "dictionary",
     "users", "roles", "permissions", "permission_packs", "menus", "departments", "system_users",
-    "settlements", "refunds", "audit_logs",
+    "settlements", "financial_reports", "refunds", "audit_logs",
     "exchange_rates", "fee_rules", "risk_rules", "merchant_review", "tenants",
     "alerts", "system_config", "scheduled_tasks",
   ];
@@ -732,6 +733,13 @@ export default function App() {
 
           {currentTab === "settlements" && (
             <SettlementsView />
+          )}
+
+          {currentTab === "financial_reports" && (
+            <FinancialReportsView
+              currentTenant={currentTenant}
+              currentUser={currentUser}
+            />
           )}
 
           {currentTab === "refunds" && (

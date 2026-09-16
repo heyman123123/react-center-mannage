@@ -44,6 +44,7 @@
     "menus": "系统菜单与导航节点管理",
     "system_users": "用户管理 (角色权限与应用权限)",
     "settlements": "结算与出金管理",
+    "financial_reports": "财务结算与渠道费率报表",
     "refunds": "退款与拒付管理",
     "audit_logs": "操作审计日志",
     "exchange_rates": "汇率管理",

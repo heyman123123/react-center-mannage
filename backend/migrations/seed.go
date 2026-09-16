@@ -78,10 +78,11 @@ func allMenuSeeds() []menuSeed {
 		{Logical: "menu_transactions", Key: "transactions", Title: "交易流水与时间轴", MenuType: "route", Path: "/transactions", Icon: "Receipt", Sort: 2, Parent: "root_core"},
 		{Logical: "menu_reconciliation", Key: "reconciliation", Title: "跨境对账中心", MenuType: "route", Path: "/reconciliation", Icon: "Scale", Sort: 3, Parent: "root_core"},
 		{Logical: "menu_settlements", Key: "settlements", Title: "结算与出金管理", MenuType: "route", Path: "/settlements", Icon: "BarChart3", Sort: 4, Parent: "root_core"},
-		{Logical: "menu_refunds", Key: "refunds", Title: "退款与拒付", MenuType: "route", Path: "/refunds", Icon: "RefreshCw", Sort: 5, Parent: "root_core"},
-		{Logical: "menu_users", Key: "users", Title: "终端客户管理", MenuType: "route", Path: "/users", Icon: "Users", Sort: 6, Parent: "root_core"},
-		{Logical: "menu_merchant_review", Key: "merchant_review", Title: "商户/KYB 审核", MenuType: "route", Path: "/merchant-review", Icon: "FileText", Sort: 7, Parent: "root_core"},
-		{Logical: "menu_tenants", Key: "tenants", Title: "租户管理", MenuType: "route", Path: "/tenants", Icon: "Building", Sort: 8, Parent: "root_core"},
+		{Logical: "menu_financial_reports", Key: "financial_reports", Title: "财务结算与渠道费率报表", MenuType: "route", Path: "/financial-reports", Icon: "FileSpreadsheet", Sort: 5, Parent: "root_core"},
+		{Logical: "menu_refunds", Key: "refunds", Title: "退款与拒付", MenuType: "route", Path: "/refunds", Icon: "RefreshCw", Sort: 6, Parent: "root_core"},
+		{Logical: "menu_users", Key: "users", Title: "终端客户管理", MenuType: "route", Path: "/users", Icon: "Users", Sort: 7, Parent: "root_core"},
+		{Logical: "menu_merchant_review", Key: "merchant_review", Title: "商户/KYB 审核", MenuType: "route", Path: "/merchant-review", Icon: "FileText", Sort: 8, Parent: "root_core"},
+		{Logical: "menu_tenants", Key: "tenants", Title: "租户管理", MenuType: "route", Path: "/tenants", Icon: "Building", Sort: 9, Parent: "root_core"},
 
 		// 商品与促销
 		{Logical: "root_commerce", Key: "root_commerce", Title: "商品与促销", MenuType: "directory", Path: "/commerce", Icon: "Folder", Sort: 2},
