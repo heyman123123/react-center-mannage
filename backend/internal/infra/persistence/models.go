@@ -48,6 +48,10 @@ func AutoMigrate(db *gorm.DB) error {
 		&SystemConfig{},
 		&ScheduledTask{},
 		&ScheduledTaskRun{},
+		&Tenant{},
+		&EmailChannel{},
+		&EmailTemplate{},
+		&EmailWebhookLog{},
 	)
 }
 
@@ -235,4 +239,85 @@ type ScheduledTaskRun struct {
 	DetailJSON    string `gorm:"type:jsonb;not null;default:'{}'" json:"detailJson"`
 	TriggerSource string `gorm:"size:16;not null;default:MANUAL" json:"triggerSource"`
 	CreatedAt     int64  `gorm:"autoCreateTime" json:"createdAt"`
+}
+
+// Tenant 业务单元 / 租户（M2）
+type Tenant struct {
+	ID                   string         `gorm:"size:64;primaryKey" json:"id"`
+	Name                 string         `gorm:"size:256;not null" json:"name"`
+	Code                 string         `gorm:"size:64;uniqueIndex;not null" json:"code"`
+	Currency             string         `gorm:"size:8;not null;default:USD" json:"currency"`
+	Description          string         `gorm:"size:512" json:"description"`
+	Color                string         `gorm:"size:32" json:"color"`
+	DailyCap             int64          `gorm:"not null;default:0" json:"dailyCap"`
+	UsedToday            int64          `gorm:"not null;default:0" json:"usedToday"`
+	ChannelsEnabledJSON  string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	IsolationLevel       string         `gorm:"size:32;not null;default:LOGICAL_TENANT" json:"isolationLevel"`
+	ActiveMerchantsCount int            `gorm:"not null;default:0" json:"activeMerchantsCount"`
+	CreatedAt            int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt            int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt            gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// EmailChannel 邮件发信渠道
+type EmailChannel struct {
+	ID             string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ProviderKey    string         `gorm:"size:32;not null;index" json:"providerKey"`
+	Name           string         `gorm:"size:128;not null" json:"name"`
+	Description    string         `gorm:"size:512" json:"description"`
+	Environment    string         `gorm:"size:16;not null;default:live;index" json:"environment"`
+	Enabled        bool           `gorm:"not null;default:true" json:"enabled"`
+	IsPrimary      bool           `gorm:"not null;default:false" json:"isPrimary"`
+	SenderEmail    string         `gorm:"size:255;not null" json:"senderEmail"`
+	SenderName     string         `gorm:"size:128" json:"senderName"`
+	ApiKey         string         `gorm:"size:512;not null" json:"-"`
+	SmtpHost       string         `gorm:"size:255" json:"smtpHost"`
+	SmtpPort       int            `gorm:"not null;default:587" json:"smtpPort"`
+	DailyQuota     int            `gorm:"not null;default:50000" json:"dailyQuota"`
+	SentToday      int            `gorm:"not null;default:0" json:"sentToday"`
+	VerifiedDomain string         `gorm:"size:255" json:"verifiedDomain"`
+	SpfDkimStatus  string         `gorm:"size:16;not null;default:PENDING" json:"spfDkimStatus"`
+	LastTestedAt   *int64         `json:"lastTestedAt"`
+	CreatedAt      int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt      int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// EmailTemplate 多语言邮件模板
+type EmailTemplate struct {
+	ID                   string         `gorm:"type:uuid;primaryKey" json:"id"`
+	Code                 string         `gorm:"size:128;uniqueIndex;not null" json:"code"`
+	Name                 string         `gorm:"size:256;not null" json:"name"`
+	Language             string         `gorm:"size:16;not null" json:"language"`
+	Category             string         `gorm:"size:32;not null;default:SYSTEM" json:"category"`
+	Description          string         `gorm:"size:512" json:"description"`
+	TriggerEvent         string         `gorm:"size:128" json:"triggerEvent"`
+	Subject              string         `gorm:"size:512;not null" json:"subject"`
+	SenderName           string         `gorm:"size:128" json:"senderName"`
+	SenderEmail          string         `gorm:"size:255" json:"senderEmail"`
+	PreviewText          string         `gorm:"size:512" json:"previewText"`
+	ContentMarkdown      string         `gorm:"type:text" json:"contentMarkdown"`
+	Status               string         `gorm:"size:16;not null;default:DRAFT" json:"status"`
+	AssociatedTenantID   string         `gorm:"size:64;default:ALL" json:"associatedTenantId"`
+	VariablesJSON        string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	DictReferencesJSON   string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	CreatedAt            int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt            int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt            gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// EmailWebhookLog 邮件投递回执
+type EmailWebhookLog struct {
+	ID           string `gorm:"type:uuid;primaryKey" json:"id"`
+	MessageID    string `gorm:"size:128;index" json:"messageId"`
+	EventType    string `gorm:"size:64;index" json:"eventType"`
+	Provider     string `gorm:"size:32" json:"provider"`
+	Recipient    string `gorm:"size:255;index" json:"recipient"`
+	Subject      string `gorm:"size:512" json:"subject"`
+	TemplateCode string `gorm:"size:128" json:"templateCode"`
+	Status       string `gorm:"size:16" json:"status"`
+	IP           string `gorm:"size:64" json:"ip"`
+	UserAgent    string `gorm:"size:512" json:"userAgent"`
+	Details      string `gorm:"type:text" json:"details"`
+	CreatedAt    int64  `gorm:"autoCreateTime;index" json:"createdAt"`
 }

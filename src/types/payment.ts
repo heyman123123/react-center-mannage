@@ -1,4 +1,5 @@
-export type TenantId = "group_hq" | "bu_na_ecom" | "bu_eu_saas" | "bu_apac_japan" | "bu_latam";
+/** 租户标识；种子数据含固定 BU 键，API 亦支持自定义字符串 ID */
+export type TenantId = string;
 
 export interface Tenant {
   id: TenantId;
@@ -122,6 +123,7 @@ export interface EmailChannelConfig {
   providerKey: "sendgrid" | "aws_ses" | "resend" | "postmark" | "mailgun";
   name: string;
   description: string;
+  mode: string;
   enabled: boolean;
   isPrimary: boolean;
   senderEmail: string;

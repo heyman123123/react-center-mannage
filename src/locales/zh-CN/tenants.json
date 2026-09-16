@@ -1,0 +1,44 @@
+{
+  "title": "租户管理",
+  "subtitle": "维护出海业务单元（BU）与总部租户，配置隔离级别、日限额与启用支付渠道。",
+  "addTenant": "新增租户",
+  "searchPlaceholder": "搜索租户名称或编码…",
+  "columns": {
+    "name": "租户名称",
+    "code": "编码",
+    "currency": "结算货币",
+    "isolation": "隔离级别",
+    "dailyCap": "日限额 (USD)",
+    "merchants": "活跃商户",
+    "actions": "操作"
+  },
+  "isolation": {
+    "STRICT_ISOLATED": "严格隔离",
+    "LOGICAL_TENANT": "逻辑租户",
+    "GROUP_CONSOLIDATED": "集团合并视图"
+  },
+  "sheet": {
+    "createTitle": "新增租户",
+    "editTitle": "编辑租户",
+    "description": "配置租户基础信息与业务隔离策略。",
+    "id": "租户 ID",
+    "idPlaceholder": "如 bu_na_ecom",
+    "name": "租户名称",
+    "code": "租户编码",
+    "currency": "结算货币",
+    "color": "标识色",
+    "dailyCap": "日交易限额",
+    "isolationLevel": "隔离级别",
+    "descriptionLabel": "说明",
+    "merchants": "活跃商户数"
+  },
+  "toast": {
+    "loadFailed": "加载租户列表失败",
+    "saved": "租户已保存",
+    "saveFailed": "保存失败",
+    "deleted": "租户已删除",
+    "deleteFailed": "删除失败",
+    "fillRequired": "请填写租户 ID、名称与编码"
+  },
+  "confirmDelete": "确定删除该租户？此操作不可恢复。"
+}

@@ -31,10 +31,16 @@
       "done": "完成",
       "success": "✅ 测试邮件投递成功！已通过 {{channel}} 发往 {{recipient}}，耗时 320ms，TLSv1.3 加密完成。"
     },
+    "modeFilter": "运行环境",
+    "modeAll": "全部环境",
     "createSheet": {
       "title": "添加发件渠道",
       "description": "新增海外事务邮件发信通道，配置服务商、发件人与 SMTP 投递参数后即可启用。",
       "confirm": "确认添加渠道",
+      "mode": "运行环境",
+      "modeLive": "Live 生产环境",
+      "modeSandbox": "Sandbox 测试环境",
+      "modePlaceholder": "选择运行环境",
       "provider": "服务商 (Provider)",
       "name": "渠道名称",
       "nameRequired": "*",
@@ -57,6 +63,7 @@
       "description": "维护发件人信息、SMTP 服务器与每日投递配额。",
       "save": "保存通道配置",
       "channelName": "发信渠道名称",
+      "mode": "运行环境",
       "dailyQuotaMax": "每日最大投递配额 (Quota)"
     },
     "providers": {
@@ -68,7 +75,12 @@
     },
     "toast": {
       "fillRequired": "请填写渠道名称与发件人邮箱",
-      "added": "发件渠道【{{name}}】已成功添加"
+      "added": "发件渠道【{{name}}】已成功添加",
+      "loadFailed": "加载邮件渠道失败",
+      "saveFailed": "保存失败",
+      "testFailed": "测试邮件发送失败",
+      "testSent": "测试邮件已发送（Message ID: {{id}}）",
+      "resendOnly": "当前仅 Resend 支持真实发信测试"
     },
     "defaults": {
       "description": "新增海外事务邮件发信通道",

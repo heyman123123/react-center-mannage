@@ -1,6 +1,6 @@
 # NovasPay Admin API
 
-一期平台后端：IAM（Cookie 会话）+ 菜单/角色/用户/部门 + 字典。
+一期平台后端：IAM（Cookie 会话）+ 菜单/角色/用户/部门 + 字典；M2 起含租户与邮件（Resend）渠道。
 
 ## 快速启动（推荐 Make）
 

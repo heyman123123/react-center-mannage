@@ -22,3 +22,8 @@ func Val(p *int64) int64 {
 	}
 	return *p
 }
+
+// FormatUTC 将 Unix 秒时间戳格式化为 UTC 字符串。
+func FormatUTC(ts int64) string {
+	return time.Unix(ts, 0).UTC().Format("2006-01-02 15:04:05")
+}
