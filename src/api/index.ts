@@ -5,6 +5,8 @@ export * from "./types";
 export { USE_MOCK, API_BASE_URL } from "./config";
 export { request, http } from "./request";
 
+export * as authApi from "./modules/auth";
+export * as iamApi from "./modules/iam";
 export * as transactionsApi from "./modules/transactions";
 export * as settlementsApi from "./modules/settlements";
 export * as refundsApi from "./modules/refunds";

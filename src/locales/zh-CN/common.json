@@ -69,5 +69,9 @@
     "network": "网络请求失败",
     "timeout": "请求超时",
     "unknown": "发生未知错误"
+  },
+  "permission": {
+    "denied": "您没有访问该页面的权限",
+    "deniedHint": "如需开通，请联系管理员。"
   }
 }

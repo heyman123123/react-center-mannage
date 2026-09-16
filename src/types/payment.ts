@@ -310,6 +310,16 @@ export type RbacRoleKey =
   | "RISK_AUDITOR"
   | "BU_OPERATOR";
 
+/** 权限包：挂菜单树；角色通过 packIds 引用 */
+export interface PermissionPack {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  menuIds: string[];
+  createdAt?: number | string;
+}
+
 export interface RbacRole {
   id?: string;
   key?: string;
@@ -319,6 +329,8 @@ export interface RbacRole {
   userCount?: number;
   assignedMembersCount?: number;
   dataScope?: "ALL_TENANTS" | "ASSIGNED_TENANT" | "READ_ONLY_MASKED";
+  /** 绑定的权限包 ID 列表 */
+  packIds?: string[];
   permissions: {
     canViewExecutiveDashboard?: boolean;
     canViewAllTenants?: boolean;
@@ -344,7 +356,7 @@ export interface RbacRole {
     canConfigGateways?: boolean;
     canManageEmails?: boolean;
     canManageRoles?: boolean;
-    /** 基于菜单树配置的可访问菜单节点 ID 列表 */
+    /** @deprecated 菜单权限已迁至权限包；保留作 Mock/旧数据兼容 */
     menuPermissionIds?: string[];
     /** 可访问的应用 ID 列表（"ALL" 表示全部） */
     appPermissionIds?: string[];
@@ -441,6 +453,7 @@ export interface DictionaryEntry {
   id: string;
   key: string;
   category: DictionaryCategory;
+  categoryId?: string;
   description: string;
   platforms?: ProjectPlatform[];
   referencedTemplatesCount: number;
@@ -506,6 +519,8 @@ export interface SystemUser {
   departmentIds?: string[];
   phone?: string;
   createdAt?: string;
+  /** 有效菜单权限码（routeKey / menu.key），来自 /me */
+  menuKeys?: string[];
 }
 
 // 组织部门（树结构）：部门可绑定多个角色，成员继承部门角色的权限
@@ -826,7 +841,7 @@ export interface ScheduledTask {
   cron: string; // Cron 表达式
   lastRunAt?: string;
   lastRunStatus?: TaskRunStatus;
-  nextRunAt: string;
+  nextRunAt?: string;
   status: "ENABLED" | "DISABLED";
-  logs: TaskExecutionLog[];
+  logs?: TaskExecutionLog[];
 }

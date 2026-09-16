@@ -19,11 +19,14 @@ import {
   UserX,
   Sparkles,
   KeyRound,
+  Copy,
+  Check,
 } from "lucide-react";
 import { SystemUser, PaymentApp, RbacRole, Department } from "../types/payment";
 import { RBAC_ROLES } from "../data/mockData";
 import { ShadcnSelect } from "./ui/select";
 import { MultiSelect } from "./ui/MultiSelect";
+import { AppScopeMultiSelect } from "./AppScopeMultiSelect";
 import { SideSheet } from "./ui/SideSheet";
 import { Popconfirm } from "./ui/Popconfirm";
 
@@ -51,9 +54,12 @@ interface SystemUserManagementViewProps {
   apps: PaymentApp[];
   departments: Department[];
   currentUser: SystemUser;
-  onSaveUser: (user: SystemUser) => void;
-  onDeleteUser?: (id: string) => void;
+  onSaveUser: (user: SystemUser, opts?: { isNew?: boolean }) => void | Promise<SaveUserResult | void>;
+  onDeleteUser?: (id: string) => void | Promise<void>;
+  onResetPassword?: (id: string) => void | Promise<string>;
 }
+
+type SaveUserResult = { user?: SystemUser; initialPassword?: string };
 
 export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> = ({
   users,
@@ -63,6 +69,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
   currentUser,
   onSaveUser,
   onDeleteUser,
+  onResetPassword,
 }) => {
   const { t } = useTranslation(["rbac", "common"]);
   const [userList, setUserList] = useState<SystemUser[]>(users);
@@ -87,7 +94,12 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
   const [formStatus, setFormStatus] = useState<"ACTIVE" | "DISABLED">("ACTIVE");
   const [formAllowedAppIds, setFormAllowedAppIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+  const [credentialsModal, setCredentialsModal] = useState<{
+    email: string;
+    password: string;
+    titleKey: "created" | "reset";
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setUserList(users);
@@ -107,7 +119,6 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
     setFormPhone("+1 (555) ");
     setFormStatus("ACTIVE");
     setFormAllowedAppIds([]);
-    setGeneratedPassword(null);
     setIsSheetOpen(true);
   };
 
@@ -122,13 +133,46 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
     setFormAllowedAppIds(
       (user.allowedAppIds || []).filter((id) => id !== "ALL")
     );
-    setGeneratedPassword(null);
     setIsSheetOpen(true);
   };
 
-  const handleResetPassword = (user: SystemUser) => {
-    const password = generateRandomPassword();
-    showToast(t("systemUsers.toast.passwordReset", { name: user.name, password }));
+  const handleResetPassword = async (user: SystemUser) => {
+    try {
+      const password = onResetPassword
+        ? (await onResetPassword(user.id)) || generateRandomPassword()
+        : generateRandomPassword();
+      setCredentialsModal({
+        email: user.email,
+        password,
+        titleKey: "reset",
+      });
+      setCopied(false);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t("systemUsers.toast.actionFailed"));
+    }
+  };
+
+  const closeCredentialsModal = () => {
+    setCredentialsModal(null);
+    setCopied(false);
+  };
+
+  const handleCopyCredentials = async () => {
+    if (!credentialsModal) return;
+    const text = t("systemUsers.credentials.copyText", {
+      email: credentialsModal.email,
+      password: credentialsModal.password,
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      showToast(t("systemUsers.toast.credentialsCopied"));
+      window.setTimeout(() => {
+        closeCredentialsModal();
+      }, 400);
+    } catch {
+      showToast(t("systemUsers.toast.copyFailed"));
+    }
   };
 
   // 所选部门继承的角色（并集）
@@ -140,7 +184,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
     )
   );
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formEmail.trim()) {
       showToast(t("systemUsers.toast.nameEmailRequired"));
@@ -169,53 +213,76 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         status: formStatus,
         allowedAppIds: finalAppIds,
       };
-      setUserList((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-      onSaveUser(updated);
-      showToast(t("systemUsers.toast.updated", { name: updated.name }));
-    } else {
-      const initials =
-        formName
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .toUpperCase()
-          .slice(0, 2) || "U";
-      const newUser: SystemUser = {
-        id: `user-${Date.now().toString().slice(-4)}`,
-        name: formName.trim(),
-        email: formEmail.trim(),
-        roleKeys: finalRoleKeys,
-        role: roleNames.length ? roleNames.join("、") : t("systemUsers.unassignedRole"),
-        roleKey: finalRoleKeys[0] || "UNASSIGNED",
-        avatarText: initials,
-        departmentIds: formDepartmentIds,
-        department: deptNames.join(" / ") || undefined,
-        phone: formPhone.trim(),
-        status: formStatus,
-        allowedAppIds: finalAppIds,
-        lastLogin: t("systemUsers.justCreated"),
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      const initialPassword = generateRandomPassword();
-      setUserList((prev) => [newUser, ...prev]);
-      onSaveUser(newUser);
-      setGeneratedPassword(initialPassword);
-      showToast(t("systemUsers.toast.passwordGenerated", { password: initialPassword }));
+      try {
+        const result = await onSaveUser(updated, { isNew: false });
+        const saved = result && "user" in result && result.user ? result.user : updated;
+        setUserList((prev) => prev.map((u) => (u.id === saved.id ? saved : u)));
+        showToast(t("systemUsers.toast.updated", { name: saved.name }));
+        setIsSheetOpen(false);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : t("systemUsers.toast.saveFailed"));
+      }
       return;
     }
-    setIsSheetOpen(false);
+
+    const initials =
+      formName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2) || "U";
+    const newUser: SystemUser = {
+      id: `user-${Date.now().toString().slice(-4)}`,
+      name: formName.trim(),
+      email: formEmail.trim(),
+      roleKeys: finalRoleKeys,
+      role: roleNames.length ? roleNames.join("、") : t("systemUsers.unassignedRole"),
+      roleKey: finalRoleKeys[0] || "UNASSIGNED",
+      avatarText: initials,
+      departmentIds: formDepartmentIds,
+      department: deptNames.join(" / ") || undefined,
+      phone: formPhone.trim(),
+      status: formStatus,
+      allowedAppIds: finalAppIds,
+      lastLogin: t("systemUsers.justCreated"),
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+    try {
+      const result = await onSaveUser(newUser, { isNew: true });
+      const saved = result && "user" in result && result.user ? result.user : newUser;
+      const initialPassword =
+        (result && "initialPassword" in result && result.initialPassword) ||
+        generateRandomPassword();
+      setUserList((prev) => [saved, ...prev]);
+      setIsSheetOpen(false);
+      setCredentialsModal({
+        email: saved.email,
+        password: initialPassword,
+        titleKey: "created",
+      });
+      setCopied(false);
+      showToast(t("systemUsers.toast.created", { name: saved.name }));
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t("systemUsers.toast.saveFailed"));
+    }
   };
 
-  const handleToggleStatus = (user: SystemUser) => {
+  const handleToggleStatus = async (user: SystemUser) => {
     const nextStatus = user.status === "DISABLED" ? "ACTIVE" : "DISABLED";
     const updated: SystemUser = { ...user, status: nextStatus };
-    setUserList((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
-    onSaveUser(updated);
-    showToast(
-      nextStatus === "ACTIVE"
-        ? t("systemUsers.toast.enabled", { name: user.name })
-        : t("systemUsers.toast.disabled", { name: user.name })
-    );
+    try {
+      const result = await onSaveUser(updated, { isNew: false });
+      const saved = result && "user" in result && result.user ? result.user : updated;
+      setUserList((prev) => prev.map((u) => (u.id === saved.id ? saved : u)));
+      showToast(
+        nextStatus === "ACTIVE"
+          ? t("systemUsers.toast.enabled", { name: user.name })
+          : t("systemUsers.toast.disabled", { name: user.name })
+      );
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t("systemUsers.toast.saveFailed"));
+    }
   };
 
   // Filtered Users
@@ -628,7 +695,6 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         isOpen={isSheetOpen}
         onClose={() => {
           setIsSheetOpen(false);
-          setGeneratedPassword(null);
         }}
         title={
           editingUser
@@ -660,19 +726,6 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
         }
       >
         <div className="space-y-5 text-xs">
-          {generatedPassword && !editingUser && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs">
-              <div className="flex items-center gap-2 font-bold text-amber-800 mb-1">
-                <KeyRound className="w-4 h-4" />
-                {t("systemUsers.sheet.initialPasswordTitle")}
-              </div>
-              <p className="text-amber-700 mb-2">{t("systemUsers.sheet.initialPasswordHint")}</p>
-              <code className="block px-3 py-2 bg-white border border-amber-300 rounded-lg font-mono text-sm text-amber-900 select-all">
-                {generatedPassword}
-              </code>
-            </div>
-          )}
-
           {/* Basic Info Section */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5 border-b border-line-subtle pb-2">
@@ -794,22 +847,75 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
               <Layers className="w-3.5 h-3.5 text-fg-secondary" />
               <span>{t("systemUsers.sheet.appsTitle")}</span>
             </h3>
-            <MultiSelect
+            <AppScopeMultiSelect
+              apps={apps}
               value={formAllowedAppIds}
-              onValueChange={setFormAllowedAppIds}
+              onChange={setFormAllowedAppIds}
               placeholder={t("systemUsers.sheet.appsPlaceholder")}
-              options={[
-                ...apps.map((a) => ({
-                  value: a.id,
-                  label: `${a.name}（${a.code}）`,
-                })),
-              ]}
-              showToolbar
+              hint={t("systemUsers.sheet.appsHint")}
             />
-            <p className="text-[11px] text-fg-tertiary">{t("systemUsers.sheet.appsHint")}</p>
           </div>
         </div>
       </SideSheet>
+
+      {credentialsModal && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="credentials-modal-title"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-surface border border-line shadow-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-line-subtle">
+              <h2 id="credentials-modal-title" className="text-sm font-bold text-fg">
+                {credentialsModal.titleKey === "reset"
+                  ? t("systemUsers.credentials.resetTitle")
+                  : t("systemUsers.credentials.createdTitle")}
+              </h2>
+              <p className="mt-1 text-xs text-fg-secondary">
+                {t("systemUsers.credentials.hint")}
+              </p>
+            </div>
+            <div className="px-5 py-4 space-y-3 text-xs">
+              <div>
+                <div className="text-fg-tertiary font-medium mb-1">
+                  {t("systemUsers.credentials.accountLabel")}
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-subtle border border-line font-mono text-fg select-all">
+                  {credentialsModal.email}
+                </div>
+              </div>
+              <div>
+                <div className="text-fg-tertiary font-medium mb-1">
+                  {t("systemUsers.credentials.passwordLabel")}
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-subtle border border-line font-mono text-fg select-all break-all">
+                  {credentialsModal.password}
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-4 border-t border-line-subtle flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeCredentialsModal}
+                className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              >
+                {t("common:actions.close")}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCopyCredentials()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied
+                  ? t("systemUsers.credentials.copied")
+                  : t("systemUsers.credentials.copyButton")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

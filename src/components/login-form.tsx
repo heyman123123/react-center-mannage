@@ -11,12 +11,18 @@ import { Input } from "./ui/input"
 
 export function LoginForm({
   className,
+  onSubmit,
+  loading,
+  error,
   ...props
-}: React.ComponentProps<"form">) {
+}: React.ComponentProps<"form"> & {
+  loading?: boolean
+  error?: string | null
+}) {
   const { t } = useTranslation("auth")
 
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form className={cn("flex flex-col gap-6", className)} onSubmit={onSubmit} {...props}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">{t("welcome")}</h1>
@@ -28,22 +34,33 @@ export function LoginForm({
           <FieldLabel htmlFor="email">{t("email")}</FieldLabel>
           <Input
             id="email"
+            name="email"
             type="email"
             placeholder={t("emailPlaceholder")}
             required
+            autoComplete="username"
           />
         </Field>
         <Field>
           <FieldLabel htmlFor="password">{t("password")}</FieldLabel>
           <Input
             id="password"
+            name="password"
             type="password"
             placeholder={t("passwordPlaceholder")}
             required
+            autoComplete="current-password"
           />
         </Field>
+        {error ? (
+          <p className="text-sm text-destructive text-center" role="alert">
+            {error}
+          </p>
+        ) : null}
         <Field>
-          <Button type="submit">{t("submit")}</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? t("submitting") : t("submit")}
+          </Button>
         </Field>
       </FieldGroup>
     </form>

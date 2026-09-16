@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { LayoutDashboard, Receipt, Wallet, RotateCcw, User } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
@@ -14,7 +14,7 @@ import { EmailWebhooksView } from "./components/EmailWebhooksView";
 import { EmailTemplatesView } from "./components/EmailTemplatesView";
 import { UserManagementView } from "./components/UserManagementView";
 import { SystemUserManagementView } from "./components/SystemUserManagementView";
-import { PermissionsView } from "./components/PermissionsView";
+import { PermissionPacksView } from "./components/PermissionPacksView";
 import { FinancialReportsView } from "./components/FinancialReportsView";
 import { ProductsView } from "./components/ProductsView";
 import { DiscountsView } from "./components/DiscountsView";
@@ -32,6 +32,7 @@ import { RiskRulesView } from "./components/RiskRulesView";
 import { MerchantReviewView } from "./components/MerchantReviewView";
 import { AlertsView } from "./components/AlertsView";
 import { SystemConfigView } from "./components/SystemConfigView";
+import { ScheduledTaskDetailView } from "./components/ScheduledTaskDetailView";
 import { UserSettingsModal } from "./components/UserSettingsModal";
 import { QuickCreateModal } from "./components/QuickCreateModal";
 import { DiscrepancyModal } from "./components/DiscrepancyModal";
@@ -56,6 +57,7 @@ import {
   SystemMenuItem,
   UserProfileSettings,
   RbacRole,
+  PermissionPack,
   SettlementBatch,
   RefundRecord,
   ChargebackRecord,
@@ -66,11 +68,28 @@ import {
   MerchantApplication,
   AlertRule,
   AlertHistory,
-  SystemConfigParam,
-  ScheduledTask,
 } from "./types/payment";
 import { getStoredTheme, applyTheme } from "./lib/theme";
-import { isAuthenticated, setAuthenticated, clearAuth } from "./lib/auth";
+import { isAuthenticated, setAuthenticated, clearAuth, probeSession, logoutSession } from "./lib/auth";
+import { loadShellIamData } from "./lib/iamBootstrap";
+import {
+  persistUser,
+  removeUser,
+  resetUserPassword,
+  persistRole,
+  removeRole,
+  persistPermissionPack,
+  persistPermissionPackMenus,
+  removePermissionPack,
+  persistMenu,
+  persistDepartment,
+  removeDepartment,
+  persistDictionaryEntry,
+  removeDictionaryEntry,
+} from "./lib/iamActions";
+import { filterMenusForUser, canAccessTab, firstAccessibleTab } from "./lib/menuAccess";
+import { PermissionGate, PermissionProvider } from "./lib/permission";
+import { USE_MOCK } from "./api/config";
 import {
   INITIAL_TENANTS,
   SYSTEM_USERS,
@@ -90,6 +109,7 @@ import {
   INITIAL_DICTIONARY,
   INITIAL_MENUS,
   RBAC_ROLES,
+  INITIAL_PERMISSION_PACKS,
   INITIAL_SETTLEMENTS,
   INITIAL_REFUNDS,
   INITIAL_CHARGEBACKS,
@@ -100,12 +120,10 @@ import {
   INITIAL_MERCHANT_APPLICATIONS,
   INITIAL_ALERT_RULES,
   INITIAL_ALERT_HISTORY,
-  INITIAL_SYSTEM_CONFIGS,
-  INITIAL_SCHEDULED_TASKS,
 } from "./data/mockData";
 
 export default function App() {
-  const { t } = useTranslation("nav");
+  const { t } = useTranslation(["nav", "common"]);
   const [tenants, setTenants] = useState<Tenant[]>(INITIAL_TENANTS);
   const [currentTenant, setCurrentTenant] = useState<Tenant>(INITIAL_TENANTS[0]);
   const [allUsers, setAllUsers] = useState<SystemUser[]>(SYSTEM_USERS);
@@ -129,6 +147,7 @@ export default function App() {
   const [dictionary, setDictionary] = useState<DictionaryEntry[]>(INITIAL_DICTIONARY);
   const [menus, setMenus] = useState<SystemMenuItem[]>(INITIAL_MENUS);
   const [rolesList, setRolesList] = useState<RbacRole[]>(Object.values(RBAC_ROLES));
+  const [permissionPacks, setPermissionPacks] = useState<PermissionPack[]>(INITIAL_PERMISSION_PACKS);
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>(SYSTEM_USERS);
   const [departments, setDepartments] = useState<Department[]>(DEPARTMENTS);
 
@@ -144,43 +163,81 @@ export default function App() {
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>(INITIAL_BLACKLIST);
   const [merchantApps, setMerchantApps] = useState<MerchantApplication[]>(INITIAL_MERCHANT_APPLICATIONS);
 
-  // P2: 告警与通知 / 系统参数与定时任务
+  // P2: 告警与通知 / 系统参数与定时任务（系统参数页自拉 API）
   const [alertRules, setAlertRules] = useState<AlertRule[]>(INITIAL_ALERT_RULES);
   const [alertHistories, setAlertHistories] = useState<AlertHistory[]>(INITIAL_ALERT_HISTORY);
-  const [systemConfigs, setSystemConfigs] = useState<SystemConfigParam[]>(INITIAL_SYSTEM_CONFIGS);
-  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>(INITIAL_SCHEDULED_TASKS);
 
   // Current View & Modals
   const VALID_TABS = [
     "dashboard", "transactions", "reconciliation", "products", "discounts",
     "promo_campaigns", "payment_channels", "payment_webhooks", "apps",
     "email_channels", "email_webhooks", "email_templates", "dictionary",
-    "users", "roles", "permissions", "menus", "departments", "system_users",
+    "users", "roles", "permissions", "permission_packs", "menus", "departments", "system_users",
     "settlements", "refunds", "audit_logs",
     "exchange_rates", "fee_rules", "risk_rules", "merchant_review",
-    "alerts", "system_config",
+    "alerts", "system_config", "scheduled_tasks",
   ];
-  const tabFromHash = (): string => {
+  const normalizeTab = (raw: string): string =>
+    raw === "permissions" ? "permission_packs" : raw;
+  const parseHash = (): { tab: string; taskId: string | null } => {
     const raw = (window.location.hash || "").replace(/^#\/?/, "");
-    if (raw === "login") return "login";
-    return VALID_TABS.includes(raw) ? raw : "dashboard";
+    if (raw === "login") return { tab: "login", taskId: null };
+    const detail = raw.match(/^scheduled_tasks\/([^/?#]+)/);
+    if (detail) return { tab: "scheduled_tasks", taskId: detail[1] };
+    if (raw === "scheduled_tasks") return { tab: "scheduled_tasks", taskId: null };
+    const tab = normalizeTab(raw);
+    return { tab: VALID_TABS.includes(tab) || VALID_TABS.includes(raw) ? tab : "dashboard", taskId: null };
   };
+  const tabFromHash = (): string => parseHash().tab;
   const [currentTab, setCurrentTab] = useState<string>(() => {
-    if (!isAuthenticated()) return "login";
-    return tabFromHash();
+    if (USE_MOCK) return isAuthenticated() ? tabFromHash() : "login";
+    // 真实环境：会话需异步探测，初始先按 hash 占位，避免误渲染登录页
+    const hash = tabFromHash();
+    return hash === "login" ? "dashboard" : hash;
   });
+  const [scheduledTaskId, setScheduledTaskId] = useState<string | null>(() => parseHash().taskId);
   const [refreshTick, setRefreshTick] = useState<number>(0);
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
   const [quickCreateOpen, setQuickCreateOpen] = useState<boolean>(false);
   const [activeDiscrepancyTx, setActiveDiscrepancyTx] = useState<TransactionRecord | null>(null);
   const [userSettingsOpen, setUserSettingsOpen] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-  const [loggedIn, setLoggedIn] = useState<boolean>(() => isAuthenticated());
+  const [loggedIn, setLoggedIn] = useState<boolean>(() => (USE_MOCK ? isAuthenticated() : false));
+  /** 真实环境刷新时先探测 Cookie 会话，完成前不展示登录页 */
+  const [authReady, setAuthReady] = useState<boolean>(() => USE_MOCK);
+
+  /** 侧栏仅展示当前用户有权限的菜单 */
+  const navMenus = useMemo(
+    () => filterMenusForUser(menus, currentUser, rolesList, departments),
+    [menus, currentUser, rolesList, departments],
+  );
+
+  // 权限变更后，若当前页不可访问则跳到首个可访问页
+  useEffect(() => {
+    if (!loggedIn || currentTab === "login") return;
+    const accessKey = currentTab === "scheduled_tasks" ? "system_config" : currentTab;
+    if (!canAccessTab(accessKey, menus, currentUser, rolesList, departments)) {
+      const next = firstAccessibleTab(menus, currentUser, rolesList, departments);
+      setCurrentTab(next);
+      setScheduledTaskId(null);
+      window.history.replaceState(null, "", `#/${next}`);
+    }
+  }, [loggedIn, currentTab, menus, currentUser, rolesList, departments]);
+
+  // 旧 hash #/permissions → #/permission_packs
+  useEffect(() => {
+    const raw = (window.location.hash || "").replace(/^#\/?/, "");
+    if (raw === "permissions") {
+      window.history.replaceState(null, "", "#/permission_packs");
+      if (currentTab !== "permission_packs") setCurrentTab("permission_packs");
+    }
+  }, [currentTab]);
 
   // 切换页面：更新 state 并同步 URL hash
   const navigateToTab = (tab: string) => {
     if (tab === "login") {
       setCurrentTab("login");
+      setScheduledTaskId(null);
       setMobileMenuOpen(false);
       if (window.location.hash !== `#/login`) {
         window.history.replaceState(null, "", `#/login`);
@@ -189,66 +246,169 @@ export default function App() {
     }
     if (!loggedIn) {
       setCurrentTab("login");
+      setScheduledTaskId(null);
       setMobileMenuOpen(false);
       if (window.location.hash !== `#/login`) {
         window.history.replaceState(null, "", `#/login`);
       }
       return;
     }
-    if (!VALID_TABS.includes(tab)) tab = "dashboard";
+    if (!VALID_TABS.includes(tab) && tab !== "permissions") tab = "dashboard";
+    tab = normalizeTab(tab);
+    const accessKey = tab === "scheduled_tasks" ? "system_config" : tab;
+    if (!canAccessTab(accessKey, menus, currentUser, rolesList, departments)) {
+      tab = firstAccessibleTab(menus, currentUser, rolesList, departments);
+    }
     setCurrentTab(tab);
+    if (tab !== "scheduled_tasks") setScheduledTaskId(null);
     setMobileMenuOpen(false);
     if (window.location.hash !== `#/${tab}`) {
       window.history.replaceState(null, "", `#/${tab}`);
     }
   };
 
-  // 登录成功 → 进入仪表盘（凭证由服务端 Cookie 下发；Mock 仅翻内存门禁）
+  const enterFirstMenu = (
+    nextMenus = menus,
+    nextUser = currentUser,
+    nextRoles = rolesList,
+    nextDepartments = departments,
+  ) => {
+    const tab = firstAccessibleTab(nextMenus, nextUser, nextRoles, nextDepartments);
+    setCurrentTab(tab);
+    window.history.replaceState(null, "", `#/${tab}`);
+  };
+
+  // 登录成功 → 选中并展开侧栏第一个可访问菜单（凭证由 Cookie 下发；Mock 仅翻内存门禁）
   const handleLoginSuccess = () => {
     setAuthenticated();
     setLoggedIn(true);
-    setCurrentTab("dashboard");
-    window.history.replaceState(null, "", `#/dashboard`);
+    if (!USE_MOCK) {
+      void loadShellIamData()
+        .then((data) => {
+          if (!data) {
+            enterFirstMenu();
+            return;
+          }
+          setSystemUsers(data.users);
+          setAllUsers(data.users);
+          setRolesList(data.roles);
+          setPermissionPacks(data.packs);
+          setMenus(data.menus);
+          setDepartments(data.departments);
+          setDictionary(data.dictionary);
+          if (data.me) setCurrentUser(data.me);
+          enterFirstMenu(
+            data.menus,
+            data.me || currentUser,
+            data.roles,
+            data.departments,
+          );
+        })
+        .catch(() => {
+          /* 壳层数据拉取失败时用当前态进首个菜单，避免白屏 */
+          enterFirstMenu();
+        });
+      return;
+    }
+    enterFirstMenu();
   };
 
-  // 退出登录 → 清门禁并回到登录页（生产须先调 POST /auth/logout 清 Cookie）
+  // 退出登录 → 清 Cookie（真实）/ 清门禁（Mock）并回到登录页
   const handleLogout = () => {
-    clearAuth();
-    setLoggedIn(false);
-    setUserSettingsOpen(false);
-    setMobileMenuOpen(false);
-    setQuickCreateOpen(false);
-    setActiveDiscrepancyTx(null);
-    setCurrentTab("login");
-    window.history.replaceState(null, "", `#/login`);
+    void (async () => {
+      try {
+        await logoutSession();
+      } catch {
+        clearAuth();
+      }
+      setLoggedIn(false);
+      setUserSettingsOpen(false);
+      setMobileMenuOpen(false);
+      setQuickCreateOpen(false);
+      setActiveDiscrepancyTx(null);
+      setCurrentTab("login");
+      window.history.replaceState(null, "", `#/login`);
+    })();
   };
 
-  // 初始化：读取持久化主题并挂载到根节点
+  // 初始化：主题 + 会话探测 + hash 路由
   useEffect(() => {
     applyTheme(getStoredTheme());
-    // 监听 hash 变化（地址栏改 hash / 前进后退）切换页面
-    const onHashChange = () => {
-      if (!isAuthenticated()) {
+    let cancelled = false;
+
+    const syncFromHash = (authed: boolean) => {
+      if (!authed) {
         setLoggedIn(false);
         setCurrentTab("login");
+        setScheduledTaskId(null);
         if (window.location.hash !== `#/login`) {
           window.history.replaceState(null, "", `#/login`);
         }
         return;
       }
       setLoggedIn(true);
-      setCurrentTab(tabFromHash());
+      const parsed = parseHash();
+      // hash 仍是 login 时先落到 dashboard，菜单加载后由权限 effect / 下方逻辑纠正为首个菜单
+      if (parsed.tab === "login") {
+        setCurrentTab("dashboard");
+        setScheduledTaskId(null);
+      } else {
+        setCurrentTab(parsed.tab);
+        setScheduledTaskId(parsed.taskId);
+      }
+    };
+
+    void (async () => {
+      const ok = await probeSession();
+      if (cancelled) return;
+      syncFromHash(ok);
+      setAuthReady(true);
+      if (ok && !USE_MOCK) {
+        try {
+          const data = await loadShellIamData();
+          if (cancelled || !data) return;
+          setSystemUsers(data.users);
+          setAllUsers(data.users);
+          setRolesList(data.roles);
+          setPermissionPacks(data.packs);
+          setMenus(data.menus);
+          setDepartments(data.departments);
+          setDictionary(data.dictionary);
+          if (data.me) setCurrentUser(data.me);
+          const hashTab = tabFromHash();
+          const accessKey = hashTab === "scheduled_tasks" ? "system_config" : hashTab;
+          if (hashTab === "login" || !canAccessTab(accessKey, data.menus, data.me || currentUser, data.roles, data.departments)) {
+            const tab = firstAccessibleTab(data.menus, data.me || currentUser, data.roles, data.departments);
+            setCurrentTab(tab);
+            setScheduledTaskId(null);
+            window.history.replaceState(null, "", `#/${tab}`);
+          } else {
+            const parsed = parseHash();
+            setCurrentTab(parsed.tab);
+            setScheduledTaskId(parsed.taskId);
+          }
+        } catch {
+          /* ignore bootstrap errors */
+        }
+      } else if (ok && USE_MOCK && tabFromHash() === "login") {
+        const tab = firstAccessibleTab(menus, currentUser, rolesList, departments);
+        setCurrentTab(tab);
+        window.history.replaceState(null, "", `#/${tab}`);
+      }
+    })();
+
+    const onHashChange = () => {
+      void (async () => {
+        const ok = await probeSession();
+        if (cancelled) return;
+        syncFromHash(ok);
+      })();
     };
     window.addEventListener("hashchange", onHashChange);
-    // 未登录时强制落在登录页
-    if (!isAuthenticated()) {
-      setLoggedIn(false);
-      setCurrentTab("login");
-      if (window.location.hash !== `#/login`) {
-        window.history.replaceState(null, "", `#/login`);
-      }
-    }
-    return () => window.removeEventListener("hashchange", onHashChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("hashchange", onHashChange);
+    };
   }, []);
 
   // Global Keyboard Shortcut: ⌘K or Ctrl+K opens Quick Create
@@ -474,10 +634,22 @@ export default function App() {
   };
 
   const getTabTitle = () => {
+    if (currentTab === "scheduled_tasks") {
+      return t("pageTitle.scheduled_tasks");
+    }
     const key = `pageTitle.${currentTab}`;
     const translated = t(key);
     return translated === key ? t("pageTitle.default") : translated;
   };
+
+  // 会话探测完成前：不闪登录页
+  if (!authReady) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-page text-fg-secondary text-sm">
+        {t("common:status.loading")}
+      </div>
+    );
+  }
 
   // 登录路由 / 未登录：直接渲染登录页（绕过主框架）
   if (!loggedIn || currentTab === "login") {
@@ -489,11 +661,12 @@ export default function App() {
   }
 
   return (
+    <PermissionProvider value={{ user: currentUser, ready: authReady }}>
     <div className="flex h-screen w-screen overflow-hidden bg-page font-sans text-fg antialiased selection:bg-primary selection:text-primary-foreground">
       {/* Left Sidebar (desktop only, md+) */}
       <div className="hidden md:block shrink-0">
         <Sidebar
-          menus={menus}
+          menus={navMenus}
           currentTab={currentTab}
           setCurrentTab={navigateToTab}
           currentUser={currentUser}
@@ -513,7 +686,7 @@ export default function App() {
           />
           <div className="fixed inset-y-0 left-0 z-50 h-full animate-in slide-in-from-left duration-300 ease-out">
             <Sidebar
-              menus={menus}
+              menus={navMenus}
               currentTab={currentTab}
               setCurrentTab={navigateToTab}
               currentUser={currentUser}
@@ -706,21 +879,38 @@ export default function App() {
           )}
 
           {currentTab === "dictionary" && (
-            <DictionaryView
-              dictionary={dictionary}
-              currentTenant={currentTenant}
-              onSaveEntry={(updated) => {
-                setDictionary((prev) => {
-                  const exists = prev.some((d) => d.id === updated.id);
-                  return exists
-                    ? prev.map((d) => (d.id === updated.id ? updated : d))
-                    : [updated, ...prev];
-                });
-              }}
-              onDeleteEntry={(id) => {
-                setDictionary((prev) => prev.filter((d) => d.id !== id));
-              }}
-            />
+            <PermissionGate menuKey="dictionary">
+              <DictionaryView
+                dictionary={dictionary}
+                currentTenant={currentTenant}
+                onSaveEntry={(updated) => {
+                  void (async () => {
+                    const exists = dictionary.some((d) => d.id === updated.id);
+                    try {
+                      const saved = await persistDictionaryEntry(updated, !exists);
+                      setDictionary((prev) => {
+                        const hit = prev.some((d) => d.id === saved.id);
+                        return hit
+                          ? prev.map((d) => (d.id === saved.id ? saved : d))
+                          : [saved, ...prev];
+                      });
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  })();
+                }}
+                onDeleteEntry={(id) => {
+                  void (async () => {
+                    try {
+                      await removeDictionaryEntry(id);
+                      setDictionary((prev) => prev.filter((d) => d.id !== id));
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  })();
+                }}
+              />
+            </PermissionGate>
           )}
 
           {currentTab === "users" && (
@@ -728,106 +918,177 @@ export default function App() {
           )}
 
           {currentTab === "roles" && (
-            <RolesView
-              roles={rolesList}
-              menus={menus}
-              apps={paymentApps}
-              onSaveRole={(updated) => {
-                setRolesList((prev) => {
-                  const exists = prev.some((r) => r.id === updated.id);
-                  return exists
-                    ? prev.map((r) => (r.id === updated.id ? updated : r))
-                    : [...prev, updated];
-                });
-              }}
-              onDeleteRole={(roleId) => {
-                setRolesList((prev) => prev.filter((r) => r.id !== roleId && r.key !== roleId));
-              }}
-            />
+            <PermissionGate menuKey="roles">
+              <RolesView
+                roles={rolesList}
+                packs={permissionPacks}
+                apps={paymentApps}
+                onSaveRole={(updated) => {
+                  void (async () => {
+                    const exists = rolesList.some((r) => r.id === updated.id);
+                    try {
+                      const saved = await persistRole(updated, !exists);
+                      setRolesList((prev) => {
+                        const hit = prev.some((r) => r.id === saved.id);
+                        return hit
+                          ? prev.map((r) => (r.id === saved.id ? saved : r))
+                          : [...prev, saved];
+                      });
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  })();
+                }}
+                onDeleteRole={(roleId) => {
+                  void (async () => {
+                    try {
+                      await removeRole(roleId);
+                      setRolesList((prev) => prev.filter((r) => r.id !== roleId && r.key !== roleId));
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  })();
+                }}
+              />
+            </PermissionGate>
           )}
 
-          {currentTab === "permissions" && (
-            <PermissionsView
-              roles={rolesList}
-              menus={menus}
-              apps={paymentApps}
-              onSaveRole={(updated) => {
-                setRolesList((prev) => {
-                  const exists = prev.some((r) => r.id === updated.id);
-                  return exists
-                    ? prev.map((r) => (r.id === updated.id ? updated : r))
-                    : [...prev, updated];
-                });
-              }}
-              onDeleteRole={(roleId) => {
-                setRolesList((prev) => prev.filter((r) => r.id !== roleId && r.key !== roleId));
-              }}
-            />
+          {currentTab === "permission_packs" && (
+            <PermissionGate menuKey="permission_packs">
+              <PermissionPacksView
+                packs={permissionPacks}
+                menus={menus}
+                onSavePack={async (pack, isNew) => {
+                  const saved = await persistPermissionPack(pack, isNew);
+                  setPermissionPacks((prev) => {
+                    const hit = prev.some((p) => p.id === saved.id);
+                    return hit
+                      ? prev.map((p) => (p.id === saved.id ? saved : p))
+                      : [...prev, saved];
+                  });
+                  return saved;
+                }}
+                onSavePackMenus={async (packId, menuIds) => {
+                  const saved = await persistPermissionPackMenus(packId, menuIds);
+                  setPermissionPacks((prev) =>
+                    prev.map((p) =>
+                      p.id === packId ? { ...p, menuIds: saved.menuIds ?? menuIds } : p,
+                    ),
+                  );
+                  return { ...saved, id: packId, menuIds: saved.menuIds ?? menuIds };
+                }}
+                onDeletePack={async (packId) => {
+                  await removePermissionPack(packId);
+                  setPermissionPacks((prev) => prev.filter((p) => p.id !== packId));
+                }}
+              />
+            </PermissionGate>
           )}
 
           {currentTab === "menus" && (
-            <MenusView
-              menus={menus}
-              onSaveMenu={(updated) => {
-                setMenus((prev) => {
-                  const exists = prev.some((m) => m.id === updated.id);
-                  return exists
-                    ? prev.map((m) => (m.id === updated.id ? updated : m))
-                    : [...prev, updated];
-                });
-              }}
-            />
+            <PermissionGate menuKey="menus">
+              <MenusView
+                menus={menus}
+                onSaveMenu={(updated) => {
+                  void (async () => {
+                    const exists = menus.some((m) => m.id === updated.id);
+                    try {
+                      const saved = await persistMenu(updated, !exists);
+                      setMenus((prev) => {
+                        const hit = prev.some((m) => m.id === saved.id);
+                        return hit
+                          ? prev.map((m) => (m.id === saved.id ? saved : m))
+                          : [...prev, saved];
+                      });
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  })();
+                }}
+              />
+            </PermissionGate>
           )}
 
           {currentTab === "departments" && (
-            <DepartmentManagementView
-              departments={departments}
-              users={systemUsers}
-              roles={rolesList}
-              onSaveDepartment={(updated) => {
-                setDepartments((prev) => {
-                  const exists = prev.some((d) => d.id === updated.id);
-                  return exists
-                    ? prev.map((d) => (d.id === updated.id ? updated : d))
-                    : [...prev, updated];
-                });
-              }}
-              onDeleteDepartment={(deptId) => {
-                setDepartments((prev) => prev.filter((d) => d.id !== deptId));
-              }}
-              onSaveUser={(updatedUser) => {
-                setSystemUsers((prev) => {
-                  const exists = prev.some((u) => u.id === updatedUser.id);
-                  return exists
-                    ? prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
-                    : [updatedUser, ...prev];
-                });
-              }}
-            />
+            <PermissionGate menuKey="departments">
+              <DepartmentManagementView
+                departments={departments}
+                users={systemUsers}
+                roles={rolesList}
+                onSaveDepartment={(updated) => {
+                  void (async () => {
+                    const exists = departments.some((d) => d.id === updated.id);
+                    try {
+                      const saved = await persistDepartment(updated, !exists);
+                      setDepartments((prev) => {
+                        const hit = prev.some((d) => d.id === saved.id);
+                        return hit
+                          ? prev.map((d) => (d.id === saved.id ? saved : d))
+                          : [...prev, saved];
+                      });
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  })();
+                }}
+                onDeleteDepartment={(deptId) => {
+                  void (async () => {
+                    try {
+                      await removeDepartment(deptId);
+                      setDepartments((prev) => prev.filter((d) => d.id !== deptId));
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  })();
+                }}
+                onSaveUser={(updatedUser) => {
+                  void (async () => {
+                    try {
+                      const { user: saved } = await persistUser(updatedUser, false);
+                      setSystemUsers((prev) => {
+                        const exists = prev.some((u) => u.id === saved.id);
+                        return exists
+                          ? prev.map((u) => (u.id === saved.id ? saved : u))
+                          : [saved, ...prev];
+                      });
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  })();
+                }}
+              />
+            </PermissionGate>
           )}
 
           {currentTab === "system_users" && (
-            <SystemUserManagementView
-              users={systemUsers}
-              roles={rolesList}
-              apps={paymentApps}
-              departments={departments}
-              currentUser={currentUser}
-              onSaveUser={(updatedUser) => {
-                setSystemUsers((prev) => {
-                  const exists = prev.some((u) => u.id === updatedUser.id);
-                  return exists
-                    ? prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
-                    : [updatedUser, ...prev];
-                });
-                if (updatedUser.id === currentUser.id) {
-                  setCurrentUser(updatedUser);
-                }
-              }}
-              onDeleteUser={(userId) => {
-                setSystemUsers((prev) => prev.filter((u) => u.id !== userId));
-              }}
-            />
+            <PermissionGate menuKey="system_users">
+              <SystemUserManagementView
+                users={systemUsers}
+                roles={rolesList}
+                apps={paymentApps}
+                departments={departments}
+                currentUser={currentUser}
+                onSaveUser={async (updatedUser, opts) => {
+                  const isNew = opts?.isNew ?? !systemUsers.some((u) => u.id === updatedUser.id);
+                  const { user: saved, initialPassword } = await persistUser(updatedUser, isNew);
+                  setSystemUsers((prev) => {
+                    const exists = prev.some((u) => u.id === saved.id);
+                    return exists
+                      ? prev.map((u) => (u.id === saved.id ? saved : u))
+                      : [saved, ...prev];
+                  });
+                  if (saved.id === currentUser.id) {
+                    setCurrentUser(saved);
+                  }
+                  return { user: saved, initialPassword };
+                }}
+                onDeleteUser={async (userId) => {
+                  await removeUser(userId);
+                  setSystemUsers((prev) => prev.filter((u) => u.id !== userId));
+                }}
+                onResetPassword={async (userId) => resetUserPassword(userId)}
+              />
+            </PermissionGate>
           )}
 
           {currentTab === "settlements" && (
@@ -876,10 +1137,19 @@ export default function App() {
           )}
 
           {currentTab === "system_config" && (
-            <SystemConfigView
-              configs={systemConfigs}
-              tasks={scheduledTasks}
+            <SystemConfigView />
+          )}
+          {currentTab === "scheduled_tasks" && scheduledTaskId && (
+            <ScheduledTaskDetailView
+              taskId={scheduledTaskId}
+              onBack={() => {
+                try { sessionStorage.setItem("system_config_tab", "tasks"); } catch { /* ignore */ }
+                navigateToTab("system_config");
+              }}
             />
+          )}
+          {currentTab === "scheduled_tasks" && !scheduledTaskId && (
+            <SystemConfigView />
           )}
         </main>
       </div>
@@ -944,5 +1214,6 @@ export default function App() {
         />
       )}
     </div>
+    </PermissionProvider>
   );
 }

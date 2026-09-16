@@ -48,16 +48,21 @@ export async function request<T = unknown>(path: string, options: RequestOptions
 
     clearTimeout(timer);
 
+    const contentType = resp.headers.get("content-type") || "";
+    const isJSON = contentType.includes("application/json");
+    const json = isJSON ? await resp.json() : null;
+
     if (!resp.ok) {
+      if (json && typeof json === "object" && "message" in json) {
+        throw new ApiError(String(json.message || `HTTP ${resp.status}`), Number(json.code ?? resp.status), resp.status);
+      }
       throw new ApiError(`HTTP ${resp.status} ${resp.statusText}`, resp.status, resp.status);
     }
 
-    const contentType = resp.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
+    if (!isJSON) {
       return (await resp.text()) as unknown as T;
     }
 
-    const json = await resp.json();
     // 兼容后端统一包装 { code, message, data }
     if (json && typeof json === "object" && "code" in json && "data" in json) {
       if (json.code !== 0) {

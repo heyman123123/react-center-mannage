@@ -22,6 +22,8 @@ interface MultiSelectProps {
   /** 是否显示「全选 / 清空」工具条 */
   showToolbar?: boolean;
   maxTags?: number;
+  /** 面板内关键词过滤 */
+  searchable?: boolean;
 }
 
 /**
@@ -40,15 +42,25 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   disabled,
   showToolbar = true,
   maxTags = 3,
+  searchable = false,
 }) => {
   const { t } = useTranslation("shell");
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const resolvedPlaceholder = placeholder ?? t("multiSelect.placeholder");
 
   const normalizedOptions: MultiSelectOption[] = options.map((opt) =>
     typeof opt === "string" ? { value: opt, label: opt } : opt
   );
+
+  const filteredOptions = searchable && search.trim()
+    ? normalizedOptions.filter((o) => {
+        const text = typeof o.label === "string" ? o.label : String(o.value);
+        return text.toLowerCase().includes(search.trim().toLowerCase()) ||
+          o.value.toLowerCase().includes(search.trim().toLowerCase());
+      })
+    : normalizedOptions;
 
   const selectedOptions = normalizedOptions.filter((o) => value.includes(o.value));
 
@@ -59,7 +71,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   };
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root open={open} onOpenChange={(next) => { setOpen(next); if (!next) setSearch(""); }}>
       {/* Trigger */}
       <Popover.Trigger asChild>
         <button
@@ -151,13 +163,26 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
             </div>
           )}
 
+          {searchable && (
+            <div className="px-2.5 py-2 border-b border-line-subtle">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("multiSelect.searchPlaceholder")}
+                className="w-full px-2.5 py-1.5 rounded-lg border border-line bg-subtle text-xs outline-none focus:ring-2 focus:ring-primary/10"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
+
           <div className="max-h-64 overflow-y-auto p-1.5 space-y-0.5">
-            {normalizedOptions.length === 0 ? (
+            {filteredOptions.length === 0 ? (
               <div className="py-6 text-center text-xs text-fg-tertiary">
                 {t("multiSelect.empty")}
               </div>
             ) : (
-              normalizedOptions.map((opt) => {
+              filteredOptions.map((opt) => {
                 const isChecked = value.includes(opt.value);
                 return (
                   <button

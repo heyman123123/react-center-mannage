@@ -17,6 +17,17 @@ export default defineConfig(() => {
       strictPort: true,
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // 同源代理：Cookie 落在 localhost:3000，避免跨端口 CORS/Cookie 问题
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:8080',
+          changeOrigin: true,
+        },
+        '/healthz': {
+          target: 'http://127.0.0.1:8080',
+          changeOrigin: true,
+        },
+      },
     },
     preview: {
       host: '0.0.0.0',

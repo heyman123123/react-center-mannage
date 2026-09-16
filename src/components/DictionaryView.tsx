@@ -40,8 +40,79 @@ import {
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { Popconfirm } from "./ui/Popconfirm";
-import { ContextMenu } from "./ui/ContextMenu";
+import { ContextMenu, type ContextMenuItem } from "./ui/ContextMenu";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
+import { USE_MOCK } from "../api/config";
+import {
+  listDictionaryCategories,
+  createDictionaryCategory,
+  updateDictionaryCategory,
+  deleteDictionaryCategory,
+  type ApiDictCategory,
+} from "../api/modules/iam";
+
+type CategoryNode = {
+  id: string;
+  parentId: string | null;
+  key: string;
+  name: string;
+  isSystem: boolean;
+  sortOrder: number;
+  children?: CategoryNode[];
+};
+
+const mockCategoriesFromLabels = (
+  labels: { key: string; label: string }[],
+): CategoryNode[] =>
+  labels.map((c, i) => ({
+    id: c.key,
+    parentId: null,
+    key: c.key,
+    name: c.label,
+    isSystem: false,
+    sortOrder: i + 1,
+  }));
+
+const flattenCategories = (nodes: CategoryNode[]): CategoryNode[] => {
+  const out: CategoryNode[] = [];
+  const walk = (list: CategoryNode[]) => {
+    for (const n of list) {
+      out.push(n);
+      if (n.children?.length) walk(n.children);
+    }
+  };
+  walk(nodes);
+  return out;
+};
+
+const filterCategoryTree = (nodes: CategoryNode[], keyword: string): CategoryNode[] => {
+  const q = keyword.trim().toLowerCase();
+  if (!q) return nodes;
+  const walk = (list: CategoryNode[]): CategoryNode[] =>
+    list
+      .map((n) => {
+        const children = n.children ? walk(n.children) : [];
+        const selfHit =
+          n.name.toLowerCase().includes(q) || n.key.toLowerCase().includes(q);
+        if (selfHit || children.length > 0) {
+          return { ...n, children };
+        }
+        return null;
+      })
+      .filter(Boolean) as CategoryNode[];
+  return walk(nodes);
+};
+
+const mapApiCategoryTree = (nodes: ApiDictCategory[]): CategoryNode[] =>
+  (nodes || []).map((n) => ({
+    id: n.id,
+    parentId: n.parentId ?? null,
+    key: n.key,
+    name: n.name,
+    isSystem: !!n.isSystem,
+    sortOrder: n.sortOrder ?? 1,
+    children: n.children ? mapApiCategoryTree(n.children) : [],
+  }));
 
 interface DictionaryViewProps {
   dictionary: DictionaryEntry[];
@@ -363,45 +434,189 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [treeKeyword, setTreeKeyword] = useState("");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
   // ===== 左侧分类：可右键新增/删除/重命名/刷新 =====
-  const [categoryList, setCategoryList] = useState<{ key: string; label: string }[]>(categoryLabels);
-  const [renamingKey, setRenamingKey] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState("");
+  const [categoryTree, setCategoryTree] = useState<CategoryNode[]>(() =>
+    mockCategoriesFromLabels(categoryLabels),
+  );
+  const [categorySheetMode, setCategorySheetMode] = useState<"create" | "rename" | null>(null);
+  const [categorySheetParent, setCategorySheetParent] = useState<CategoryNode | null>(null);
+  const [categorySheetTarget, setCategorySheetTarget] = useState<CategoryNode | null>(null);
+  const [categoryFormKey, setCategoryFormKey] = useState("");
+  const [categoryFormName, setCategoryFormName] = useState("");
+  const [categorySaving, setCategorySaving] = useState(false);
   const [treeRefreshing, setTreeRefreshing] = useState(false);
   const { currentPage, setCurrentPage, reset: resetPage, pageSize } = usePagination(10);
 
-  const handleAddCategory = () => {
-    const name = window.prompt(t("dictionary:tree.addPrompt"));
-    if (!name || !name.trim()) return;
-    const key = `CAT_${Date.now()}`;
-    setCategoryList((prev) => [...prev, { key, label: name.trim() }]);
-    setCategoryFilter(key);
-    showToast(t("dictionary:toast.categoryAdded", { name: name.trim() }));
-  };
-  const handleDeleteCategory = (key: string, label: string) => {
-    setCategoryList((prev) => prev.filter((c) => c.key !== key));
-    if (categoryFilter === key) setCategoryFilter("ALL");
-    showToast(t("dictionary:toast.categoryDeleted", { label }));
-  };
-  const startRename = (key: string, label: string) => {
-    setRenamingKey(key);
-    setRenameValue(label);
-  };
-  const commitRename = () => {
-    if (renamingKey && renameValue.trim()) {
-      setCategoryList((prev) => prev.map((c) => (c.key === renamingKey ? { ...c, label: renameValue.trim() } : c)));
-      showToast(t("dictionary:toast.categoryRenamed"));
+  const flatCategories = useMemo(() => flattenCategories(categoryTree), [categoryTree]);
+
+  const loadCategoryTree = async () => {
+    if (USE_MOCK) {
+      setCategoryTree(mockCategoriesFromLabels(categoryLabels));
+      return;
     }
-    setRenamingKey(null);
+    try {
+      const tree = await listDictionaryCategories();
+      setCategoryTree(mapApiCategoryTree(tree || []));
+    } catch {
+      showToast(t("dictionary:toast.treeLoadFailed"));
+    }
   };
+
+  useEffect(() => {
+    void loadCategoryTree();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [USE_MOCK]);
+
+  useEffect(() => {
+    if (USE_MOCK) {
+      setCategoryTree(mockCategoriesFromLabels(categoryLabels));
+    }
+  }, [categoryLabels]);
+
+  const openCreateCategorySheet = (parent: CategoryNode | null) => {
+    setCategorySheetMode("create");
+    setCategorySheetParent(parent);
+    setCategorySheetTarget(null);
+    setCategoryFormKey("");
+    setCategoryFormName("");
+  };
+
+  const openRenameCategorySheet = (node: CategoryNode) => {
+    setCategorySheetMode("rename");
+    setCategorySheetParent(null);
+    setCategorySheetTarget(node);
+    setCategoryFormKey(node.key);
+    setCategoryFormName(node.name);
+  };
+
+  const closeCategorySheet = () => {
+    setCategorySheetMode(null);
+    setCategorySheetParent(null);
+    setCategorySheetTarget(null);
+    setCategoryFormKey("");
+    setCategoryFormName("");
+  };
+
+  const handleSubmitCategorySheet = async () => {
+    const name = categoryFormName.trim();
+    if (categorySheetMode === "create") {
+      const key = categoryFormKey.trim().toLowerCase().replace(/\s+/g, "_");
+      if (!key || !name) {
+        showToast(t("dictionary:categorySheet.fieldsRequired"));
+        return;
+      }
+      setCategorySaving(true);
+      try {
+        if (USE_MOCK) {
+          const id = `CAT_${Date.now()}`;
+          const node: CategoryNode = {
+            id,
+            parentId: categorySheetParent?.id ?? null,
+            key,
+            name,
+            isSystem: false,
+            sortOrder: 99,
+            children: [],
+          };
+          if (!categorySheetParent) {
+            setCategoryTree((prev) => [...prev, node]);
+          } else {
+            const attach = (list: CategoryNode[]): CategoryNode[] =>
+              list.map((n) =>
+                n.id === categorySheetParent.id
+                  ? { ...n, children: [...(n.children || []), node] }
+                  : { ...n, children: n.children ? attach(n.children) : [] },
+              );
+            setCategoryTree((prev) => attach(prev));
+          }
+          setCategoryFilter(id);
+          showToast(t("dictionary:toast.categoryAdded", { name }));
+        } else {
+          const created = await createDictionaryCategory({
+            parentId: categorySheetParent?.id ?? null,
+            key,
+            name,
+          });
+          await loadCategoryTree();
+          setCategoryFilter(created.id);
+          showToast(t("dictionary:toast.categoryAdded", { name: created.name || name }));
+        }
+        closeCategorySheet();
+      } catch {
+        showToast(t("dictionary:toast.categorySaveFailed"));
+      } finally {
+        setCategorySaving(false);
+      }
+      return;
+    }
+
+    if (categorySheetMode === "rename" && categorySheetTarget) {
+      if (!name) {
+        showToast(t("dictionary:categorySheet.nameRequired"));
+        return;
+      }
+      setCategorySaving(true);
+      try {
+        if (USE_MOCK) {
+          const rename = (list: CategoryNode[]): CategoryNode[] =>
+            list.map((n) =>
+              n.id === categorySheetTarget.id
+                ? { ...n, name }
+                : { ...n, children: n.children ? rename(n.children) : [] },
+            );
+          setCategoryTree((prev) => rename(prev));
+          showToast(t("dictionary:toast.categoryRenamed"));
+        } else {
+          await updateDictionaryCategory(categorySheetTarget.id, { name });
+          await loadCategoryTree();
+          showToast(t("dictionary:toast.categoryRenamed"));
+        }
+        closeCategorySheet();
+      } catch {
+        showToast(t("dictionary:toast.categorySaveFailed"));
+      } finally {
+        setCategorySaving(false);
+      }
+    }
+  };
+
+  const handleDeleteCategory = async (node: CategoryNode) => {
+    if (node.isSystem) {
+      showToast(t("dictionary:tree.deleteBlocked"));
+      return;
+    }
+    try {
+      if (USE_MOCK) {
+        const remove = (list: CategoryNode[]): CategoryNode[] =>
+          list
+            .filter((n) => n.id !== node.id)
+            .map((n) => ({ ...n, children: n.children ? remove(n.children) : [] }));
+        setCategoryTree((prev) => remove(prev));
+      } else {
+        await deleteDictionaryCategory(node.id);
+        await loadCategoryTree();
+      }
+      if (categoryFilter === node.id) setCategoryFilter("ALL");
+      showToast(t("dictionary:toast.categoryDeleted", { label: node.name }));
+    } catch {
+      showToast(t("dictionary:toast.categoryDeleteFailed"));
+    }
+  };
+
   const handleRefreshTree = () => {
     setTreeRefreshing(true);
-    setTimeout(() => {
-      setCategoryList(categoryLabels);
+    void (async () => {
+      await loadCategoryTree();
       setTreeRefreshing(false);
       showToast(t("dictionary:toast.treeRefreshed"));
-    }, 400);
+    })();
   };
   useEffect(() => { resetPage(); }, [categoryFilter, searchQuery, resetPage]);
 
@@ -420,11 +635,11 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [activeCodeEntry, setActiveCodeEntry] = useState<DictionaryEntry | null>(null);
   const [editingEntry, setEditingEntry] = useState<DictionaryEntry | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Form State
   const [formKey, setFormKey] = useState("");
   const [formCategory, setFormCategory] = useState<DictionaryCategory>("COMMON");
+  const [formCategoryId, setFormCategoryId] = useState<string>("");
   const [formPlatforms, setFormPlatforms] = useState<ProjectPlatform[]>([
     "CHECKOUT",
     "PORTAL",
@@ -493,11 +708,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setCustomLangFlag("");
   };
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
-
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(id);
@@ -508,10 +718,22 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setExpandedKeys((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleOpenAdd = (presetCategory?: DictionaryCategory) => {
+  const resolveCategorySelection = (idOrKey?: string) => {
+    const hit =
+      flatCategories.find((c) => c.id === idOrKey) ||
+      flatCategories.find((c) => c.key === idOrKey) ||
+      flatCategories[0];
+    return hit;
+  };
+
+  const handleOpenAdd = (presetCategory?: DictionaryCategory | string) => {
     setEditingEntry(null);
     setFormKey("");
-    setFormCategory(presetCategory || "COMMON");
+    const hit = resolveCategorySelection(
+      typeof presetCategory === "string" ? presetCategory : categoryFilter !== "ALL" ? categoryFilter : undefined,
+    );
+    setFormCategory((hit?.key as DictionaryCategory) || "COMMON");
+    setFormCategoryId(hit?.id || "");
     setFormPlatforms(["CHECKOUT", "PORTAL", "EMAIL_NOTIFY", "MOBILE_SDK"]);
     setFormDescription("");
     setFormTranslations(emptyTranslations());
@@ -522,6 +744,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
     setEditingEntry(entry);
     setFormKey(entry.key);
     setFormCategory(entry.category);
+    setFormCategoryId(entry.categoryId || resolveCategorySelection(entry.category)?.id || "");
     setFormPlatforms(entry.platforms || ["CHECKOUT", "PORTAL", "EMAIL_NOTIFY"]);
     setFormDescription(entry.description);
     const translationsMap: Record<string, string> = {};
@@ -582,6 +805,8 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const handleApplyPreset = (preset: (typeof PROJECT_PRESET_ENTRIES)[0]) => {
     setFormKey(preset.key);
     setFormCategory(preset.category);
+    const hit = resolveCategorySelection(preset.category);
+    setFormCategoryId(hit?.id || "");
     setFormPlatforms(preset.platforms);
     setFormDescription(preset.description);
     const translationsMap: Record<string, string> = {};
@@ -609,6 +834,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         ...editingEntry,
         key: formKey.trim(),
         category: formCategory,
+        categoryId: formCategoryId || editingEntry.categoryId,
         platforms: formPlatforms,
         description: formDescription.trim(),
         translations: guaranteedTranslations,
@@ -622,6 +848,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         id: `dict_${Date.now().toString().slice(-6)}`,
         key: formKey.trim(),
         category: formCategory,
+        categoryId: formCategoryId || undefined,
         platforms: formPlatforms,
         description: formDescription.trim(),
         referencedTemplatesCount: 1,
@@ -716,7 +943,10 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   };
 
   const filteredEntries = entryList.filter((item) => {
-    const matchesCategory = categoryFilter === "ALL" || item.category === categoryFilter;
+    const matchesCategory =
+      categoryFilter === "ALL" ||
+      item.categoryId === categoryFilter ||
+      item.category === categoryFilter;
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !query ||
@@ -729,12 +959,112 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const currentCategoryLabel =
     categoryFilter === "ALL"
       ? t("dictionary:tree.all")
-      : categoryList.find((c) => c.key === categoryFilter)?.label || t("dictionary:tree.all");
+      : flatCategories.find((c) => c.id === categoryFilter || c.key === categoryFilter)?.name ||
+        t("dictionary:tree.all");
 
-  const visibleCategoryKeys = categoryList.filter((c) =>
-    !treeKeyword ||
-    c.label.toLowerCase().includes(treeKeyword.toLowerCase())
+  const visibleCategoryTree = useMemo(
+    () => filterCategoryTree(categoryTree, treeKeyword),
+    [categoryTree, treeKeyword],
   );
+
+  const countEntriesForCategory = (node: CategoryNode) =>
+    entryList.filter((e) => e.categoryId === node.id || e.category === node.key).length;
+
+  const isSystemCategoryEntry = (entry: DictionaryEntry) => {
+    const cat =
+      flatCategories.find((c) => c.id === entry.categoryId) ||
+      flatCategories.find((c) => c.key === entry.category);
+    return !!cat?.isSystem;
+  };
+
+  const renderCategoryNode = (node: CategoryNode, depth = 0): React.ReactNode => {
+    const count = countEntriesForCategory(node);
+    const active = categoryFilter === node.id || categoryFilter === node.key;
+    const menuItems: ContextMenuItem[] = [
+      {
+        key: "add-sibling",
+        label: t("dictionary:tree.addSibling"),
+        onClick: () =>
+          openCreateCategorySheet(
+            node.parentId ? flatCategories.find((c) => c.id === node.parentId) || null : null,
+          ),
+      },
+      {
+        key: "add-child",
+        label: t("dictionary:tree.addChild"),
+        onClick: () => openCreateCategorySheet(node),
+      },
+      {
+        key: "rename",
+        label: t("dictionary:tree.rename"),
+        onClick: () => openRenameCategorySheet(node),
+      },
+      ...(!node.isSystem
+        ? [
+            {
+              key: "del",
+              label: t("dictionary:tree.delete"),
+              danger: true,
+              onClick: () => {
+                void handleDeleteCategory(node);
+              },
+            } as ContextMenuItem,
+          ]
+        : []),
+      {
+        key: "refresh",
+        label: t("dictionary:tree.refresh"),
+        onClick: handleRefreshTree,
+      },
+    ];
+
+    return (
+      <div key={node.id} className="space-y-0.5">
+        <ContextMenu
+          items={menuItems}
+          trigger={
+            <button
+              type="button"
+              onClick={() => setCategoryFilter(node.id)}
+              style={{ paddingLeft: `${8 + depth * 12}px` }}
+              className={`relative w-full flex items-center gap-2 pr-2 py-1.5 rounded text-xs cursor-pointer transition-all border ${
+                active
+                  ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm"
+                  : "text-fg-secondary hover:bg-hover border-transparent"
+              }`}
+            >
+              {active && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-r-full" />
+              )}
+              <span
+                className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                  active ? "bg-blue-500" : "bg-subtle border border-line-subtle"
+                }`}
+              >
+                <FolderTree className={`w-3.5 h-3.5 ${active ? "text-white" : "text-fg-tertiary"}`} />
+              </span>
+              <span className="flex-1 text-left truncate flex items-center gap-1">
+                <span className="truncate">{node.name}</span>
+                {node.isSystem && (
+                  <span className="text-[9px] px-1 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                    {t("dictionary:tree.systemBadge")}
+                  </span>
+                )}
+              </span>
+              <span
+                className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
+                  active ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          }
+        />
+        {(node.children || []).map((child) => renderCategoryNode(child, depth + 1))}
+      </div>
+    );
+  };
 
   // 计算词条关联位置（映射到多语言关联点：邮件模板 / 收银台 / 网关等）
   const getReferencePoints = (item: DictionaryEntry) => {
@@ -901,58 +1231,16 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             }`}>{entryList.length}</span>
           </button>
 
-          {visibleCategoryKeys.map((c) => {
-            const count = entryList.filter((e) => e.category === c.key).length;
-            return (
-              <ContextMenu
-                key={c.key}
-                items={[
-                  { key: "add", label: t("dictionary:tree.addSibling"), onClick: handleAddCategory },
-                  { key: "rename", label: t("dictionary:tree.rename"), onClick: () => startRename(c.key, c.label) },
-                  { key: "del", label: t("dictionary:tree.delete"), danger: true, onClick: () => handleDeleteCategory(c.key, c.label) },
-                  { key: "refresh", label: t("dictionary:tree.refresh"), onClick: handleRefreshTree },
-                ]}
-                trigger={
-                  renamingKey === c.key ? (
-                    <input
-                      autoFocus
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      onBlur={commitRename}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") commitRename();
-                        if (e.key === "Escape") setRenamingKey(null);
-                      }}
-                      className="w-full px-2.5 py-1.5 rounded text-xs bg-subtle border border-primary text-fg"
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setCategoryFilter(c.key)}
-                      className={`relative w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-all border ${
-                        categoryFilter === c.key
-                          ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm"
-                          : "text-fg-secondary hover:bg-hover border-transparent"
-                      }`}
-                    >
-                      {categoryFilter === c.key && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-r-full" />
-                      )}
-                      <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
-                        categoryFilter === c.key ? "bg-blue-500" : "bg-subtle border border-line-subtle"
-                      }`}>
-                        <FolderTree className={`w-3.5 h-3.5 ${categoryFilter === c.key ? "text-white" : "text-fg-tertiary"}`} />
-                      </span>
-                      <span className="flex-1 text-left truncate">{c.label}</span>
-                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
-                        categoryFilter === c.key ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
-                      }`}>{count}</span>
-                    </button>
-                  )
-                }
-              />
-            );
-          })}
+          <button
+            type="button"
+            onClick={() => openCreateCategorySheet(null)}
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-[11px] text-blue-600 hover:bg-blue-50 border border-transparent cursor-pointer"
+          >
+            <Plus className="w-3 h-3" />
+            {t("dictionary:tree.addSibling")}
+          </button>
+
+          {visibleCategoryTree.map((c) => renderCategoryNode(c))}
         </div>
       </div>
 
@@ -1102,19 +1390,21 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               >
                                 {t("dictionary:table.edit")}
                               </button>
-                              <Popconfirm
-                                title={t("dictionary:deleteEntry.title", { key: item.key })}
-                                description={t("dictionary:deleteEntry.description")}
-                                onConfirm={() => handleDelete(item.id, item.key)}
-                              >
-                                <button
-                                  type="button"
-                                  className="text-rose-500 hover:text-rose-700 font-medium cursor-pointer"
-                                  title={t("dictionary:table.deleteTitle")}
+                              {!isSystemCategoryEntry(item) && (
+                                <Popconfirm
+                                  title={t("dictionary:deleteEntry.title", { key: item.key })}
+                                  description={t("dictionary:deleteEntry.description")}
+                                  onConfirm={() => handleDelete(item.id, item.key)}
                                 >
-                                  {t("dictionary:table.delete")}
-                                </button>
-                              </Popconfirm>
+                                  <button
+                                    type="button"
+                                    className="text-rose-500 hover:text-rose-700 font-medium cursor-pointer"
+                                    title={t("dictionary:table.deleteTitle")}
+                                  >
+                                    {t("dictionary:table.delete")}
+                                  </button>
+                                </Popconfirm>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1480,6 +1770,27 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
             <div>
               <label className="font-semibold text-fg-secondary block mb-1">
+                {t("dictionary:editSheet.categoryLabel")} <span className="text-rose-500">*</span>
+              </label>
+              <ShadcnSelect
+                value={formCategoryId || formCategory}
+                onValueChange={(v) => {
+                  const hit = resolveCategorySelection(v);
+                  if (hit) {
+                    setFormCategoryId(hit.id);
+                    setFormCategory(hit.key as DictionaryCategory);
+                  }
+                }}
+                options={flatCategories.map((c) => ({
+                  value: c.id,
+                  label: c.name,
+                }))}
+                placeholder={t("dictionary:editSheet.categoryLabel")}
+              />
+            </div>
+
+            <div>
+              <label className="font-semibold text-fg-secondary block mb-1">
                 {t("dictionary:editSheet.descLabel")}
               </label>
               <input
@@ -1545,6 +1856,80 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           </form>
         </SideSheet>
       )}
+
+      {/* Category add / rename SideSheet */}
+      <SideSheet
+        id="side-sheet-dict-category"
+        isOpen={categorySheetMode !== null}
+        onClose={closeCategorySheet}
+        title={
+          categorySheetMode === "rename"
+            ? t("dictionary:categorySheet.renameTitle")
+            : t("dictionary:categorySheet.createTitle")
+        }
+        description={t("dictionary:categorySheet.description")}
+        icon={<FolderTree className="w-5 h-5 text-blue-600" />}
+        widthClass="max-w-md"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={closeCategorySheet}
+              className="px-3 py-2 border border-line text-fg-secondary rounded hover:bg-hover font-semibold cursor-pointer"
+            >
+              {t("dictionary:categorySheet.cancel")}
+            </button>
+            <button
+              type="button"
+              disabled={categorySaving}
+              onClick={() => {
+                void handleSubmitCategorySheet();
+              }}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded font-semibold cursor-pointer"
+            >
+              {categorySheetMode === "rename"
+                ? t("dictionary:categorySheet.submitRename")
+                : t("dictionary:categorySheet.submitCreate")}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3 text-xs">
+          {categorySheetMode === "create" && (
+            <p className="text-fg-tertiary">
+              {categorySheetParent
+                ? t("dictionary:categorySheet.parentHint", { name: categorySheetParent.name })
+                : t("dictionary:categorySheet.rootHint")}
+            </p>
+          )}
+          {categorySheetMode === "create" && (
+            <div>
+              <label className="font-semibold text-fg-secondary block mb-1">
+                {t("dictionary:categorySheet.keyLabel")}
+              </label>
+              <input
+                type="text"
+                value={categoryFormKey}
+                onChange={(e) => setCategoryFormKey(e.target.value)}
+                placeholder={t("dictionary:categorySheet.keyPlaceholder")}
+                className="w-full p-2 bg-surface border border-line rounded font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          )}
+          <div>
+            <label className="font-semibold text-fg-secondary block mb-1">
+              {t("dictionary:categorySheet.nameLabel")}
+            </label>
+            <input
+              type="text"
+              value={categoryFormName}
+              onChange={(e) => setCategoryFormName(e.target.value)}
+              placeholder={t("dictionary:categorySheet.namePlaceholder")}
+              className="w-full p-2 bg-surface border border-line rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        </div>
+      </SideSheet>
     </div>
   );
 };

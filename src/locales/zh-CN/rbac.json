@@ -1,4 +1,67 @@
 {
+  "appScopeSelect": {
+    "allToggle": "授权全部应用（ALL）",
+    "placeholder": "选择授权访问的出海应用（可多选）..."
+  },
+  "packs": {
+    "title": "权限包管理",
+    "subtitle": "权限包绑定菜单树节点；角色通过多选权限包获得菜单访问能力。",
+    "searchPlaceholder": "搜索权限包名称 / Key / 描述...",
+    "addPack": "新建权限包",
+    "editPack": "编辑权限包",
+    "deletePack": "删除权限包",
+    "configureMenus": "配置菜单",
+    "infoBanner": "在此维护权限包与菜单树勾选；角色页只需绑定权限包与应用范围，不再直接勾选菜单。",
+    "empty": {
+      "noPacks": "暂无权限包，请先创建。",
+      "noMatch": "未找到匹配的权限包"
+    },
+    "table": {
+      "name": "权限包名称",
+      "key": "标识 (Key)",
+      "description": "描述",
+      "menuCount": "菜单节点",
+      "operations": "操作"
+    },
+    "menuCountUnit": "{{count}} 项",
+    "form": {
+      "createTitle": "新建权限包",
+      "editTitle": "编辑权限包：{{name}}",
+      "key": "权限包 Key",
+      "keyPlaceholder": "如：PACK_OPS_READONLY",
+      "keyHint": "创建后不可修改；建议大写蛇形命名。",
+      "name": "显示名称",
+      "namePlaceholder": "如：运营只读权限包",
+      "description": "描述",
+      "descPlaceholder": "说明该权限包覆盖的菜单范围...",
+      "createHint": "创建后可立即配置菜单树权限。",
+      "editDescription": "修改权限包基础信息；菜单请在列表中点击「配置菜单」。",
+      "create": "创建权限包",
+      "save": "保存权限包"
+    },
+    "menuSheet": {
+      "title": "配置菜单：{{name}}",
+      "description": "勾选该权限包包含的菜单节点，完成后点击保存。",
+      "hint": "与侧边栏 / 菜单管理数据一致，父子节点联动勾选。",
+      "summary": "已勾选菜单 {{menuCount}} 项。",
+      "save": "保存菜单配置"
+    },
+    "toast": {
+      "created": "权限包【{{name}}】创建成功",
+      "updated": "权限包【{{name}}】已更新",
+      "deleted": "权限包【{{name}}】已删除",
+      "menusSaved": "权限包【{{name}}】菜单配置已保存",
+      "nameRequired": "请填写权限包名称",
+      "keyRequired": "请填写权限包 Key",
+      "refreshed": "权限包列表已刷新",
+      "saveFailed": "保存失败，请稍后重试",
+      "deleteFailed": "删除失败（可能仍被角色引用）"
+    },
+    "confirm": {
+      "deleteTitle": "确认删除权限包【{{name}}】？",
+      "deleteDesc": "若仍有角色绑定该权限包将无法删除；删除后不可恢复。"
+    }
+  },
   "permissions": {
     "title": "RBAC 权限矩阵与角色策略",
     "subtitle": "为各系统角色配置菜单树访问权限、应用级数据隔离与功能操作授权，支持克隆与批量保存。",
@@ -315,6 +378,16 @@
       "initialPasswordTitle": "初始密码已生成",
       "initialPasswordHint": "请妥善保存以下密码，关闭后将无法再次查看："
     },
+    "credentials": {
+      "createdTitle": "用户已创建，请保存登录凭证",
+      "resetTitle": "密码已重置，请保存登录凭证",
+      "hint": "关闭后将无法再次查看密码，请立即复制并妥善保管。",
+      "accountLabel": "登录账号",
+      "passwordLabel": "登录密码",
+      "copyButton": "复制账号和密码",
+      "copied": "已复制",
+      "copyText": "登录账号：{{email}}\n登录密码：{{password}}"
+    },
     "resetPassword": "重置密码",
     "resetPasswordTitle": "重置用户「{{name}}」的登录密码？",
     "resetPasswordDesc": "将生成新的随机密码，旧密码立即失效。",
@@ -326,7 +399,13 @@
       "updated": "系统用户【{{name}}】权限与资料已保存！",
       "created": "新系统用户【{{name}}】已成功创建并分配权限！",
       "enabled": "用户【{{name}}】已成功启用",
-      "disabled": "用户【{{name}}】已停用账号访问权限"
+      "disabled": "用户【{{name}}】已停用账号访问权限",
+      "passwordGenerated": "初始密码：{{password}}（仅显示一次）",
+      "passwordReset": "用户【{{name}}】新密码：{{password}}（仅显示一次）",
+      "saveFailed": "保存失败，请稍后重试",
+      "actionFailed": "操作失败，请稍后重试",
+      "credentialsCopied": "账号和密码已复制到剪贴板",
+      "copyFailed": "复制失败，请手动选择后复制"
     }
   }
 }

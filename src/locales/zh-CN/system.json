@@ -138,9 +138,16 @@
     "categories": {
       "payment": "支付", "email": "邮件", "risk": "风控", "settlement": "结算", "system": "系统", "all": "全部"
     },
+    "taskLog": {
+      "running": "手动触发执行中...", "success": "手动触发执行完成，处理正常",
+      "failed": "手动触发执行失败：模拟随机错误", "successShort": "手动触发执行完成", "failedShort": "手动触发执行失败"
+    },
+    "currentUser": "当前用户",
+    "executorDisabled": "定时任务执行器未启用",
     "params": {
       "categoryLabel": "分类:",
       "searchPlaceholder": "搜索参数键 / 描述...",
+      "empty": "暂无系统参数，可点击右上角新增",
       "table": {
         "key": "参数键 (Key)", "value": "参数值 (Value)", "description": "描述",
         "category": "分类", "updatedAt": "更新时间", "updatedBy": "操作人"
@@ -148,14 +155,20 @@
       "menu": { "edit": "编辑", "delete": "删除", "refresh": "刷新" }
     },
     "tasks": {
-      "summary": "共 {{count}} 个任务，双击行查看执行日志",
+      "summary": "共 {{count}} 个任务，点击行查看执行日志",
       "searchPlaceholder": "搜索任务名称 / 类型...",
+      "empty": "暂无定时任务",
       "table": {
         "name": "任务名称", "type": "任务类型", "cron": "Cron 表达式",
         "lastRun": "上次执行", "lastStatus": "上次状态", "nextRun": "下次执行", "status": "状态"
       },
       "menu": { "view": "查看详情", "enable": "启用", "disable": "停用", "trigger": "手动触发", "refresh": "刷新" },
       "enabled": "启用", "disabled": "停用"
+    },
+    "taskDetail": {
+      "back": "返回任务列表",
+      "notFound": "任务不存在或已删除",
+      "runsEmpty": "暂无执行记录"
     },
     "runStatus": { "SUCCESS": "成功", "FAILED": "失败", "RUNNING": "运行中" },
     "paramSheet": {
@@ -169,16 +182,12 @@
     "taskSheet": {
       "title": "任务详情 - {{name}}", "titleFallback": "任务详情",
       "description": "类型：{{type}} · Cron：{{cron}}",
-      "triggerTitle": "确认手动触发该任务？", "triggerDescription": "将立即执行一次，约 1.5 秒后返回结果。",
+      "triggerTitle": "确认手动触发该任务？",
+      "triggerDescription": "执行器未接入前将返回未启用提示。",
       "triggerConfirm": "立即触发", "triggering": "执行中...", "trigger": "手动触发",
       "cron": "Cron 表达式", "nextRun": "下次执行", "logs": "执行日志",
       "logTable": { "time": "时间", "status": "状态", "duration": "耗时", "summary": "输出摘要" }
-    },
-    "taskLog": {
-      "running": "手动触发执行中...", "success": "手动触发执行完成，处理正常",
-      "failed": "手动触发执行失败：模拟随机错误", "successShort": "手动触发执行完成", "failedShort": "手动触发执行失败"
-    },
-    "currentUser": "当前用户"
+    }
   },
   "riskRules": {
     "title": "风控规则与黑名单",

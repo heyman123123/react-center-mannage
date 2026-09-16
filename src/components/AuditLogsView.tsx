@@ -1,32 +1,153 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollText, Search, Eye, RefreshCw, CheckCircle2, ShieldBan, AlertTriangle, User, Download } from "lucide-react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { SideSheet } from "./ui/SideSheet";
-import { ShadcnSelect } from "./ui/select";
 import { ContextMenu } from "./ui/ContextMenu";
+import { MultiSelect } from "./ui/MultiSelect";
 import { AuditLog } from "../types/payment";
 import { exportToCSV } from "../lib/utils";
 import { INITIAL_AUDIT_LOGS } from "../data/mockData";
+import { USE_MOCK } from "../api/config";
+import {
+  listAuditLogs,
+  listDictionaryEntries,
+  listUsers,
+  type ApiAuditLog,
+} from "../api/modules/iam";
+import { ApiError } from "../api/types";
+import { formatUnix, toUnixSeconds } from "../lib/time";
 
 interface AuditLogsViewProps {
-  /** 兼容旧 props 接口；传入时直接使用，未传入时走模拟 API 取数 */
   logs?: AuditLog[];
+}
+
+function mapApiLog(row: ApiAuditLog): AuditLog {
+  return {
+    id: row.id,
+    timestamp: formatUnix(row.timestamp),
+    userId: row.userId,
+    userName: row.userName,
+    operator: row.operator || row.userName,
+    operatorRole: row.operatorRole || row.role,
+    role: row.role,
+    tenantId: "group_hq",
+    action: row.action,
+    targetResource: row.targetResource,
+    targetId: row.targetId,
+    details: row.details,
+    ipAddress: row.ipAddress || "-",
+    status: (row.status as AuditLog["status"]) || "SUCCESS",
+  };
 }
 
 export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
   const { t } = useTranslation(["system", "common"]);
   const [rows, setRows] = useState<AuditLog[]>(logs ?? []);
   const [dataLoading, setDataLoading] = useState<boolean>(!logs);
-  const [operatorFilter, setOperatorFilter] = useState("ALL");
-  const [actionFilter, setActionFilter] = useState("ALL");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [selectedActions, setSelectedActions] = useState<string[]>([]);
   const [timeRange, setTimeRange] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [detailLog, setDetailLog] = useState<AuditLog | null>(null);
+  const [actionOptions, setActionOptions] = useState<{ value: string; label: string }[]>([]);
+  const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
-  useEffect(() => { reset(); }, [operatorFilter, actionFilter, timeRange, searchQuery, reset]);
+  useEffect(() => { reset(); }, [selectedUserIds, selectedActions, timeRange, searchQuery, reset]);
+
+  const actionLabelMap = useMemo(() => {
+    const m = new Map<string, string>();
+    actionOptions.forEach((o) => m.set(o.value, o.label));
+    return m;
+  }, [actionOptions]);
+
+  const actionLabel = (code: string) => actionLabelMap.get(code) || code;
+
+  useEffect(() => {
+    if (USE_MOCK || logs) {
+      setActionOptions(
+        Array.from(new Set((logs ?? INITIAL_AUDIT_LOGS).map((l) => l.action)))
+          .sort()
+          .map((a) => ({ value: a, label: a })),
+      );
+      return;
+    }
+    void (async () => {
+      try {
+        const page = await listDictionaryEntries({ namespace: "audit_action", pageSize: 100 });
+        setActionOptions(
+          (page.list || []).map((e) => ({
+            value: e.entryKey || e.key,
+            label: e.label || e.translations?.["zh-CN"] || e.entryKey || e.key,
+          })),
+        );
+      } catch {
+        setActionOptions([]);
+      }
+    })();
+  }, [logs]);
+
+  useEffect(() => {
+    if (USE_MOCK || logs) {
+      const names = Array.from(new Set((logs ?? INITIAL_AUDIT_LOGS).map((l) => l.operator || l.userName || ""))).filter(Boolean);
+      setUserOptions(names.map((n) => ({ value: n, label: n })));
+      return;
+    }
+    void (async () => {
+      try {
+        const page = await listUsers({ page: 1, pageSize: 200 });
+        setUserOptions(
+          (page.list || []).map((u) => ({
+            value: u.id,
+            label: u.email ? `${u.name} (${u.email})` : u.name,
+          })),
+        );
+      } catch {
+        setUserOptions([]);
+      }
+    })();
+  }, [logs]);
+
+  const loadRows = useCallback(async () => {
+    setDataLoading(true);
+    try {
+      if (logs) {
+        setRows(logs);
+        return;
+      }
+      if (USE_MOCK) {
+        await new Promise((r) => setTimeout(r, 200));
+        setRows(INITIAL_AUDIT_LOGS);
+        return;
+      }
+      const page = await listAuditLogs({
+        page: 1,
+        pageSize: 200,
+        keyword: searchQuery || undefined,
+        actions: selectedActions.length ? selectedActions.join(",") : undefined,
+        userIds: selectedUserIds.length ? selectedUserIds.join(",") : undefined,
+      });
+      setRows((page.list || []).map(mapApiLog));
+    } catch (err) {
+      setRows([]);
+      if (err instanceof ApiError) setToast(err.message);
+    } finally {
+      setDataLoading(false);
+    }
+  }, [logs, searchQuery, selectedActions, selectedUserIds]);
+
+  useEffect(() => {
+    void loadRows();
+  }, [loadRows]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const id = window.setTimeout(() => setToast(null), 2800);
+    return () => window.clearTimeout(id);
+  }, [toast]);
 
   const STATUS_META = useMemo(
     (): Record<string, { label: string; badge: string; icon: React.ReactNode }> => ({
@@ -59,41 +180,37 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
     [t]
   );
 
-  useEffect(() => {
-    if (logs) { setRows(logs); setDataLoading(false); return; }
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      if (!cancelled) { setRows(INITIAL_AUDIT_LOGS); setDataLoading(false); }
-    }, 300 + Math.random() * 300);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [logs]);
-
   const operatorName = (l: AuditLog) => l.operator || l.userName || t("system:audit.systemOperator");
 
-  const operators = useMemo(
-    () => Array.from(new Set(rows.map(operatorName))).sort(),
-    [rows, t]
-  );
-  const actions = useMemo(
-    () => Array.from(new Set(rows.map((l) => l.action))).sort(),
-    [rows]
-  );
-
   const refNow = useMemo(() => {
-    const max = rows.reduce((acc, l) => (l.timestamp > acc ? l.timestamp : acc), "");
-    return max ? new Date(max.replace(" ", "T")).getTime() : Date.now();
+    const max = rows.reduce((acc, l) => {
+      const sec = toUnixSeconds(l.timestamp) || 0;
+      return sec > acc ? sec : acc;
+    }, 0);
+    return max > 0 ? max * 1000 : Date.now();
   }, [rows]);
 
   const filtered = useMemo(() => {
     return rows.filter((l) => {
-      const matchOperator = operatorFilter === "ALL" || operatorName(l) === operatorFilter;
-      const matchAction = actionFilter === "ALL" || l.action === actionFilter;
+      let matchOperator = true;
+      let matchAction = true;
+      if (USE_MOCK || logs) {
+        if (selectedUserIds.length) {
+          matchOperator = selectedUserIds.includes(l.userId || "") || selectedUserIds.includes(operatorName(l));
+        }
+        if (selectedActions.length) {
+          matchAction = selectedActions.includes(l.action);
+        }
+      }
       const matchSearch =
+        !searchQuery ||
         (l.targetResource || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (l.details || "").toLowerCase().includes(searchQuery.toLowerCase());
+        (l.details || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        l.action.toLowerCase().includes(searchQuery.toLowerCase());
 
       let matchTime = true;
-      const ts = new Date(l.timestamp.replace(" ", "T")).getTime();
+      const sec = toUnixSeconds(l.timestamp);
+      const ts = sec != null ? sec * 1000 : 0;
       if (timeRange === "today") {
         matchTime = new Date(ts).toDateString() === new Date(refNow).toDateString();
       } else if (timeRange === "7d") {
@@ -103,7 +220,7 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
       }
       return matchOperator && matchAction && matchSearch && matchTime;
     });
-  }, [rows, operatorFilter, actionFilter, timeRange, searchQuery, refNow, t]);
+  }, [rows, selectedUserIds, selectedActions, timeRange, searchQuery, refNow, logs, t]);
 
   const handleExport = () => {
     exportToCSV(
@@ -121,7 +238,7 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
         t("system:audit.exportHeaders.status"),
       ],
       filtered.map((l) => [
-        l.timestamp, operatorName(l), l.operatorRole || l.role || "", l.action,
+        l.timestamp, operatorName(l), l.operatorRole || l.role || "", actionLabel(l.action),
         l.targetResource || "", l.targetId || "", l.details || "", l.ipAddress, l.tenantId, l.status || "",
       ])
     );
@@ -133,6 +250,11 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
 
   return (
     <div className="space-y-4">
+      {toast && (
+        <div className="fixed top-4 right-4 z-[100] px-3 py-2 rounded-lg bg-fg text-page text-xs shadow-card">
+          {toast}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
@@ -144,21 +266,21 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
           <p className="text-xs text-fg-secondary mt-1 max-w-2xl">{t("system:audit.subtitle")}</p>
         </div>
         <button
+          type="button"
           onClick={handleExport}
-          className="inline-flex items-center gap-1.5 px-3 py-2 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-semibold self-start md:self-auto"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-line bg-surface hover:bg-hover self-start"
         >
-          <Download className="w-4 h-4" />
-          {t("system:audit.exportCsv")}
+          <Download className="w-3.5 h-3.5" /> {t("common:actions.exportCsv")}
         </button>
       </div>
 
-      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card space-y-2.5">
-        <div className="flex flex-col md:flex-row md:items-center gap-2 flex-wrap">
+      <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card space-y-3 text-xs">
+        <div className="flex flex-col md:flex-row md:items-center gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-fg-tertiary text-xs">{t("system:audit.timeRange")}</span>
             {TIME_RANGES.map((tr) => (
               <button
                 key={tr.key}
+                type="button"
                 onClick={() => setTimeRange(tr.key)}
                 className={`px-2.5 py-1.5 rounded-lg font-medium text-xs transition-colors ${
                   timeRange === tr.key ? "bg-primary text-primary-foreground" : "bg-hover text-fg-secondary hover:bg-hover"
@@ -182,18 +304,22 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label className="block text-[11px] text-fg-tertiary mb-1">{t("system:audit.operatorLabel")}</label>
-            <ShadcnSelect
-              value={operatorFilter}
-              onValueChange={setOperatorFilter}
-              options={[{ value: "ALL", label: t("system:audit.allOperators") }, ...operators.map((o) => ({ value: o, label: o }))]}
+            <MultiSelect
+              searchable
+              value={selectedUserIds}
+              onValueChange={setSelectedUserIds}
+              options={userOptions}
+              placeholder={t("system:audit.allOperators")}
             />
           </div>
           <div>
             <label className="block text-[11px] text-fg-tertiary mb-1">{t("system:audit.actionTypeLabel")}</label>
-            <ShadcnSelect
-              value={actionFilter}
-              onValueChange={setActionFilter}
-              options={[{ value: "ALL", label: t("system:audit.allTypes") }, ...actions.map((a) => ({ value: a, label: a }))]}
+            <MultiSelect
+              searchable
+              value={selectedActions}
+              onValueChange={setSelectedActions}
+              options={actionOptions}
+              placeholder={t("system:audit.allTypes")}
             />
           </div>
         </div>
@@ -224,7 +350,7 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
                         key: "refresh",
                         label: t("system:audit.menu.refresh"),
                         icon: <RefreshCw className="w-3.5 h-3.5" />,
-                        onClick: () => setRows((prev) => [...prev]),
+                        onClick: () => void loadRows(),
                       },
                     ]}
                     trigger={
@@ -242,7 +368,7 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
                         </td>
                         <td className="py-3 px-3">
                           <span className="px-2 py-0.5 rounded font-mono text-[11px] font-semibold bg-subtle text-fg border border-line">
-                            {l.action}
+                            {actionLabel(l.action)}
                           </span>
                         </td>
                         <td className="py-3 px-3">
@@ -275,7 +401,7 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
         isOpen={!!detailLog}
         onClose={() => setDetailLog(null)}
         title={detailLog ? t("system:audit.detail.title", { id: detailLog.id }) : t("system:audit.detail.titleFallback")}
-        description={detailLog ? `${detailLog.action} · ${detailLog.timestamp}` : ""}
+        description={detailLog ? `${actionLabel(detailLog.action)} · ${detailLog.timestamp}` : ""}
         icon={<ScrollText className="w-5 h-5 text-fg" />}
         widthClass="max-w-2xl max-md:max-w-none"
         footer={
@@ -286,34 +412,19 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
       >
         {detailLog && (
           <div className="space-y-3 text-xs">
-            <div className="bg-subtle p-3 rounded-xl border border-line space-y-1.5">
-              <div className="flex items-center justify-between">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-subtle p-3 rounded-xl border border-line">
                 <span className="text-fg-tertiary">{t("system:audit.detail.operator")}</span>
-                <span className="font-semibold text-fg">{operatorName(detailLog)}</span>
+                <div className="font-semibold text-fg mt-1">{operatorName(detailLog)}</div>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="bg-subtle p-3 rounded-xl border border-line">
                 <span className="text-fg-tertiary">{t("system:audit.detail.actionType")}</span>
-                <span className="font-mono text-fg">{detailLog.action}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-fg-tertiary">{t("system:audit.detail.status")}</span>
-                {(() => {
-                  const sm = STATUS_META[detailLog.status || "SUCCESS"] || STATUS_META.SUCCESS;
-                  return (
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border ${sm.badge}`}>
-                      {sm.icon}
-                      {sm.label}
-                    </span>
-                  );
-                })()}
+                <div className="font-semibold text-fg mt-1">{actionLabel(detailLog.action)}</div>
               </div>
             </div>
-            <div>
-              <div className="font-semibold text-fg-secondary mb-1.5">{t("system:audit.detail.jsonTitle")}</div>
-              <pre className="p-3 bg-primary text-emerald-400 rounded-xl font-mono text-[11px] overflow-x-auto max-h-[420px] overflow-y-auto">
-                {JSON.stringify(detailLog, null, 2)}
-              </pre>
-            </div>
+            <pre className="bg-subtle border border-line rounded-xl p-3 overflow-auto text-[11px] font-mono text-fg-secondary whitespace-pre-wrap">
+              {JSON.stringify(detailLog, null, 2)}
+            </pre>
           </div>
         )}
       </SideSheet>

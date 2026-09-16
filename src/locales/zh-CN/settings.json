@@ -25,8 +25,13 @@
       "members": "成员数",
       "scope": "数据范围",
       "menuPerm": "菜单权限",
+      "packCount": "权限包",
+      "appCount": "应用范围",
       "actions": "操作"
     },
+    "packCountUnit": "{{count}} 个",
+    "appCountAll": "全部",
+    "appCountUnit": "{{count}} 项",
     "scope": {
       "ALL": "全集团",
       "READONLY": "只读脱敏",
@@ -55,7 +60,7 @@
     "sheet": {
       "editTitle": "配置角色权限: {{name}}",
       "createTitle": "新建系统角色",
-      "description": "配置角色基本信息，并按菜单树勾选该角色可访问的菜单节点，以及可操作的应用范围。",
+      "description": "配置角色基本信息、绑定权限包（菜单能力来自权限包）与可操作的应用范围。",
       "saveEdit": "保存角色权限配置",
       "saveCreate": "确认创建角色",
       "nameLabel": "角色名称 (中文):",
@@ -65,10 +70,16 @@
       "menuPermTitle": "菜单树权限分配（基于菜单管理配置）",
       "selectAll": "全选",
       "clearAll": "清空",
+      "packsTitle": "权限包（多选）",
+      "packsPlaceholder": "选择绑定的权限包（可多选）...",
+      "packsHint": "菜单访问能力由所选权限包的菜单树并集决定；请在「权限管理」中维护权限包。",
       "appPermTitle": "应用权限范围 (Application Permissions)",
+      "appsPlaceholder": "选择授权访问的出海应用（可多选）...",
+      "appsHint": "限定该角色可管理或查看的接入应用范围；可勾选「授权全部应用」。",
       "toggleAllApps": "取消全部应用",
       "selectAllApps": "全选全部应用",
-      "noApps": "暂无可授权应用"
+      "noApps": "暂无可授权应用",
+      "noPacks": "暂无权限包，请先在「权限管理」中创建"
     },
     "toast": {
       "duplicated": "角色【{{name}}】已成功克隆！",

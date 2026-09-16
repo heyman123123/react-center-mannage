@@ -1,0 +1,26 @@
+server:
+  addr: ":8080"
+  mode: debug
+
+postgres:
+  dsn: "host=127.0.0.1 user=novas password=novas dbname=novaspay port=5433 sslmode=disable TimeZone=UTC"
+
+redis:
+  addr: "127.0.0.1:6380"
+  password: ""
+  db: 0
+
+auth:
+  access_ttl: 2h
+  refresh_ttl: 168h
+  jwt_secret: "CHANGE_ME"
+  cookie_domain: ""
+  cookie_secure: false
+  cookie_same_site: "Lax"
+
+cors:
+  origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+    - "http://localhost:5173"
+    - "http://127.0.0.1:5173"

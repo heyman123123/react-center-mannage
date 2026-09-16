@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   BadgeCheck,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { SystemUser, SystemMenuItem } from "../types/payment";
 import { RBAC_ROLES } from "../data/mockData";
+import { ancestorIdsForRoute } from "../lib/menuAccess";
 import { renderMenuIcon } from "./ui/iconRegistry";
 import {
   DropdownMenu,
@@ -78,9 +79,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const tree = useMemo(() => buildMenuTree(menus), [menus]);
 
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set(tree.filter((n) => n.children.length > 0).map((n) => n.id))
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() =>
+    new Set(ancestorIdsForRoute(menus, currentTab))
   );
+
+  // 刷新 / 切页 / 菜单异步加载后：展开当前页对应的祖先目录
+  useEffect(() => {
+    const ids = ancestorIdsForRoute(menus, currentTab);
+    if (ids.length === 0) return;
+    setExpandedIds((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (!next.has(id)) {
+          next.add(id);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [menus, currentTab]);
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
@@ -112,7 +130,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const renderNode = (node: MenuTreeNode): React.ReactNode => {
     const hasChildren = node.children.length > 0;
     const isExpanded = expandedIds.has(node.id);
-    const isActive = !hasChildren && currentTab === node.routeKey;
+    const isActive =
+      !hasChildren &&
+      (currentTab === node.routeKey ||
+        (currentTab === "scheduled_tasks" && node.routeKey === "system_config"));
 
     if (hasChildren) {
       const visibleChildren = node.children.filter((c) => c.visible !== false);

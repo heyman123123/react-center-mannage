@@ -1,6 +1,7 @@
 import {
   Tenant,
   RbacRole,
+  PermissionPack,
   SystemUser,
   Department,
   TransactionRecord,
@@ -1169,6 +1170,7 @@ export const RBAC_ROLES: Record<string, RbacRole> = {
     name: "全球超级管理员 (Super Admin)",
     description: "拥有海外聚合支付中台全部管理权限，可跨组织查看流水、管理支付渠道秘钥与邮件配置",
     dataScope: "ALL_TENANTS",
+    packIds: ["pack_super_admin"],
     permissions: {
       canViewExecutiveDashboard: true,
       canViewAllTenants: true,
@@ -1198,6 +1200,7 @@ export const RBAC_ROLES: Record<string, RbacRole> = {
     name: "海外财务总监 (Finance Director)",
     description: "负责全球资金清结算、跨国税务与对账调账审核、大额资金批准与多币种财报审计",
     dataScope: "ALL_TENANTS",
+    packIds: ["pack_finance_director"],
     permissions: {
       canViewExecutiveDashboard: true,
       canViewAllTenants: true,
@@ -1227,6 +1230,7 @@ export const RBAC_ROLES: Record<string, RbacRole> = {
     name: "跨境对账风控专员 (Reconciliation Specialist)",
     description: "负责日常海外账单自动对账、差错账核实、发起补账或冲正申请",
     dataScope: "ASSIGNED_TENANT",
+    packIds: ["pack_recon_specialist"],
     permissions: {
       canViewExecutiveDashboard: true,
       canViewAllTenants: false,
@@ -1252,6 +1256,7 @@ export const RBAC_ROLES: Record<string, RbacRole> = {
     name: "国际合规审计员 (Compliance Auditor)",
     description: "全球合规与海外风控内控审计，具备全局流水只读查看与操作日志审计留痕权限",
     dataScope: "ALL_TENANTS",
+    packIds: ["pack_risk_auditor"],
     permissions: {
       canViewExecutiveDashboard: true,
       canViewAllTenants: true,
@@ -1278,6 +1283,7 @@ export const RBAC_ROLES: Record<string, RbacRole> = {
     name: "出海业务操作员 (BU Operator)",
     description: "受限于本业务单元的流水查看与日常收款核对，禁止跨租户或发起密钥修改",
     dataScope: "ASSIGNED_TENANT",
+    packIds: ["pack_bu_operator"],
     permissions: {
       canViewExecutiveDashboard: true,
       canViewAllTenants: false,
@@ -1300,6 +1306,17 @@ export const RBAC_ROLES: Record<string, RbacRole> = {
     },
   },
 };
+
+/** Mock 权限包：与角色一一对应，菜单来自角色原 menuPermissionIds */
+export const INITIAL_PERMISSION_PACKS: PermissionPack[] = Object.entries(RBAC_ROLES).map(
+  ([key, role]) => ({
+    id: `pack_${key.toLowerCase()}`,
+    key: `PACK_${key}`,
+    name: `${role.name.replace(/\s*\(.*\)\s*$/, "")}权限包`,
+    description: role.description,
+    menuIds: [...(role.permissions.menuPermissionIds || [])],
+  }),
+);
 
 // 组织部门树（树结构，部门绑定多角色，成员继承部门角色权限）
 export const DEPARTMENTS: Department[] = [
@@ -3481,14 +3498,14 @@ export const INITIAL_MENUS: SystemMenuItem[] = [
   {
     id: "menu_permissions",
     title: "权限管理",
-    path: "/permissions",
+    path: "/permission_packs",
     icon: "KeyRound",
     parentId: "root_system",
-    routeKey: "permissions",
+    routeKey: "permission_packs",
     order: 3,
     visible: true,
     status: "ENABLED",
-    description: "基于菜单树的角色权限与应用权限配置",
+    description: "权限包与菜单树配置",
   },
   {
     id: "menu_menus",

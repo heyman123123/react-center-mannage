@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Settings,
@@ -22,17 +22,20 @@ import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { ContextMenu } from "./ui/ContextMenu";
-import { Popconfirm } from "./ui/Popconfirm";
 import {
   SystemConfigParam,
   ScheduledTask,
   SystemConfigCategory,
   TaskRunStatus,
 } from "../types/payment";
+import { USE_MOCK } from "../api/config";
+import { INITIAL_SCHEDULED_TASKS, INITIAL_SYSTEM_CONFIGS } from "../data/mockData";
+import * as iamApi from "../api/modules/iam";
+import { formatUnix } from "../lib/time";
 
 interface SystemConfigViewProps {
-  configs: SystemConfigParam[];
-  tasks: ScheduledTask[];
+  configs?: SystemConfigParam[];
+  tasks?: ScheduledTask[];
 }
 
 const CATEGORY_KEYS: SystemConfigCategory[] = ["支付", "邮件", "风控", "结算", "系统"];
@@ -44,9 +47,43 @@ const emptyForm = {
   key: "", value: "", description: "", category: "支付" as SystemConfigCategory, remark: "",
 };
 
+function mapConfig(row: iamApi.ApiSystemConfig): SystemConfigParam {
+  return {
+    id: row.id,
+    key: row.key,
+    value: row.value,
+    description: row.description,
+    category: (row.category as SystemConfigCategory) || "系统",
+    remark: row.remark,
+    updatedAt: formatUnix(row.updatedAt),
+    updatedBy: row.updatedBy,
+  };
+}
+
+function mapTask(row: iamApi.ApiScheduledTask): ScheduledTask {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type as ScheduledTask["type"],
+    cron: row.cron,
+    lastRunAt: row.lastRunAt ? formatUnix(row.lastRunAt) : undefined,
+    lastRunStatus: row.lastRunStatus as TaskRunStatus | undefined,
+    nextRunAt: row.nextRunAt ? formatUnix(row.nextRunAt) : undefined,
+    status: row.status,
+    logs: [],
+  };
+}
+
 export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tasks }) => {
   const { t } = useTranslation(["system", "common"]);
-  const [tab, setTab] = useState<"params" | "tasks">("params");
+  const [tab, setTab] = useState<"params" | "tasks">(() => {
+    try {
+      return sessionStorage.getItem("system_config_tab") === "tasks" ? "tasks" : "params";
+    } catch {
+      return "params";
+    }
+  });
+  const [dataLoading, setDataLoading] = useState(!configs || !tasks);
 
   const CATEGORY_LABEL = useMemo(
     (): Record<SystemConfigCategory, string> =>
@@ -63,7 +100,7 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
     [t]
   );
 
-  const [paramRows, setParamRows] = useState<SystemConfigParam[]>(configs);
+  const [paramRows, setParamRows] = useState<SystemConfigParam[]>(configs ?? []);
   const [paramCategoryFilter, setParamCategoryFilter] = useState<string>("ALL");
   const [paramSearch, setParamSearch] = useState("");
   const [paramFormOpen, setParamFormOpen] = useState(false);
@@ -72,12 +109,54 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
   useEffect(() => { reset(); }, [paramCategoryFilter, paramSearch, tab, reset]);
 
-  const [taskRows, setTaskRows] = useState<ScheduledTask[]>(tasks);
+  const [taskRows, setTaskRows] = useState<ScheduledTask[]>(tasks ?? []);
   const [taskSearch, setTaskSearch] = useState("");
-  const [detailTask, setDetailTask] = useState<ScheduledTask | null>(null);
   const [runningTaskId, setRunningTaskId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const { currentPage: tPage, setCurrentPage: setTPage, reset: tReset, pageSize: tSize } = usePagination(10);
   useEffect(() => { tReset(); }, [taskSearch, tab, tReset]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const id = window.setTimeout(() => setToast(null), 2800);
+    return () => window.clearTimeout(id);
+  }, [toast]);
+
+  const openTaskDetail = (task: ScheduledTask) => {
+    try {
+      sessionStorage.setItem("system_config_tab", "tasks");
+    } catch {
+      /* ignore */
+    }
+    window.history.replaceState(null, "", `#/scheduled_tasks/${task.id}`);
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  };
+
+  const loadData = useCallback(async () => {
+    setDataLoading(true);
+    try {
+      if (USE_MOCK) {
+        setParamRows(configs ?? INITIAL_SYSTEM_CONFIGS);
+        setTaskRows(tasks ?? INITIAL_SCHEDULED_TASKS);
+        return;
+      }
+      const [cfgList, taskList] = await Promise.all([
+        iamApi.listSystemConfigs(),
+        iamApi.listScheduledTasks(),
+      ]);
+      setParamRows((cfgList || []).map(mapConfig));
+      setTaskRows((taskList || []).map(mapTask));
+    } catch {
+      setParamRows([]);
+      setTaskRows([]);
+    } finally {
+      setDataLoading(false);
+    }
+  }, [configs, tasks]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const filteredParams = useMemo(() => {
     return paramRows.filter((p) => {
@@ -99,65 +178,84 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
     setParamForm({ key: p.key, value: p.value, description: p.description, category: p.category, remark: p.remark || "" });
     setParamFormOpen(true);
   };
-  const handleSaveParam = () => {
+  const handleSaveParam = async () => {
     if (!paramForm.key.trim()) return;
-    const payload = {
-      key: paramForm.key, value: paramForm.value, description: paramForm.description,
-      category: paramForm.category, remark: paramForm.remark,
-      updatedAt: new Date().toISOString().replace("T", " ").substring(0, 16),
-      updatedBy: t("systemConfig.currentUser"),
-    };
-    if (editingParam) {
-      setParamRows((prev) => prev.map((p) => (p.id === editingParam.id ? { ...p, ...payload } : p)));
-    } else {
-      setParamRows((prev) => [{ id: `cfg_${Date.now().toString().slice(-6)}`, ...payload }, ...prev]);
-    }
-    setParamFormOpen(false);
-  };
-  const removeParam = (p: SystemConfigParam) => setParamRows((prev) => prev.filter((x) => x.id !== p.id));
-
-  const toggleTask = (task: ScheduledTask) =>
-    setTaskRows((prev) => prev.map((x) => (x.id === task.id ? { ...x, status: x.status === "ENABLED" ? "DISABLED" : "ENABLED" } : x)));
-
-  const triggerTask = (task: ScheduledTask) => {
-    setRunningTaskId(task.id);
-    const now = new Date().toISOString().replace("T", " ").substring(0, 19);
-    setTaskRows((prev) =>
-      prev.map((x) =>
-        x.id === task.id
-          ? { ...x, lastRunAt: now, lastRunStatus: "RUNNING" as TaskRunStatus, logs: [{ id: `log_${Date.now()}`, time: now, status: "RUNNING", durationMs: 0, summary: t("systemConfig.taskLog.running") }, ...x.logs] }
-          : x
-      )
-    );
-    setDetailTask((prev) => (prev && prev.id === task.id ? { ...prev, lastRunAt: now, lastRunStatus: "RUNNING" } : prev));
-
-    setTimeout(() => {
-      const success = Math.random() > 0.25;
-      const endNow = new Date().toISOString().replace("T", " ").substring(0, 19);
-      const duration = Math.floor(800 + Math.random() * 8000);
-      setTaskRows((prev) =>
-        prev.map((x) => {
-          if (x.id !== task.id) return x;
-          const newLog = {
-            id: `log_${Date.now()}_2`, time: endNow, status: (success ? "SUCCESS" : "FAILED") as TaskRunStatus,
-            durationMs: duration, summary: success ? t("systemConfig.taskLog.success") : t("systemConfig.taskLog.failed"),
-          };
-          return { ...x, lastRunStatus: success ? "SUCCESS" : "FAILED", logs: [newLog, ...x.logs] };
-        })
-      );
-      setDetailTask((prev) => {
-        if (!prev || prev.id !== task.id) return prev;
-        const newLog = {
-          id: `log_${Date.now()}_2`, time: endNow, status: (success ? "SUCCESS" : "FAILED") as TaskRunStatus,
-          durationMs: duration, summary: success ? t("systemConfig.taskLog.successShort") : t("systemConfig.taskLog.failedShort"),
+    try {
+      if (USE_MOCK) {
+        const payload = {
+          key: paramForm.key, value: paramForm.value, description: paramForm.description,
+          category: paramForm.category, remark: paramForm.remark,
+          updatedAt: new Date().toISOString().replace("T", " ").substring(0, 16),
+          updatedBy: t("systemConfig.currentUser"),
         };
-        return { ...prev, lastRunStatus: success ? "SUCCESS" : "FAILED", logs: [newLog, ...prev.logs] };
-      });
-      setRunningTaskId(null);
-    }, 1500);
+        if (editingParam) {
+          setParamRows((prev) => prev.map((p) => (p.id === editingParam.id ? { ...p, ...payload } : p)));
+        } else {
+          setParamRows((prev) => [{ id: `cfg_${Date.now().toString().slice(-6)}`, ...payload }, ...prev]);
+        }
+      } else if (editingParam) {
+        const saved = await iamApi.updateSystemConfig(editingParam.id, {
+          value: paramForm.value,
+          description: paramForm.description,
+          category: paramForm.category,
+          remark: paramForm.remark,
+        });
+        setParamRows((prev) => prev.map((p) => (p.id === saved.id ? mapConfig(saved) : p)));
+      } else {
+        const saved = await iamApi.createSystemConfig({
+          key: paramForm.key,
+          value: paramForm.value,
+          description: paramForm.description,
+          category: paramForm.category,
+          remark: paramForm.remark,
+        });
+        setParamRows((prev) => [mapConfig(saved), ...prev]);
+      }
+      setParamFormOpen(false);
+    } catch {
+      /* toast optional */
+    }
+  };
+  const removeParam = async (p: SystemConfigParam) => {
+    try {
+      if (!USE_MOCK) await iamApi.deleteSystemConfig(p.id);
+      setParamRows((prev) => prev.filter((x) => x.id !== p.id));
+    } catch {
+      /* ignore */
+    }
   };
 
-  const loading = useViewLoading();
+  const toggleTask = async (task: ScheduledTask) => {
+    const next = task.status === "ENABLED" ? "DISABLED" : "ENABLED";
+    try {
+      if (USE_MOCK) {
+        setTaskRows((prev) => prev.map((x) => (x.id === task.id ? { ...x, status: next } : x)));
+        return;
+      }
+      const saved = await iamApi.updateScheduledTaskStatus(task.id, next);
+      setTaskRows((prev) => prev.map((x) => (x.id === saved.id ? mapTask(saved) : x)));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const triggerTask = async (task: ScheduledTask) => {
+    setRunningTaskId(task.id);
+    try {
+      if (USE_MOCK) {
+        setToast(t("systemConfig.executorDisabled"));
+        return;
+      }
+      await iamApi.triggerScheduledTask(task.id);
+      setToast(t("systemConfig.executorDisabled"));
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : t("systemConfig.executorDisabled"));
+    } finally {
+      setRunningTaskId(null);
+    }
+  };
+
+  const loading = useViewLoading() || dataLoading;
   if (loading) return <TableSkeleton rows={9} cols={6} />;
 
   const categoryFilterLabel = (c: string) =>
@@ -165,6 +263,9 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
 
   return (
     <div className="space-y-4">
+      {toast && (
+        <div className="fixed top-4 right-4 z-[100] px-3 py-2 rounded-lg bg-fg text-page text-xs shadow-card">{toast}</div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
         <div>
           <div className="flex items-center gap-2">
@@ -187,7 +288,10 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
           { key: "params" as const, label: t("systemConfig.tabs.params"), icon: <FileText className="w-3.5 h-3.5" /> },
           { key: "tasks" as const, label: t("systemConfig.tabs.tasks"), icon: <CalendarClock className="w-3.5 h-3.5" /> },
         ]).map((tabItem) => (
-          <button key={tabItem.key} onClick={() => setTab(tabItem.key)}
+          <button key={tabItem.key} onClick={() => {
+            setTab(tabItem.key);
+            try { sessionStorage.setItem("system_config_tab", tabItem.key); } catch { /* ignore */ }
+          }}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === tabItem.key ? "bg-primary text-primary-foreground" : "text-fg-secondary hover:bg-hover"}`}>
             {tabItem.icon}{tabItem.label}
           </button>
@@ -253,6 +357,9 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
                 </tbody>
               </table>
             </div>
+            {filteredParams.length === 0 ? (
+              <div className="p-8 text-center text-xs text-fg-tertiary">{t("systemConfig.params.empty")}</div>
+            ) : null}
             <Pagination currentPage={currentPage} totalItems={filteredParams.length} pageSize={pageSize} onPageChange={setCurrentPage} />
           </div>
         </>
@@ -294,13 +401,13 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
                       <ContextMenu
                         key={task.id}
                         items={[
-                          { key: "view", label: t("systemConfig.tasks.menu.view"), icon: <Eye className="w-3.5 h-3.5" />, onClick: () => setDetailTask(task) },
-                          { key: "toggle", label: task.status === "ENABLED" ? t("systemConfig.tasks.menu.disable") : t("systemConfig.tasks.menu.enable"), icon: <RefreshCw className="w-3.5 h-3.5" />, danger: task.status === "ENABLED", onClick: () => toggleTask(task) },
-                          { key: "trigger", label: t("systemConfig.tasks.menu.trigger"), icon: <Play className="w-3.5 h-3.5" />, disabled: isRunning, onClick: () => triggerTask(task) },
-                          { key: "refresh", label: t("systemConfig.tasks.menu.refresh"), icon: <RefreshCw className="w-3.5 h-3.5" />, onClick: () => setTaskRows((prev) => [...prev]) },
+                          { key: "view", label: t("systemConfig.tasks.menu.view"), icon: <Eye className="w-3.5 h-3.5" />, onClick: () => openTaskDetail(task) },
+                          { key: "toggle", label: task.status === "ENABLED" ? t("systemConfig.tasks.menu.disable") : t("systemConfig.tasks.menu.enable"), icon: <RefreshCw className="w-3.5 h-3.5" />, danger: task.status === "ENABLED", onClick: () => void toggleTask(task) },
+                          { key: "trigger", label: t("systemConfig.tasks.menu.trigger"), icon: <Play className="w-3.5 h-3.5" />, disabled: isRunning, onClick: () => void triggerTask(task) },
+                          { key: "refresh", label: t("systemConfig.tasks.menu.refresh"), icon: <RefreshCw className="w-3.5 h-3.5" />, onClick: () => void loadData() },
                         ]}
                         trigger={
-                          <tr className="hover:bg-subtle/80 transition-colors cursor-pointer">
+                          <tr onClick={() => openTaskDetail(task)} className="hover:bg-subtle/80 transition-colors cursor-pointer">
                             <td className="py-3 px-3 font-medium text-fg truncate max-w-[180px]" title={task.name}>{task.name}</td>
                             <td className="py-3 px-3 whitespace-nowrap text-fg-secondary">{task.type}</td>
                             <td className="py-3 px-3 font-mono text-[11px] text-fg-secondary bg-hover px-2 py-0.5 rounded">{task.cron}</td>
@@ -325,6 +432,9 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
                 </tbody>
               </table>
             </div>
+            {filteredTasks.length === 0 ? (
+              <div className="p-8 text-center text-xs text-fg-tertiary">{t("systemConfig.tasks.empty")}</div>
+            ) : null}
             <Pagination currentPage={tPage} totalItems={filteredTasks.length} pageSize={tSize} onPageChange={setTPage} />
           </div>
         </>
@@ -375,77 +485,6 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
         </div>
       </SideSheet>
 
-      <SideSheet
-        id="task-detail"
-        isOpen={!!detailTask}
-        onClose={() => setDetailTask(null)}
-        title={detailTask ? t("systemConfig.taskSheet.title", { name: detailTask.name }) : t("systemConfig.taskSheet.titleFallback")}
-        description={detailTask ? t("systemConfig.taskSheet.description", { type: detailTask.type, cron: detailTask.cron }) : ""}
-        icon={<CalendarClock className="w-5 h-5 text-fg" />}
-        widthClass="max-w-2xl max-md:max-w-none"
-        footer={
-          <>
-            {detailTask && (
-              <Popconfirm title={t("systemConfig.taskSheet.triggerTitle")} description={t("systemConfig.taskSheet.triggerDescription")} confirmText={t("systemConfig.taskSheet.triggerConfirm")}
-                onConfirm={() => triggerTask(detailTask)}>
-                <button disabled={runningTaskId === detailTask.id}
-                  className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors disabled:opacity-40 inline-flex items-center gap-1.5 cursor-pointer">
-                  {runningTaskId === detailTask.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                  {runningTaskId === detailTask.id ? t("systemConfig.taskSheet.triggering") : t("systemConfig.taskSheet.trigger")}
-                </button>
-              </Popconfirm>
-            )}
-            <button onClick={() => setDetailTask(null)} className="px-3 py-2 rounded-lg text-xs font-medium text-fg-secondary hover:bg-hover cursor-pointer">{t("common:actions.close")}</button>
-          </>
-        }
-      >
-        {detailTask && (
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-subtle p-3 rounded-xl border border-line">
-                <div className="text-[11px] text-fg-tertiary">{t("systemConfig.taskSheet.cron")}</div>
-                <div className="font-mono font-semibold text-fg mt-1">{detailTask.cron}</div>
-              </div>
-              <div className="bg-subtle p-3 rounded-xl border border-line">
-                <div className="text-[11px] text-fg-tertiary">{t("systemConfig.taskSheet.nextRun")}</div>
-                <div className="font-mono font-semibold text-fg mt-1">{detailTask.nextRunAt}</div>
-              </div>
-            </div>
-            <div>
-              <div className="font-semibold text-fg mb-2 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-fg-tertiary" /> {t("systemConfig.taskSheet.logs")}
-              </div>
-              <div className="border border-line rounded-xl overflow-hidden">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="bg-subtle border-b border-line text-fg-secondary text-[11px]">
-                      <th className="py-2 px-3">{t("systemConfig.taskSheet.logTable.time")}</th>
-                      <th className="py-2 px-3">{t("systemConfig.taskSheet.logTable.status")}</th>
-                      <th className="py-2 px-3 text-right">{t("systemConfig.taskSheet.logTable.duration")}</th>
-                      <th className="py-2 px-3">{t("systemConfig.taskSheet.logTable.summary")}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line-subtle">
-                    {detailTask.logs.map((log) => {
-                      const sm = RUN_STATUS_META[log.status];
-                      return (
-                        <tr key={log.id}>
-                          <td className="py-2 px-3 font-mono text-[11px] text-fg-secondary whitespace-nowrap">{log.time}</td>
-                          <td className="py-2 px-3 whitespace-nowrap">
-                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold border ${sm.badge}`}>{sm.icon}{sm.label}</span>
-                          </td>
-                          <td className="py-2 px-3 text-right font-mono text-fg-secondary">{log.status === "RUNNING" ? "-" : `${log.durationMs}ms`}</td>
-                          <td className="py-2 px-3 text-fg-secondary truncate max-w-[260px]" title={log.summary}>{log.summary}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-      </SideSheet>
     </div>
   );
 };

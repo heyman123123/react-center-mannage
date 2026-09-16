@@ -4,7 +4,8 @@
     "selectedCount": "已选 {{count}} 项",
     "selectAll": "全选",
     "clear": "清空",
-    "empty": "暂无可选项"
+    "empty": "暂无可选项",
+    "searchPlaceholder": "搜索…"
   },
   "sideSheet": {
     "close": "关闭",

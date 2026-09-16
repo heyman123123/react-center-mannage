@@ -39,7 +39,8 @@
     "users": "海外终端客户与全周期行为大盘",
     "departments": "部门管理 (组织部门树结构、成员与绑定角色)",
     "roles": "角色管理 (Roles)",
-    "permissions": "权限管理 (基于菜单树的角色与权限配置)",
+    "permissions": "权限管理 (权限包)",
+    "permission_packs": "权限管理 (权限包与菜单树)",
     "menus": "系统菜单与导航节点管理",
     "system_users": "用户管理 (角色权限与应用权限)",
     "settlements": "结算与出金管理",
@@ -51,6 +52,7 @@
     "merchant_review": "商户 / KYB 审核",
     "alerts": "告警与通知",
     "system_config": "系统参数与定时任务",
+    "scheduled_tasks": "定时任务详情",
     "default": "海外聚合支付中台"
   },
   "audit": {
