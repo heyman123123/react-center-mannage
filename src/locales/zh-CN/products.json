@@ -78,9 +78,15 @@
       "startDateLabel": "生效开始时间:",
       "endDateLabel": "失效截止时间:",
       "channelsLabel": "绑定渠道账号:",
-      "channelsPlaceholder": "选择该折扣可使用的渠道账号（可多选）..."
+      "channelsPlaceholder": "选择该折扣可使用的渠道账号（可多选）...",
+      "channelRequired": "请选择 Creem 渠道账号",
+      "productsLabel": "适用商品 (Creem 已同步):",
+      "productsPlaceholder": "选择该折扣适用的已同步商品..."
     },
     "toast": {
+      "loadFailed": "加载折扣列表失败",
+      "saveFailed": "保存折扣失败",
+      "productsRequired": "请至少选择一个已同步的商品",
       "toggled": "折扣码【{{code}}】已{{status}}",
       "enabled": "重新启用",
       "disabled": "停用",
@@ -141,6 +147,8 @@
       "description": "选择退款方式与原因，提交后进入处理中，约 1 秒完成原路退回",
       "cancel": "取消",
       "submit": "提交退款",
+      "transactionNoLabel": "关联交易流水号",
+      "transactionNoPlaceholder": "如：TX-20260905-102900",
       "methodLabel": "退款方式",
       "full": "全额退款",
       "partial": "部分退款",
@@ -313,9 +321,16 @@
       "featuresLabel": "包含核心权益清单 (每行一项):",
       "featuresPlaceholder": "无限量代码补全&#10;128k 上下文窗口&#10;7x24 小时 SLA 响应",
       "channelsLabel": "绑定渠道账号:",
-      "channelsPlaceholder": "选择该商品可使用的渠道账号（可多选）..."
+      "channelsPlaceholder": "选择该商品可使用的渠道账号（可多选）...",
+      "channelRequired": "请选择 Creem 渠道账号",
+      "syncStatus": "Creem 同步状态",
+      "syncSynced": "已同步",
+      "syncPending": "待同步",
+      "syncFailed": "同步失败"
     },
     "toast": {
+      "loadFailed": "加载商品列表失败",
+      "saveFailed": "保存商品失败",
       "toggled": "商品【{{name}}】已{{status}}",
       "reactivated": "重新上架激活",
       "archivedAction": "归档下架",

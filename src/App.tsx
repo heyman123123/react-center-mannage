@@ -93,6 +93,12 @@ import { filterMenusForUser, canAccessTab, firstAccessibleTab } from "./lib/menu
 import { PermissionGate, PermissionProvider } from "./lib/permission";
 import { USE_MOCK } from "./api/config";
 import * as tenantsApi from "./api/modules/tenants";
+import * as channelsApi from "./api/modules/channels";
+import * as productsApi from "./api/modules/products";
+import * as discountsApi from "./api/modules/discounts";
+import * as transactionsApi from "./api/modules/transactions";
+import * as refundsApi from "./api/modules/refunds";
+import * as reconciliationApi from "./api/modules/reconciliation";
 import {
   INITIAL_TENANTS,
   SYSTEM_USERS,
@@ -387,6 +393,27 @@ export default function App() {
           } catch {
             /* tenants optional on bootstrap */
           }
+          try {
+            const [channelRows, productRows, discountRows, txRes, refundRows, chargebackRows] =
+              await Promise.all([
+                channelsApi.listPaymentChannels(),
+                productsApi.listProducts(),
+                discountsApi.listDiscounts(),
+                transactionsApi.listTransactions({ page: 1, pageSize: 200 }),
+                refundsApi.getRefunds(),
+                refundsApi.getChargebacks(),
+              ]);
+            if (!cancelled) {
+              if (channelRows.length > 0) setPaymentChannels(channelRows);
+              if (productRows.length > 0) setProducts(productRows);
+              if (discountRows.length > 0) setDiscounts(discountRows);
+              if (txRes.list.length > 0) setTransactions(txRes.list);
+              if (refundRows.length > 0) setRefunds(refundRows);
+              if (chargebackRows.length > 0) setChargebacks(chargebackRows);
+            }
+          } catch {
+            /* payment catalog optional on bootstrap */
+          }
           const hashTab = tabFromHash();
           const accessKey = hashTab === "scheduled_tasks" ? "system_config" : hashTab;
           if (hashTab === "login" || !canAccessTab(accessKey, data.menus, data.me || currentUser, data.roles, data.departments)) {
@@ -435,9 +462,9 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Real-time Overseas Transaction Simulator Stream
+  // Real-time Overseas Transaction Simulator Stream（仅 Mock 演示）
   useEffect(() => {
-    if (!isSimulating) return;
+    if (!isSimulating || !USE_MOCK) return;
 
     const interval = setInterval(() => {
       const sampleTitles = [
@@ -552,9 +579,11 @@ export default function App() {
 
   // Handle Discrepancy Resolution
   const handleResolveDiscrepancy = (txId: string, resolutionType: string, note: string) => {
-    setTransactions((prev) =>
-      prev.map((t) => {
-        if (t.id === txId) {
+    const applyResolved = (resolved?: TransactionRecord) => {
+      setTransactions((prev) =>
+        prev.map((t) => {
+          if (t.id !== txId) return t;
+          if (resolved) return resolved;
           const updatedLifecycle = [
             ...(t.lifecycle || []),
             {
@@ -572,24 +601,32 @@ export default function App() {
             discrepancyReason: undefined,
             lifecycle: updatedLifecycle,
           };
-        }
-        return t;
-      })
-    );
+        })
+      );
 
-    const audit: AuditLog = {
-      id: `audit_${Date.now().toString().slice(-6)}`,
-      action: "RECONCILIATION_RESOLVE",
-      operator: currentUser.name,
-      operatorRole: currentUser.role,
-      tenantId: currentTenant.id,
-      timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
-      targetId: txId,
-      details: `执行人工核销处理: ${resolutionType}. 备注: ${note}`,
-      ipAddress: "127.0.0.1",
+      const audit: AuditLog = {
+        id: `audit_${Date.now().toString().slice(-6)}`,
+        action: "RECONCILIATION_RESOLVE",
+        operator: currentUser.name,
+        operatorRole: currentUser.role,
+        tenantId: currentTenant.id,
+        timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
+        targetId: txId,
+        details: `执行人工核销处理: ${resolutionType}. 备注: ${note}`,
+        ipAddress: "127.0.0.1",
+      };
+      setAuditLogs((prev) => [audit, ...prev]);
+      setActiveDiscrepancyTx(null);
     };
-    setAuditLogs((prev) => [audit, ...prev]);
-    setActiveDiscrepancyTx(null);
+
+    if (!USE_MOCK) {
+      void reconciliationApi
+        .resolveDiscrepancy(txId, { resolutionType, note })
+        .then(applyResolved)
+        .catch(() => applyResolved());
+      return;
+    }
+    applyResolved();
   };
 
   // Handle Quick Auto-resolve done
@@ -599,6 +636,15 @@ export default function App() {
 
   // Auto reconcile all
   const handleAutoReconcileAll = () => {
+    if (!USE_MOCK) {
+      void transactionsApi
+        .listTransactions({ page: 1, pageSize: 200 })
+        .then((res) => {
+          if (res.list.length > 0) setTransactions(res.list);
+        })
+        .catch(() => {});
+      return;
+    }
     setTransactions((prev) =>
       prev.map((t) => {
         if (t.reconStatus === "DISCREPANCY") {
@@ -771,6 +817,7 @@ export default function App() {
           {currentTab === "discounts" && (
             <DiscountsView
               discounts={discounts}
+              products={products}
               currentTenant={currentTenant}
               paymentChannels={paymentChannels}
               onSaveDiscount={(updated) => {

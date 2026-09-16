@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import type { TransactionRecord } from "../types/payment";
 import {
   Area,
   AreaChart,
@@ -14,6 +15,7 @@ interface TransactionAreaChartProps {
   timeRange: "3m" | "30d" | "7d";
   setTimeRange: (val: "3m" | "30d" | "7d") => void;
   currency: string;
+  transactions?: TransactionRecord[];
 }
 
 type ChartPoint = {
@@ -31,10 +33,27 @@ function formatAxisAmount(value: number) {
 export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
   timeRange,
   setTimeRange,
+  transactions = [],
 }) => {
   const { t } = useTranslation("dashboard");
 
   const dataPoints = useMemo<ChartPoint[]>(() => {
+    if (transactions.length > 0) {
+      const buckets = new Map<string, { gross: number; net: number }>();
+      for (const tx of transactions) {
+        const day = (tx.createdAt || "").slice(0, 10);
+        if (!day) continue;
+        const label = day.slice(5).replace("-", "/");
+        const prev = buckets.get(label) || { gross: 0, net: 0 };
+        prev.gross += tx.orderAmount || 0;
+        prev.net += tx.netAmount ?? (tx.orderAmount - (tx.channelFee || 0));
+        buckets.set(label, prev);
+      }
+      const entries = Array.from(buckets.entries()).slice(-15);
+      if (entries.length > 0) {
+        return entries.map(([date, v]) => ({ date, gross: Math.round(v.gross), net: Math.round(v.net) }));
+      }
+    }
     if (timeRange === "7d") {
       const dates = ["8/29", "8/30", "8/31", "9/1", "9/2", "9/3", "9/4"];
       return dates.map((date, i) => {
@@ -63,7 +82,7 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
       const gross = 1850000 + rhythms[i] * 12000;
       return { date, gross, net: Math.round(gross * 0.994) };
     });
-  }, [timeRange]);
+  }, [timeRange, transactions]);
 
   const rangeLabel =
     timeRange === "3m"

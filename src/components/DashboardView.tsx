@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { USE_MOCK } from "../api/config";
+import * as transactionsApi from "../api/modules/transactions";
 import { useViewLoading } from "./ui/useViewLoading";
 import { DashboardSkeleton } from "./ui/Skeletons";
 import {
@@ -46,6 +48,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onResolveQuickDone,
 }) => {
   const { t } = useTranslation(["dashboard", "common"]);
+  const [transactionList, setTransactionList] = useState<TransactionRecord[]>(transactions);
+
+  const loadTransactions = useCallback(async () => {
+    if (USE_MOCK) {
+      setTransactionList(transactions);
+      return;
+    }
+    try {
+      const res = await transactionsApi.listTransactions({
+        page: 1,
+        pageSize: 200,
+        tenantId: currentTenant.id === "group_hq" ? undefined : currentTenant.id,
+      });
+      setTransactionList(res.list);
+    } catch {
+      setTransactionList([]);
+    }
+  }, [currentTenant.id, transactions]);
+
+  useEffect(() => {
+    void loadTransactions();
+  }, [loadTransactions]);
+
   const [timeRange, setTimeRange] = useState<"3m" | "30d" | "7d">("3m");
   const [activeTableTab, setActiveTableTab] = useState<
     "all" | "in_process" | "discrepancy" | "done"
@@ -72,10 +97,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       currentTenant?.id === "group_hq" &&
       currentRole?.dataScope === "ALL_TENANTS"
     ) {
-      return transactions;
+      return transactionList;
     }
-    return transactions.filter((t) => t.tenantId === currentTenant.id);
-  }, [transactions, currentTenant, currentRole]);
+    return transactionList.filter((t) => t.tenantId === currentTenant.id);
+  }, [transactionList, currentTenant, currentRole]);
 
   // Counts for tabs
   const pendingCount = tenantScopedTransactions.filter(
@@ -104,7 +129,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         const query = searchQuery.toLowerCase();
         const matchesTitle = tx.orderTitle.toLowerCase().includes(query);
         const matchesId = tx.id.toLowerCase().includes(query);
-        const matchesMerchant = tx.merchantName.toLowerCase().includes(query);
+        const matchesMerchant = (tx.merchantName || "").toLowerCase().includes(query);
         const matchesChannel = tx.channel.toLowerCase().includes(query);
         return matchesTitle || matchesId || matchesMerchant || matchesChannel;
       }
@@ -139,8 +164,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       (acc, curr) => acc + curr.orderAmount,
       0
     );
-    return sum || 1250.0;
+    return sum;
   }, [tenantScopedTransactions]);
+
+  const doneCount = tenantScopedTransactions.filter((t) => t.status === "done").length;
+  const uniqueChannels = new Set(tenantScopedTransactions.map((t) => t.channel)).size;
 
   const channelBadges: Record<string, { label: string; bg: string }> = {
     stripe: { label: t("channels.stripe"), bg: "bg-indigo-50 text-indigo-700 border-indigo-200" },
@@ -151,6 +179,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     google_pay: { label: t("channels.google_pay"), bg: "bg-amber-50 text-amber-800 border-amber-200" },
     klarna: { label: t("channels.klarna"), bg: "bg-pink-50 text-pink-700 border-pink-200" },
     sepa: { label: t("channels.sepa"), bg: "bg-sky-50 text-sky-700 border-sky-200" },
+    creem: { label: t("channels.creem"), bg: "bg-violet-50 text-violet-700 border-violet-200" },
   };
 
   const loading = useViewLoading();
@@ -197,7 +226,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
           </div>
           <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
-            1,234
+            {tenantScopedTransactions.length.toLocaleString()}
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>{t("kpi.downPeriod")}</span>
@@ -221,7 +250,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
           </div>
           <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
-            45,678
+            {doneCount.toLocaleString()}
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>{t("kpi.retentionStrong")}</span>
@@ -245,7 +274,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
           </div>
           <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
-            4.5%
+            {tenantScopedTransactions.length > 0
+              ? `${((doneCount / tenantScopedTransactions.length) * 100).toFixed(1)}%`
+              : "0%"}
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
             <span>{t("kpi.steadyIncrease")}</span>
@@ -262,6 +293,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         timeRange={timeRange}
         setTimeRange={setTimeRange}
         currency={currentTenant.currency}
+        transactions={tenantScopedTransactions}
       />
 
       {/* Table Section (matching screenshot's tabbed toolbar, filters, and row design) */}

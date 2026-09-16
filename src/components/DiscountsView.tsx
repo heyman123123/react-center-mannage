@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { USE_MOCK } from "../api/config";
+import * as discountsApi from "../api/modules/discounts";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -20,13 +22,14 @@ import {
   Sparkles,
   TrendingUp,
 } from "lucide-react";
-import { DiscountConfig, DiscountType, Tenant, PaymentChannelConfig } from "../types/payment";
+import { DiscountConfig, DiscountType, Tenant, PaymentChannelConfig, ProductConfig } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { MultiSelect } from "./ui/MultiSelect";
 
 interface DiscountsViewProps {
   discounts: DiscountConfig[];
+  products?: ProductConfig[];
   currentTenant: Tenant;
   paymentChannels?: PaymentChannelConfig[];
   onSaveDiscount: (discount: DiscountConfig) => void;
@@ -34,6 +37,7 @@ interface DiscountsViewProps {
 
 export const DiscountsView: React.FC<DiscountsViewProps> = ({
   discounts,
+  products = [],
   currentTenant,
   paymentChannels = [],
   onSaveDiscount,
@@ -72,6 +76,37 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     [t]
   );
   const [discountList, setDiscountList] = useState<DiscountConfig[]>(discounts);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const creemChannels = paymentChannels.filter((c) => c.channelKey === "creem");
+  const channelOptions = (USE_MOCK ? paymentChannels : creemChannels).map((c) => ({
+    value: c.id,
+    label: `${c.name}${c.accountName ? ` · ${c.accountName}` : ""}`,
+  }));
+
+  const loadDiscounts = useCallback(async () => {
+    try {
+      const list = await discountsApi.listDiscounts({
+        tenantId: currentTenant.id === "group_hq" ? undefined : currentTenant.id,
+      });
+      setDiscountList(list);
+    } catch {
+      showToast(t("discounts.toast.loadFailed"));
+    }
+  }, [currentTenant.id, t]);
+
+  useEffect(() => {
+    if (USE_MOCK) {
+      setDiscountList(discounts);
+      return;
+    }
+    void loadDiscounts();
+  }, [discounts, loadDiscounts]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -82,7 +117,6 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<DiscountConfig | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Form State
   const [formCode, setFormCode] = useState("");
@@ -96,16 +130,13 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
   const [formEndDate, setFormEndDate] = useState("2026-12-31");
   const [formScope, setFormScope] = useState<"ALL" | "SUBSCRIPTION_ONLY" | "BU_SPECIFIC">("ALL");
   const [formBoundChannels, setFormBoundChannels] = useState<string[]>([]);
+  const [formAppliesToProducts, setFormAppliesToProducts] = useState<string[]>([]);
 
-  const channelOptions = paymentChannels.map((c) => ({
-    value: c.id,
-    label: `${c.name}${c.description?.includes("·") ? ` · ${c.description.split("·")[1].trim()}` : ""}`,
-  }));
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
+  const selectedChannelId = formBoundChannels[0] || editingDiscount?.channelId;
+  const productOptions = products
+    .filter((p) => !selectedChannelId || p.channelId === selectedChannelId || p.boundChannelIds?.includes(selectedChannelId))
+    .filter((p) => USE_MOCK || p.syncStatus === "SYNCED" || p.creemProductId)
+    .map((p) => ({ value: p.id, label: `${p.name} (${p.code})` }));
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -126,6 +157,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     setFormEndDate("2026-12-31");
     setFormScope("ALL");
     setFormBoundChannels([]);
+    setFormAppliesToProducts([]);
     setIsModalOpen(true);
   };
 
@@ -141,7 +173,8 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     setFormStartDate(d.startDate);
     setFormEndDate(d.endDate);
     setFormScope(d.applicableScope);
-    setFormBoundChannels(d.boundChannelIds || []);
+    setFormBoundChannels(d.boundChannelIds || (d.channelId ? [d.channelId] : []));
+    setFormAppliesToProducts(d.appliesToProductIds || []);
     setIsModalOpen(true);
   };
 
@@ -156,50 +189,68 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const channelId = formBoundChannels[0];
 
-    if (editingDiscount) {
-      const updated: DiscountConfig = {
-        ...editingDiscount,
-        code: formCode.trim().toUpperCase(),
-        name: formName.trim(),
-        type: formType,
-        value: Number(formValue) || 0,
-        currency: formCurrency,
-        minOrderAmount: Number(formMinOrder) || 0,
-        maxUsageLimit: Number(formMaxUsage) || 0,
-        startDate: formStartDate,
-        endDate: formEndDate,
-        applicableScope: formScope,
-        boundChannelIds: formBoundChannels,
-      };
-      setDiscountList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      onSaveDiscount(updated);
-      showToast(t("discounts.toast.updated", { code: updated.code }));
-    } else {
-      const newDiscount: DiscountConfig = {
-        id: `disc_${Date.now().toString().slice(-6)}`,
-        code: formCode.trim().toUpperCase(),
-        name: formName.trim(),
-        type: formType,
-        value: Number(formValue) || 0,
-        currency: formCurrency,
-        minOrderAmount: Number(formMinOrder) || 0,
-        maxUsageLimit: Number(formMaxUsage) || 0,
-        usedCount: 0,
-        startDate: formStartDate,
-        endDate: formEndDate,
-        applicableScope: formScope,
-        status: "ACTIVE",
-        boundChannelIds: formBoundChannels,
-        createdAt: new Date().toISOString().slice(0, 10),
-      };
-      setDiscountList((prev) => [newDiscount, ...prev]);
-      onSaveDiscount(newDiscount);
-      showToast(t("discounts.toast.created", { code: newDiscount.code }));
+    if (!USE_MOCK) {
+      if (!channelId) {
+        showToast(t("discounts.sheet.channelRequired"));
+        return;
+      }
+      if (!editingDiscount && formAppliesToProducts.length === 0) {
+        showToast(t("discounts.toast.productsRequired"));
+        return;
+      }
     }
-    setIsModalOpen(false);
+
+    const tenantId = currentTenant.id === "group_hq" ? "bu_na_ecom" : currentTenant.id;
+    const payload = {
+      channelId: channelId || editingDiscount?.channelId || "",
+      tenantId,
+      code: formCode.trim().toUpperCase(),
+      name: formName.trim(),
+      type: formType,
+      value: Number(formValue) || 0,
+      currency: formCurrency,
+      minOrderAmount: Number(formMinOrder) || 0,
+      maxUsageLimit: Number(formMaxUsage) || 0,
+      startDate: formStartDate,
+      endDate: formEndDate,
+      applicableScope: formScope,
+      appliesToProductIds: formAppliesToProducts,
+    };
+
+    try {
+      if (editingDiscount) {
+        const updated: DiscountConfig = {
+          ...editingDiscount,
+          ...payload,
+          boundChannelIds: formBoundChannels,
+          appliesToProductIds: formAppliesToProducts,
+        };
+        setDiscountList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        onSaveDiscount(updated);
+        showToast(t("discounts.toast.updated", { code: updated.code }));
+      } else {
+        const newDiscount = USE_MOCK
+          ? {
+              id: `disc_${Date.now().toString().slice(-6)}`,
+              ...payload,
+              usedCount: 0,
+              status: "ACTIVE" as const,
+              boundChannelIds: formBoundChannels,
+              createdAt: new Date().toISOString().slice(0, 10),
+            }
+          : await discountsApi.createDiscount(payload);
+        setDiscountList((prev) => [newDiscount, ...prev]);
+        onSaveDiscount(newDiscount);
+        showToast(t("discounts.toast.created", { code: newDiscount.code }));
+      }
+      setIsModalOpen(false);
+    } catch {
+      showToast(t("discounts.toast.saveFailed"));
+    }
   };
 
   const filteredDiscounts = discountList.filter((d) => {
@@ -685,6 +736,20 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
                 placeholder={t("discounts.sheet.channelsPlaceholder")}
               />
             </div>
+
+            {!editingDiscount && (
+              <div>
+                <label className="font-semibold text-fg-secondary block mb-1">
+                  {t("discounts.sheet.productsLabel")}
+                </label>
+                <MultiSelect
+                  value={formAppliesToProducts}
+                  onValueChange={setFormAppliesToProducts}
+                  options={productOptions}
+                  placeholder={t("discounts.sheet.productsPlaceholder")}
+                />
+              </div>
+            )}
           </form>
         </SideSheet>
       )}

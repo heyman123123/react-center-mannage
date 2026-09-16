@@ -52,6 +52,13 @@ func AutoMigrate(db *gorm.DB) error {
 		&EmailChannel{},
 		&EmailTemplate{},
 		&EmailWebhookLog{},
+		&PaymentChannel{},
+		&CatalogProduct{},
+		&CatalogDiscount{},
+		&PaymentWebhookLog{},
+		&PaymentTransaction{},
+		&PaymentRefund{},
+		&PaymentChargeback{},
 	)
 }
 
@@ -319,5 +326,180 @@ type EmailWebhookLog struct {
 	IP           string `gorm:"size:64" json:"ip"`
 	UserAgent    string `gorm:"size:512" json:"userAgent"`
 	Details      string `gorm:"type:text" json:"details"`
+	CreatedAt    int64  `gorm:"autoCreateTime;index" json:"createdAt"`
+}
+
+// PaymentChannel 支付渠道账号（支持多 Creem 账号，后期智能路由）
+type PaymentChannel struct {
+	ID                      string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ChannelKey              string         `gorm:"size:32;not null;index" json:"channelKey"`
+	Name                    string         `gorm:"size:128;not null" json:"name"`
+	AccountName             string         `gorm:"size:128" json:"accountName"`
+	Description             string         `gorm:"size:512" json:"description"`
+	Environment             string         `gorm:"size:16;not null;default:live;index" json:"environment"`
+	Enabled                 bool           `gorm:"not null;default:true" json:"enabled"`
+	ApiKey                  string         `gorm:"size:512;not null" json:"-"`
+	WebhookSecret           string         `gorm:"size:512" json:"-"`
+	ApiPublicKey            string         `gorm:"size:512" json:"apiPublicKey"`
+	ApiSecretKey            string         `gorm:"size:512" json:"-"`
+	WebhookSecretDisplay    string         `gorm:"size:512" json:"-"`
+	SupportedCurrenciesJSON string         `gorm:"type:jsonb;not null;default:'[\"USD\"]'" json:"-"`
+	FeeRateText             string         `gorm:"size:64" json:"feeRateText"`
+	RoutingPriority         int            `gorm:"not null;default:1" json:"routingPriority"`
+	FallbackChannelID       *string        `gorm:"type:uuid" json:"fallbackChannelId"`
+	TenantID                string         `gorm:"size:64;index;default:ALL" json:"tenantId"`
+	TestStatus              string         `gorm:"size:16;not null;default:DOWN" json:"testStatus"`
+	LatencyMs               int            `gorm:"not null;default:0" json:"latencyMs"`
+	LastTestedAt            *int64         `json:"lastTestedAt"`
+	CreatedAt               int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt               int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt               gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// CatalogProduct 商品（Creem 单向同步）
+type CatalogProduct struct {
+	ID                string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ChannelID         string         `gorm:"type:uuid;not null;index" json:"channelId"`
+	TenantID          string         `gorm:"size:64;not null;index" json:"tenantId"`
+	Code              string         `gorm:"size:128;not null;index" json:"code"`
+	Name              string         `gorm:"size:256;not null" json:"name"`
+	Description       string         `gorm:"type:text" json:"description"`
+	ProductType       string         `gorm:"size:32;not null" json:"productType"`
+	Currency          string         `gorm:"size:8;not null" json:"currency"`
+	PriceCents        int64          `gorm:"not null" json:"priceCents"`
+	BillingInterval   string         `gorm:"size:32" json:"billingInterval"`
+	TrialDays         int            `gorm:"not null;default:0" json:"trialDays"`
+	Status            string         `gorm:"size:16;not null;default:ACTIVE" json:"status"`
+	ExternalProductID string         `gorm:"size:128;index" json:"externalProductId"`
+	SyncStatus        string         `gorm:"size:16;not null;default:PENDING" json:"syncStatus"`
+	SyncError         string         `gorm:"size:512" json:"syncError"`
+	FeaturesJSON      string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	LastSyncedAt      *int64         `json:"lastSyncedAt"`
+	CreatedAt         int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt         int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// CatalogDiscount 折扣/优惠券（Creem 单向同步）
+type CatalogDiscount struct {
+	ID                    string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ChannelID             string         `gorm:"type:uuid;not null;index" json:"channelId"`
+	TenantID              string         `gorm:"size:64;not null;index" json:"tenantId"`
+	Code                  string         `gorm:"size:64;not null;index" json:"code"`
+	Name                  string         `gorm:"size:256;not null" json:"name"`
+	DiscountType          string         `gorm:"size:32;not null" json:"discountType"`
+	Value                 int            `gorm:"not null" json:"value"`
+	Currency              string         `gorm:"size:8" json:"currency"`
+	MinOrderAmountCents   int64          `gorm:"not null;default:0" json:"minOrderAmountCents"`
+	MaxUsageLimit         int            `gorm:"not null;default:0" json:"maxUsageLimit"`
+	UsedCount             int            `gorm:"not null;default:0" json:"usedCount"`
+	StartDate             string         `gorm:"size:32" json:"startDate"`
+	EndDate               string         `gorm:"size:32" json:"endDate"`
+	ApplicableScope       string         `gorm:"size:32;not null;default:ALL" json:"applicableScope"`
+	TargetTenantID        string         `gorm:"size:64" json:"targetTenantId"`
+	Status                string         `gorm:"size:16;not null;default:ACTIVE" json:"status"`
+	Duration              string         `gorm:"size:16;not null;default:once" json:"duration"`
+	DurationInMonths      int            `gorm:"not null;default:0" json:"durationInMonths"`
+	AppliesToProductsJSON string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	ExternalDiscountID    string         `gorm:"size:128;index" json:"externalDiscountId"`
+	SyncStatus            string         `gorm:"size:16;not null;default:PENDING" json:"syncStatus"`
+	SyncError             string         `gorm:"size:512" json:"syncError"`
+	CreatedAt             int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt             int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt             gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// PaymentTransaction 支付交易流水（由 Creem Webhook 落库）
+type PaymentTransaction struct {
+	ID                 string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DisplayID          string         `gorm:"size:64;not null;uniqueIndex" json:"displayId"`
+	ChannelID          string         `gorm:"type:uuid;not null;uniqueIndex:idx_tx_channel_event" json:"channelId"`
+	TenantID           string         `gorm:"size:64;not null;index" json:"tenantId"`
+	Channel            string         `gorm:"size:32;not null;index" json:"channel"`
+	ExternalEventID    string         `gorm:"size:128;not null;uniqueIndex:idx_tx_channel_event" json:"externalEventId"`
+	ChannelTradeNo     string         `gorm:"size:128;index" json:"channelTradeNo"`
+	OrderNumber        string         `gorm:"size:128;index" json:"orderNumber"`
+	OrderTitle         string         `gorm:"size:512" json:"orderTitle"`
+	OrderAmountCents   int64          `gorm:"not null;default:0" json:"orderAmountCents"`
+	ChannelFeeCents    int64          `gorm:"not null;default:0" json:"channelFeeCents"`
+	NetAmountCents     int64          `gorm:"not null;default:0" json:"netAmountCents"`
+	Currency           string         `gorm:"size:8;not null" json:"currency"`
+	Status             string         `gorm:"size:32;not null;index" json:"status"`
+	CustomerEmail      string         `gorm:"size:255" json:"customerEmail"`
+	CustomerName       string         `gorm:"size:128" json:"customerName"`
+	CustomerCountry    string         `gorm:"size:16" json:"customerCountry"`
+	PaymentMethod      string         `gorm:"size:128" json:"paymentMethod"`
+	ProductID          string         `gorm:"size:128" json:"productId"`
+	ProductName        string         `gorm:"size:256" json:"productName"`
+	SubscriptionID     string         `gorm:"size:128;index" json:"subscriptionId"`
+	EventType          string         `gorm:"size:64;index" json:"eventType"`
+	TimelineJSON       string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	RawPayloadJSON     string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt          int64          `gorm:"autoCreateTime;index" json:"createdAt"`
+	UpdatedAt          int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// PaymentRefund 退款单（Creem refund.created / 管理端发起）
+type PaymentRefund struct {
+	ID                  string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DisplayID           string         `gorm:"size:64;not null;uniqueIndex" json:"displayId"`
+	TransactionID       string         `gorm:"type:uuid;index" json:"transactionId"`
+	TransactionNo       string         `gorm:"size:64;index" json:"transactionNo"`
+	ChannelID           string         `gorm:"type:uuid;index" json:"channelId"`
+	TenantID            string         `gorm:"size:64;not null;index" json:"tenantId"`
+	Channel             string         `gorm:"size:32;not null;index" json:"channel"`
+	ExternalEventID     string         `gorm:"size:128;index" json:"externalEventId"`
+	RefundAmountCents   int64          `gorm:"not null;default:0" json:"refundAmountCents"`
+	OriginalAmountCents int64          `gorm:"not null;default:0" json:"originalAmountCents"`
+	Currency            string         `gorm:"size:8;not null" json:"currency"`
+	Reason              string         `gorm:"size:64" json:"reason"`
+	Status              string         `gorm:"size:32;not null;index" json:"status"`
+	RefundType          string         `gorm:"size:16;not null;default:FULL" json:"refundType"`
+	Note                string         `gorm:"type:text" json:"note"`
+	CreatedAt           int64          `gorm:"autoCreateTime;index" json:"createdAt"`
+	UpdatedAt           int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// PaymentChargeback 拒付/争议单（Creem dispute.created）
+type PaymentChargeback struct {
+	ID              string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DisplayID       string         `gorm:"size:64;not null;uniqueIndex" json:"displayId"`
+	TransactionID   string         `gorm:"type:uuid;index" json:"transactionId"`
+	TransactionNo   string         `gorm:"size:64;index" json:"transactionNo"`
+	ChannelID       string         `gorm:"type:uuid;index" json:"channelId"`
+	TenantID        string         `gorm:"size:64;not null;index" json:"tenantId"`
+	Channel         string         `gorm:"size:32;not null;index" json:"channel"`
+	ExternalEventID string         `gorm:"size:128;uniqueIndex" json:"externalEventId"`
+	AmountCents     int64          `gorm:"not null;default:0" json:"amountCents"`
+	Currency        string         `gorm:"size:8;not null" json:"currency"`
+	Reason          string         `gorm:"size:64" json:"reason"`
+	Status          string         `gorm:"size:32;not null;index" json:"status"`
+	DeadlineAt      int64          `gorm:"index" json:"deadlineAt"`
+	EvidenceJSON    string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	TimelineJSON    string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	Note            string         `gorm:"type:text" json:"note"`
+	CreatedAt       int64          `gorm:"autoCreateTime;index" json:"createdAt"`
+	UpdatedAt       int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// PaymentWebhookLog 支付 Webhook 入站记录
+type PaymentWebhookLog struct {
+	ID           string `gorm:"type:uuid;primaryKey" json:"id"`
+	ChannelID    string `gorm:"type:uuid;index" json:"channelId"`
+	EventID      string `gorm:"size:128;index" json:"eventId"`
+	EventType    string `gorm:"size:64;index" json:"eventType"`
+	Channel      string `gorm:"size:32" json:"channel"`
+	AppID        string `gorm:"size:64" json:"appId"`
+	AppName      string `gorm:"size:128" json:"appName"`
+	TargetURL    string `gorm:"size:512" json:"targetUrl"`
+	HTTPStatus   int    `gorm:"not null;default:200" json:"httpStatus"`
+	LatencyMs    int    `gorm:"not null;default:0" json:"latencyMs"`
+	Attempts     int    `gorm:"not null;default:1" json:"attempts"`
+	Status       string `gorm:"size:16" json:"status"`
+	PayloadJSON  string `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	ResponseBody string `gorm:"type:text" json:"responseBody"`
 	CreatedAt    int64  `gorm:"autoCreateTime;index" json:"createdAt"`
 }

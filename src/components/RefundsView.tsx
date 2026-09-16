@@ -35,7 +35,8 @@ import {
   RefundReason,
   TenantId,
 } from "../types/payment";
-import { refundsApi } from "../api";
+import { USE_MOCK } from "../api/config";
+import * as refundsApi from "../api/modules/refunds";
 import { useTranslation } from "react-i18next";
 
 interface RefundsViewProps {
@@ -51,6 +52,7 @@ const CHANNEL_LABEL: Record<string, string> = {
   klarna: "Klarna",
   checkout: "Checkout",
   sepa: "SEPA",
+  creem: "Creem",
 };
 
 const fmt = (n: number, currency: string) =>
@@ -113,6 +115,7 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedRefund, setSelectedRefund] = useState<RefundRecord | null>(null);
   const [refundType, setRefundType] = useState<"PARTIAL" | "FULL">("FULL");
+  const [formTransactionNo, setFormTransactionNo] = useState("");
   const [refundAmount, setRefundAmount] = useState<string>("");
   const [refundReason, setRefundReason] = useState<string>("客户要求");
   const [refundNote, setRefundNote] = useState("");
@@ -173,52 +176,69 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
     );
   };
 
-  const handleCreateRefund = () => {
-    const newRefund: RefundRecord = {
-      id: `ref_${Date.now().toString().slice(-8)}`,
-      transactionNo: `TX-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`,
-      tenantId: "bu_na_ecom",
-      channel: "stripe",
-      refundAmount: refundType === "FULL" ? 99 : Number(refundAmount || 0),
-      originalAmount: 99,
-      currency: "USD",
-      reason: refundReason as RefundReason,
-      status: "PROCESSING",
-      refundType,
-      note: refundNote,
-      createdAt: new Date().toISOString().replace("T", " ").substring(0, 19),
-    };
-    setRefundRows((prev) => [newRefund, ...prev]);
-    setCreateOpen(false);
-    setRefundNote("");
+  const handleCreateRefund = async () => {
+    if (!formTransactionNo.trim()) return;
+    try {
+      const saved = await refundsApi.createRefund({
+        transactionNo: formTransactionNo.trim(),
+        refundAmount: refundType === "PARTIAL" ? Number(refundAmount || 0) : undefined,
+        reason: refundReason,
+        refundType,
+        note: refundNote,
+      });
+      setRefundRows((prev) => [saved, ...prev]);
+      setCreateOpen(false);
+      setFormTransactionNo("");
+      setRefundNote("");
+    } catch {
+      /* keep sheet open */
+    }
   };
 
-  const handleProcessRefund = (r: RefundRecord) => {
+  const handleProcessRefund = async (r: RefundRecord) => {
     setProcessingId(r.id);
-    setTimeout(() => {
-      setRefundRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: "SUCCESS" } : x)));
+    try {
+      const updated = USE_MOCK
+        ? { ...r, status: "SUCCESS" as const }
+        : await refundsApi.processRefund(r.id);
+      setRefundRows((prev) => prev.map((x) => (x.id === r.id ? updated : x)));
+    } finally {
       setProcessingId(null);
-    }, 1000);
+    }
   };
 
-  const handleUploadEvidence = () => {
+  const handleUploadEvidence = async () => {
     if (!activeCb) return;
-    const newEv = {
-      id: `ev_${Date.now()}`,
-      name: `${t("refunds.evidenceFilePrefix")}_${Date.now().toString().slice(-4)}.pdf`,
-      size: `${(Math.random() * 2 + 0.3).toFixed(1)} MB`,
-      uploadedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
-    };
-    setCbRows((prev) =>
-      prev.map((c) => (c.id === activeCb.id ? { ...c, evidence: [...c.evidence, newEv] } : c))
-    );
-    setActiveCb((prev) => (prev ? { ...prev, evidence: [...prev.evidence, newEv] } : prev));
+    const fileName = `${t("refunds.evidenceFilePrefix")}_${Date.now().toString().slice(-4)}.pdf`;
+    const fileSize = `${(Math.random() * 2 + 0.3).toFixed(1)} MB`;
+    try {
+      const updated = USE_MOCK
+        ? {
+            ...activeCb,
+            evidence: [
+              ...activeCb.evidence,
+              { id: `ev_${Date.now()}`, name: fileName, size: fileSize, uploadedAt: new Date().toISOString().replace("T", " ").substring(0, 19) },
+            ],
+          }
+        : await refundsApi.addChargebackEvidence(activeCb.id, { name: fileName, size: fileSize });
+      setCbRows((prev) => prev.map((c) => (c.id === activeCb.id ? updated : c)));
+      setActiveCb(updated);
+    } catch {
+      /* ignore */
+    }
   };
 
-  const handleSubmitEvidence = () => {
+  const handleSubmitEvidence = async () => {
     if (!activeCb) return;
-    setCbRows((prev) => prev.map((c) => (c.id === activeCb.id ? { ...c, status: "已提交证据" } : c)));
-    setActiveCb((prev) => (prev ? { ...prev, status: "已提交证据" } : prev));
+    try {
+      const updated = USE_MOCK
+        ? { ...activeCb, status: "已提交证据" as const }
+        : await refundsApi.submitChargeback(activeCb.id);
+      setCbRows((prev) => prev.map((c) => (c.id === activeCb.id ? updated : c)));
+      setActiveCb(updated);
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleAcceptCb = (id: string) => {
@@ -386,6 +406,15 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
             }
           >
             <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-fg-secondary mb-1.5 font-medium">{t("refunds.create.transactionNoLabel")}</label>
+                <input
+                  value={formTransactionNo}
+                  onChange={(e) => setFormTransactionNo(e.target.value)}
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-xs font-mono"
+                  placeholder={t("refunds.create.transactionNoPlaceholder")}
+                />
+              </div>
               <div>
                 <label className="block text-fg-secondary mb-1.5 font-medium">{t("refunds.create.methodLabel")}</label>
                 <div className="grid grid-cols-2 gap-2">

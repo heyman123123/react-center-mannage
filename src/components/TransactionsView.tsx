@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { USE_MOCK } from "../api/config";
+import * as transactionsApi from "../api/modules/transactions";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import {
@@ -37,6 +39,29 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   onOpenDiscrepancy,
 }) => {
   const { t } = useTranslation(["transactions", "common"]);
+  const [transactionList, setTransactionList] = useState<TransactionRecord[]>(transactions);
+
+  const loadTransactions = useCallback(async () => {
+    if (USE_MOCK) {
+      setTransactionList(transactions);
+      return;
+    }
+    try {
+      const res = await transactionsApi.listTransactions({
+        page: 1,
+        pageSize: 200,
+        tenantId: currentTenant.id === "group_hq" ? undefined : currentTenant.id,
+      });
+      setTransactionList(res.list);
+    } catch {
+      setTransactionList([]);
+    }
+  }, [currentTenant.id, transactions]);
+
+  useEffect(() => {
+    void loadTransactions();
+  }, [loadTransactions]);
+
   const [selectedChannel, setSelectedChannel] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -54,6 +79,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
       { value: "adyen", label: t("list.channels.adyen") },
       { value: "apple_pay", label: t("list.channelsExtra.apple_pay") },
       { value: "klarna", label: t("list.channels.klarna") },
+      { value: "creem", label: t("list.channels.creem") },
     ],
     [t]
   );
@@ -69,7 +95,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     [t]
   );
 
-  const scopedList = transactions.filter((tx) => {
+  const scopedList = transactionList.filter((tx) => {
     if (currentTenant.id !== "group_hq" && tx.tenantId !== currentTenant.id) {
       return false;
     }
@@ -85,7 +111,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
         tx.orderTitle.toLowerCase().includes(q) ||
         tx.id.toLowerCase().includes(q) ||
         tx.channelTradeNo.toLowerCase().includes(q) ||
-        tx.merchantName.toLowerCase().includes(q)
+        (tx.merchantName || "").toLowerCase().includes(q)
       );
     }
     return true;

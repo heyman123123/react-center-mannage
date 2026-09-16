@@ -24,7 +24,8 @@ export type PaymentChannel =
   | "apple_pay"
   | "google_pay"
   | "klarna"
-  | "sepa";
+  | "sepa"
+  | "creem";
 
 export type ReconciliationStatus = "done" | "in_process" | "discrepancy" | "pending_check";
 
@@ -150,7 +151,12 @@ export interface PaymentWebhookLog {
     | "customer.subscription.deleted"
     | "invoice.payment_failed"
     | "charge.refunded"
-    | "charge.dispute.created";
+    | "charge.dispute.created"
+    | "checkout.completed"
+    | "subscription.created"
+    | "subscription.past_due"
+    | "dispute.created"
+    | string;
   channel: PaymentChannel;
   appId: string;
   appName: string;
@@ -388,6 +394,12 @@ export interface ProductConfig {
   paypalPlanId?: string;
   subscriberCount?: number;
   boundChannelIds?: string[]; // 绑定的渠道账号 id（来自 paymentChannels）
+  channelId?: string;
+  providerChannelId?: string;
+  creemProductId?: string;
+  externalProductId?: string;
+  syncStatus?: "PENDING" | "SYNCED" | "FAILED";
+  syncError?: string;
   createdAt: string;
 }
 
@@ -409,6 +421,14 @@ export interface DiscountConfig {
   targetTenantId?: TenantId;
   status: "ACTIVE" | "EXPIRED" | "DISABLED";
   boundChannelIds?: string[]; // 绑定的渠道账号 id（来自 paymentChannels）
+  channelId?: string;
+  providerChannelId?: string;
+  creemDiscountId?: string;
+  externalDiscountId?: string;
+  syncStatus?: "PENDING" | "SYNCED" | "FAILED";
+  duration?: "once" | "repeating" | "forever";
+  durationInMonths?: number;
+  appliesToProductIds?: string[];
   createdAt: string;
 }
 

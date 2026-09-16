@@ -1,5 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { USE_MOCK } from "../api/config";
+import * as reconciliationApi from "../api/modules/reconciliation";
+import * as transactionsApi from "../api/modules/transactions";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -27,7 +30,7 @@ import {
   TransactionRecord,
   ReconciliationBatch,
 } from "../types/payment";
-import { RBAC_ROLES, INITIAL_RECON_BATCHES } from "../data/mockData";
+import { RBAC_ROLES } from "../data/mockData";
 import { formatCurrency, exportToCSV } from "../lib/utils";
 
 interface ReconciliationViewProps {
@@ -46,23 +49,55 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
   onAutoReconcileAll,
 }) => {
   const { t } = useTranslation(["reconciliation", "common"]);
+  const [transactionList, setTransactionList] = useState<TransactionRecord[]>(transactions);
+  const [reconBatches, setReconBatches] = useState<ReconciliationBatch[]>([]);
+  const [summary, setSummary] = useState<reconciliationApi.ReconciliationSummary | null>(null);
   const [isRunningEngine, setIsRunningEngine] = useState(false);
   const [progress, setProgress] = useState(0);
   const [selectedChannel, setSelectedChannel] = useState<string>("all");
   const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    const tenantId = currentTenant.id === "group_hq" ? undefined : currentTenant.id;
+    if (USE_MOCK) {
+      setTransactionList(transactions);
+      const batches = await reconciliationApi.listReconciliationBatches(tenantId);
+      const sum = await reconciliationApi.getReconciliationSummary(tenantId);
+      setReconBatches(batches);
+      setSummary(sum);
+      return;
+    }
+    try {
+      const [txRes, batches, sum] = await Promise.all([
+        transactionsApi.listTransactions({ page: 1, pageSize: 200, tenantId }),
+        reconciliationApi.listReconciliationBatches(tenantId),
+        reconciliationApi.getReconciliationSummary(tenantId),
+      ]);
+      setTransactionList(txRes.list);
+      setReconBatches(batches);
+      setSummary(sum);
+    } catch {
+      setTransactionList([]);
+      setReconBatches([]);
+    }
+  }, [currentTenant.id, transactions]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const currentRole = (currentUser?.roleKey && RBAC_ROLES[currentUser.roleKey]) || RBAC_ROLES["SUPER_ADMIN"];
   const canReconcile = currentRole?.permissions?.canTriggerReconciliation ?? true;
   const canResolve = currentRole?.permissions?.canResolveDiscrepancy ?? true;
 
   // Filter discrepancy transactions
-  const discrepancies = transactions.filter(
+  const discrepancies = transactionList.filter(
     (t) =>
       t.status === "discrepancy" &&
       (currentTenant.id === "group_hq" || t.tenantId === currentTenant.id)
   );
 
-  const pendingRecon = transactions.filter(
+  const pendingRecon = transactionList.filter(
     (t) =>
       (t.status === "in_process" || t.status === "pending_check") &&
       (currentTenant.id === "group_hq" || t.tenantId === currentTenant.id)
@@ -76,21 +111,26 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
 
     setIsRunningEngine(true);
     setProgress(15);
-
-    setTimeout(() => setProgress(45), 400);
-    setTimeout(() => setProgress(75), 800);
-    setTimeout(() => {
-      setProgress(100);
-      setIsRunningEngine(false);
-      onAutoReconcileAll();
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.7 },
-      });
-      setSuccessToast(t("toast.engineComplete"));
-      setTimeout(() => setSuccessToast(null), 4000);
-    }, 1200);
+    const tenantId = currentTenant.id === "group_hq" ? undefined : currentTenant.id;
+    void (async () => {
+      try {
+        setProgress(45);
+        if (!USE_MOCK) {
+          await reconciliationApi.runReconciliation(tenantId);
+        }
+        setProgress(75);
+        onAutoReconcileAll();
+        await loadData();
+        setProgress(100);
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+        setSuccessToast(t("toast.engineComplete"));
+        setTimeout(() => setSuccessToast(null), 4000);
+      } catch {
+        setSuccessToast(t("errors.engineFailed"));
+      } finally {
+        setIsRunningEngine(false);
+      }
+    })();
   };
 
   const handleExport = () => {
@@ -199,11 +239,11 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             </span>
           </div>
           <div className="mt-2 text-xl font-bold text-fg font-mono">
-            {formatCurrency(18420650, currentTenant.currency)}
+            {formatCurrency(summary?.orderTotalAmount ?? 0, currentTenant.currency)}
           </div>
           <div className="text-xs text-fg-secondary mt-1 flex items-center justify-between">
             <span>{t("nodes.orderCount")}</span>
-            <span className="font-mono text-fg font-medium">45,678 {t("units.count")}</span>
+            <span className="font-mono text-fg font-medium">{summary?.orderCount ?? 0} {t("units.count")}</span>
           </div>
           <div className="mt-2 pt-3 border-t border-line-subtle text-[11px] text-fg-tertiary">
             {t("nodes.orderHint")}
@@ -221,11 +261,11 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             </span>
           </div>
           <div className="mt-2 text-xl font-bold text-fg font-mono">
-            {formatCurrency(18420650, currentTenant.currency)}
+            {formatCurrency(summary?.gatewayTotalAmount ?? 0, currentTenant.currency)}
           </div>
           <div className="text-xs text-fg-secondary mt-1 flex items-center justify-between">
             <span>{t("nodes.gatewayCount")}</span>
-            <span className="font-mono text-fg font-medium">45,678 {t("units.count")}</span>
+            <span className="font-mono text-fg font-medium">{summary?.orderCount ?? 0} {t("units.count")}</span>
           </div>
           <div className="mt-2 pt-3 border-t border-line-subtle text-[11px] text-fg-tertiary">
             {t("nodes.gatewayHint")}
@@ -243,11 +283,11 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             </span>
           </div>
           <div className="mt-2 text-xl font-bold text-fg font-mono">
-            {formatCurrency(18410200, currentTenant.currency)}
+            {formatCurrency(summary?.bankTotalAmount ?? 0, currentTenant.currency)}
           </div>
           <div className="text-xs text-fg-secondary mt-1 flex items-center justify-between">
             <span>{t("nodes.matchRate")}</span>
-            <span className="font-mono text-emerald-600 font-semibold">99.85%</span>
+            <span className="font-mono text-emerald-600 font-semibold">{(summary?.matchedRate ?? 0).toFixed(2)}%</span>
           </div>
           <div className="mt-2 pt-3 border-t border-line-subtle text-[11px] text-red-600 font-medium flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
@@ -365,7 +405,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-line-subtle">
-              {paginate(INITIAL_RECON_BATCHES, currentPage, pageSize).map((batch) => (
+              {paginate(reconBatches, currentPage, pageSize).map((batch) => (
                 <tr key={batch.batchNo} className="hover:bg-subtle/80 transition-colors group">
                   <td className="px-3 py-2.5 w-[180px] font-mono font-medium text-fg">
                     {batch.batchNo}
@@ -410,7 +450,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={INITIAL_RECON_BATCHES.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={reconBatches.length} pageSize={pageSize} onPageChange={setCurrentPage} />
       </div>
     </div>
   );

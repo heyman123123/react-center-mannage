@@ -81,6 +81,7 @@
     "apple_pay": "Apple Pay",
     "google_pay": "Google Pay",
     "klarna": "Klarna 先买后付",
-    "sepa": "SEPA 欧洲借记"
+    "sepa": "SEPA 欧洲借记",
+    "creem": "Creem 订阅收单"
   }
 }

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { USE_MOCK } from "../api/config";
+import * as productsApi from "../api/modules/products";
 import { useViewLoading } from "./ui/useViewLoading";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -50,6 +52,37 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 }) => {
   const { t } = useTranslation(["products", "common"]);
   const [productList, setProductList] = useState<ProductConfig[]>(products);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const creemChannels = paymentChannels.filter((c) => c.channelKey === "creem");
+  const channelOptions = (USE_MOCK ? paymentChannels : creemChannels).map((c) => ({
+    value: c.id,
+    label: `${c.name}${c.accountName ? ` · ${c.accountName}` : ""}`,
+  }));
+
+  const loadProducts = useCallback(async () => {
+    try {
+      const list = await productsApi.listProducts({
+        tenantId: currentTenant.id === "group_hq" ? undefined : currentTenant.id,
+      });
+      setProductList(list);
+    } catch {
+      showToast(t("products.toast.loadFailed"));
+    }
+  }, [currentTenant.id, t]);
+
+  useEffect(() => {
+    if (USE_MOCK) {
+      setProductList(products);
+      return;
+    }
+    void loadProducts();
+  }, [products, loadProducts]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -60,7 +93,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductConfig | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Form State - dedicated to ONE currency per product code
@@ -76,17 +108,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [formStripePriceId, setFormStripePriceId] = useState("");
   const [formPaypalPlanId, setFormPaypalPlanId] = useState("");
   const [formBoundChannels, setFormBoundChannels] = useState<string[]>([]);
-
-  // 渠道账号选项（channelName - accountName）
-  const channelOptions = paymentChannels.map((c) => ({
-    value: c.id,
-    label: `${c.name}${c.description && !c.description.includes("·") ? "" : ""} · ${c.description?.split("·")[1]?.trim() || c.name}`,
-  }));
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -170,7 +191,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const featuresArray = formFeatures
       .split("\n")
@@ -178,53 +199,65 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       .filter(Boolean);
 
     const numericPrice = Number(formPrice) || 0;
+    const channelId = formBoundChannels[0] || editingProduct?.channelId;
 
-    if (editingProduct) {
-      const updated: ProductConfig = {
-        ...editingProduct,
-        code: formCode.trim(),
-        name: formName.trim(),
-        currency: formCurrency,
-        price: numericPrice,
-        prices: { [formCurrency]: numericPrice },
-        type: formType,
-        billingInterval: formInterval,
-        description: formDescription.trim(),
-        features: featuresArray,
-        trialDays: formTrialDays,
-        stripePriceId: formStripePriceId.trim() || undefined,
-        paypalPlanId: formPaypalPlanId.trim() || undefined,
-        boundChannelIds: formBoundChannels,
-      };
-      setProductList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      onSaveProduct(updated);
-      showToast(t("products.toast.updated", { code: updated.code }));
-    } else {
-      const newProd: ProductConfig = {
-        id: `prod_${formCurrency.toLowerCase()}_${Date.now().toString().slice(-6)}`,
-        code: formCode.trim(),
-        name: formName.trim(),
-        currency: formCurrency,
-        price: numericPrice,
-        prices: { [formCurrency]: numericPrice },
-        type: formType,
-        tenantId: currentTenant.id === "group_hq" ? "bu_na_ecom" : currentTenant.id,
-        description: formDescription.trim(),
-        features: featuresArray,
-        trialDays: formTrialDays,
-        status: "ACTIVE",
-        billingInterval: formInterval,
-        stripePriceId: formStripePriceId.trim() || `price_stripe_${Date.now().toString().slice(-6)}`,
-        paypalPlanId: formPaypalPlanId.trim() || undefined,
-        subscriberCount: 0,
-        boundChannelIds: formBoundChannels,
-        createdAt: new Date().toISOString().slice(0, 10),
-      };
-      setProductList((prev) => [newProd, ...prev]);
-      onSaveProduct(newProd);
-      showToast(t("products.toast.created", { code: newProd.code }));
+    if (!USE_MOCK && !channelId) {
+      showToast(t("products.sheet.channelRequired"));
+      return;
     }
-    setIsModalOpen(false);
+
+    const tenantId = currentTenant.id === "group_hq" ? "bu_na_ecom" : currentTenant.id;
+    const payload = {
+      channelId: channelId!,
+      tenantId,
+      code: formCode.trim(),
+      name: formName.trim(),
+      currency: formCurrency,
+      price: numericPrice,
+      type: formType,
+      billingInterval: formInterval,
+      description: formDescription.trim(),
+      features: featuresArray,
+      trialDays: formTrialDays,
+      status: editingProduct?.status || "ACTIVE",
+    };
+
+    try {
+      if (editingProduct) {
+        const updated = USE_MOCK
+          ? {
+              ...editingProduct,
+              ...payload,
+              prices: { [formCurrency]: numericPrice },
+              stripePriceId: formStripePriceId.trim() || undefined,
+              paypalPlanId: formPaypalPlanId.trim() || undefined,
+              boundChannelIds: formBoundChannels,
+            }
+          : await productsApi.updateProduct(editingProduct.id, payload);
+        setProductList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        onSaveProduct(updated);
+        showToast(t("products.toast.updated", { code: updated.code }));
+      } else {
+        const newProd = USE_MOCK
+          ? {
+              id: `prod_${formCurrency.toLowerCase()}_${Date.now().toString().slice(-6)}`,
+              ...payload,
+              prices: { [formCurrency]: numericPrice },
+              stripePriceId: formStripePriceId.trim() || `price_stripe_${Date.now().toString().slice(-6)}`,
+              paypalPlanId: formPaypalPlanId.trim() || undefined,
+              subscriberCount: 0,
+              boundChannelIds: formBoundChannels,
+              createdAt: new Date().toISOString().slice(0, 10),
+            } as ProductConfig
+          : await productsApi.createProduct(payload);
+        setProductList((prev) => [newProd, ...prev]);
+        onSaveProduct(newProd);
+        showToast(t("products.toast.created", { code: newProd.code }));
+      }
+      setIsModalOpen(false);
+    } catch {
+      showToast(t("products.toast.saveFailed"));
+    }
   };
 
   const filteredProducts = productList.filter((p) => {
