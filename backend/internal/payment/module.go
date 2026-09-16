@@ -21,6 +21,7 @@ func NewPaymentRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFun
 			ch.PUT("/:id", mw.RequireMenu("payment_channels"), h.UpdateChannel)
 			ch.DELETE("/:id", mw.RequireMenu("payment_channels"), h.DeleteChannel)
 			ch.POST("/:id/test", mw.RequireMenu("payment_channels"), h.TestChannel)
+			ch.POST("/:id/checkout-test", mw.RequireMenu("payment_channels"), h.CheckoutTestChannel)
 		}
 
 		wh := r.Group("/payment-webhooks", mw.Auth)

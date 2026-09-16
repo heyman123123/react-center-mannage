@@ -144,6 +144,18 @@
       "feeRate": "费率说明",
       "routingPriority": "路由优先级 (越小越优先)"
     },
+    "checkoutTest": {
+      "productIdLabel": "Creem 商品 ID",
+      "productIdPlaceholder": "prod_xxx",
+      "customerEmailLabel": "客户邮箱（可选）",
+      "customerEmailPlaceholder": "tester@example.com",
+      "execute": "Sandbox 测试下单",
+      "processing": "正在创建 Checkout…",
+      "success": "Checkout 已创建，请在新窗口完成支付。支付结果将通过 Webhook 自动入账。",
+      "failed": "创建 Checkout 失败",
+      "productRequired": "请填写 Creem 商品 ID",
+      "creemOnly": "仅 Creem 渠道支持 Sandbox 测试下单"
+    },
     "testTx": {
       "title": "海外支付渠道沙箱测试 (Payment Gateway Live Test)",
       "description": "实时模拟全球网关握手、3D-Secure 协议核身与风控拦截，测试结果将直接入账至交易流水中",

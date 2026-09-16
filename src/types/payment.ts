@@ -112,6 +112,7 @@ export interface PaymentChannelConfig {
   supportedCurrencies: string[];
   feeRateText: string; // 如 "2.9% + $0.30"
   routingPriority: number; // 优先级 1, 2, 3
+  tenantId?: string;
   fallbackChannel?: PaymentChannel;
   lastTestedAt: string;
   testStatus: "HEALTHY" | "DEGRADED" | "DOWN";

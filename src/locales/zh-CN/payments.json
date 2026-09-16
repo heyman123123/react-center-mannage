@@ -1,4 +1,19 @@
 {
+  "checkoutTest": {
+    "productIdLabel": "Creem 商品 ID",
+    "productIdPlaceholder": "prod_xxx",
+    "customerEmailLabel": "客户邮箱（可选）",
+    "customerEmailPlaceholder": "tester@example.com",
+    "successUrlLabel": "支付成功跳转 URL（可选）",
+    "successUrlPlaceholder": "https://example.com/success",
+    "execute": "Sandbox 测试下单",
+    "processing": "正在创建 Checkout…",
+    "success": "Checkout 已创建，请在新窗口完成支付。支付结果将通过 Webhook 自动入账。",
+    "failed": "创建 Checkout 失败",
+    "openCheckout": "打开支付页",
+    "productRequired": "请填写 Creem 商品 ID",
+    "creemOnly": "仅 Creem 渠道支持 Sandbox 测试下单"
+  },
   "webhooks": {
     "title": "支付 Webhook 调度与监听中心",
     "subtitle": "监听海外网关（Stripe、PayPal、Adyen）的实时扣款与退款回调，并安全向集团下游 SaaS 应用推送事件签名通知，支持自动重试与单号重放。",

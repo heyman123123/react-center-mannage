@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/novaspay/admin-api/internal/conf"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
 	"github.com/novaspay/admin-api/internal/payment/provider/creem"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
@@ -15,11 +16,13 @@ import (
 )
 
 type Service struct {
-	db *gorm.DB
+	db      *gorm.DB
+	dataKey []byte
 }
 
-func NewService(db *gorm.DB) *Service {
-	return &Service{db: db}
+func NewService(db *gorm.DB, cfg *conf.Config) *Service {
+	key, _ := resolveDataKey(cfg)
+	return &Service{db: db, dataKey: key}
 }
 
 type ChannelDTO struct {
@@ -106,6 +109,8 @@ func (s *Service) Create(ctx context.Context, in ChannelInput) (*ChannelDTO, err
 	if tenantID == "" {
 		tenantID = "ALL"
 	}
+	webhookSecret := s.sealSecret(strings.TrimSpace(in.WebhookSecret))
+	sealedSecret := s.sealSecret(secret)
 	row := persistence.PaymentChannel{
 		ID:                      uuid.NewString(),
 		ChannelKey:              key,
@@ -114,9 +119,9 @@ func (s *Service) Create(ctx context.Context, in ChannelInput) (*ChannelDTO, err
 		Description:             strings.TrimSpace(in.Description),
 		Environment:             normalizeMode(in.Mode),
 		Enabled:                 true,
-		ApiKey:                  secret,
-		ApiSecretKey:              secret,
-		WebhookSecret:           strings.TrimSpace(in.WebhookSecret),
+		ApiKey:                  sealedSecret,
+		ApiSecretKey:            sealedSecret,
+		WebhookSecret:           webhookSecret,
 		SupportedCurrenciesJSON: string(currenciesJSON),
 		FeeRateText:             strings.TrimSpace(in.FeeRateText),
 		RoutingPriority:         priority,
@@ -153,11 +158,12 @@ func (s *Service) Update(ctx context.Context, id string, in ChannelInput) (*Chan
 		updates["enabled"] = *in.Enabled
 	}
 	if secret := strings.TrimSpace(in.ApiSecretKey); secret != "" && !strings.Contains(secret, "****") {
-		updates["api_key"] = secret
-		updates["api_secret_key"] = secret
+		sealed := s.sealSecret(secret)
+		updates["api_key"] = sealed
+		updates["api_secret_key"] = sealed
 	}
 	if wh := strings.TrimSpace(in.WebhookSecret); wh != "" && !strings.Contains(wh, "****") {
-		updates["webhook_secret"] = wh
+		updates["webhook_secret"] = s.sealSecret(wh)
 	}
 	if in.SupportedCurrencies != nil {
 		currenciesJSON, _ := json.Marshal(defaultCurrencies(in.SupportedCurrencies))
@@ -205,7 +211,8 @@ func (s *Service) Test(ctx context.Context, id string) (*ChannelDTO, error) {
 	if row.ChannelKey != "creem" {
 		return nil, apperr.ProviderNotSupported
 	}
-	client := creem.NewClient(row.Environment, row.ApiKey)
+	ch := s.decryptChannel(&row)
+	client := creem.NewClient(ch.Environment, ch.ApiKey)
 	latency, err := client.Ping(ctx)
 	now := time.Now().Unix()
 	status := "HEALTHY"
@@ -230,7 +237,50 @@ func (s *Service) GetRawChannel(ctx context.Context, id string) (*persistence.Pa
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
 		return nil, apperr.NotFound
 	}
-	return &row, nil
+	return s.decryptChannel(&row), nil
+}
+
+type CheckoutTestInput struct {
+	ProductID     string `json:"productId"`
+	CustomerEmail string `json:"customerEmail"`
+	SuccessURL    string `json:"successUrl"`
+}
+
+type CheckoutTestResult struct {
+	CheckoutURL string `json:"checkoutUrl"`
+	SessionID   string `json:"sessionId"`
+	ExpiresAt   string `json:"expiresAt"`
+}
+
+func (s *Service) CreateCheckoutTest(ctx context.Context, channelID string, in CheckoutTestInput) (*CheckoutTestResult, error) {
+	productID := strings.TrimSpace(in.ProductID)
+	if productID == "" {
+		return nil, apperr.InvalidArgument
+	}
+	ch, err := s.GetRawChannel(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+	if ch.ChannelKey != "creem" {
+		return nil, apperr.ProviderNotSupported
+	}
+	if strings.TrimSpace(ch.ApiKey) == "" {
+		return nil, apperr.New(42212, 422, "渠道未配置 API Secret")
+	}
+	client := creem.NewClient(ch.Environment, ch.ApiKey)
+	session, err := client.CreateCheckoutSession(ctx, creem.CreateCheckoutReq{
+		ProductID:     productID,
+		CustomerEmail: strings.TrimSpace(in.CustomerEmail),
+		SuccessURL:    strings.TrimSpace(in.SuccessURL),
+	})
+	if err != nil {
+		return nil, apperr.Wrap(50212, 502, "Creem Checkout 创建失败", err)
+	}
+	return &CheckoutTestResult{
+		CheckoutURL: session.CheckoutURL,
+		SessionID:   session.ID,
+		ExpiresAt:   session.ExpiresAt,
+	}, nil
 }
 
 func normalizeMode(mode string) string {
