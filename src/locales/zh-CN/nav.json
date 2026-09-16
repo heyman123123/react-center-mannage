@@ -58,6 +58,7 @@
   },
   "audit": {
     "profileWithPassword": "更新个人基本资料、头像并安全修改登录密码",
-    "profileBasic": "更新个人基本资料与头像图片"
+    "profileBasic": "更新个人基本资料与头像图片",
+    "quickResolveNote": "仪表盘快捷处置：以网关结算单为准自动平账"
   }
 }

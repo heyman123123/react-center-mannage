@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import * as endUsersApi from "../api/modules/endUsers";
+import type { Tenant } from "../types/payment";
 import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -37,8 +39,7 @@ import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 
 interface UserManagementViewProps {
-  users: EndUser[];
-  onSaveUser?: (user: EndUser) => void;
+  currentTenant: Tenant;
 }
 
 const COUNTRY_FLAGS: Record<string, string> = {
@@ -54,9 +55,23 @@ const COUNTRY_FLAGS: Record<string, string> = {
   ES: "🇪🇸",
 };
 
-export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, onSaveUser }) => {
+export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentTenant }) => {
   const { t } = useTranslation(["rbac", "common"]);
-  const [userList, setUserList] = useState<EndUser[]>(users);
+  const [userList, setUserList] = useState<EndUser[]>([]);
+
+  const loadUsers = useCallback(async () => {
+    const tenantId = currentTenant.id === "group_hq" ? undefined : currentTenant.id;
+    try {
+      const list = await endUsersApi.listEndUsers(tenantId);
+      setUserList(list);
+    } catch {
+      setUserList([]);
+    }
+  }, [currentTenant.id]);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
   const [selectedUser, setSelectedUser] = useState<EndUser | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -221,7 +236,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
 
     setUserList((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
     setSelectedUser(updated);
-    if (onSaveUser) onSaveUser(updated);
     showToast(
       t("endUsers.toast.subscriptionUpdated", {
         name: user.name,
@@ -328,7 +342,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ users, o
     };
 
     setUserList([newUser, ...userList]);
-    if (onSaveUser) onSaveUser(newUser);
     showToast(t("endUsers.toast.userCreated", { name: newUser.name, email: newUser.email }));
     setIsAddModalOpen(false);
   };

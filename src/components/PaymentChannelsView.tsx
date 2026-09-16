@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { USE_MOCK } from "../api/config";
 import * as channelsApi from "../api/modules/channels";
 import { useViewLoading } from "./ui/useViewLoading";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -29,29 +28,16 @@ import {
   ShieldAlert,
   Layers,
 } from "lucide-react";
-import { PaymentChannelConfig, PaymentChannel, TransactionRecord, PaymentApp, DictionaryEntry } from "../types/payment";
+import { PaymentChannelConfig, PaymentChannel, TransactionRecord, PaymentApp, DictionaryEntry, Tenant, SystemUser } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 
 interface PaymentChannelsViewProps {
-  channels: PaymentChannelConfig[];
-  apps?: PaymentApp[];
-  dictionary?: DictionaryEntry[];
-  onUpdateChannel?: (channel: PaymentChannelConfig) => void;
-  onSaveChannel?: (channel: PaymentChannelConfig) => void;
-  onCreateTestTransaction?: (tx: TransactionRecord) => void;
-  onNavigateToTransactions?: () => void;
+  currentTenant?: Tenant;
+  currentUser?: SystemUser;
 }
 
-export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
-  channels,
-  apps = [],
-  dictionary = [],
-  onUpdateChannel,
-  onSaveChannel,
-  onCreateTestTransaction,
-  onNavigateToTransactions,
-}) => {
+export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
   const { t } = useTranslation(["channels", "common"]);
   const testScenarios = useMemo(
     () =>
@@ -71,7 +57,9 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
       })),
     [t]
   );
-  const [channelList, setChannelList] = useState<PaymentChannelConfig[]>(channels);
+  const [channelList, setChannelList] = useState<PaymentChannelConfig[]>([]);
+  const [apps] = useState<PaymentApp[]>([]);
+  const [dictionary] = useState<DictionaryEntry[]>([]);
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { currentPage, setCurrentPage, reset: _pcr, pageSize } = usePagination(10);
@@ -93,16 +81,8 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
   }, [modeFilter, t]);
 
   useEffect(() => {
-    if (USE_MOCK) {
-      const list =
-        modeFilter === "all"
-          ? channels
-          : channels.filter((c) => (c.mode || "live") === modeFilter);
-      setChannelList(list);
-      return;
-    }
     void loadChannels();
-  }, [channels, loadChannels, modeFilter]);
+  }, [loadChannels]);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ id: string; msg: string; success: boolean } | null>(null);
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
@@ -156,16 +136,8 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     setTestingId(channel.id);
     setTestResult(null);
     try {
-      const updated = USE_MOCK
-        ? {
-            ...channel,
-            lastTestedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
-            testStatus: "HEALTHY" as const,
-            latencyMs: Math.floor(Math.random() * 80) + 95,
-          }
-        : await channelsApi.testPaymentChannel(channel.id);
+      const updated = await channelsApi.testPaymentChannel(channel.id);
       setChannelList((prev) => prev.map((c) => (c.id === channel.id ? updated : c)));
-      onUpdateChannel?.(updated);
       setTestResult({
         id: channel.id,
         msg: t("payment.toast.testSuccess", { latency: updated.latencyMs }),
@@ -182,17 +154,13 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
   const handleToggleEnabled = (channel: PaymentChannelConfig) => {
     const updated = { ...channel, enabled: !channel.enabled };
     setChannelList((prev) => prev.map((c) => (c.id === channel.id ? updated : c)));
-    if (onUpdateChannel) onUpdateChannel(updated);
-    if (onSaveChannel) onSaveChannel(updated);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingChannel) return;
     try {
-      const saved = USE_MOCK
-        ? editingChannel
-        : await channelsApi.updatePaymentChannel(editingChannel.id, {
+      const saved = await channelsApi.updatePaymentChannel(editingChannel.id, {
             name: editingChannel.name,
             accountName: editingChannel.accountName,
             description: editingChannel.description,
@@ -205,8 +173,6 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
             routingPriority: editingChannel.routingPriority,
           });
       setChannelList((prev) => prev.map((c) => (c.id === saved.id ? saved : c)));
-      onUpdateChannel?.(saved);
-      onSaveChannel?.(saved);
       setEditingChannel(null);
     } catch {
       showToast(t("payment.toast.saveFailed"));
@@ -226,32 +192,13 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
       ? `${channelName} · ${formAccountName.trim()}`
       : channelName;
 
-    if (!USE_MOCK && slug === "creem" && !formApiSecret.trim()) {
+    if (slug === "creem" && !formApiSecret.trim()) {
       showToast(t("payment.toast.fillRequired"));
       return;
     }
 
     try {
-      const newChannel: PaymentChannelConfig = USE_MOCK
-        ? {
-            id: `ch_${slug}_${Date.now()}`,
-            channelKey: slug as PaymentChannelConfig["channelKey"],
-            name: displayName,
-            accountName: formAccountName.trim() || undefined,
-            description: entry?.description || channelName,
-            enabled: true,
-            mode: formMode,
-            apiPublicKey: formApiKey.trim() || `pk_${formMode}_${Math.random().toString(36).slice(2, 10)}`,
-            apiSecretKey: formApiSecret.trim() || `sk_${formMode}_${Math.random().toString(36).slice(2, 12)}`,
-            webhookSecret: formWebhookSecret.trim() || `whsec_${Math.random().toString(36).slice(2, 12)}`,
-            supportedCurrencies: formCurrencies.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
-            feeRateText: formFeeRate.trim() || "—",
-            routingPriority: channelList.length + 1,
-            lastTestedAt: t("payment.defaults.notTested"),
-            testStatus: "DEGRADED",
-            latencyMs: 0,
-          }
-        : await channelsApi.createPaymentChannel({
+      const newChannel: PaymentChannelConfig = await channelsApi.createPaymentChannel({
             channelKey: slug as PaymentChannelConfig["channelKey"],
             name: displayName,
             accountName: formAccountName.trim() || undefined,
@@ -265,7 +212,6 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
           });
 
       setChannelList((prev) => [...prev, newChannel]);
-      onSaveChannel?.(newChannel);
       setIsAddChannelOpen(false);
       showToast(t("payment.toast.added", { name: newChannel.name }));
       setFormChannelKey("");
@@ -399,18 +345,12 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
         ],
       };
 
-      if (onCreateTestTransaction) {
-        onCreateTestTransaction(newTx);
-      }
-
       const updatedChannel = {
         ...channel,
         lastTestedAt: timeString,
         latencyMs: simulatedLatency,
       };
       setChannelList((prev) => prev.map((c) => (c.id === channel.id ? updatedChannel : c)));
-      if (onUpdateChannel) onUpdateChannel(updatedChannel);
-      if (onSaveChannel) onSaveChannel(updatedChannel);
 
       const rawJson = JSON.stringify(
         {
@@ -929,20 +869,18 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   >
 {t("payment.testTx.finish")}
                   </button>
-                  {onNavigateToTransactions && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsTestTxModalOpen(false);
-                        setLastExecutedTxResult(null);
-                        onNavigateToTransactions();
-                      }}
-                      className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-card transition-colors cursor-pointer"
-                    >
-                      <span>{t("payment.testTx.viewInTransactions")}</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTestTxModalOpen(false);
+                      setLastExecutedTxResult(null);
+                      window.location.hash = "#/transactions";
+                    }}
+                    className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-card transition-colors cursor-pointer"
+                  >
+                    <span>{t("payment.testTx.viewInTransactions")}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </>
               ) : (
                 <button

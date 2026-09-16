@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import * as appsApi from "../api/modules/apps";
+import * as channelsApi from "../api/modules/channels";
+import * as productsApi from "../api/modules/products";
+import * as discountsApi from "../api/modules/discounts";
+import * as messagingApi from "../api/modules/messaging";
+import * as tenantsApi from "../api/modules/tenants";
 import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -52,15 +58,7 @@ import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 
 interface ApplicationManagementViewProps {
-  apps: PaymentApp[];
-  paymentChannels?: PaymentChannelConfig[];
-  emailChannels?: EmailChannelConfig[];
-  products?: ProductConfig[];
-  discounts?: DiscountConfig[];
-  emailTemplates?: EmailTemplate[];
-  tenants?: Tenant[];
-  onUpdateApp?: (app: PaymentApp) => void;
-  onSaveApp?: (app: PaymentApp) => void;
+  currentTenant: Tenant;
 }
 
 const AVAILABLE_PAYMENT_CHANNELS: { key: PaymentChannel; label: string; desc: string; icon: string }[] = [
@@ -102,18 +100,45 @@ const EMAIL_TRIGGER_EVENTS = [
 ];
 
 export const ApplicationManagementView: React.FC<ApplicationManagementViewProps> = ({
-  apps,
-  paymentChannels = [],
-  emailChannels = [],
-  products = [],
-  discounts = [],
-  emailTemplates = [],
-  tenants = [],
-  onUpdateApp,
-  onSaveApp,
+  currentTenant,
 }) => {
   const { t } = useTranslation(["apps", "common"]);
-  const [appList, setAppList] = useState<PaymentApp[]>(apps);
+  const [appList, setAppList] = useState<PaymentApp[]>([]);
+  const [paymentChannels, setPaymentChannels] = useState<PaymentChannelConfig[]>([]);
+  const [emailChannels, setEmailChannels] = useState<EmailChannelConfig[]>([]);
+  const [products, setProducts] = useState<ProductConfig[]>([]);
+  const [discounts, setDiscounts] = useState<DiscountConfig[]>([]);
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+
+  const loadData = useCallback(async () => {
+    const tenantId = currentTenant.id === "group_hq" ? undefined : currentTenant.id;
+    try {
+      const [apps, channels, emailCh, productRows, discountRows, templates, tenantRows] =
+        await Promise.all([
+          appsApi.getApps(),
+          channelsApi.listPaymentChannels(),
+          messagingApi.listEmailChannels(),
+          productsApi.listProducts({ tenantId }),
+          discountsApi.listDiscounts({ tenantId }),
+          messagingApi.listEmailTemplates(),
+          tenantsApi.listTenants(),
+        ]);
+      setAppList(apps);
+      setPaymentChannels(channels);
+      setEmailChannels(emailCh);
+      setProducts(productRows);
+      setDiscounts(discountRows);
+      setEmailTemplates(templates);
+      setTenants(tenantRows);
+    } catch {
+      /* keep partial state */
+    }
+  }, [currentTenant.id]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const routingStrategies = useMemo(
     () =>
@@ -150,9 +175,6 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
     [t]
   );
 
-  useEffect(() => {
-    setAppList(apps);
-  }, [apps]);
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -313,8 +335,6 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
     const rotatedSec = `np_sec_live_${Math.random().toString(36).substring(2, 18)}${Math.random().toString(36).substring(2, 18)}`;
     const updated = { ...app, secretKey: rotatedSec };
     setAppList((prev) => prev.map((a) => (a.id === app.id ? updated : a)));
-    if (onUpdateApp) onUpdateApp(updated);
-    if (onSaveApp) onSaveApp(updated);
     showToast(t("apps:toast.secretRotated", { name: app.name }));
   };
 
@@ -324,8 +344,6 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
       status: app.status === "ACTIVE" ? "PAUSED" : "ACTIVE",
     };
     setAppList((prev) => prev.map((a) => (a.id === app.id ? updated : a)));
-    if (onUpdateApp) onUpdateApp(updated);
-    if (onSaveApp) onSaveApp(updated);
     showToast(
       t("apps:toast.statusChanged", {
         name: app.name,
@@ -377,8 +395,6 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
       };
 
       setAppList((prev) => prev.map((a) => (a.id === updatedApp.id ? updatedApp : a)));
-      if (onUpdateApp) onUpdateApp(updatedApp);
-      if (onSaveApp) onSaveApp(updatedApp);
       showToast(t("apps:toast.saved", { name: updatedApp.name }));
     } else {
       const newApp: PaymentApp = {
@@ -410,7 +426,6 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
       };
 
       setAppList([newApp, ...appList]);
-      if (onSaveApp) onSaveApp(newApp);
       showToast(t("apps:toast.created", { name: newApp.name }));
     }
 

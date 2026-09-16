@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import * as promoApi from "../api/modules/promo";
+import * as discountsApi from "../api/modules/discounts";
+import * as messagingApi from "../api/modules/messaging";
 import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -31,22 +34,36 @@ import { ShadcnSelect } from "./ui/select";
 import { SearchableSelect } from "./ui/SearchableSelect";
 
 interface PromoCampaignsViewProps {
-  campaigns: PromoCampaign[];
-  discounts: DiscountConfig[];
-  templates: EmailTemplate[];
   currentTenant: Tenant;
-  onSaveCampaign: (campaign: PromoCampaign) => void;
 }
 
 export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
-  campaigns,
-  discounts,
-  templates,
   currentTenant,
-  onSaveCampaign,
 }) => {
   const { t } = useTranslation(["products", "common"]);
-  const [campaignList, setCampaignList] = useState<PromoCampaign[]>(campaigns);
+  const [campaignList, setCampaignList] = useState<PromoCampaign[]>([]);
+  const [discounts, setDiscounts] = useState<DiscountConfig[]>([]);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+
+  const loadData = useCallback(async () => {
+    const tenantId = currentTenant.id === "group_hq" ? undefined : currentTenant.id;
+    try {
+      const [campaigns, discountRows, templateRows] = await Promise.all([
+        promoApi.listPromoCampaigns(),
+        discountsApi.listDiscounts({ tenantId }),
+        messagingApi.listEmailTemplates(),
+      ]);
+      setCampaignList(campaigns);
+      setDiscounts(discountRows);
+      setTemplates(templateRows);
+    } catch {
+      setCampaignList([]);
+    }
+  }, [currentTenant.id]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
@@ -100,7 +117,6 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
       createdAt: new Date().toISOString().slice(0, 10),
     };
     setCampaignList([duplicated, ...campaignList]);
-    onSaveCampaign(duplicated);
     showToast(t("promo.toast.duplicated", { name: duplicated.name }));
   };
 
@@ -118,7 +134,6 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
         conversionRate: 8.6,
       };
       setCampaignList((prev) => prev.map((item) => (item.id === c.id ? updated : item)));
-      onSaveCampaign(updated);
       showToast(t("promo.toast.sent", { name: c.name, count: c.totalRecipients }));
     }, 1200);
   };
@@ -154,7 +169,6 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
     };
 
     setCampaignList((prev) => [newCamp, ...prev]);
-    onSaveCampaign(newCamp);
     showToast(
       isNow
         ? t("promo.toast.createdNow", { name: newCamp.name })

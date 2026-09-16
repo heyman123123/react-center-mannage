@@ -36,21 +36,14 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { EmailTemplate, SupportedLanguage, DictionaryEntry, EmailCategory } from "../types/payment";
-import { INITIAL_DICTIONARY } from "../data/mockData";
 import { REACT_EMAIL_PRESETS } from "../data/emailTemplatesData";
 import { ReactEmailRenderer } from "./ReactEmailRenderer";
-import { USE_MOCK } from "../api/config";
 import * as messagingApi from "../api/modules/messaging";
+import * as iamApi from "../api/modules/iam";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { Popconfirm } from "./ui/Popconfirm";
 
-interface EmailTemplatesViewProps {
-  templates: EmailTemplate[];
-  dictionary?: DictionaryEntry[];
-  onSaveTemplate?: (template: EmailTemplate) => void;
-  onDeleteTemplate?: (id: string) => void;
-}
 
 export const SUPPORTED_LANG_CONFIG: {
   code: SupportedLanguage;
@@ -92,12 +85,7 @@ const DYNAMIC_TAG_SAMPLES: { tag: string; key: string; sample: string }[] = [
   { tag: "{{expiry_date}}", key: "expiry_date", sample: "2026-09-30" },
 ];
 
-export const EmailTemplatesView: React.FC<EmailTemplatesViewProps> = ({
-  templates,
-  dictionary = INITIAL_DICTIONARY,
-  onSaveTemplate,
-  onDeleteTemplate,
-}) => {
+export const EmailTemplatesView: React.FC = () => {
   const { t } = useTranslation(["email", "common"]);
 
   const categoryMap = useMemo(
@@ -179,22 +167,38 @@ export const EmailTemplatesView: React.FC<EmailTemplatesViewProps> = ({
     [t]
   );
 
-  const [templateList, setTemplateList] = useState<EmailTemplate[]>(templates);
+  const [templateList, setTemplateList] = useState<EmailTemplate[]>([]);
+  const [dictionary, setDictionary] = useState<DictionaryEntry[]>([]);
 
   useEffect(() => {
-    if (USE_MOCK) {
-      setTemplateList(templates);
-      return;
-    }
     void (async () => {
       try {
-        const list = await messagingApi.listEmailTemplates();
+        const [list, dictPage] = await Promise.all([
+          messagingApi.listEmailTemplates(),
+          iamApi.listDictionaryEntries({ page: 1, pageSize: 100 }),
+        ]);
         setTemplateList(list);
+        setDictionary(
+          (dictPage.list || []).map((d) => ({
+            id: d.id,
+            key: d.key || d.entryKey,
+            category: (d.category?.toUpperCase() as DictionaryEntry["category"]) || "COMMON",
+            categoryId: d.categoryId || undefined,
+            description: d.description || d.label,
+            referencedTemplatesCount: 0,
+            translations: {
+              "zh-CN": d.translations?.["zh-CN"] || d.label || "",
+              "en-US": d.translations?.["en-US"] || "",
+            } as DictionaryEntry["translations"],
+            updatedAt: "",
+          })),
+        );
       } catch {
         setTemplateList([]);
+        setDictionary([]);
       }
     })();
-  }, [templates]);
+  }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [langFilter, setLangFilter] = useState<string>("ALL");
@@ -322,9 +326,6 @@ The {{app_name}} Team`,
       return exists ? prev.map((tmpl) => (tmpl.id === updated.id ? updated : tmpl)) : [updated, ...prev];
     });
 
-    if (onSaveTemplate) {
-      onSaveTemplate(updated);
-    }
 
     setIsEditingModalOpen(false);
     showToast(t("templates.toast.savedStandalone", { name: updated.name, language: updated.language }));
@@ -340,7 +341,6 @@ The {{app_name}} Team`,
     };
 
     setTemplateList((prev) => prev.map((tmpl) => (tmpl.id === updated.id ? updated : tmpl)));
-    if (onSaveTemplate) onSaveTemplate(updated);
     showToast(
       t("templates.toast.statusChanged", {
         name: email.name,
@@ -355,7 +355,6 @@ The {{app_name}} Team`,
   // Delete single email
   const handleDelete = (id: string, name: string) => {
     setTemplateList((prev) => prev.filter((tmpl) => tmpl.id !== id));
-    if (onDeleteTemplate) onDeleteTemplate(id);
     showToast(t("templates.toast.removedStandalone", { name }));
   };
 
@@ -382,7 +381,6 @@ The {{app_name}} Team`,
     };
 
     setTemplateList((prev) => [cloned, ...prev]);
-    if (onSaveTemplate) onSaveTemplate(cloned);
     setCloningSourceEmail(null);
     showToast(
       t("templates.toast.clonedStandalone", {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { USE_MOCK } from "../api/config";
 import * as discountsApi from "../api/modules/discounts";
+import * as productsApi from "../api/modules/products";
+import * as channelsApi from "../api/modules/channels";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -28,19 +29,12 @@ import { ShadcnSelect } from "./ui/select";
 import { MultiSelect } from "./ui/MultiSelect";
 
 interface DiscountsViewProps {
-  discounts: DiscountConfig[];
-  products?: ProductConfig[];
   currentTenant: Tenant;
-  paymentChannels?: PaymentChannelConfig[];
-  onSaveDiscount: (discount: DiscountConfig) => void;
+  currentUser?: import("../types/payment").SystemUser;
 }
 
 export const DiscountsView: React.FC<DiscountsViewProps> = ({
-  discounts,
-  products = [],
   currentTenant,
-  paymentChannels = [],
-  onSaveDiscount,
 }) => {
   const { t } = useTranslation(["products", "common"]);
   const typeFilters = useMemo(
@@ -75,7 +69,9 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     ],
     [t]
   );
-  const [discountList, setDiscountList] = useState<DiscountConfig[]>(discounts);
+  const [discountList, setDiscountList] = useState<DiscountConfig[]>([]);
+  const [products, setProducts] = useState<ProductConfig[]>([]);
+  const [paymentChannels, setPaymentChannels] = useState<PaymentChannelConfig[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -83,7 +79,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
   };
 
   const creemChannels = paymentChannels.filter((c) => c.channelKey === "creem");
-  const channelOptions = (USE_MOCK ? paymentChannels : creemChannels).map((c) => ({
+  const channelOptions = creemChannels.map((c) => ({
     value: c.id,
     label: `${c.name}${c.accountName ? ` · ${c.accountName}` : ""}`,
   }));
@@ -99,13 +95,25 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     }
   }, [currentTenant.id, t]);
 
-  useEffect(() => {
-    if (USE_MOCK) {
-      setDiscountList(discounts);
-      return;
+  const loadCatalog = useCallback(async () => {
+    const tenantId = currentTenant.id === "group_hq" ? undefined : currentTenant.id;
+    try {
+      const [productRows, channelRows] = await Promise.all([
+        productsApi.listProducts({ tenantId }),
+        channelsApi.listPaymentChannels(),
+      ]);
+      setProducts(productRows);
+      setPaymentChannels(channelRows);
+    } catch {
+      setProducts([]);
+      setPaymentChannels([]);
     }
+  }, [currentTenant.id]);
+
+  useEffect(() => {
     void loadDiscounts();
-  }, [discounts, loadDiscounts]);
+    void loadCatalog();
+  }, [loadDiscounts, loadCatalog]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
@@ -135,7 +143,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
   const selectedChannelId = formBoundChannels[0] || editingDiscount?.channelId;
   const productOptions = products
     .filter((p) => !selectedChannelId || p.channelId === selectedChannelId || p.boundChannelIds?.includes(selectedChannelId))
-    .filter((p) => USE_MOCK || p.syncStatus === "SYNCED" || p.creemProductId)
+    .filter((p) => p.syncStatus === "SYNCED" || p.creemProductId)
     .map((p) => ({ value: p.id, label: `${p.name} (${p.code})` }));
 
   const handleCopyCode = (code: string) => {
@@ -182,7 +190,6 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     const nextStatus = d.status === "ACTIVE" ? "DISABLED" : "ACTIVE";
     const updated: DiscountConfig = { ...d, status: nextStatus };
     setDiscountList((prev) => prev.map((item) => (item.id === d.id ? updated : item)));
-    onSaveDiscount(updated);
     showToast(t("discounts.toast.toggled", {
       code: d.code,
       status: nextStatus === "ACTIVE" ? t("discounts.toast.enabled") : t("discounts.toast.disabled"),
@@ -193,15 +200,13 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     e.preventDefault();
     const channelId = formBoundChannels[0];
 
-    if (!USE_MOCK) {
-      if (!channelId) {
-        showToast(t("discounts.sheet.channelRequired"));
-        return;
-      }
-      if (!editingDiscount && formAppliesToProducts.length === 0) {
-        showToast(t("discounts.toast.productsRequired"));
-        return;
-      }
+    if (!channelId) {
+      showToast(t("discounts.sheet.channelRequired"));
+      return;
+    }
+    if (!editingDiscount && formAppliesToProducts.length === 0) {
+      showToast(t("discounts.toast.productsRequired"));
+      return;
     }
 
     const tenantId = currentTenant.id === "group_hq" ? "bu_na_ecom" : currentTenant.id;
@@ -230,21 +235,10 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           appliesToProductIds: formAppliesToProducts,
         };
         setDiscountList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-        onSaveDiscount(updated);
         showToast(t("discounts.toast.updated", { code: updated.code }));
       } else {
-        const newDiscount = USE_MOCK
-          ? {
-              id: `disc_${Date.now().toString().slice(-6)}`,
-              ...payload,
-              usedCount: 0,
-              status: "ACTIVE" as const,
-              boundChannelIds: formBoundChannels,
-              createdAt: new Date().toISOString().slice(0, 10),
-            }
-          : await discountsApi.createDiscount(payload);
+        const newDiscount = await discountsApi.createDiscount(payload);
         setDiscountList((prev) => [newDiscount, ...prev]);
-        onSaveDiscount(newDiscount);
         showToast(t("discounts.toast.created", { code: newDiscount.code }));
       }
       setIsModalOpen(false);

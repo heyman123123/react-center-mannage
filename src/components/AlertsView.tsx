@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import * as alertsApi from "../api/modules/alerts";
 import { useTranslation } from "react-i18next";
 import {
   BellRing,
@@ -34,10 +35,6 @@ import {
   AlertHistoryStatus,
 } from "../types/payment";
 
-interface AlertsViewProps {
-  rules: AlertRule[];
-  histories: AlertHistory[];
-}
 
 // MONITOR_LABEL moved inside component
 
@@ -61,8 +58,28 @@ const emptyForm = {
   thresholdValue: "",
 };
 
-export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
+export const AlertsView: React.FC = () => {
   const { t } = useTranslation(["alerts", "common"]);
+  const [ruleRows, setRuleRows] = useState<AlertRule[]>([]);
+  const [historyRows, setHistoryRows] = useState<AlertHistory[]>([]);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [ruleRows, historyRows] = await Promise.all([
+        alertsApi.listAlertRules(),
+        alertsApi.listAlertHistory(),
+      ]);
+      setRuleRows(ruleRows);
+      setHistoryRows(historyRows);
+    } catch {
+      setRuleRows([]);
+      setHistoryRows([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
   const MONITOR_LABEL = useMemo((): Record<AlertMonitorObject, string> => ({
     CHANNEL_ABNORMAL: t("monitor.CHANNEL_ABNORMAL"),
     RECON_DIFF: t("monitor.RECON_DIFF"),
@@ -90,7 +107,6 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
   const [webhookUrl, setWebhookUrl] = useState("https://hooks.slack.com/services/T000/B000/xxx");
 
   // ---- 规则列表状态 ----
-  const [ruleRows, setRuleRows] = useState<AlertRule[]>(rules);
   const [ruleFilter, setRuleFilter] = useState<"ALL" | "ENABLED" | "DISABLED">("ALL");
   const [ruleSearch, setRuleSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -100,7 +116,6 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ rules, histories }) => {
   useEffect(() => { reset(); }, [ruleFilter, ruleSearch, tab, reset]);
 
   // ---- 历史列表状态 ----
-  const [historyRows, setHistoryRows] = useState<AlertHistory[]>(histories);
   const [historyStatusFilter, setHistoryStatusFilter] = useState<string>("ALL");
   const [historySearch, setHistorySearch] = useState("");
   const [detailHistory, setDetailHistory] = useState<AlertHistory | null>(null);

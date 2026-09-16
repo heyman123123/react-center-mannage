@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import * as merchantApi from "../api/modules/merchant";
 import { useTranslation } from "react-i18next";
 import {
   FileText,
@@ -24,9 +25,6 @@ import { ContextMenu } from "./ui/ContextMenu";
 import { Popconfirm } from "./ui/Popconfirm";
 import { MerchantApplication, MerchantReviewStatus, MerchantDocument } from "../types/payment";
 
-interface MerchantReviewViewProps {
-  applications: MerchantApplication[];
-}
 
 const fileIcon = (type: string) => {
   if (/图片|jpg|png|jpeg/i.test(type)) return <FileImage className="w-4 h-4 text-blue-500" />;
@@ -34,9 +32,22 @@ const fileIcon = (type: string) => {
   return <File className="w-4 h-4 text-fg-tertiary" />;
 };
 
-export const MerchantReviewView: React.FC<MerchantReviewViewProps> = ({ applications }) => {
+export const MerchantReviewView: React.FC = () => {
   const { t } = useTranslation(["commerce", "common"]);
-  const [rows, setRows] = useState<MerchantApplication[]>(applications);
+  const [rows, setRows] = useState<MerchantApplication[]>([]);
+
+  const loadRows = useCallback(async () => {
+    try {
+      const list = await merchantApi.listMerchantApplications();
+      setRows(list);
+    } catch {
+      setRows([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRows();
+  }, [loadRows]);
   const [statusFilter, setStatusFilter] = useState<"ALL" | MerchantReviewStatus>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [reviewApp, setReviewApp] = useState<MerchantApplication | null>(null);

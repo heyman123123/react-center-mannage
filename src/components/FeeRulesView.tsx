@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import * as feeRulesApi from "../api/modules/feeRules";
 import { useTranslation } from "react-i18next";
 import {
   SlidersHorizontal,
@@ -21,9 +22,6 @@ import { ContextMenu } from "./ui/ContextMenu";
 import { Popconfirm } from "./ui/Popconfirm";
 import { FeeRule, PaymentChannel, MerchantTier } from "../types/payment";
 
-interface FeeRulesViewProps {
-  rules: FeeRule[];
-}
 
 const CHANNEL_LABEL: Record<string, string> = {
   stripe: "Stripe", paypal: "PayPal", adyen: "Adyen", klarna: "Klarna",
@@ -44,9 +42,22 @@ const emptyForm = {
   status: true,
 };
 
-export const FeeRulesView: React.FC<FeeRulesViewProps> = ({ rules }) => {
+export const FeeRulesView: React.FC = () => {
   const { t } = useTranslation(["commerce", "common"]);
-  const [rows, setRows] = useState<FeeRule[]>(rules);
+  const [rows, setRows] = useState<FeeRule[]>([]);
+
+  const loadRules = useCallback(async () => {
+    try {
+      const list = await feeRulesApi.listFeeRules();
+      setRows(list);
+    } catch {
+      setRows([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRules();
+  }, [loadRules]);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ENABLED" | "DISABLED">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [formOpen, setFormOpen] = useState(false);

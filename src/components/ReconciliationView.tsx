@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { USE_MOCK } from "../api/config";
 import * as reconciliationApi from "../api/modules/reconciliation";
+import { resolveCurrentRole } from "../lib/permissions";
 import * as transactionsApi from "../api/modules/transactions";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -30,26 +30,23 @@ import {
   TransactionRecord,
   ReconciliationBatch,
 } from "../types/payment";
-import { RBAC_ROLES } from "../data/mockData";
 import { formatCurrency, exportToCSV } from "../lib/utils";
 
 interface ReconciliationViewProps {
   currentTenant: Tenant;
   currentUser: SystemUser;
-  transactions: TransactionRecord[];
   onOpenDiscrepancy: (tx: TransactionRecord) => void;
-  onAutoReconcileAll: () => void;
+  onAutoReconcileAll?: () => void;
 }
 
 export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
   currentTenant,
   currentUser,
-  transactions,
   onOpenDiscrepancy,
   onAutoReconcileAll,
 }) => {
   const { t } = useTranslation(["reconciliation", "common"]);
-  const [transactionList, setTransactionList] = useState<TransactionRecord[]>(transactions);
+  const [transactionList, setTransactionList] = useState<TransactionRecord[]>([]);
   const [reconBatches, setReconBatches] = useState<ReconciliationBatch[]>([]);
   const [summary, setSummary] = useState<reconciliationApi.ReconciliationSummary | null>(null);
   const [isRunningEngine, setIsRunningEngine] = useState(false);
@@ -59,14 +56,6 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
 
   const loadData = useCallback(async () => {
     const tenantId = currentTenant.id === "group_hq" ? undefined : currentTenant.id;
-    if (USE_MOCK) {
-      setTransactionList(transactions);
-      const batches = await reconciliationApi.listReconciliationBatches(tenantId);
-      const sum = await reconciliationApi.getReconciliationSummary(tenantId);
-      setReconBatches(batches);
-      setSummary(sum);
-      return;
-    }
     try {
       const [txRes, batches, sum] = await Promise.all([
         transactionsApi.listTransactions({ page: 1, pageSize: 200, tenantId }),
@@ -80,13 +69,13 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       setTransactionList([]);
       setReconBatches([]);
     }
-  }, [currentTenant.id, transactions]);
+  }, [currentTenant.id]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
 
-  const currentRole = (currentUser?.roleKey && RBAC_ROLES[currentUser.roleKey]) || RBAC_ROLES["SUPER_ADMIN"];
+  const currentRole = resolveCurrentRole(currentUser, []);
   const canReconcile = currentRole?.permissions?.canTriggerReconciliation ?? true;
   const canResolve = currentRole?.permissions?.canResolveDiscrepancy ?? true;
 
@@ -115,11 +104,9 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
     void (async () => {
       try {
         setProgress(45);
-        if (!USE_MOCK) {
-          await reconciliationApi.runReconciliation(tenantId);
-        }
+        await reconciliationApi.runReconciliation(tenantId);
         setProgress(75);
-        onAutoReconcileAll();
+        onAutoReconcileAll?.();
         await loadData();
         setProgress(100);
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });

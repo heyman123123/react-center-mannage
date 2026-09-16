@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Tenant, SystemUser, TransactionRecord } from "../types/payment";
 import { formatCurrency } from "../lib/utils";
-import { RBAC_ROLES } from "../data/mockData";
+import { resolveCurrentRole } from "../lib/permissions";
 
 interface FinancialReportsViewProps {
   currentTenant: Tenant;
@@ -23,7 +23,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
   transactions: _transactions,
 }) => {
   const { t } = useTranslation(["system", "common"]);
-  const currentRole = (currentUser?.roleKey && RBAC_ROLES[currentUser.roleKey]) || RBAC_ROLES["SUPER_ADMIN"];
+  const currentRole = resolveCurrentRole(currentUser, []);
   void currentRole;
 
   const channelBreakdown = [

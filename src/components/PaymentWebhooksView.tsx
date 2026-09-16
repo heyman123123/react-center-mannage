@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { USE_MOCK } from "../api/config";
 import * as paymentWebhooksApi from "../api/modules/paymentWebhooks";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -26,26 +25,18 @@ import {
 import { PaymentWebhookLog } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 
-interface PaymentWebhooksViewProps {
-  logs: PaymentWebhookLog[];
-}
-
-export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }) => {
+export const PaymentWebhooksView: React.FC = () => {
   const { t } = useTranslation(["payments", "common"]);
-  const [webhookLogs, setWebhookLogs] = useState<PaymentWebhookLog[]>(logs);
+  const [webhookLogs, setWebhookLogs] = useState<PaymentWebhookLog[]>([]);
 
   const loadLogs = useCallback(async () => {
-    if (USE_MOCK) {
-      setWebhookLogs(logs);
-      return;
-    }
     try {
       const res = await paymentWebhooksApi.listPaymentWebhooks({ page: 1, pageSize: 100 });
       setWebhookLogs(res.list);
     } catch {
       setWebhookLogs([]);
     }
-  }, [logs]);
+  }, []);
 
   useEffect(() => {
     void loadLogs();

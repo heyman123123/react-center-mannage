@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { USE_MOCK } from "../api/config";
 import * as productsApi from "../api/modules/products";
+import * as channelsApi from "../api/modules/channels";
 import { useViewLoading } from "./ui/useViewLoading";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -22,17 +22,15 @@ import {
   Sparkles,
   Layers,
 } from "lucide-react";
-import { ProductConfig, ProductType, Tenant, PaymentChannelConfig } from "../types/payment";
+import { ProductConfig, ProductType, Tenant, PaymentChannelConfig, SystemUser } from "../types/payment";
 import { formatCurrency } from "../lib/utils";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { MultiSelect } from "./ui/MultiSelect";
 
 interface ProductsViewProps {
-  products: ProductConfig[];
   currentTenant: Tenant;
-  paymentChannels?: PaymentChannelConfig[];
-  onSaveProduct: (product: ProductConfig) => void;
+  currentUser?: SystemUser;
 }
 
 const SUPPORTED_CURRENCIES = [
@@ -45,13 +43,11 @@ const SUPPORTED_CURRENCIES = [
 ];
 
 export const ProductsView: React.FC<ProductsViewProps> = ({
-  products,
   currentTenant,
-  paymentChannels = [],
-  onSaveProduct,
 }) => {
   const { t } = useTranslation(["products", "common"]);
-  const [productList, setProductList] = useState<ProductConfig[]>(products);
+  const [productList, setProductList] = useState<ProductConfig[]>([]);
+  const [paymentChannels, setPaymentChannels] = useState<PaymentChannelConfig[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -59,7 +55,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   };
 
   const creemChannels = paymentChannels.filter((c) => c.channelKey === "creem");
-  const channelOptions = (USE_MOCK ? paymentChannels : creemChannels).map((c) => ({
+  const channelOptions = creemChannels.map((c) => ({
     value: c.id,
     label: `${c.name}${c.accountName ? ` · ${c.accountName}` : ""}`,
   }));
@@ -75,13 +71,19 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     }
   }, [currentTenant.id, t]);
 
-  useEffect(() => {
-    if (USE_MOCK) {
-      setProductList(products);
-      return;
+  const loadChannels = useCallback(async () => {
+    try {
+      const list = await channelsApi.listPaymentChannels();
+      setPaymentChannels(list);
+    } catch {
+      setPaymentChannels([]);
     }
+  }, []);
+
+  useEffect(() => {
     void loadProducts();
-  }, [products, loadProducts]);
+    void loadChannels();
+  }, [loadProducts, loadChannels]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
@@ -182,7 +184,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       status: p.status === "ACTIVE" ? "ARCHIVED" : "ACTIVE",
     };
     setProductList((prev) => prev.map((item) => (item.id === p.id ? updated : item)));
-    onSaveProduct(updated);
     showToast(
       t("products.toast.toggled", {
         name: p.name,
@@ -201,7 +202,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     const numericPrice = Number(formPrice) || 0;
     const channelId = formBoundChannels[0] || editingProduct?.channelId;
 
-    if (!USE_MOCK && !channelId) {
+    if (!channelId) {
       showToast(t("products.sheet.channelRequired"));
       return;
     }
@@ -224,34 +225,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
     try {
       if (editingProduct) {
-        const updated = USE_MOCK
-          ? {
-              ...editingProduct,
-              ...payload,
-              prices: { [formCurrency]: numericPrice },
-              stripePriceId: formStripePriceId.trim() || undefined,
-              paypalPlanId: formPaypalPlanId.trim() || undefined,
-              boundChannelIds: formBoundChannels,
-            }
-          : await productsApi.updateProduct(editingProduct.id, payload);
+        const updated = await productsApi.updateProduct(editingProduct.id, payload);
         setProductList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-        onSaveProduct(updated);
         showToast(t("products.toast.updated", { code: updated.code }));
       } else {
-        const newProd = USE_MOCK
-          ? {
-              id: `prod_${formCurrency.toLowerCase()}_${Date.now().toString().slice(-6)}`,
-              ...payload,
-              prices: { [formCurrency]: numericPrice },
-              stripePriceId: formStripePriceId.trim() || `price_stripe_${Date.now().toString().slice(-6)}`,
-              paypalPlanId: formPaypalPlanId.trim() || undefined,
-              subscriberCount: 0,
-              boundChannelIds: formBoundChannels,
-              createdAt: new Date().toISOString().slice(0, 10),
-            } as ProductConfig
-          : await productsApi.createProduct(payload);
+        const newProd = await productsApi.createProduct(payload);
         setProductList((prev) => [newProd, ...prev]);
-        onSaveProduct(newProd);
         showToast(t("products.toast.created", { code: newProd.code }));
       }
       setIsModalOpen(false);
