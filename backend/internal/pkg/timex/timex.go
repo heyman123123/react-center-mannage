@@ -27,3 +27,13 @@ func Val(p *int64) int64 {
 func FormatUTC(ts int64) string {
 	return time.Unix(ts, 0).UTC().Format("2006-01-02 15:04:05")
 }
+
+// FormatDate 格式化为 YYYY-MM-DD。
+func FormatDate(ts int64) string {
+	return time.Unix(ts, 0).UTC().Format("2006-01-02")
+}
+
+// FormatDateTime 同 FormatUTC。
+func FormatDateTime(ts int64) string {
+	return FormatUTC(ts)
+}

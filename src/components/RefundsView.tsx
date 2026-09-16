@@ -35,7 +35,6 @@ import {
   RefundReason,
   TenantId,
 } from "../types/payment";
-import { USE_MOCK } from "../api/config";
 import * as refundsApi from "../api/modules/refunds";
 import { useTranslation } from "react-i18next";
 
@@ -198,9 +197,7 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
   const handleProcessRefund = async (r: RefundRecord) => {
     setProcessingId(r.id);
     try {
-      const updated = USE_MOCK
-        ? { ...r, status: "SUCCESS" as const }
-        : await refundsApi.processRefund(r.id);
+      const updated = await refundsApi.processRefund(r.id);
       setRefundRows((prev) => prev.map((x) => (x.id === r.id ? updated : x)));
     } finally {
       setProcessingId(null);
@@ -212,15 +209,7 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
     const fileName = `${t("refunds.evidenceFilePrefix")}_${Date.now().toString().slice(-4)}.pdf`;
     const fileSize = `${(Math.random() * 2 + 0.3).toFixed(1)} MB`;
     try {
-      const updated = USE_MOCK
-        ? {
-            ...activeCb,
-            evidence: [
-              ...activeCb.evidence,
-              { id: `ev_${Date.now()}`, name: fileName, size: fileSize, uploadedAt: new Date().toISOString().replace("T", " ").substring(0, 19) },
-            ],
-          }
-        : await refundsApi.addChargebackEvidence(activeCb.id, { name: fileName, size: fileSize });
+      const updated = await refundsApi.addChargebackEvidence(activeCb.id, { name: fileName, size: fileSize });
       setCbRows((prev) => prev.map((c) => (c.id === activeCb.id ? updated : c)));
       setActiveCb(updated);
     } catch {
@@ -231,9 +220,7 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
   const handleSubmitEvidence = async () => {
     if (!activeCb) return;
     try {
-      const updated = USE_MOCK
-        ? { ...activeCb, status: "已提交证据" as const }
-        : await refundsApi.submitChargeback(activeCb.id);
+      const updated = await refundsApi.submitChargeback(activeCb.id);
       setCbRows((prev) => prev.map((c) => (c.id === activeCb.id ? updated : c)));
       setActiveCb(updated);
     } catch {

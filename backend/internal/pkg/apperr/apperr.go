@@ -36,4 +36,5 @@ var (
 	ExecutorDisabled     = New(50100, 200, "定时任务执行器未启用")
 	ProviderNotSupported = New(42210, 422, "该邮件服务商暂未接入")
 	SendFailed           = New(50210, 502, "邮件发送失败")
+	Internal             = New(50000, 500, "内部错误")
 )

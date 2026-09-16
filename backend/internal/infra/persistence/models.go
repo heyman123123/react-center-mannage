@@ -59,6 +59,18 @@ func AutoMigrate(db *gorm.DB) error {
 		&PaymentTransaction{},
 		&PaymentRefund{},
 		&PaymentChargeback{},
+		&PaymentApp{},
+		&SettlementBatch{},
+		&PromoCampaign{},
+		&EndUser{},
+		&ExchangeRate{},
+		&ExchangeRateHistory{},
+		&FeeRule{},
+		&RiskRule{},
+		&BlacklistEntry{},
+		&MerchantApplication{},
+		&AlertRule{},
+		&AlertHistory{},
 	)
 }
 
@@ -483,6 +495,122 @@ type PaymentChargeback struct {
 	CreatedAt       int64          `gorm:"autoCreateTime;index" json:"createdAt"`
 	UpdatedAt       int64          `gorm:"autoUpdateTime" json:"updatedAt"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// PaymentApp 接入应用（JSON 存完整前端结构）
+type PaymentApp struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
+	Code      string         `gorm:"size:128;uniqueIndex" json:"code"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// SettlementBatch 结算批次
+type SettlementBatch struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
+	Channel   string         `gorm:"size:32;index" json:"channel"`
+	BatchDate string         `gorm:"size:16;index" json:"batchDate"`
+	Status    string         `gorm:"size:32;index" json:"status"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// PromoCampaign 促销邮件活动
+type PromoCampaign struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	TenantID  string         `gorm:"size:64;index;default:ALL" json:"tenantId"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// EndUser 终端客户
+type EndUser struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
+	Email     string         `gorm:"size:255;index" json:"email"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// ExchangeRate 汇率
+type ExchangeRate struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// ExchangeRateHistory 汇率历史
+type ExchangeRateHistory struct {
+	ID        string `gorm:"type:uuid;primaryKey" json:"id"`
+	RateID    string `gorm:"type:uuid;index" json:"rateId"`
+	Rate      float64 `json:"rate"`
+	RecordedAt int64 `gorm:"index" json:"recordedAt"`
+}
+
+// FeeRule 费率规则
+type FeeRule struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// RiskRule 风控规则
+type RiskRule struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// BlacklistEntry 黑名单
+type BlacklistEntry struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// MerchantApplication 商户 KYB 申请
+type MerchantApplication struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// AlertRule 告警规则
+type AlertRule struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// AlertHistory 告警历史
+type AlertHistory struct {
+	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	RuleID    string         `gorm:"type:uuid;index" json:"ruleId"`
+	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt int64          `gorm:"autoCreateTime;index" json:"createdAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // PaymentWebhookLog 支付 Webhook 入站记录

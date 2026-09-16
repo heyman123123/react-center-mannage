@@ -14,7 +14,6 @@ import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, usePagination } from "./ui/Pagination";
 import { Popconfirm } from "./ui/Popconfirm";
-import { USE_MOCK } from "../api/config";
 import * as iamApi from "../api/modules/iam";
 import { ApiError } from "../api/types";
 import type { TaskRunStatus } from "../types/payment";
@@ -51,12 +50,6 @@ export const ScheduledTaskDetailView: React.FC<ScheduledTaskDetailViewProps> = (
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      if (USE_MOCK) {
-        setTask(null);
-        setRuns([]);
-        setTotal(0);
-        return;
-      }
       const [detail, page] = await Promise.all([
         iamApi.getScheduledTask(taskId),
         iamApi.listScheduledTaskRuns(taskId, { page: currentPage, pageSize }),
