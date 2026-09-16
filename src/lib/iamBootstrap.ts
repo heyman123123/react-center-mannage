@@ -1,7 +1,6 @@
 /**
- * 将一期后端 IAM/字典响应映射为前端壳层类型，并在非 Mock 时拉取。
+ * 将一期后端 IAM/字典响应映射为前端壳层类型。
  */
-import { USE_MOCK } from "../api/config";
 import * as iamApi from "../api/modules/iam";
 import { formatUnix } from "./time";
 import type {
@@ -62,8 +61,6 @@ export interface ShellIamData {
 }
 
 export async function loadShellIamData(): Promise<ShellIamData | null> {
-  if (USE_MOCK) return null;
-
   const [
     usersRes,
     rolesRes,

@@ -1,7 +1,6 @@
 /**
- * 壳层 IAM 写操作：Mock 时纯本地；真实后端时调 API。
+ * 壳层 IAM 写操作：调后端 API。
  */
-import { USE_MOCK } from "../api/config";
 import * as iamApi from "../api/modules/iam";
 import { formatUnix } from "./time";
 import type {
@@ -16,9 +15,6 @@ import type {
 export type SaveUserResult = { user: SystemUser; initialPassword?: string };
 
 export async function persistUser(user: SystemUser, isNew: boolean): Promise<SaveUserResult> {
-  if (USE_MOCK) {
-    return { user };
-  }
   if (isNew) {
     const res = await iamApi.createUser({
       email: user.email,
@@ -60,21 +56,15 @@ export async function persistUser(user: SystemUser, isNew: boolean): Promise<Sav
 }
 
 export async function removeUser(id: string): Promise<void> {
-  if (USE_MOCK) return;
   await iamApi.deleteUser(id);
 }
 
 export async function resetUserPassword(id: string): Promise<string> {
-  if (USE_MOCK) {
-    const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$";
-    return Array.from({ length: 14 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  }
   const res = await iamApi.resetUserPassword(id);
   return res.password;
 }
 
 export async function persistRole(role: RbacRole, isNew: boolean): Promise<RbacRole> {
-  if (USE_MOCK) return role;
   const packIds = role.packIds || [];
   const appIds = role.permissions?.appPermissionIds || [];
   if (isNew) {
@@ -105,7 +95,6 @@ export async function persistRole(role: RbacRole, isNew: boolean): Promise<RbacR
 }
 
 export async function removeRole(idOrKey: string): Promise<void> {
-  if (USE_MOCK) return;
   // 后端按 id 删除；若传入 key 则跳过（前端应传 id）
   if (idOrKey.includes("-") || idOrKey.length > 20) {
     await iamApi.deleteRole(idOrKey);
@@ -127,7 +116,6 @@ export async function persistPermissionPack(
   pack: PermissionPack,
   isNew: boolean,
 ): Promise<PermissionPack> {
-  if (USE_MOCK) return pack;
   if (isNew) {
     const created = await iamApi.createPermissionPack({
       key: pack.key,
@@ -148,20 +136,15 @@ export async function persistPermissionPackMenus(
   id: string,
   menuIds: string[],
 ): Promise<PermissionPack> {
-  if (USE_MOCK) {
-    return { id, key: id, name: "", description: "", menuIds };
-  }
   const updated = await iamApi.updatePermissionPackMenus(id, menuIds);
   return mapApiPack(updated);
 }
 
 export async function removePermissionPack(id: string): Promise<void> {
-  if (USE_MOCK) return;
   await iamApi.deletePermissionPack(id);
 }
 
 export async function persistMenu(menu: SystemMenuItem, isNew: boolean): Promise<SystemMenuItem> {
-  if (USE_MOCK) return menu;
   const body = {
     id: isNew ? undefined : menu.id,
     parentId: menu.parentId ?? null,
@@ -189,12 +172,10 @@ export async function persistMenu(menu: SystemMenuItem, isNew: boolean): Promise
 }
 
 export async function removeMenu(id: string): Promise<void> {
-  if (USE_MOCK) return;
   await iamApi.deleteMenu(id);
 }
 
 export async function persistDepartment(dept: Department, isNew: boolean): Promise<Department> {
-  if (USE_MOCK) return dept;
   const body = {
     parentId: dept.parentId ?? null,
     name: dept.name,
@@ -217,7 +198,6 @@ export async function persistDepartment(dept: Department, isNew: boolean): Promi
 }
 
 export async function removeDepartment(id: string): Promise<void> {
-  if (USE_MOCK) return;
   await iamApi.deleteDepartment(id);
 }
 
@@ -225,7 +205,6 @@ export async function persistDictionaryEntry(
   entry: DictionaryEntry,
   isNew: boolean,
 ): Promise<DictionaryEntry> {
-  if (USE_MOCK) return entry;
   const translations = entry.translations as Record<string, string>;
   const label = translations?.["zh-CN"] || entry.description || entry.key;
   if (isNew) {
@@ -257,6 +236,5 @@ export async function persistDictionaryEntry(
 }
 
 export async function removeDictionaryEntry(id: string): Promise<void> {
-  if (USE_MOCK) return;
   await iamApi.deleteDictionaryEntry(id);
 }
