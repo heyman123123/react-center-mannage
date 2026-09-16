@@ -1,6 +1,7 @@
 package migrations
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/google/uuid"
@@ -25,6 +26,13 @@ func seedDefaults(db *gorm.DB) {
 	migrateLegacyPermissionsMenu(db)
 	seedSuperAdmin(db)
 	seedTenants(db)
+	seedPaymentApps(db)
+	seedExchangeRates(db)
+	seedFeeRules(db)
+	seedRiskRules(db)
+	seedBlacklistEntries(db)
+	seedAlertRules(db)
+	seedPromoCampaigns(db)
 	seedAuditActionDict(db)
 	seedDictionaryCategories(db)
 	MigrateRoleMenusToPacks(db)
@@ -388,4 +396,237 @@ func seedTenants(db *gorm.DB) {
 		}
 	}
 	log.Printf("seed: tenants created (%d)", len(tenants))
+}
+
+func mustSeedJSON(v interface{}) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		log.Printf("seed json marshal: %v", err)
+		return "{}"
+	}
+	return string(b)
+}
+
+func seedPaymentApps(db *gorm.DB) {
+	var n int64
+	db.Model(&persistence.PaymentApp{}).Count(&n)
+	if n > 0 {
+		return
+	}
+	apps := []persistence.PaymentApp{
+		{
+			ID: "app_vpn_shield", TenantID: "bu_na_ecom", Code: "APP-VPN-SHIELD",
+			DataJSON: mustSeedJSON(map[string]interface{}{
+				"id": "app_vpn_shield", "name": "Global VPN Shield Pro", "code": "APP-VPN-SHIELD",
+				"description": "全球高速隐私网络与数据安全防护客户端，跨 80+ 节点自动连线",
+				"environment": "Production",
+				"publishableKey": "np_pub_live_551029381029",
+				"secretKey":      "np_sec_live_551029381029381029381029",
+				"webhookUrl":     "https://billing.globalvpn.net/webhooks/payment",
+				"defaultCurrency": "USD", "tenantId": "bu_na_ecom",
+				"enabledChannels":       []string{"stripe", "paypal", "klarna"},
+				"enabledPaymentMethods": []string{"credit_card", "paypal_wallet", "klarna_pay_later"},
+				"routingStrategy":       "LOWEST_FEE",
+				"associatedProductCodes":  []string{"PROD-VPN-YEAR-USD", "PROD-VPN-YEAR-EUR"},
+				"associatedDiscountCodes": []string{"WELCOME20", "EARLYBIRD50"},
+				"emailChannelId": "ech_ses_backup",
+				"senderEmail":    "support@globalvpn.net",
+				"senderName":     "Global VPN Security Team",
+				"enabledEmailEvents": []string{
+					"subscription_welcome_receipt", "recurring_renewal_success", "payment_failed_dunning",
+				},
+				"supportedLanguages": []string{"en-US", "zh-CN", "de-DE", "es-ES"},
+				"defaultLanguage":          "en-US",
+				"activeSubscribersCount":     42100,
+				"totalGmv":                 685400.0,
+				"status":                   "ACTIVE",
+				"createdAt":                "2025-01-20",
+			}),
+		},
+		{
+			ID: "app_shopify_store", TenantID: "bu_na_ecom", Code: "APP-NORDIC-STORE",
+			DataJSON: mustSeedJSON(map[string]interface{}{
+				"id": "app_shopify_store", "name": "Nordic Living Shopify DTC", "code": "APP-NORDIC-STORE",
+				"description": "北欧极简智能家居独立站矩阵，主打北美及欧洲中产消费群体",
+				"environment": "Production",
+				"publishableKey": "np_pub_live_331029381029",
+				"secretKey":      "np_sec_live_331029381029381029381029",
+				"webhookUrl":     "https://shop.nordicliving.store/apps/gateway/webhook",
+				"defaultCurrency": "EUR", "tenantId": "bu_na_ecom",
+				"enabledChannels":       []string{"stripe", "adyen", "klarna", "sepa"},
+				"enabledPaymentMethods": []string{"credit_card", "klarna_pay_later", "sepa_debit"},
+				"routingStrategy":       "LOWEST_FEE",
+				"associatedProductCodes":  []string{"PROD-NORDIC-LAMP-USD"},
+				"associatedDiscountCodes": []string{"WELCOME20", "BLACKFRIDAY30"},
+				"emailChannelId": "ech_sendgrid_live",
+				"senderEmail":    "orders@nordicliving.store",
+				"senderName":     "Nordic Living Dispatch",
+				"enabledEmailEvents": []string{
+					"subscription_welcome_receipt", "subscription_canceled_notice",
+				},
+				"supportedLanguages": []string{"en-US", "de-DE", "fr-FR", "es-ES"},
+				"defaultLanguage":          "en-US",
+				"activeSubscribersCount":     3120,
+				"totalGmv":                 890400.0,
+				"status":                   "ACTIVE",
+				"createdAt":                "2025-08-18",
+			}),
+		},
+	}
+	for _, app := range apps {
+		if err := db.Create(&app).Error; err != nil {
+			log.Printf("seed payment app %s: %v", app.ID, err)
+		}
+	}
+	log.Printf("seed: payment apps created (%d)", len(apps))
+}
+
+func seedExchangeRates(db *gorm.DB) {
+	var n int64
+	db.Model(&persistence.ExchangeRate{}).Count(&n)
+	if n > 0 {
+		return
+	}
+	rates := []persistence.ExchangeRate{
+		{
+			ID: "fx_usd_eur",
+			DataJSON: mustSeedJSON(map[string]interface{}{
+				"id": "fx_usd_eur", "baseCurrency": "USD", "targetCurrency": "EUR",
+				"bid": 0.9215, "ask": 0.9245,
+				"effectiveFrom": "2026-09-12 00:00", "status": "ENABLED",
+				"remark": "欧美主力结算对", "updatedAt": "2026-09-12 08:30",
+			}),
+		},
+		{
+			ID: "fx_usd_jpy",
+			DataJSON: mustSeedJSON(map[string]interface{}{
+				"id": "fx_usd_jpy", "baseCurrency": "USD", "targetCurrency": "JPY",
+				"bid": 147.32, "ask": 147.68,
+				"effectiveFrom": "2026-09-12 00:00", "status": "ENABLED",
+				"remark": "日元高频波动对", "updatedAt": "2026-09-12 08:30",
+			}),
+		},
+	}
+	for _, rate := range rates {
+		if err := db.Create(&rate).Error; err != nil {
+			log.Printf("seed exchange rate %s: %v", rate.ID, err)
+		}
+	}
+	log.Printf("seed: exchange rates created (%d)", len(rates))
+}
+
+func seedFeeRules(db *gorm.DB) {
+	var n int64
+	db.Model(&persistence.FeeRule{}).Count(&n)
+	if n > 0 {
+		return
+	}
+	rule := persistence.FeeRule{
+		ID: "fee_creem_std",
+		DataJSON: mustSeedJSON(map[string]interface{}{
+			"id": "fee_creem_std", "name": "Creem 标准收单费率",
+			"channels": []string{"creem"}, "currency": "USD",
+			"minAmount": 0, "maxAmount": 999999,
+			"merchantTier": "NORMAL", "fixedFee": 0.25, "percentFee": 3.5,
+			"priority": 10, "status": "ENABLED", "createdAt": "2026-08-01 10:00",
+		}),
+	}
+	if err := db.Create(&rule).Error; err != nil {
+		log.Printf("seed fee rule %s: %v", rule.ID, err)
+		return
+	}
+	log.Printf("seed: fee rules created (1)")
+}
+
+func seedRiskRules(db *gorm.DB) {
+	var n int64
+	db.Model(&persistence.RiskRule{}).Count(&n)
+	if n > 0 {
+		return
+	}
+	rule := persistence.RiskRule{
+		ID: "risk01",
+		DataJSON: mustSeedJSON(map[string]interface{}{
+			"id": "risk01", "name": "欧洲强 3DS 验证", "type": "THREE_DS",
+			"condition": "欧洲 EEA 交易强制 3DS 2.0 验证", "action": "BLOCK",
+			"params": map[string]interface{}{"region": "EEA", "channel": "all"},
+			"status": "ENABLED", "updatedAt": "2026-09-01 10:00",
+		}),
+	}
+	if err := db.Create(&rule).Error; err != nil {
+		log.Printf("seed risk rule %s: %v", rule.ID, err)
+		return
+	}
+	log.Printf("seed: risk rules created (1)")
+}
+
+func seedBlacklistEntries(db *gorm.DB) {
+	var n int64
+	db.Model(&persistence.BlacklistEntry{}).Count(&n)
+	if n > 0 {
+		return
+	}
+	entry := persistence.BlacklistEntry{
+		ID: "bl03",
+		DataJSON: mustSeedJSON(map[string]interface{}{
+			"id": "bl03", "type": "IP", "value": "185.220.101.45",
+			"reason": "代理/VPN 出口，关联多笔拒付", "expiresAt": "永久",
+			"status": "ACTIVE", "createdAt": "2026-08-22 10:00",
+		}),
+	}
+	if err := db.Create(&entry).Error; err != nil {
+		log.Printf("seed blacklist entry %s: %v", entry.ID, err)
+		return
+	}
+	log.Printf("seed: blacklist entries created (1)")
+}
+
+func seedAlertRules(db *gorm.DB) {
+	var n int64
+	db.Model(&persistence.AlertRule{}).Count(&n)
+	if n > 0 {
+		return
+	}
+	rule := persistence.AlertRule{
+		ID: "alr01",
+		DataJSON: mustSeedJSON(map[string]interface{}{
+			"id": "alr01", "name": "Stripe 渠道健康度异常",
+			"monitorObject": "CHANNEL_ABNORMAL",
+			"triggerCondition": "渠道健康检查失败或延迟 > 2000ms 持续 3 分钟",
+			"severity": "P0", "notifyChannels": []string{"IN_APP", "EMAIL", "WEBHOOK"},
+			"status": "ENABLED",
+			"thresholdParams": map[string]interface{}{"latencyMs": 2000, "windowMin": 3},
+			"updatedAt": "2026-09-01 09:00", "updatedBy": "系统管理员",
+		}),
+	}
+	if err := db.Create(&rule).Error; err != nil {
+		log.Printf("seed alert rule %s: %v", rule.ID, err)
+		return
+	}
+	log.Printf("seed: alert rules created (1)")
+}
+
+func seedPromoCampaigns(db *gorm.DB) {
+	var n int64
+	db.Model(&persistence.PromoCampaign{}).Count(&n)
+	if n > 0 {
+		return
+	}
+	campaign := persistence.PromoCampaign{
+		ID: "camp_03_churn_winback", TenantID: "bu_na_ecom",
+		DataJSON: mustSeedJSON(map[string]interface{}{
+			"id": "camp_03_churn_winback", "name": "90天未登录高价值客户返场礼遇邮件",
+			"targetAudience": "CHURNED_90D", "discountCode": "ANNUAL_SAVE50",
+			"emailTemplateId": "promo_discount_offer",
+			"emailSubject": "We miss you! Here is $50 toward your next year of Novas",
+			"status": "DRAFT", "totalRecipients": 890,
+			"deliveredCount": 0, "openRate": 0, "clickRate": 0, "conversionRate": 0,
+			"createdAt": "2026-09-05",
+		}),
+	}
+	if err := db.Create(&campaign).Error; err != nil {
+		log.Printf("seed promo campaign %s: %v", campaign.ID, err)
+		return
+	}
+	log.Printf("seed: promo campaigns created (1)")
 }
