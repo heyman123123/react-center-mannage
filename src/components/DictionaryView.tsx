@@ -456,6 +456,13 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
   const flatCategories = useMemo(() => flattenCategories(categoryTree), [categoryTree]);
 
+  const isSystemCategoryEntry = (entry: DictionaryEntry) => {
+    const cat =
+      flatCategories.find((c) => c.id === entry.categoryId) ||
+      flatCategories.find((c) => c.key === entry.category);
+    return !!cat?.isSystem;
+  };
+
   const loadCategoryTree = async () => {
     if (USE_MOCK) {
       setCategoryTree(mockCategoriesFromLabels(categoryLabels));
@@ -635,6 +642,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [activeCodeEntry, setActiveCodeEntry] = useState<DictionaryEntry | null>(null);
   const [editingEntry, setEditingEntry] = useState<DictionaryEntry | null>(null);
+  const isKeyReadOnly = Boolean(editingEntry && isSystemCategoryEntry(editingEntry));
 
   // Form State
   const [formKey, setFormKey] = useState("");
@@ -803,7 +811,9 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   };
 
   const handleApplyPreset = (preset: (typeof PROJECT_PRESET_ENTRIES)[0]) => {
-    setFormKey(preset.key);
+    if (!isKeyReadOnly) {
+      setFormKey(preset.key);
+    }
     setFormCategory(preset.category);
     const hit = resolveCategorySelection(preset.category);
     setFormCategoryId(hit?.id || "");
@@ -829,10 +839,12 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       }
     });
 
+    const finalKey = isKeyReadOnly && editingEntry ? editingEntry.key : formKey.trim();
+
     if (editingEntry) {
       const updated: DictionaryEntry = {
         ...editingEntry,
-        key: formKey.trim(),
+        key: finalKey,
         category: formCategory,
         categoryId: formCategoryId || editingEntry.categoryId,
         platforms: formPlatforms,
@@ -969,13 +981,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
   const countEntriesForCategory = (node: CategoryNode) =>
     entryList.filter((e) => e.categoryId === node.id || e.category === node.key).length;
-
-  const isSystemCategoryEntry = (entry: DictionaryEntry) => {
-    const cat =
-      flatCategories.find((c) => c.id === entry.categoryId) ||
-      flatCategories.find((c) => c.key === entry.category);
-    return !!cat?.isSystem;
-  };
 
   const renderCategoryNode = (node: CategoryNode, depth = 0): React.ReactNode => {
     const count = countEntriesForCategory(node);
@@ -1735,36 +1740,53 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         >
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             {/* Presets Bar */}
-            <div className="bg-violet-50/70 p-3 rounded border border-violet-200/80 space-y-1.5">
-              <div className="text-[11px] font-bold text-violet-900 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-violet-600" />
-                {t("dictionary:editSheet.presetsTitle")}
+            {!isKeyReadOnly && (
+              <div className="bg-violet-50/70 p-3 rounded border border-violet-200/80 space-y-1.5">
+                <div className="text-[11px] font-bold text-violet-900 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-violet-600" />
+                  {t("dictionary:editSheet.presetsTitle")}
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {PROJECT_PRESET_ENTRIES.map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      onClick={() => handleApplyPreset(preset)}
+                      className="px-2 py-1 bg-surface hover:bg-violet-100 text-violet-700 rounded text-[10px] font-mono border border-violet-200 transition-colors cursor-pointer"
+                    >
+                      +{preset.key}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {PROJECT_PRESET_ENTRIES.map((preset) => (
-                  <button
-                    key={preset.key}
-                    type="button"
-                    onClick={() => handleApplyPreset(preset)}
-                    className="px-2 py-1 bg-surface hover:bg-violet-100 text-violet-700 rounded text-[10px] font-mono border border-violet-200 transition-colors cursor-pointer"
-                  >
-                    +{preset.key}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
 
             <div>
-              <label className="font-semibold text-fg-secondary block mb-1">
-                {t("dictionary:editSheet.keyLabel")} <span className="text-rose-500">*</span>:
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-semibold text-fg-secondary block">
+                  {t("dictionary:editSheet.keyLabel")} <span className="text-rose-500">*</span>:
+                </label>
+                {isKeyReadOnly && (
+                  <span className="text-[11px] text-amber-600 dark:text-amber-400 font-normal">
+                    ({t("dictionary:editSheet.systemKeyReadOnly")})
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 required
+                readOnly={isKeyReadOnly}
+                disabled={isKeyReadOnly}
                 placeholder={t("dictionary:editSheet.keyPlaceholder")}
                 value={formKey}
-                onChange={(e) => setFormKey(e.target.value)}
-                className="w-full p-2 bg-surface border border-line rounded font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                onChange={(e) => {
+                  if (!isKeyReadOnly) setFormKey(e.target.value);
+                }}
+                className={`w-full p-2 border rounded font-mono text-xs focus:outline-none transition-colors ${
+                  isKeyReadOnly
+                    ? "bg-subtle text-fg-secondary border-line cursor-not-allowed opacity-80"
+                    : "bg-surface border-line focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                }`}
               />
             </div>
 

@@ -55,7 +55,7 @@ func NewSysRoute(
 			secured.DELETE("/permission-packs/:id", mw.RequireMenu("permission_packs"), packs.Delete)
 			secured.PUT("/permission-packs/:id/menus", mw.RequireMenu("permission_packs"), packs.ReplaceMenus)
 
-			secured.GET("/menus", mw.RequireMenu("menus"), menus.Tree)
+			secured.GET("/menus", menus.Tree)
 			secured.PUT("/menus", mw.RequireMenu("menus"), menus.ReplaceTree)
 			secured.POST("/menus", mw.RequireMenu("menus"), menus.Create)
 			secured.PUT("/menus/:id", mw.RequireMenu("menus"), menus.Update)

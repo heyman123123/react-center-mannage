@@ -25,8 +25,8 @@ import { Popconfirm } from "./ui/Popconfirm";
 
 interface MenusViewProps {
   menus: SystemMenuItem[];
-  onSaveMenu: (menu: SystemMenuItem) => void;
-  onDeleteMenu?: (id: string) => void;
+  onSaveMenu: (menu: SystemMenuItem) => Promise<void> | void;
+  onDeleteMenu?: (id: string) => Promise<void> | void;
 }
 
 export const MenusView: React.FC<MenusViewProps> = ({
@@ -40,6 +40,7 @@ export const MenusView: React.FC<MenusViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMenu, setEditingMenu] = useState<SystemMenuItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Tree expansion state（默认展开全部一级节点）
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(() => {
@@ -188,8 +189,8 @@ export const MenusView: React.FC<MenusViewProps> = ({
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!formTitle.trim()) {
       showToast(t("menus.toast.titleRequired"));
       return;
@@ -205,45 +206,54 @@ export const MenusView: React.FC<MenusViewProps> = ({
     const finalPath = formPath.trim() || (formMenuType === "directory" ? "#" : "");
     const finalRouteKey = formRouteKey.trim() || undefined;
 
-    if (editingMenu) {
-      const updated: SystemMenuItem = {
-        ...editingMenu,
-        title: formTitle.trim(),
-        path: finalPath,
-        parentId: finalParent,
-        icon: formIcon,
-        order: finalOrder,
-        sortOrder: finalOrder,
-        menuType: formMenuType,
-        routeKey: finalRouteKey,
-        visible: true,
-        description: formDescription.trim(),
-      };
-      setMenuList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      onSaveMenu(updated);
-      showToast(t("menus.toast.updated", { title: updated.title }));
-    } else {
-      const newMenu: SystemMenuItem = {
-        id: `menu_${Date.now().toString().slice(-6)}`,
-        title: formTitle.trim(),
-        path: finalPath,
-        parentId: finalParent,
-        icon: formIcon,
-        order: finalOrder,
-        sortOrder: finalOrder,
-        menuType: formMenuType,
-        routeKey: finalRouteKey,
-        visible: true,
-        description: formDescription.trim(),
-      };
-      setMenuList((prev) => [...prev, newMenu]);
-      onSaveMenu(newMenu);
-      if (finalParent) {
-        setExpandedNodeIds((prev) => new Set([...prev, finalParent]));
+    try {
+      setIsSaving(true);
+      if (editingMenu) {
+        const updated: SystemMenuItem = {
+          ...editingMenu,
+          title: formTitle.trim(),
+          path: finalPath,
+          parentId: finalParent,
+          icon: formIcon,
+          order: finalOrder,
+          sortOrder: finalOrder,
+          menuType: formMenuType,
+          routeKey: finalRouteKey,
+          visible: true,
+          description: formDescription.trim(),
+        };
+        await Promise.resolve(onSaveMenu(updated));
+        setMenuList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        setIsModalOpen(false);
+        showToast(t("menus.toast.savedSuccess"));
+      } else {
+        const newMenu: SystemMenuItem = {
+          id: `menu_${Date.now().toString().slice(-6)}`,
+          title: formTitle.trim(),
+          path: finalPath,
+          parentId: finalParent,
+          icon: formIcon,
+          order: finalOrder,
+          sortOrder: finalOrder,
+          menuType: formMenuType,
+          routeKey: finalRouteKey,
+          visible: true,
+          description: formDescription.trim(),
+        };
+        await Promise.resolve(onSaveMenu(newMenu));
+        setMenuList((prev) => [...prev, newMenu]);
+        if (finalParent) {
+          setExpandedNodeIds((prev) => new Set([...prev, finalParent]));
+        }
+        setIsModalOpen(false);
+        showToast(t("menus.toast.savedSuccess"));
       }
-      showToast(t("menus.toast.created", { title: newMenu.title }));
+    } catch (err) {
+      console.error(err);
+      showToast(t("common:status.failed"));
+    } finally {
+      setIsSaving(false);
     }
-    setIsModalOpen(false);
   };
 
   const handleDelete = (id: string, title: string) => {
@@ -403,8 +413,8 @@ export const MenusView: React.FC<MenusViewProps> = ({
     <div className="space-y-6 max-w-7xl mx-auto font-sans p-4 md:p-8">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <div className="fixed top-4 right-4 z-[100] bg-primary text-primary-foreground px-3.5 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2 border border-primary/20">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -498,17 +508,26 @@ export const MenusView: React.FC<MenusViewProps> = ({
           <>
             <button
               type="button"
+              disabled={isSaving}
               onClick={() => setIsModalOpen(false)}
-              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover disabled:opacity-50 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               {t("common:actions.cancel")}
             </button>
             <button
               type="button"
+              disabled={isSaving}
               onClick={handleSubmit}
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 text-primary-foreground rounded-xl text-xs font-semibold shadow-card transition-colors cursor-pointer flex items-center gap-1.5"
             >
-              {editingMenu ? t("menus.sheet.saveEdit") : t("menus.sheet.saveCreate")}
+              {isSaving ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                  <span>{t("common:actions.saving")}</span>
+                </>
+              ) : (
+                editingMenu ? t("menus.sheet.saveEdit") : t("menus.sheet.saveCreate")
+              )}
             </button>
           </>
         }

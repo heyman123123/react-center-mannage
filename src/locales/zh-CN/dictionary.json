@@ -114,6 +114,7 @@
     "saveCreate": "确认添加词条 (默认 6 语种生效)",
     "presetsTitle": "快速插入出海全工程标准词条模板（点击自动填充当前配置语种）：",
     "keyLabel": "统一词条键名 (Key Identifier)",
+    "systemKeyReadOnly": "系统内置词条，不允许修改键名",
     "keyPlaceholder": "如：checkout.pay_now_cta 或 gateway.error.card_declined",
     "categoryLabel": "所属业务场景分类",
     "categoryCheckout": "海外收银台 (Web Checkout)",

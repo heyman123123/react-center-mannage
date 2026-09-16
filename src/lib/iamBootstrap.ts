@@ -13,18 +13,18 @@ import type {
   SystemUser,
 } from "../types/payment";
 
-function flattenMenus(nodes: iamApi.ApiMenuNode[], acc: SystemMenuItem[] = []): SystemMenuItem[] {
+export function flattenMenus(nodes: iamApi.ApiMenuNode[], acc: SystemMenuItem[] = []): SystemMenuItem[] {
   for (const n of nodes) {
     acc.push({
       id: n.id,
       title: n.title,
       path: n.path || "",
-      icon: n.icon || "circle",
+      icon: n.icon || "Folder",
       parentId: n.parentId,
       sortOrder: n.sortOrder,
       order: n.sortOrder,
       menuType: (n.menuType as SystemMenuItem["menuType"]) || "route",
-      routeKey: n.key,
+      routeKey: n.key || n.id,
       visible: !n.hidden,
       status: n.hidden ? "DISABLED" : "ENABLED",
       children: undefined,
@@ -64,7 +64,15 @@ export interface ShellIamData {
 export async function loadShellIamData(): Promise<ShellIamData | null> {
   if (USE_MOCK) return null;
 
-  const [usersPage, roles, packs, menuTree, deptTree, dictPage, me] = await Promise.all([
+  const [
+    usersRes,
+    rolesRes,
+    packsRes,
+    menusRes,
+    deptRes,
+    dictRes,
+    meRes,
+  ] = await Promise.allSettled([
     iamApi.listUsers({ page: 1, pageSize: 100 }),
     iamApi.listRoles(),
     iamApi.listPermissionPacks(),
@@ -73,6 +81,14 @@ export async function loadShellIamData(): Promise<ShellIamData | null> {
     iamApi.listDictionaryEntries({ page: 1, pageSize: 100 }),
     import("../api/modules/auth").then((m) => m.me()),
   ]);
+
+  const usersPage = usersRes.status === "fulfilled" ? usersRes.value : { list: [] };
+  const roles = rolesRes.status === "fulfilled" ? rolesRes.value : [];
+  const packs = packsRes.status === "fulfilled" ? packsRes.value : [];
+  const menuTree = menusRes.status === "fulfilled" && Array.isArray(menusRes.value) ? menusRes.value : [];
+  const deptTree = deptRes.status === "fulfilled" && Array.isArray(deptRes.value) ? deptRes.value : [];
+  const dictPage = dictRes.status === "fulfilled" ? dictRes.value : { list: [] };
+  const me = meRes.status === "fulfilled" ? meRes.value : null;
 
   const users: SystemUser[] = (usersPage.list || []).map((u) => ({
     id: u.id,
@@ -124,31 +140,47 @@ export async function loadShellIamData(): Promise<ShellIamData | null> {
     updatedAt: formatUnix(d.createdAt),
   }));
 
-  const meUser: SystemUser = {
-    ...(users.find((u) => u.id === me.id) || {
-      id: me.id,
-      name: me.name,
-      email: me.email,
-      roleKey: (me.roleKeys && me.roleKeys[0]) || "SUPER_ADMIN",
-      roleKeys: me.roleKeys || [],
-      avatarText: me.name.slice(0, 1).toUpperCase(),
-      lastLogin: "-",
-      status: "ACTIVE" as const,
-    }),
-    name: me.name,
-    email: me.email,
-    roleKey: (me.roleKeys && me.roleKeys[0]) || "SUPER_ADMIN",
-    roleKeys: me.roleKeys || [],
-    menuKeys: me.menuKeys || [],
-  };
+  const meUser: SystemUser | undefined = me
+    ? {
+        ...(users.find((u) => u.id === me.id) || {
+          id: me.id,
+          name: me.name,
+          email: me.email,
+          roleKey: (me.roleKeys && me.roleKeys[0]) || "SUPER_ADMIN",
+          roleKeys: me.roleKeys || [],
+          avatarText: me.name.slice(0, 1).toUpperCase(),
+          lastLogin: "-",
+          status: "ACTIVE" as const,
+        }),
+        name: me.name,
+        email: me.email,
+        roleKey: (me.roleKeys && me.roleKeys[0]) || "SUPER_ADMIN",
+        roleKeys: me.roleKeys || [],
+        menuKeys: me.menuKeys || [],
+      }
+    : undefined;
+
+  const flatMenus = flattenMenus(menuTree);
 
   return {
     users,
     roles: roleList,
     packs: packList,
-    menus: flattenMenus(menuTree),
+    menus: flatMenus,
     departments: flattenDepts(deptTree),
     dictionary,
     me: meUser,
   };
+}
+
+export async function fetchRealMenus(): Promise<SystemMenuItem[] | null> {
+  try {
+    const tree = await iamApi.getMenuTree();
+    if (Array.isArray(tree) && tree.length > 0) {
+      return flattenMenus(tree);
+    }
+  } catch (err) {
+    console.warn("Failed to fetch real menu data:", err);
+  }
+  return null;
 }

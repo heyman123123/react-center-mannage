@@ -188,6 +188,11 @@ export async function persistMenu(menu: SystemMenuItem, isNew: boolean): Promise
   return menu;
 }
 
+export async function removeMenu(id: string): Promise<void> {
+  if (USE_MOCK) return;
+  await iamApi.deleteMenu(id);
+}
+
 export async function persistDepartment(dept: Department, isNew: boolean): Promise<Department> {
   if (USE_MOCK) return dept;
   const body = {

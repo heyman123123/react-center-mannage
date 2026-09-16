@@ -39,19 +39,41 @@ interface MenuTreeNode extends SystemMenuItem {
   level: number;
 }
 
-/** 由扁平菜单数据构建无限级树 */
+/** 由扁平或树形菜单数据构建无限级树 */
+function flattenMenuTree(items: SystemMenuItem[]): SystemMenuItem[] {
+  const result: SystemMenuItem[] = [];
+  const recurse = (list: SystemMenuItem[]) => {
+    for (const item of list) {
+      const { children, ...rest } = item;
+      result.push(rest as SystemMenuItem);
+      if (children && children.length > 0) {
+        recurse(children as SystemMenuItem[]);
+      }
+    }
+  };
+  recurse(items);
+  return result;
+}
+
 function buildMenuTree(menus: SystemMenuItem[]): MenuTreeNode[] {
+  const flat = flattenMenuTree(menus);
   const itemMap = new Map<string, MenuTreeNode>();
-  menus.forEach((m) => {
+  flat.forEach((m) => {
     itemMap.set(m.id, { ...m, children: [], level: 0 });
+    if (m.routeKey) {
+      itemMap.set(m.routeKey, itemMap.get(m.id)!);
+    }
   });
   const roots: MenuTreeNode[] = [];
-  menus.forEach((m) => {
+  flat.forEach((m) => {
     const node = itemMap.get(m.id)!;
-    if (m.parentId && itemMap.has(m.parentId)) {
+    if (node.level > 0 || roots.includes(node)) return;
+    if (m.parentId && itemMap.has(m.parentId) && itemMap.get(m.parentId) !== node) {
       const parent = itemMap.get(m.parentId)!;
       node.level = parent.level + 1;
-      parent.children.push(node);
+      if (!parent.children.some((c) => c.id === node.id)) {
+        parent.children.push(node);
+      }
     } else {
       roots.push(node);
     }
@@ -130,10 +152,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const renderNode = (node: MenuTreeNode): React.ReactNode => {
     const hasChildren = node.children.length > 0;
     const isExpanded = expandedIds.has(node.id);
+    const targetTab = node.routeKey || node.id;
     const isActive =
       !hasChildren &&
-      (currentTab === node.routeKey ||
-        (currentTab === "scheduled_tasks" && node.routeKey === "system_config"));
+      (currentTab === targetTab ||
+        currentTab === node.routeKey ||
+        currentTab === node.id ||
+        (currentTab === "scheduled_tasks" && (node.routeKey === "system_config" || node.id === "system_config")));
 
     if (hasChildren) {
       const visibleChildren = node.children.filter((c) => c.visible !== false);
@@ -181,7 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <button
         key={node.id}
         type="button"
-        onClick={() => node.routeKey && setCurrentTab(node.routeKey)}
+        onClick={() => targetTab && setCurrentTab(targetTab)}
         data-path={node.path}
         title={`${node.title} (${node.path})`}
         className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs transition-all text-left group ${

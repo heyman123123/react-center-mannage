@@ -27,12 +27,28 @@ export function resolveUserRoleKeys(
   return Array.from(set);
 }
 
+export function flattenMenuTree(items: SystemMenuItem[]): SystemMenuItem[] {
+  const result: SystemMenuItem[] = [];
+  const recurse = (list: SystemMenuItem[]) => {
+    for (const item of list) {
+      const { children, ...rest } = item;
+      result.push(rest as SystemMenuItem);
+      if (children && children.length > 0) {
+        recurse(children as SystemMenuItem[]);
+      }
+    }
+  };
+  recurse(items);
+  return result;
+}
+
 export function filterMenusForUser(
-  menus: SystemMenuItem[],
+  rawMenus: SystemMenuItem[],
   user: SystemUser,
   roles: RbacRole[],
   departments: Department[] = [],
 ): SystemMenuItem[] {
+  const menus = flattenMenuTree(rawMenus);
   const roleKeys = resolveUserRoleKeys(user, departments);
   if (roleKeys.includes("SUPER_ADMIN")) {
     return menus.filter(visible);
@@ -61,12 +77,21 @@ export function filterMenusForUser(
   }
 
   const byId = new Map(menus.map((m) => [m.id, m]));
+  for (const m of menus) {
+    if (m.routeKey) byId.set(m.routeKey, m);
+  }
   const keep = new Set<string>();
 
   const isAllowedNode = (m: SystemMenuItem): boolean => {
     if (!visible(m)) return false;
-    if (allowedIds.size > 0 && allowedIds.has(m.id)) return true;
-    if (allowedKeys.size > 0 && m.routeKey && allowedKeys.has(m.routeKey)) return true;
+    if (allowedIds.size > 0) {
+      if (allowedIds.has(m.id)) return true;
+      if (m.routeKey && (allowedIds.has(m.routeKey) || allowedIds.has(`menu_${m.routeKey}`))) return true;
+    }
+    if (allowedKeys.size > 0) {
+      if (allowedKeys.has(m.id)) return true;
+      if (m.routeKey && (allowedKeys.has(m.routeKey) || allowedKeys.has(`menu_${m.routeKey}`))) return true;
+    }
     return false;
   };
 
@@ -75,8 +100,9 @@ export function filterMenusForUser(
     keep.add(m.id);
     let pid = m.parentId ?? null;
     while (pid && byId.has(pid)) {
-      keep.add(pid);
-      pid = byId.get(pid)!.parentId ?? null;
+      const parentNode = byId.get(pid)!;
+      keep.add(parentNode.id);
+      pid = parentNode.parentId ?? null;
     }
   }
 
@@ -97,24 +123,32 @@ export function canAccessTab(
   if (Array.isArray(user.menuKeys)) return false;
 
   const filtered = filterMenusForUser(menus, user, roles, departments);
-  return filtered.some((m) => m.routeKey === tab);
+  return filtered.some((m) => m.routeKey === tab || m.id === tab);
 }
 
 interface MenuTreeNode extends SystemMenuItem {
   children: MenuTreeNode[];
 }
 
-/** 扁平菜单 → 按 order 排序的树（与侧栏一致） */
+/** 扁平或树形菜单 → 按 order 排序的树（与侧栏一致） */
 function buildSortedMenuTree(menus: SystemMenuItem[]): MenuTreeNode[] {
+  const flat = flattenMenuTree(menus);
   const itemMap = new Map<string, MenuTreeNode>();
-  menus.forEach((m) => {
+  flat.forEach((m) => {
     itemMap.set(m.id, { ...m, children: [] });
+    if (m.routeKey) {
+      itemMap.set(m.routeKey, itemMap.get(m.id)!);
+    }
   });
   const roots: MenuTreeNode[] = [];
-  menus.forEach((m) => {
+  flat.forEach((m) => {
     const node = itemMap.get(m.id)!;
-    if (m.parentId && itemMap.has(m.parentId)) {
-      itemMap.get(m.parentId)!.children.push(node);
+    if (roots.includes(node)) return;
+    if (m.parentId && itemMap.has(m.parentId) && itemMap.get(m.parentId) !== node) {
+      const parent = itemMap.get(m.parentId)!;
+      if (!parent.children.some((c) => c.id === node.id)) {
+        parent.children.push(node);
+      }
     } else {
       roots.push(node);
     }
@@ -154,16 +188,21 @@ export function firstAccessibleTab(
 }
 
 /** 当前 routeKey 对应菜单的全部祖先 id（用于侧栏展开） */
-export function ancestorIdsForRoute(menus: SystemMenuItem[], routeKey: string): string[] {
+export function ancestorIdsForRoute(rawMenus: SystemMenuItem[], routeKey: string): string[] {
   if (!routeKey) return [];
+  const menus = flattenMenuTree(rawMenus);
   const byId = new Map(menus.map((m) => [m.id, m]));
-  const target = menus.find((m) => m.routeKey === routeKey);
+  for (const m of menus) {
+    if (m.routeKey) byId.set(m.routeKey, m);
+  }
+  const target = menus.find((m) => m.routeKey === routeKey || m.id === routeKey);
   if (!target) return [];
   const ids: string[] = [];
   let pid = target.parentId ?? null;
   while (pid && byId.has(pid)) {
-    ids.push(pid);
-    pid = byId.get(pid)!.parentId ?? null;
+    const parentNode = byId.get(pid)!;
+    ids.push(parentNode.id);
+    pid = parentNode.parentId ?? null;
   }
   return ids;
 }

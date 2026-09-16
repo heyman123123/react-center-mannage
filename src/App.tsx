@@ -82,6 +82,7 @@ import {
   persistPermissionPackMenus,
   removePermissionPack,
   persistMenu,
+  removeMenu,
   persistDepartment,
   removeDepartment,
   persistDictionaryEntry,
@@ -989,21 +990,19 @@ export default function App() {
             <PermissionGate menuKey="menus">
               <MenusView
                 menus={menus}
-                onSaveMenu={(updated) => {
-                  void (async () => {
-                    const exists = menus.some((m) => m.id === updated.id);
-                    try {
-                      const saved = await persistMenu(updated, !exists);
-                      setMenus((prev) => {
-                        const hit = prev.some((m) => m.id === saved.id);
-                        return hit
-                          ? prev.map((m) => (m.id === saved.id ? saved : m))
-                          : [...prev, saved];
-                      });
-                    } catch (err) {
-                      console.error(err);
-                    }
-                  })();
+                onSaveMenu={async (updated) => {
+                  const exists = menus.some((m) => m.id === updated.id);
+                  const saved = await persistMenu(updated, !exists);
+                  setMenus((prev) => {
+                    const hit = prev.some((m) => m.id === saved.id);
+                    return hit
+                      ? prev.map((m) => (m.id === saved.id ? saved : m))
+                      : [...prev, saved];
+                  });
+                }}
+                onDeleteMenu={async (id) => {
+                  await removeMenu(id);
+                  setMenus((prev) => prev.filter((m) => m.id !== id));
                 }}
               />
             </PermissionGate>

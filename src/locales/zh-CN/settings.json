@@ -152,7 +152,8 @@
       "pathRequired": "路由类型菜单必须填写路径",
       "updated": "菜单节点【{{title}}】已成功更新！",
       "created": "新子菜单【{{title}}】已成功挂载到树节点！",
-      "deleted": "菜单节点【{{title}}】及其子节点已成功删除"
+      "deleted": "菜单节点【{{title}}】及其子节点已成功删除",
+      "savedSuccess": "菜单配置保存成功"
     }
   },
   "departments": {
