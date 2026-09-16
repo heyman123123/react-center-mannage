@@ -225,6 +225,9 @@
     "title": "海外商品与独立币种 SKU 配置 (Products & Multi-Currency SKUs)",
     "subtitle": "每个商品的不同货币具有独立的唯一编号 (Code / SKU)，分别对应 USD、EUR、JPY、GBP 等独立清算价格与网关 Plan ID，支持一键派生克隆。",
     "addProduct": "创建新商品 SKU",
+    "syncFromCreem": "从 Creem 同步",
+    "syncingFromCreem": "同步中...",
+    "selectChannelToSync": "请选择 Creem 渠道",
     "metrics": {
       "activeSkus": "在售独立 SKU 数",
       "skuRatio": "/ {{total}} 款",
@@ -331,6 +334,8 @@
     "toast": {
       "loadFailed": "加载商品列表失败",
       "saveFailed": "保存商品失败",
+      "syncFromCreemSuccess": "已从 Creem 同步 {{total}} 个商品（新建 {{created}}，更新 {{updated}}）",
+      "syncFromCreemFailed": "从 Creem 同步商品失败",
       "toggled": "商品【{{name}}】已{{status}}",
       "reactivated": "重新上架激活",
       "archivedAction": "归档下架",

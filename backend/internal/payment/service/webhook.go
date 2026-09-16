@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
@@ -113,6 +114,10 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 		}
 		return err
 	}
+	return s.processCreemWebhookPayload(ctx, channelID, rawBody, payload, eventType)
+}
+
+func (s *Service) processCreemWebhookPayload(ctx context.Context, channelID string, rawBody []byte, payload map[string]interface{}, eventType string) error {
 	if err := s.UpsertTransactionFromWebhook(ctx, channelID, rawBody, payload, eventType); err != nil {
 		return err
 	}
@@ -124,6 +129,44 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 		return err
 	}
 	return s.UpsertChargebackFromWebhook(ctx, channelID, parsed)
+}
+
+func (s *Service) RedeliverWebhook(ctx context.Context, id string) error {
+	var row persistence.PaymentWebhookLog
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return apperr.NotFound
+	}
+	payload := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(row.PayloadJSON), &payload); err != nil {
+		return apperr.InvalidArgument
+	}
+	eventType := row.EventType
+	if eventType == "" {
+		eventType, _ = payload["eventType"].(string)
+	}
+	if eventType == "" {
+		eventType, _ = payload["event"].(string)
+	}
+	if eventType == "" {
+		eventType, _ = payload["type"].(string)
+	}
+	start := time.Now()
+	err := s.processCreemWebhookPayload(ctx, row.ChannelID, []byte(row.PayloadJSON), payload, eventType)
+	latency := int(time.Since(start).Milliseconds())
+	status := "DELIVERED"
+	if err != nil {
+		status = "FAILED"
+	}
+	updates := map[string]interface{}{
+		"attempts":    row.Attempts + 1,
+		"status":      status,
+		"latency_ms":  latency,
+		"http_status": 200,
+	}
+	if err := s.db.WithContext(ctx).Model(&row).Updates(updates).Error; err != nil {
+		return err
+	}
+	return err
 }
 
 func toWebhookDTO(r persistence.PaymentWebhookLog) WebhookDTO {

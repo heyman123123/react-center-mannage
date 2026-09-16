@@ -690,15 +690,34 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
 
               {/* Card Footer Actions */}
               <div className="mt-5 pt-4 border-t border-line-subtle flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      channel.testStatus === "HEALTHY" ? "bg-emerald-500" : "bg-amber-500"
-                    }`}
-                  />
-                  <span className="text-fg-secondary font-mono text-[11px]">
-{channel.latencyMs}ms • {t("payment.card.priority", { priority: channel.routingPriority })}
-                  </span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        (channel.healthStatus || channel.testStatus) === "HEALTHY"
+                          ? "bg-emerald-500"
+                          : (channel.healthStatus || channel.testStatus) === "DOWN"
+                          ? "bg-rose-500"
+                          : "bg-amber-500"
+                      }`}
+                    />
+                    <span className="text-fg-secondary font-mono text-[11px]">
+                      {channel.latencyMs}ms • {t("payment.card.priority", { priority: channel.routingPriority })}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-fg-tertiary">
+                    {t("payment.card.healthStatus")}:{" "}
+                    <span className="font-medium text-fg-secondary">
+                      {(channel.healthStatus || channel.testStatus) === "HEALTHY"
+                        ? t("payment.card.healthHealthy")
+                        : (channel.healthStatus || channel.testStatus) === "DOWN"
+                        ? t("payment.card.healthDown")
+                        : t("payment.card.healthUnknown")}
+                    </span>
+                    {channel.lastHealthAt
+                      ? ` • ${t("payment.card.lastHealthAt", { time: channel.lastHealthAt })}`
+                      : null}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-1.5">

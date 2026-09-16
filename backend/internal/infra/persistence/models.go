@@ -361,8 +361,10 @@ type PaymentChannel struct {
 	FallbackChannelID       *string        `gorm:"type:uuid" json:"fallbackChannelId"`
 	TenantID                string         `gorm:"size:64;index;default:ALL" json:"tenantId"`
 	TestStatus              string         `gorm:"size:16;not null;default:DOWN" json:"testStatus"`
+	HealthStatus            string         `gorm:"size:16;not null;default:UNKNOWN" json:"healthStatus"`
 	LatencyMs               int            `gorm:"not null;default:0" json:"latencyMs"`
 	LastTestedAt            *int64         `json:"lastTestedAt"`
+	LastHealthAt            *int64         `json:"lastHealthAt"`
 	CreatedAt               int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt               int64          `gorm:"autoUpdateTime" json:"updatedAt"`
 	DeletedAt               gorm.DeletedAt `gorm:"index" json:"-"`

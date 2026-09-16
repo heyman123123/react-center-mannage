@@ -39,3 +39,15 @@ export async function deleteProduct(id: string): Promise<void> {
 export async function syncProduct(id: string): Promise<ProductConfig> {
   return http.post<ProductConfig>(`/products/${id}/sync`);
 }
+
+export type SyncFromCreemResult = {
+  created: number;
+  updated: number;
+  total: number;
+};
+
+export async function syncFromCreem(channelId: string): Promise<SyncFromCreemResult> {
+  return http.post<SyncFromCreemResult>(
+    `/products/sync-from-creem?channelId=${encodeURIComponent(channelId)}`
+  );
+}

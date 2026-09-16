@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"strings"
 	"time"
 
@@ -42,8 +43,10 @@ type ChannelDTO struct {
 	FallbackChannelID *string  `json:"fallbackChannelId"`
 	TenantID          string   `json:"tenantId"`
 	TestStatus        string   `json:"testStatus"`
+	HealthStatus      string   `json:"healthStatus"`
 	LatencyMs         int      `json:"latencyMs"`
 	LastTestedAt      string   `json:"lastTestedAt"`
+	LastHealthAt      string   `json:"lastHealthAt"`
 }
 
 type ChannelInput struct {
@@ -252,6 +255,41 @@ type CheckoutTestResult struct {
 	ExpiresAt   string `json:"expiresAt"`
 }
 
+func (s *Service) CheckAllChannelsHealth(ctx context.Context) error {
+	var rows []persistence.PaymentChannel
+	if err := s.db.WithContext(ctx).Where("enabled = ?", true).Find(&rows).Error; err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if err := s.pingChannelHealth(ctx, &row); err != nil {
+			log.Printf("channel %s health check: %v", row.ID, err)
+		}
+	}
+	return nil
+}
+
+func (s *Service) pingChannelHealth(ctx context.Context, row *persistence.PaymentChannel) error {
+	now := time.Now().Unix()
+	status := "UNKNOWN"
+	latency := 0
+	if row.ChannelKey == "creem" {
+		ch := s.decryptChannel(row)
+		client := creem.NewClient(ch.Environment, ch.ApiKey)
+		pingLatency, err := client.Ping(ctx)
+		latency = pingLatency
+		if err == nil {
+			status = "HEALTHY"
+		} else {
+			status = "DOWN"
+		}
+	}
+	return s.db.WithContext(ctx).Model(row).Updates(map[string]interface{}{
+		"health_status":  status,
+		"last_health_at": now,
+		"latency_ms":     latency,
+	}).Error
+}
+
 func (s *Service) CreateCheckoutTest(ctx context.Context, channelID string, in CheckoutTestInput) (*CheckoutTestResult, error) {
 	productID := strings.TrimSpace(in.ProductID)
 	if productID == "" {
@@ -315,6 +353,14 @@ func toChannelDTO(r persistence.PaymentChannel) ChannelDTO {
 	if r.LastTestedAt != nil {
 		lastTested = timex.FormatUTC(*r.LastTestedAt)
 	}
+	lastHealth := ""
+	if r.LastHealthAt != nil {
+		lastHealth = timex.FormatUTC(*r.LastHealthAt)
+	}
+	healthStatus := r.HealthStatus
+	if healthStatus == "" {
+		healthStatus = "UNKNOWN"
+	}
 	return ChannelDTO{
 		ID:                  r.ID,
 		ChannelKey:          r.ChannelKey,
@@ -332,7 +378,9 @@ func toChannelDTO(r persistence.PaymentChannel) ChannelDTO {
 		FallbackChannelID:   r.FallbackChannelID,
 		TenantID:            r.TenantID,
 		TestStatus:          r.TestStatus,
+		HealthStatus:        healthStatus,
 		LatencyMs:           r.LatencyMs,
 		LastTestedAt:        lastTested,
+		LastHealthAt:        lastHealth,
 	}
 }

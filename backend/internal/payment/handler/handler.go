@@ -113,6 +113,25 @@ func (h *Handler) ListWebhooks(c *gin.Context) {
 	response.OKPage(c, list, total, page, pageSize)
 }
 
+func (h *Handler) RedeliverWebhook(c *gin.Context) {
+	id := c.Param("id")
+	if err := h.svc.RedeliverWebhook(c.Request.Context(), id); err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "PAYMENT_WEBHOOK_REDELIVER", "PAYMENT_WEBHOOK", id, "重新投递支付 Webhook")
+	response.OK(c, gin.H{"ok": true})
+}
+
+func (h *Handler) GetDashboardKPI(c *gin.Context) {
+	item, err := h.svc.GetDashboardKPI(c.Request.Context(), c.Query("tenantId"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
+}
+
 func (h *Handler) ListTransactions(c *gin.Context) {
 	page := paymentsvc.ParsePage(c.Query("page"), 1)
 	pageSize := paymentsvc.ParsePage(c.Query("pageSize"), 20)

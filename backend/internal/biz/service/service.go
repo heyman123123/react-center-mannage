@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -507,15 +506,3 @@ func (s *Service) RevenueReport(ctx context.Context, tenantID, from, to string) 
 	}, nil
 }
 
-// --- Webhook redeliver ---
-
-func (s *Service) RedeliverPaymentWebhook(ctx context.Context, id string) error {
-	var row persistence.PaymentWebhookLog
-	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
-		return apperr.NotFound
-	}
-	row.Attempts++
-	row.Status = "SUCCESS"
-	row.LatencyMs = 50 + rand.Intn(100)
-	return s.db.WithContext(ctx).Save(&row).Error
-}

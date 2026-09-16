@@ -115,7 +115,9 @@ export interface PaymentChannelConfig {
   tenantId?: string;
   fallbackChannel?: PaymentChannel;
   lastTestedAt: string;
+  lastHealthAt?: string;
   testStatus: "HEALTHY" | "DEGRADED" | "DOWN";
+  healthStatus?: "HEALTHY" | "DOWN" | "UNKNOWN";
   latencyMs: number;
 }
 
