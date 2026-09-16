@@ -65,6 +65,10 @@ npm run dev
 | `GET/POST/PUT/DELETE /api/v1/products` | 商品 CRUD（创建/更新时推送 Creem） |
 | `POST /api/v1/products/:id/sync` | 手动重同步商品至 Creem |
 | `GET/POST/DELETE /api/v1/discounts` | 折扣 CRUD（创建时推送 Creem） |
+| `GET /api/v1/transactions` | 交易流水分页（Creem Webhook 自动落库） |
+| `GET /api/v1/transactions/:id` | 交易流水详情（含时间轴） |
+
+Creem Webhook 事件 `checkout.completed` / `subscription.paid` 等会自动写入 `payment_transactions` 表。
 
 Creem Base URL：`live` → `api.creem.io`，`sandbox` → `test-api.creem.io`。Webhook 回调建议配置为 `/api/v1/hooks/creem/{channelId}`。
 

@@ -98,6 +98,34 @@ func (h *Handler) ListWebhooks(c *gin.Context) {
 	response.OKPage(c, list, total, page, pageSize)
 }
 
+func (h *Handler) ListTransactions(c *gin.Context) {
+	page := paymentsvc.ParsePage(c.Query("page"), 1)
+	pageSize := paymentsvc.ParsePage(c.Query("pageSize"), 20)
+	list, total, err := h.svc.ListTransactions(
+		c.Request.Context(),
+		page,
+		pageSize,
+		c.Query("tenantId"),
+		c.Query("channel"),
+		c.Query("status"),
+		c.Query("keyword"),
+	)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OKPage(c, list, total, page, pageSize)
+}
+
+func (h *Handler) GetTransaction(c *gin.Context) {
+	item, err := h.svc.GetTransaction(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
+}
+
 func (h *Handler) CreemWebhook(c *gin.Context) {
 	channelID := c.Param("channelId")
 	raw, err := io.ReadAll(c.Request.Body)

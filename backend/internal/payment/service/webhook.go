@@ -89,7 +89,10 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 		Status:      status,
 		PayloadJSON: string(rawBody),
 	}
-	return s.db.WithContext(ctx).Create(&row).Error
+	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
+		return err
+	}
+	return s.UpsertTransactionFromWebhook(ctx, channelID, rawBody, payload, eventType)
 }
 
 func toWebhookDTO(r persistence.PaymentWebhookLog) WebhookDTO {

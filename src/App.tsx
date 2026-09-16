@@ -96,6 +96,7 @@ import * as tenantsApi from "./api/modules/tenants";
 import * as channelsApi from "./api/modules/channels";
 import * as productsApi from "./api/modules/products";
 import * as discountsApi from "./api/modules/discounts";
+import * as transactionsApi from "./api/modules/transactions";
 import {
   INITIAL_TENANTS,
   SYSTEM_USERS,
@@ -391,15 +392,17 @@ export default function App() {
             /* tenants optional on bootstrap */
           }
           try {
-            const [channelRows, productRows, discountRows] = await Promise.all([
+            const [channelRows, productRows, discountRows, txRes] = await Promise.all([
               channelsApi.listPaymentChannels(),
               productsApi.listProducts(),
               discountsApi.listDiscounts(),
+              transactionsApi.listTransactions({ page: 1, pageSize: 200 }),
             ]);
             if (!cancelled) {
               if (channelRows.length > 0) setPaymentChannels(channelRows);
               if (productRows.length > 0) setProducts(productRows);
               if (discountRows.length > 0) setDiscounts(discountRows);
+              if (txRes.list.length > 0) setTransactions(txRes.list);
             }
           } catch {
             /* payment catalog optional on bootstrap */

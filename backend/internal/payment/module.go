@@ -27,6 +27,12 @@ func NewPaymentRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFun
 		{
 			wh.GET("", mw.RequireMenu("payment_webhooks"), h.ListWebhooks)
 		}
+
+		tx := r.Group("/transactions", mw.Auth)
+		{
+			tx.GET("", mw.RequireMenu("transactions"), h.ListTransactions)
+			tx.GET("/:id", mw.RequireMenu("transactions"), h.GetTransaction)
+		}
 	}
 }
 

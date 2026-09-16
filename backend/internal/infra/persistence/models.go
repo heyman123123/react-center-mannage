@@ -56,6 +56,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&CatalogProduct{},
 		&CatalogDiscount{},
 		&PaymentWebhookLog{},
+		&PaymentTransaction{},
 	)
 }
 
@@ -404,6 +405,37 @@ type CatalogDiscount struct {
 	CreatedAt             int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt             int64          `gorm:"autoUpdateTime" json:"updatedAt"`
 	DeletedAt             gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// PaymentTransaction 支付交易流水（由 Creem Webhook 落库）
+type PaymentTransaction struct {
+	ID                 string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DisplayID          string         `gorm:"size:64;not null;uniqueIndex" json:"displayId"`
+	ChannelID          string         `gorm:"type:uuid;not null;uniqueIndex:idx_tx_channel_event" json:"channelId"`
+	TenantID           string         `gorm:"size:64;not null;index" json:"tenantId"`
+	Channel            string         `gorm:"size:32;not null;index" json:"channel"`
+	ExternalEventID    string         `gorm:"size:128;not null;uniqueIndex:idx_tx_channel_event" json:"externalEventId"`
+	ChannelTradeNo     string         `gorm:"size:128;index" json:"channelTradeNo"`
+	OrderNumber        string         `gorm:"size:128;index" json:"orderNumber"`
+	OrderTitle         string         `gorm:"size:512" json:"orderTitle"`
+	OrderAmountCents   int64          `gorm:"not null;default:0" json:"orderAmountCents"`
+	ChannelFeeCents    int64          `gorm:"not null;default:0" json:"channelFeeCents"`
+	NetAmountCents     int64          `gorm:"not null;default:0" json:"netAmountCents"`
+	Currency           string         `gorm:"size:8;not null" json:"currency"`
+	Status             string         `gorm:"size:32;not null;index" json:"status"`
+	CustomerEmail      string         `gorm:"size:255" json:"customerEmail"`
+	CustomerName       string         `gorm:"size:128" json:"customerName"`
+	CustomerCountry    string         `gorm:"size:16" json:"customerCountry"`
+	PaymentMethod      string         `gorm:"size:128" json:"paymentMethod"`
+	ProductID          string         `gorm:"size:128" json:"productId"`
+	ProductName        string         `gorm:"size:256" json:"productName"`
+	SubscriptionID     string         `gorm:"size:128;index" json:"subscriptionId"`
+	EventType          string         `gorm:"size:64;index" json:"eventType"`
+	TimelineJSON       string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	RawPayloadJSON     string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt          int64          `gorm:"autoCreateTime;index" json:"createdAt"`
+	UpdatedAt          int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // PaymentWebhookLog 支付 Webhook 入站记录

@@ -1,7 +1,7 @@
 {
   "list": {
     "title": "海外全渠道实时交易流水监控 (Global Transactions)",
-    "subtitle": "当前业务单元: {{tenant}} • 聚合全球支付网关（Stripe、PayPal、Adyen、Klarna）毫秒级资金流水与对账审计，点击任意行可穿透查看完整流程节点与时间轴。",
+    "subtitle": "当前业务单元: {{tenant}} • 聚合全球支付网关（Stripe、PayPal、Adyen、Creem、Klarna）毫秒级资金流水与对账审计，点击任意行可穿透查看完整流程节点与时间轴。",
     "searchPlaceholder": "搜索流水号/渠道交易单号...",
     "exportDenied": "权限不足：当前角色无权导出含有敏感商户资金信息的财务流水账单！",
     "resultCount": "检索到 {{count}} 笔海外流水",
@@ -24,8 +24,10 @@
       "stripe": "Stripe (信用卡 / 周期订阅)",
       "paypal": "PayPal (全球钱包 / 订阅扣款)",
       "adyen": "Adyen (欧洲多币种清算)",
-      "klarna": "Klarna (欧洲先买后付 BNPL)"
+      "klarna": "Klarna (欧洲先买后付 BNPL)",
+      "creem": "Creem (SaaS 订阅收单)"
     },
+    "loadFailed": "加载交易流水失败",
     "status": {
       "all": "全部平账状态",
       "done": "已平账 (Done)",
