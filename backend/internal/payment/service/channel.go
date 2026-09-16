@@ -1,0 +1,288 @@
+package service
+
+import (
+	"context"
+	"encoding/json"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/novaspay/admin-api/internal/infra/persistence"
+	"github.com/novaspay/admin-api/internal/payment/provider/creem"
+	"github.com/novaspay/admin-api/internal/pkg/apperr"
+	"github.com/novaspay/admin-api/internal/pkg/timex"
+	"gorm.io/gorm"
+)
+
+type Service struct {
+	db *gorm.DB
+}
+
+func NewService(db *gorm.DB) *Service {
+	return &Service{db: db}
+}
+
+type ChannelDTO struct {
+	ID                string   `json:"id"`
+	ChannelKey        string   `json:"channelKey"`
+	Name              string   `json:"name"`
+	AccountName       string   `json:"accountName"`
+	Description       string   `json:"description"`
+	Mode              string   `json:"mode"`
+	Enabled           bool     `json:"enabled"`
+	ApiPublicKey      string   `json:"apiPublicKey"`
+	ApiSecretKey      string   `json:"apiSecretKey"`
+	WebhookSecret     string   `json:"webhookSecret"`
+	SupportedCurrencies []string `json:"supportedCurrencies"`
+	FeeRateText       string   `json:"feeRateText"`
+	RoutingPriority   int      `json:"routingPriority"`
+	FallbackChannelID *string  `json:"fallbackChannelId"`
+	TenantID          string   `json:"tenantId"`
+	TestStatus        string   `json:"testStatus"`
+	LatencyMs         int      `json:"latencyMs"`
+	LastTestedAt      string   `json:"lastTestedAt"`
+}
+
+type ChannelInput struct {
+	ChannelKey          string   `json:"channelKey"`
+	Name                string   `json:"name"`
+	AccountName         string   `json:"accountName"`
+	Description         string   `json:"description"`
+	Mode                string   `json:"mode"`
+	Enabled             *bool    `json:"enabled"`
+	ApiSecretKey        string   `json:"apiSecretKey"`
+	WebhookSecret       string   `json:"webhookSecret"`
+	SupportedCurrencies []string `json:"supportedCurrencies"`
+	FeeRateText         string   `json:"feeRateText"`
+	RoutingPriority     *int     `json:"routingPriority"`
+	FallbackChannelID   *string  `json:"fallbackChannelId"`
+	TenantID            string   `json:"tenantId"`
+}
+
+func (s *Service) List(ctx context.Context, mode, channelKey string) ([]ChannelDTO, error) {
+	q := s.db.WithContext(ctx).Model(&persistence.PaymentChannel{})
+	if m := normalizeMode(mode); m != "" && m != "all" {
+		q = q.Where("environment = ?", m)
+	}
+	if ck := strings.TrimSpace(channelKey); ck != "" && ck != "all" {
+		q = q.Where("channel_key = ?", ck)
+	}
+	var rows []persistence.PaymentChannel
+	if err := q.Order("routing_priority ASC, created_at ASC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make([]ChannelDTO, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toChannelDTO(r))
+	}
+	return out, nil
+}
+
+func (s *Service) Get(ctx context.Context, id string) (*ChannelDTO, error) {
+	var row persistence.PaymentChannel
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	dto := toChannelDTO(row)
+	return &dto, nil
+}
+
+func (s *Service) Create(ctx context.Context, in ChannelInput) (*ChannelDTO, error) {
+	key := strings.TrimSpace(in.ChannelKey)
+	if key == "" {
+		key = "creem"
+	}
+	name := strings.TrimSpace(in.Name)
+	secret := strings.TrimSpace(in.ApiSecretKey)
+	if name == "" || secret == "" {
+		return nil, apperr.InvalidArgument
+	}
+	currenciesJSON, _ := json.Marshal(defaultCurrencies(in.SupportedCurrencies))
+	priority := 1
+	if in.RoutingPriority != nil {
+		priority = *in.RoutingPriority
+	}
+	tenantID := strings.TrimSpace(in.TenantID)
+	if tenantID == "" {
+		tenantID = "ALL"
+	}
+	row := persistence.PaymentChannel{
+		ID:                      uuid.NewString(),
+		ChannelKey:              key,
+		Name:                    name,
+		AccountName:             strings.TrimSpace(in.AccountName),
+		Description:             strings.TrimSpace(in.Description),
+		Environment:             normalizeMode(in.Mode),
+		Enabled:                 true,
+		ApiKey:                  secret,
+		ApiSecretKey:              secret,
+		WebhookSecret:           strings.TrimSpace(in.WebhookSecret),
+		SupportedCurrenciesJSON: string(currenciesJSON),
+		FeeRateText:             strings.TrimSpace(in.FeeRateText),
+		RoutingPriority:         priority,
+		FallbackChannelID:       in.FallbackChannelID,
+		TenantID:                tenantID,
+		TestStatus:              "DOWN",
+	}
+	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
+		return nil, err
+	}
+	dto := toChannelDTO(row)
+	return &dto, nil
+}
+
+func (s *Service) Update(ctx context.Context, id string, in ChannelInput) (*ChannelDTO, error) {
+	var row persistence.PaymentChannel
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	updates := map[string]interface{}{}
+	if name := strings.TrimSpace(in.Name); name != "" {
+		updates["name"] = name
+	}
+	if in.AccountName != "" {
+		updates["account_name"] = strings.TrimSpace(in.AccountName)
+	}
+	if in.Description != "" {
+		updates["description"] = strings.TrimSpace(in.Description)
+	}
+	if in.Mode != "" {
+		updates["environment"] = normalizeMode(in.Mode)
+	}
+	if in.Enabled != nil {
+		updates["enabled"] = *in.Enabled
+	}
+	if secret := strings.TrimSpace(in.ApiSecretKey); secret != "" && !strings.Contains(secret, "****") {
+		updates["api_key"] = secret
+		updates["api_secret_key"] = secret
+	}
+	if wh := strings.TrimSpace(in.WebhookSecret); wh != "" && !strings.Contains(wh, "****") {
+		updates["webhook_secret"] = wh
+	}
+	if in.SupportedCurrencies != nil {
+		currenciesJSON, _ := json.Marshal(defaultCurrencies(in.SupportedCurrencies))
+		updates["supported_currencies_json"] = string(currenciesJSON)
+	}
+	if in.FeeRateText != "" {
+		updates["fee_rate_text"] = in.FeeRateText
+	}
+	if in.RoutingPriority != nil {
+		updates["routing_priority"] = *in.RoutingPriority
+	}
+	if in.FallbackChannelID != nil {
+		updates["fallback_channel_id"] = in.FallbackChannelID
+	}
+	if in.TenantID != "" {
+		updates["tenant_id"] = strings.TrimSpace(in.TenantID)
+	}
+	if len(updates) == 0 {
+		return nil, apperr.InvalidArgument
+	}
+	if err := s.db.WithContext(ctx).Model(&row).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+	_ = s.db.WithContext(ctx).First(&row, "id = ?", id)
+	dto := toChannelDTO(row)
+	return &dto, nil
+}
+
+func (s *Service) Delete(ctx context.Context, id string) error {
+	res := s.db.WithContext(ctx).Delete(&persistence.PaymentChannel{}, "id = ?", id)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return apperr.NotFound
+	}
+	return nil
+}
+
+func (s *Service) Test(ctx context.Context, id string) (*ChannelDTO, error) {
+	var row persistence.PaymentChannel
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	if row.ChannelKey != "creem" {
+		return nil, apperr.ProviderNotSupported
+	}
+	client := creem.NewClient(row.Environment, row.ApiKey)
+	latency, err := client.Ping(ctx)
+	now := time.Now().Unix()
+	status := "HEALTHY"
+	if err != nil {
+		status = "DOWN"
+	}
+	_ = s.db.WithContext(ctx).Model(&row).Updates(map[string]interface{}{
+		"test_status":    status,
+		"latency_ms":     latency,
+		"last_tested_at": now,
+	}).Error
+	_ = s.db.WithContext(ctx).First(&row, "id = ?", id)
+	if err != nil {
+		return nil, apperr.Wrap(50210, 502, "渠道连通性测试失败: "+err.Error(), err)
+	}
+	dto := toChannelDTO(row)
+	return &dto, nil
+}
+
+func (s *Service) GetRawChannel(ctx context.Context, id string) (*persistence.PaymentChannel, error) {
+	var row persistence.PaymentChannel
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	return &row, nil
+}
+
+func normalizeMode(mode string) string {
+	m := strings.ToLower(strings.TrimSpace(mode))
+	if m == "sandbox" || m == "test" {
+		return "sandbox"
+	}
+	if m == "all" || m == "" {
+		return m
+	}
+	return "live"
+}
+
+func defaultCurrencies(c []string) []string {
+	if len(c) == 0 {
+		return []string{"USD"}
+	}
+	return c
+}
+
+func maskKey(key string) string {
+	if len(key) <= 8 {
+		return "****"
+	}
+	return key[:4] + "****" + key[len(key)-4:]
+}
+
+func toChannelDTO(r persistence.PaymentChannel) ChannelDTO {
+	currencies := []string{}
+	_ = json.Unmarshal([]byte(r.SupportedCurrenciesJSON), &currencies)
+	lastTested := ""
+	if r.LastTestedAt != nil {
+		lastTested = timex.FormatUTC(*r.LastTestedAt)
+	}
+	return ChannelDTO{
+		ID:                  r.ID,
+		ChannelKey:          r.ChannelKey,
+		Name:                r.Name,
+		AccountName:         r.AccountName,
+		Description:         r.Description,
+		Mode:                r.Environment,
+		Enabled:             r.Enabled,
+		ApiPublicKey:        r.ApiPublicKey,
+		ApiSecretKey:        maskKey(r.ApiSecretKey),
+		WebhookSecret:       maskKey(r.WebhookSecret),
+		SupportedCurrencies: currencies,
+		FeeRateText:         r.FeeRateText,
+		RoutingPriority:     r.RoutingPriority,
+		FallbackChannelID:   r.FallbackChannelID,
+		TenantID:            r.TenantID,
+		TestStatus:          r.TestStatus,
+		LatencyMs:           r.LatencyMs,
+		LastTestedAt:        lastTested,
+	}
+}

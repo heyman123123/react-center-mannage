@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { USE_MOCK } from "../api/config";
+import * as channelsApi from "../api/modules/channels";
 import { useViewLoading } from "./ui/useViewLoading";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -70,7 +72,37 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     [t]
   );
   const [channelList, setChannelList] = useState<PaymentChannelConfig[]>(channels);
+  const [modeFilter, setModeFilter] = useState<string>("all");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { currentPage, setCurrentPage, reset: _pcr, pageSize } = usePagination(10);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const loadChannels = useCallback(async () => {
+    try {
+      const list = await channelsApi.listPaymentChannels(
+        modeFilter === "all" ? undefined : { mode: modeFilter }
+      );
+      setChannelList(list);
+    } catch {
+      showToast(t("payment.toast.loadFailed"));
+    }
+  }, [modeFilter, t]);
+
+  useEffect(() => {
+    if (USE_MOCK) {
+      const list =
+        modeFilter === "all"
+          ? channels
+          : channels.filter((c) => (c.mode || "live") === modeFilter);
+      setChannelList(list);
+      return;
+    }
+    void loadChannels();
+  }, [channels, loadChannels, modeFilter]);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ id: string; msg: string; success: boolean } | null>(null);
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
@@ -120,27 +152,31 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const handleTestConnection = (channel: PaymentChannelConfig) => {
+  const handleTestConnection = async (channel: PaymentChannelConfig) => {
     setTestingId(channel.id);
     setTestResult(null);
-    setTimeout(() => {
-      setTestingId(null);
-      const simulatedLatency = Math.floor(Math.random() * 80) + 95;
-      const updated = {
-        ...channel,
-        lastTestedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
-        testStatus: "HEALTHY" as const,
-        latencyMs: simulatedLatency,
-      };
+    try {
+      const updated = USE_MOCK
+        ? {
+            ...channel,
+            lastTestedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
+            testStatus: "HEALTHY" as const,
+            latencyMs: Math.floor(Math.random() * 80) + 95,
+          }
+        : await channelsApi.testPaymentChannel(channel.id);
       setChannelList((prev) => prev.map((c) => (c.id === channel.id ? updated : c)));
-      onUpdateChannel(updated);
+      onUpdateChannel?.(updated);
       setTestResult({
         id: channel.id,
-        msg: t("payment.toast.testSuccess", { latency: simulatedLatency }),
-        success: true,
+        msg: t("payment.toast.testSuccess", { latency: updated.latencyMs }),
+        success: updated.testStatus === "HEALTHY",
       });
       setTimeout(() => setTestResult(null), 5000);
-    }, 1000);
+    } catch {
+      showToast(t("payment.toast.testFailed"));
+    } finally {
+      setTestingId(null);
+    }
   };
 
   const handleToggleEnabled = (channel: PaymentChannelConfig) => {
@@ -150,51 +186,98 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     if (onSaveChannel) onSaveChannel(updated);
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingChannel) return;
-    setChannelList((prev) => prev.map((c) => (c.id === editingChannel.id ? editingChannel : c)));
-    if (onUpdateChannel) onUpdateChannel(editingChannel);
-    if (onSaveChannel) onSaveChannel(editingChannel);
-    setEditingChannel(null);
+    try {
+      const saved = USE_MOCK
+        ? editingChannel
+        : await channelsApi.updatePaymentChannel(editingChannel.id, {
+            name: editingChannel.name,
+            accountName: editingChannel.accountName,
+            description: editingChannel.description,
+            mode: editingChannel.mode,
+            enabled: editingChannel.enabled,
+            apiSecretKey: editingChannel.apiSecretKey,
+            webhookSecret: editingChannel.webhookSecret,
+            supportedCurrencies: editingChannel.supportedCurrencies,
+            feeRateText: editingChannel.feeRateText,
+            routingPriority: editingChannel.routingPriority,
+          });
+      setChannelList((prev) => prev.map((c) => (c.id === saved.id ? saved : c)));
+      onUpdateChannel?.(saved);
+      onSaveChannel?.(saved);
+      setEditingChannel(null);
+    } catch {
+      showToast(t("payment.toast.saveFailed"));
+    }
   };
 
   // 接入新渠道：从渠道池批量创建并同步父级 App 的 paymentChannels
-  const handleConfirmNewChannel = () => {
-    if (!formChannelKey) { alert(t("payment.selectChannelFirst")); return; }
+  const handleConfirmNewChannel = async () => {
+    if (!formChannelKey) {
+      showToast(t("payment.selectChannelFirst"));
+      return;
+    }
     const entry = dictChannelEntries.find((e) => e.key === formChannelKey);
-    // 从 channel.<slug>.name 提取 channelKey
     const slug = (formChannelKey.match(/^channel\.(.+)\.name$/)?.[1]) || formChannelKey;
     const channelName = (entry?.translations?.["zh-CN"] || entry?.translations?.["en-US"] || entry?.key || slug) as string;
-    const newChannel: PaymentChannelConfig = {
-      id: `ch_${slug}_${Date.now()}`,
-      channelKey: slug as PaymentChannelConfig["channelKey"],
-      name: channelName,
-      accountName: formAccountName.trim() || undefined,
-      description: formAccountName.trim() ? `${channelName} · ${formAccountName.trim()}` : entry?.description || channelName,
-      enabled: true,
-      mode: formMode,
-      apiPublicKey: formApiKey.trim() || `pk_${formMode}_${Math.random().toString(36).slice(2, 10)}`,
-      apiSecretKey: formApiSecret.trim() || `sk_${formMode}_${Math.random().toString(36).slice(2, 12)}`,
-      webhookSecret: formWebhookSecret.trim() || `whsec_${Math.random().toString(36).slice(2, 12)}`,
-      supportedCurrencies: formCurrencies.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
-      feeRateText: formFeeRate.trim() || "—",
-      routingPriority: channelList.length + 1,
-      lastTestedAt: t("payment.defaults.notTested"),
-      testStatus: "DEGRADED",
-      latencyMs: 0,
-    };
-    setChannelList((prev) => [...prev, newChannel]);
-    if (onSaveChannel) onSaveChannel(newChannel);
-    setIsAddChannelOpen(false);
-    // 重置表单
-    setFormChannelKey("");
-    setFormAccountName("");
-    setFormApiKey("");
-    setFormApiSecret("");
-    setFormWebhookSecret("");
-    setFormCurrencies("USD,EUR,GBP");
-    setFormFeeRate("");
+    const displayName = formAccountName.trim()
+      ? `${channelName} · ${formAccountName.trim()}`
+      : channelName;
+
+    if (!USE_MOCK && slug === "creem" && !formApiSecret.trim()) {
+      showToast(t("payment.toast.fillRequired"));
+      return;
+    }
+
+    try {
+      const newChannel: PaymentChannelConfig = USE_MOCK
+        ? {
+            id: `ch_${slug}_${Date.now()}`,
+            channelKey: slug as PaymentChannelConfig["channelKey"],
+            name: displayName,
+            accountName: formAccountName.trim() || undefined,
+            description: entry?.description || channelName,
+            enabled: true,
+            mode: formMode,
+            apiPublicKey: formApiKey.trim() || `pk_${formMode}_${Math.random().toString(36).slice(2, 10)}`,
+            apiSecretKey: formApiSecret.trim() || `sk_${formMode}_${Math.random().toString(36).slice(2, 12)}`,
+            webhookSecret: formWebhookSecret.trim() || `whsec_${Math.random().toString(36).slice(2, 12)}`,
+            supportedCurrencies: formCurrencies.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
+            feeRateText: formFeeRate.trim() || "—",
+            routingPriority: channelList.length + 1,
+            lastTestedAt: t("payment.defaults.notTested"),
+            testStatus: "DEGRADED",
+            latencyMs: 0,
+          }
+        : await channelsApi.createPaymentChannel({
+            channelKey: slug as PaymentChannelConfig["channelKey"],
+            name: displayName,
+            accountName: formAccountName.trim() || undefined,
+            description: entry?.description || channelName,
+            mode: formMode,
+            apiSecretKey: formApiSecret.trim(),
+            webhookSecret: formWebhookSecret.trim(),
+            supportedCurrencies: formCurrencies.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
+            feeRateText: formFeeRate.trim() || "—",
+            routingPriority: channelList.length + 1,
+          });
+
+      setChannelList((prev) => [...prev, newChannel]);
+      onSaveChannel?.(newChannel);
+      setIsAddChannelOpen(false);
+      showToast(t("payment.toast.added", { name: newChannel.name }));
+      setFormChannelKey("");
+      setFormAccountName("");
+      setFormApiKey("");
+      setFormApiSecret("");
+      setFormWebhookSecret("");
+      setFormCurrencies("USD,EUR,GBP");
+      setFormFeeRate("");
+    } catch {
+      showToast(t("payment.toast.saveFailed"));
+    }
   };
 
   // 打开应用详情 SideSheet
@@ -381,7 +464,18 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          <ShadcnSelect
+            value={modeFilter}
+            onValueChange={setModeFilter}
+            options={[
+              { value: "all", label: t("payment.modeAll") },
+              { value: "live", label: t("payment.modeLive") },
+              { value: "sandbox", label: t("payment.modeSandbox") },
+            ]}
+            placeholder={t("payment.modeFilter")}
+            className="w-[140px]"
+          />
           <button
             onClick={() => setIsAddChannelOpen(true)}
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
@@ -391,6 +485,13 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
           </button>
         </div>
       </div>
+
+      {toastMessage && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center justify-between animate-in fade-in">
+          <span>{toastMessage}</span>
+          <button onClick={() => setToastMessage(null)} className="font-bold">✕</button>
+        </div>
+      )}
 
       {/* Test feedback notification */}
       {testResult && (

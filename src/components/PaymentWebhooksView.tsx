@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { USE_MOCK } from "../api/config";
+import * as paymentWebhooksApi from "../api/modules/paymentWebhooks";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -31,6 +33,23 @@ interface PaymentWebhooksViewProps {
 export const PaymentWebhooksView: React.FC<PaymentWebhooksViewProps> = ({ logs }) => {
   const { t } = useTranslation(["payments", "common"]);
   const [webhookLogs, setWebhookLogs] = useState<PaymentWebhookLog[]>(logs);
+
+  const loadLogs = useCallback(async () => {
+    if (USE_MOCK) {
+      setWebhookLogs(logs);
+      return;
+    }
+    try {
+      const res = await paymentWebhooksApi.listPaymentWebhooks({ page: 1, pageSize: 100 });
+      setWebhookLogs(res.list);
+    } catch {
+      setWebhookLogs([]);
+    }
+  }, [logs]);
+
+  useEffect(() => {
+    void loadLogs();
+  }, [loadLogs]);
   const [selectedLog, setSelectedLog] = useState<PaymentWebhookLog | null>(null);
   const [redeliveringId, setRedeliveringId] = useState<string | null>(null);
   const [redeliverToast, setRedeliverToast] = useState<string | null>(null);

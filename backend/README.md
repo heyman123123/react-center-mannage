@@ -54,6 +54,20 @@ npm run dev
 | `GET/POST/PUT/DELETE /api/v1/email-templates` | 多语言邮件模板 |
 | `GET /api/v1/email-webhooks` | 投递回执分页 |
 
+## M3 API（Creem 支付渠道 / 商品 / 折扣）
+
+| 前缀 | 说明 |
+|------|------|
+| `GET/POST/PUT/DELETE /api/v1/payment-channels` | 支付渠道账号（`channelKey`: `creem`，`mode`: `live` / `sandbox`） |
+| `POST /api/v1/payment-channels/:id/test` | Creem 连通性探活 |
+| `POST /api/v1/hooks/creem/:channelId` | Creem Webhook 入站（公开，HMAC 验签） |
+| `GET /api/v1/payment-webhooks` | 支付 Webhook 日志分页 |
+| `GET/POST/PUT/DELETE /api/v1/products` | 商品 CRUD（创建/更新时推送 Creem） |
+| `POST /api/v1/products/:id/sync` | 手动重同步商品至 Creem |
+| `GET/POST/DELETE /api/v1/discounts` | 折扣 CRUD（创建时推送 Creem） |
+
+Creem Base URL：`live` → `api.creem.io`，`sandbox` → `test-api.creem.io`。Webhook 回调建议配置为 `/api/v1/hooks/creem/{channelId}`。
+
 ## Cookie / CORS
 
 - Cookie：`novas_access` / `novas_refresh`，HttpOnly；响应 JSON **无** token

@@ -93,6 +93,9 @@ import { filterMenusForUser, canAccessTab, firstAccessibleTab } from "./lib/menu
 import { PermissionGate, PermissionProvider } from "./lib/permission";
 import { USE_MOCK } from "./api/config";
 import * as tenantsApi from "./api/modules/tenants";
+import * as channelsApi from "./api/modules/channels";
+import * as productsApi from "./api/modules/products";
+import * as discountsApi from "./api/modules/discounts";
 import {
   INITIAL_TENANTS,
   SYSTEM_USERS,
@@ -386,6 +389,20 @@ export default function App() {
             }
           } catch {
             /* tenants optional on bootstrap */
+          }
+          try {
+            const [channelRows, productRows, discountRows] = await Promise.all([
+              channelsApi.listPaymentChannels(),
+              productsApi.listProducts(),
+              discountsApi.listDiscounts(),
+            ]);
+            if (!cancelled) {
+              if (channelRows.length > 0) setPaymentChannels(channelRows);
+              if (productRows.length > 0) setProducts(productRows);
+              if (discountRows.length > 0) setDiscounts(discountRows);
+            }
+          } catch {
+            /* payment catalog optional on bootstrap */
           }
           const hashTab = tabFromHash();
           const accessKey = hashTab === "scheduled_tasks" ? "system_config" : hashTab;
@@ -771,6 +788,7 @@ export default function App() {
           {currentTab === "discounts" && (
             <DiscountsView
               discounts={discounts}
+              products={products}
               currentTenant={currentTenant}
               paymentChannels={paymentChannels}
               onSaveDiscount={(updated) => {
