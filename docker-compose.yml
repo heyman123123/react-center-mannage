@@ -31,8 +31,10 @@ services:
       NOVAS_POSTGRES_DSN: host=postgres user=${POSTGRES_USER:-novas} password=${POSTGRES_PASSWORD:-novas} dbname=${POSTGRES_DB:-novaspay} port=5432 sslmode=disable TimeZone=UTC
       NOVAS_REDIS_ADDR: redis:6379
       NOVAS_JWT_SECRET: ${NOVAS_JWT_SECRET:-dev-change-me}
+      # 生产环境在 HTTPS 反代后必须设为 true，否则 Cookie 无法写入浏览器
       NOVAS_COOKIE_SECURE: ${NOVAS_COOKIE_SECURE:-false}
       NOVAS_CORS_ORIGINS: ${NOVAS_CORS_ORIGINS:-http://localhost:3000}
+      # 生产环境设为 false，跳过演示租户/应用等种子数据（仍保留超管与菜单）
       SEED_DEMO: ${SEED_DEMO:-true}
     ports:
       - "8080:8080"

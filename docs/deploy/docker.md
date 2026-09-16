@@ -33,7 +33,28 @@ curl -sf http://localhost:3000/healthz
 | 邮箱 | `admin@novaspay.global` |
 | 密码 | `Admin@123456` |
 
-**首次登录后请立即修改密码。**
+**首次登录后请立即修改密码**（生产环境强制要求，见下方「生产部署检查清单」）。
+
+## 生产部署检查清单
+
+上线前请确认以下配置（`.env` 或 Compose 环境变量）：
+
+| 项 | 要求 | 说明 |
+|----|------|------|
+| 默认密码 | **首次登录后立即修改** | 种子超管为 `admin@novaspay.global` / `Admin@123456`，仅用于初始化 |
+| `NOVAS_JWT_SECRET` | 使用随机强密钥 | `openssl rand -base64 32` |
+| `NOVAS_DATA_KEY` | 配置 32 字节 base64 | 加密渠道 ApiKey/WebhookSecret |
+| `NOVAS_COOKIE_SECURE` | **`true`**（HTTPS 反代后） | 经 TLS 终结的 Nginx/Ingress 反代时启用；纯 HTTP 本地调试保持 `false` |
+| `SEED_DEMO` | **`false`** | 不写入演示租户、支付应用、汇率等样本数据 |
+| `NOVAS_CORS_ORIGINS` | 与实际访问域名一致 | 例如 `https://ops.example.com` |
+
+HTTPS 反代示例：外层 Nginx 终结 TLS 并将 `X-Forwarded-Proto: https` 传给 NovasPay Web 容器后，在 `.env` 中设置：
+
+```bash
+NOVAS_COOKIE_SECURE=true
+SEED_DEMO=false
+NOVAS_CORS_ORIGINS=https://ops.example.com
+```
 
 ## 环境变量
 

@@ -28,6 +28,8 @@ make docker-up                # 或 docker compose up -d --build
 
 详见 [Docker 部署文档](./docs/deploy/docker.md)。
 
+内部运营（Creem Sandbox 测试交易、Webhook 排查）见 [内部运营 Runbook](./docs/runbooks/internal-ops.md)。
+
 ### 本地开发
 
 #### 1. 后端
@@ -83,3 +85,4 @@ curl http://localhost:8080/healthz
 - [技术文档](./docs/backend-technical.md)
 - [协作约定](./AGENTS.md)
 - [Docker 单机部署](./docs/deploy/docker.md)
+- [内部运营 Runbook](./docs/runbooks/internal-ops.md)
