@@ -565,20 +565,28 @@ Worker / 对账 Cron 等与业务域一并排期，**一期可不单独部署 Wo
 
 ---
 
-## 15. 演进路线
+## 15. v1.0 功能范围
 
-| 阶段 | 内容 |
-|------|------|
-| **M1（一期）** | IAM：登录 / 注册、系统用户、角色、菜单树、部门；字典管理；统一响应；Cookie 会话；Env 中间件预留；FX 路由自动搜集 |
-| **M2** | 租户/应用、交易列表与详情、渠道配置、对账处置；Webhook 入站；审计加强；业务表 `environment` 分桶（可选同步启用） |
-| **M3** | 结算、退款/拒付；商品促销；邮件渠道与模板；风控与 KYB |
-| **M4** | 告警与定时任务；流水分区与归档；独立 Worker；按需拆 `ledger` / `settlement` 服务 |
+v1.0 作为首发版本，已交付以下能力（模块化单体，单进程部署）：
+
+| 域 | 包路径 | 已交付 |
+|----|--------|--------|
+| IAM / RBAC | `platform/sys` | 登录注册、用户/角色/部门、菜单、权限包（Casbin）、Cookie 会话 |
+| 字典 | `platform/dictionary` | 多语言词条与分类 |
+| 审计 / 运维 | `platform/audit`、`platform/ops` | 操作审计、系统参数、定时任务、告警 |
+| 租户 | `platform/tenant` | 多 BU 租户 |
+| 邮件 | `platform/messaging` | Resend 渠道、模板、Webhook 回执 |
+| 支付 | `payment` | Creem 渠道、Webhook、流水、退款/拒付、对账 |
+| 商品 | `catalog` | 商品/折扣（同步 Creem） |
+| 运营扩展 | `biz` | 接入应用、结算、促销、终端客户、汇率/费率、风控、KYB、报表 |
+
+**后续演进方向**（非 v1 范围）：业务表 Live/Sandbox 分桶、流水分区归档、独立 Worker、按域拆微服务。
 
 ---
 
 ## 16. 与前端协作清单
 
-- [ ] 确认 `API_BASE_URL` 与 `VITE_USE_MOCK=false` 联调开关
+- [ ] 确认 `VITE_API_BASE_URL` 与 Vite 代理配置
 - [ ] 错误码表共享（前端 Toast 文案）
 - [ ] OpenAPI/Swagger 由后端生成，前端可选 codegen
 - [ ] Cookie 名 / Domain / SameSite / CSRF 方案与前端 `credentials: 'include'` 对齐
@@ -594,4 +602,4 @@ Worker / 对账 Cron 等与业务域一并排期，**一期可不单独部署 Wo
 
 ---
 
-*文档版本：v1.1 · 一期收敛为平台基础（IAM + 字典 + 统一响应 + Cookie 会话 + FX 路由）；支付业务域与 Live/Sandbox 业务分桶排期至 M2+*
+*文档版本：v1.0 · 首发版本已包含全量管理端 API；Live/Sandbox 业务分桶与独立 Worker 为后续演进*

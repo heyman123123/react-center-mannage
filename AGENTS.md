@@ -10,13 +10,13 @@
 |----|------|
 | `const { t } = useTranslation('dashboard');` 后用 `t('kpi.totalRevenue')` | `<span>总收入</span>` / `"Total Revenue"` 写死在 TSX |
 | 新文案写入 `src/locales/zh-CN/<namespace>.json`，再在组件引用 | 只改组件字符串、不补语言包 |
-| Toast / 空状态 / 表头 / 按钮 / placeholder / title / aria-label 一律 `t()` | 把 UI 文案塞进 `mockData` 当「数据」规避 |
+| Toast / 空状态 / 表头 / 按钮 / placeholder / title / aria-label 一律 `t()` | 在组件里硬编码 UI 文案 |
 | 插值用 `t('key', { count })` | 字符串拼接拼出整句 UI 文案 |
 
 ### 范围（方案 A）
 
 - **必须 i18n**：按钮、标题、Tab、表头、Toast、空状态、表单 label/placeholder、确认框、侧栏用户菜单、登录页等壳层文案。
-- **不必 i18n**：Mock / 后端下发的业务数据（订单标题、商户名、审计详情原文、字典词条内容、菜单树由配置下发的 `title` 等）。配置型菜单若改为前端写死展示名，则仍须走 i18n。
+- **不必 i18n**：后端下发的业务数据（订单标题、商户名、审计详情原文、字典词条内容、菜单树由配置下发的 `title` 等）。配置型菜单若改为前端写死展示名，则仍须走 i18n。
 
 ### 目录与用法
 
@@ -37,7 +37,7 @@
 - 后端以 **HttpOnly Cookie** 下发会话；响应 JSON **不得**含 access/refresh token。
 - 前端 **禁止** 读写删会话 Cookie，**禁止** localStorage/sessionStorage 存 token。
 - 请求统一 `credentials: 'include'`（见 `src/api/request.ts`）。
-- 登出只调后端 logout；Mock 门禁见 `src/lib/auth.ts`。
+- 登出只调后端 logout；会话探测见 `src/lib/auth.ts`。
 - 细节见 `docs/backend-architecture.md` §6、`docs/backend-technical.md` §7。
 
 ## 其它

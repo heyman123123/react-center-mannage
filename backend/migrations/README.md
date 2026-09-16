@@ -1,17 +1,16 @@
-# Migrations / Seed
+# Seed（初始化数据）
 
-一期开发仍以 GORM `AutoMigrate` 建表；**初始化数据**放在本目录：
+v1 使用 GORM `AutoMigrate` 建表；**初始化数据**在启动时由 `migrations.ApplySeed` 幂等写入：
 
-| 文件 | 说明 |
+| 内容 | 说明 |
 |------|------|
-| `seed.go` / `apply.go` | 启动时幂等写入语言、菜单、SUPER_ADMIN、默认管理员、审计字典、字典分类、角色菜单→权限包迁移 |
-| `001_seed_languages.sql` | 语言快照（可审计） |
-| `002_seed_menus.sql` | 菜单快照（稳定 UUID；权限管理 key=`permission_packs`） |
-| `003_seed_audit_action.sql` | 审计操作类型字典快照 |
-| `004_migrate_role_menus_to_packs.go` | 角色菜单 → 权限包幂等迁移 |
+| 语言 | `zh-CN` / `en-US` |
+| 菜单树 | 稳定 UUID，含全部管理端路由 |
+| 超管 | 角色 `SUPER_ADMIN` + 权限包 `PACK_SUPER_ADMIN`（Casbin 走权限包） |
+| 默认账号 | `admin@novaspay.global` / `Admin@123456` |
+| 审计字典 | `audit_action` 命名空间词条 |
+| 演示数据 | 租户、接入应用、汇率、费率、风控、告警、促销等 |
 
-生产环境可改为 golang-migrate / Atlas 执行 SQL；本地 `make run` 通过 `migrations.ApplySeed` 灌数。
-
-默认管理员：`admin@novaspay.global` / `Admin@123456`
+本地启动：`cd backend && make run`（自动灌数）。
 
 时间字段：库内一律存 **UTC Unix 秒（bigint）**。

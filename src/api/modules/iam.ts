@@ -1,5 +1,5 @@
 /**
- * 一期 IAM / 字典 API（VITE_USE_MOCK=false 时使用）
+ * IAM / 字典 API
  */
 import { http } from "../request";
 import type { PageResult } from "../types";
