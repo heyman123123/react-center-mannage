@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -7,32 +7,46 @@ import {
   FileSpreadsheet,
   Download,
 } from "lucide-react";
-import { Tenant, SystemUser, TransactionRecord } from "../types/payment";
+import { Tenant, SystemUser } from "../types/payment";
 import { formatCurrency } from "../lib/utils";
-import { RBAC_ROLES } from "../data/mockData";
+import { resolveCurrentRole } from "../lib/permissions";
+import * as reportsApi from "../api/modules/reports";
 
 interface FinancialReportsViewProps {
   currentTenant: Tenant;
   currentUser: SystemUser;
-  transactions: TransactionRecord[];
 }
 
 export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
   currentTenant,
   currentUser,
-  transactions: _transactions,
 }) => {
   const { t } = useTranslation(["system", "common"]);
-  const currentRole = (currentUser?.roleKey && RBAC_ROLES[currentUser.roleKey]) || RBAC_ROLES["SUPER_ADMIN"];
+  const currentRole = resolveCurrentRole(currentUser, []);
   void currentRole;
 
-  const channelBreakdown = [
-    { channel: "支付宝 (Alipay)", totalVolume: 12450800, count: 28410, feeRate: "0.38%", feePaid: 47313.04, status: "T+1 已到账" },
-    { channel: "微信支付 (WeChat Pay)", totalVolume: 4980200, count: 14220, feeRate: "0.38%", feePaid: 18924.76, status: "T+1 已到账" },
-    { channel: "银联大额清算 (UnionPay)", totalVolume: 820000, count: 180, feeRate: "0.20%", feePaid: 1640.00, status: "D+0 实时到账" },
-    { channel: "国际信用卡 (Visa/Master)", totalVolume: 184500, count: 940, feeRate: "2.80%", feePaid: 5166.00, status: "T+2 待回盘" },
-    { channel: "数字人民币母子钱包 (e-CNY)", totalVolume: 12500, count: 320, feeRate: "0.00%", feePaid: 0.00, status: "D+0 实时到账" },
-  ];
+  const [report, setReport] = useState<reportsApi.RevenueReport | null>(null);
+
+  useEffect(() => {
+    void reportsApi
+      .getRevenueReport({
+        tenantId: currentTenant.id === "group_hq" ? undefined : currentTenant.id,
+      })
+      .then(setReport)
+      .catch(() => setReport(null));
+  }, [currentTenant.id]);
+
+  const channelBreakdown = useMemo(() => {
+    const breakdown = report?.channelBreakdown || {};
+    return Object.entries(breakdown).map(([channel, totalVolume]) => ({
+      channel,
+      totalVolume,
+      count: report?.orderCount || 0,
+      feeRate: "—",
+      feePaid: 0,
+      status: "—",
+    }));
+  }, [report]);
 
   const { currentPage, setCurrentPage, pageSize } = usePagination(10);
 

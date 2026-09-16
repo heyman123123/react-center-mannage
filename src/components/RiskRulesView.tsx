@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import * as riskApi from "../api/modules/risk";
 import { useTranslation } from "react-i18next";
 import {
   Shield,
@@ -21,10 +22,6 @@ import { ContextMenu } from "./ui/ContextMenu";
 import { Popconfirm } from "./ui/Popconfirm";
 import { RiskRule, BlacklistEntry, RiskRuleType, RiskAction, BlacklistType } from "../types/payment";
 
-interface RiskRulesViewProps {
-  rules: RiskRule[];
-  blacklist: BlacklistEntry[];
-}
 
 const emptyRuleForm = {
   name: "",
@@ -39,9 +36,29 @@ const emptyRuleForm = {
 };
 const emptyBlForm = { type: "CARD_BIN" as BlacklistType, value: "", reason: "", expiresAt: "" };
 
-export const RiskRulesView: React.FC<RiskRulesViewProps> = ({ rules, blacklist }) => {
+export const RiskRulesView: React.FC = () => {
   const { t } = useTranslation(["system", "common"]);
   const [tab, setTab] = useState<"rules" | "blacklist">("rules");
+  const [ruleRows, setRuleRows] = useState<RiskRule[]>([]);
+  const [blRows, setBlRows] = useState<BlacklistEntry[]>([]);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [ruleRows, blRows] = await Promise.all([
+        riskApi.listRiskRules(),
+        riskApi.listBlacklist(),
+      ]);
+      setRuleRows(ruleRows);
+      setBlRows(blRows);
+    } catch {
+      setRuleRows([]);
+      setBlRows([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const TYPE_LABEL = useMemo(
     (): Record<RiskRuleType, string> => ({
@@ -87,7 +104,6 @@ export const RiskRulesView: React.FC<RiskRulesViewProps> = ({ rules, blacklist }
     [t]
   );
 
-  const [ruleRows, setRuleRows] = useState<RiskRule[]>(rules);
   const [ruleStatus, setRuleStatus] = useState<"ALL" | "ENABLED" | "DISABLED">("ALL");
   const [ruleFormOpen, setRuleFormOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<RiskRule | null>(null);
@@ -95,7 +111,6 @@ export const RiskRulesView: React.FC<RiskRulesViewProps> = ({ rules, blacklist }
   const rulePg = usePagination(10);
   useEffect(() => { rulePg.reset(); }, [ruleStatus, rulePg.reset]);
 
-  const [blRows, setBlRows] = useState<BlacklistEntry[]>(blacklist);
   const [blTypeFilter, setBlTypeFilter] = useState<"ALL" | BlacklistType>("ALL");
   const [blSearch, setBlSearch] = useState("");
   const [blFormOpen, setBlFormOpen] = useState(false);

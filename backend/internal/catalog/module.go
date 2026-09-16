@@ -24,6 +24,7 @@ func NewCatalogRoute(h *cataloghandler.Handler, mw *middleware.Bundle) routing.R
 		{
 			d.GET("", mw.RequireMenu("discounts"), h.ListDiscounts)
 			d.POST("", mw.RequireMenu("discounts"), h.CreateDiscount)
+			d.PUT("/:id", mw.RequireMenu("discounts"), h.UpdateDiscount)
 			d.DELETE("/:id", mw.RequireMenu("discounts"), h.DeleteDiscount)
 		}
 	}

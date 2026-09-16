@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import * as exchangeRatesApi from "../api/modules/exchangeRates";
 import { useTranslation } from "react-i18next";
 import {
   Globe,
@@ -20,10 +21,6 @@ import { ShadcnSelect } from "./ui/select";
 import { ContextMenu } from "./ui/ContextMenu";
 import { ExchangeRate, DictionaryEntry } from "../types/payment";
 
-interface ExchangeRatesViewProps {
-  rates: ExchangeRate[];
-  dictionary: DictionaryEntry[];
-}
 
 const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "HKD", "SGD", "CNY"];
 
@@ -36,25 +33,11 @@ const emptyForm = {
   remark: "",
 };
 
-/** 由汇率种子值生成最近 30 天的汇率走势（确定性伪随机游走） */
-function genHistory(seed: number, days = 30): number[] {
-  const out: number[] = [];
-  let v = seed;
-  let s = Math.floor(seed * 100000) + 7;
-  const rand = () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-  for (let i = 0; i < days; i++) {
-    v = v * (1 + (rand() - 0.5) * 0.012);
-    out.push(Number(v.toFixed(4)));
-  }
-  return out;
-}
-
-export const ExchangeRatesView: React.FC<ExchangeRatesViewProps> = ({ rates, dictionary }) => {
+export const ExchangeRatesView: React.FC = () => {
   const { t } = useTranslation(["system", "common"]);
-  const [rows, setRows] = useState<ExchangeRate[]>(rates);
+  const [rows, setRows] = useState<ExchangeRate[]>([]);
+  const [dictionary] = useState<DictionaryEntry[]>([]);
+  const [history, setHistory] = useState<number[]>([]);
   const [pairSearch, setPairSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ENABLED" | "DISABLED">("ALL");
   const [detailRate, setDetailRate] = useState<ExchangeRate | null>(null);
@@ -62,6 +45,30 @@ export const ExchangeRatesView: React.FC<ExchangeRatesViewProps> = ({ rates, dic
   const [editing, setEditing] = useState<ExchangeRate | null>(null);
   const [form, setForm] = useState(emptyForm);
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+
+  const loadRates = useCallback(async () => {
+    try {
+      const list = await exchangeRatesApi.listExchangeRates();
+      setRows(list);
+    } catch {
+      setRows([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRates();
+  }, [loadRates]);
+
+  useEffect(() => {
+    if (!detailRate) {
+      setHistory([]);
+      return;
+    }
+    void exchangeRatesApi.getExchangeRateHistory(detailRate.id).then((points) => {
+      setHistory(points.map((p) => p.rate));
+    }).catch(() => setHistory([]));
+  }, [detailRate?.id]);
+
   useEffect(() => { reset(); }, [pairSearch, statusFilter, reset]);
 
   const STATUS_BADGE = useMemo(
@@ -150,12 +157,11 @@ export const ExchangeRatesView: React.FC<ExchangeRatesViewProps> = ({ rates, dic
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={9} cols={8} />;
 
-  const history = detailRate ? genHistory(detailRate.bid) : [];
   const hMin = history.length ? Math.min(...history) : 0;
   const hMax = history.length ? Math.max(...history) : 1;
   const W = 520, H = 180, PAD = 8;
   const points = history.map((v, i) => {
-    const x = PAD + (i / (history.length - 1)) * (W - PAD * 2);
+    const x = PAD + (i / Math.max(history.length - 1, 1)) * (W - PAD * 2);
     const y = H - PAD - ((v - hMin) / (hMax - hMin || 1)) * (H - PAD * 2);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(" ");
@@ -309,7 +315,7 @@ export const ExchangeRatesView: React.FC<ExchangeRatesViewProps> = ({ rates, dic
                   points={points}
                 />
                 {history.map((v, i) => {
-                  const x = PAD + (i / (history.length - 1)) * (W - PAD * 2);
+                  const x = PAD + (i / Math.max(history.length - 1, 1)) * (W - PAD * 2);
                   const y = H - PAD - ((v - hMin) / (hMax - hMin || 1)) * (H - PAD * 2);
                   if (i % 5 !== 0) return null;
                   return <circle key={i} cx={x} cy={y} r="2.5" fill="var(--color-primary, #3b82f6)" />;

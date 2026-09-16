@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { SystemUser, SystemMenuItem } from "../types/payment";
-import { RBAC_ROLES } from "../data/mockData";
+import { resolveCurrentRole } from "../lib/permissions";
 import { ancestorIdsForRoute } from "../lib/menuAccess";
 import { renderMenuIcon } from "./ui/iconRegistry";
 import {
@@ -95,9 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
 }) => {
   const { t } = useTranslation("nav");
-  const currentRole = RBAC_ROLES[currentUser.roleKey] || {
-    name: currentUser.role,
-  };
+  const currentRole = resolveCurrentRole(currentUser, []);
 
   const tree = useMemo(() => buildMenuTree(menus), [menus]);
 

@@ -22,7 +22,6 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import { Department, SystemUser, RbacRole } from "../types/payment";
-import { RBAC_ROLES } from "../data/mockData";
 import { SideSheet } from "./ui/SideSheet";
 import { Popconfirm } from "./ui/Popconfirm";
 import { ShadcnSelect } from "./ui/select";
@@ -141,7 +140,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
   };
 
   const getRoleName = (key: string) => {
-    const r = roles.find((role) => (role.key || role.id) === key) || RBAC_ROLES[key as keyof typeof RBAC_ROLES];
+    const r = roles.find((role) => (role.key || role.id) === key);
     return r?.name || key;
   };
 

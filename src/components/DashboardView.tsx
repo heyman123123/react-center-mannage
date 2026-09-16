@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { USE_MOCK } from "../api/config";
 import * as transactionsApi from "../api/modules/transactions";
+import { resolveCurrentRole } from "../lib/permissions";
 import { useViewLoading } from "./ui/useViewLoading";
 import { DashboardSkeleton } from "./ui/Skeletons";
 import {
@@ -28,14 +28,12 @@ import {
   ReconciliationStatus,
 } from "../types/payment";
 import { TransactionAreaChart } from "./TransactionAreaChart";
-import { RBAC_ROLES } from "../data/mockData";
 import { formatCurrency } from "../lib/utils";
 import { TransactionDetailModal } from "./TransactionDetailModal";
 
 interface DashboardViewProps {
   currentTenant: Tenant;
   currentUser: SystemUser;
-  transactions: TransactionRecord[];
   onOpenDiscrepancy: (tx: TransactionRecord) => void;
   onResolveQuickDone: (txId: string) => void;
 }
@@ -43,18 +41,13 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({
   currentTenant,
   currentUser,
-  transactions,
   onOpenDiscrepancy,
   onResolveQuickDone,
 }) => {
   const { t } = useTranslation(["dashboard", "common"]);
-  const [transactionList, setTransactionList] = useState<TransactionRecord[]>(transactions);
+  const [transactionList, setTransactionList] = useState<TransactionRecord[]>([]);
 
   const loadTransactions = useCallback(async () => {
-    if (USE_MOCK) {
-      setTransactionList(transactions);
-      return;
-    }
     try {
       const res = await transactionsApi.listTransactions({
         page: 1,
@@ -65,7 +58,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     } catch {
       setTransactionList([]);
     }
-  }, [currentTenant.id, transactions]);
+  }, [currentTenant.id]);
 
   useEffect(() => {
     void loadTransactions();
@@ -89,7 +82,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     actions: true,
   });
 
-  const currentRole = (currentUser?.roleKey && RBAC_ROLES[currentUser.roleKey]) || RBAC_ROLES["SUPER_ADMIN"];
+  const currentRole = resolveCurrentRole(currentUser, []);
 
   // Filter transactions based on active tenant (unless Group HQ with ALL_TENANTS permissions)
   const tenantScopedTransactions = useMemo(() => {

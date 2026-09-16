@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { USE_MOCK } from "../api/config";
 import * as messagingApi from "../api/modules/messaging";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -23,26 +22,18 @@ import { EmailWebhookLog } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { exportToCSV } from "../lib/utils";
 
-interface EmailWebhooksViewProps {
-  logs: EmailWebhookLog[];
-}
-
-export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) => {
+export const EmailWebhooksView: React.FC = () => {
   const { t } = useTranslation(["email", "common"]);
-  const [emailLogs, setEmailLogs] = useState<EmailWebhookLog[]>(logs);
+  const [emailLogs, setEmailLogs] = useState<EmailWebhookLog[]>([]);
 
   const loadLogs = useCallback(async () => {
-    if (USE_MOCK) {
-      setEmailLogs(logs);
-      return;
-    }
     try {
       const res = await messagingApi.listEmailWebhooks({ page: 1, pageSize: 100 });
       setEmailLogs(res.list);
     } catch {
       setEmailLogs([]);
     }
-  }, [logs]);
+  }, []);
 
   useEffect(() => {
     void loadLogs();

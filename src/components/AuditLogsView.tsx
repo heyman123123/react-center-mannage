@@ -9,8 +9,6 @@ import { ContextMenu } from "./ui/ContextMenu";
 import { MultiSelect } from "./ui/MultiSelect";
 import { AuditLog } from "../types/payment";
 import { exportToCSV } from "../lib/utils";
-import { INITIAL_AUDIT_LOGS } from "../data/mockData";
-import { USE_MOCK } from "../api/config";
 import {
   listAuditLogs,
   listDictionaryEntries,
@@ -67,9 +65,9 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
   const actionLabel = (code: string) => actionLabelMap.get(code) || code;
 
   useEffect(() => {
-    if (USE_MOCK || logs) {
+    if (logs) {
       setActionOptions(
-        Array.from(new Set((logs ?? INITIAL_AUDIT_LOGS).map((l) => l.action)))
+        Array.from(new Set(logs.map((l) => l.action)))
           .sort()
           .map((a) => ({ value: a, label: a })),
       );
@@ -91,8 +89,8 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
   }, [logs]);
 
   useEffect(() => {
-    if (USE_MOCK || logs) {
-      const names = Array.from(new Set((logs ?? INITIAL_AUDIT_LOGS).map((l) => l.operator || l.userName || ""))).filter(Boolean);
+    if (logs) {
+      const names = Array.from(new Set(logs.map((l) => l.operator || l.userName || ""))).filter(Boolean);
       setUserOptions(names.map((n) => ({ value: n, label: n })));
       return;
     }
@@ -116,11 +114,6 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
     try {
       if (logs) {
         setRows(logs);
-        return;
-      }
-      if (USE_MOCK) {
-        await new Promise((r) => setTimeout(r, 200));
-        setRows(INITIAL_AUDIT_LOGS);
         return;
       }
       const page = await listAuditLogs({
@@ -194,7 +187,7 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
     return rows.filter((l) => {
       let matchOperator = true;
       let matchAction = true;
-      if (USE_MOCK || logs) {
+      if (logs) {
         if (selectedUserIds.length) {
           matchOperator = selectedUserIds.includes(l.userId || "") || selectedUserIds.includes(operatorName(l));
         }

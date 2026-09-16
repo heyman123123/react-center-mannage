@@ -42,7 +42,6 @@ import { ShadcnSelect } from "./ui/select";
 import { Popconfirm } from "./ui/Popconfirm";
 import { ContextMenu, type ContextMenuItem } from "./ui/ContextMenu";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
-import { USE_MOCK } from "../api/config";
 import {
   listDictionaryCategories,
   createDictionaryCategory,
@@ -464,10 +463,6 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   };
 
   const loadCategoryTree = async () => {
-    if (USE_MOCK) {
-      setCategoryTree(mockCategoriesFromLabels(categoryLabels));
-      return;
-    }
     try {
       const tree = await listDictionaryCategories();
       setCategoryTree(mapApiCategoryTree(tree || []));
@@ -479,13 +474,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   useEffect(() => {
     void loadCategoryTree();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [USE_MOCK]);
-
-  useEffect(() => {
-    if (USE_MOCK) {
-      setCategoryTree(mockCategoriesFromLabels(categoryLabels));
-    }
-  }, [categoryLabels]);
+  }, []);
 
   const openCreateCategorySheet = (parent: CategoryNode | null) => {
     setCategorySheetMode("create");
@@ -521,40 +510,14 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       }
       setCategorySaving(true);
       try {
-        if (USE_MOCK) {
-          const id = `CAT_${Date.now()}`;
-          const node: CategoryNode = {
-            id,
-            parentId: categorySheetParent?.id ?? null,
-            key,
-            name,
-            isSystem: false,
-            sortOrder: 99,
-            children: [],
-          };
-          if (!categorySheetParent) {
-            setCategoryTree((prev) => [...prev, node]);
-          } else {
-            const attach = (list: CategoryNode[]): CategoryNode[] =>
-              list.map((n) =>
-                n.id === categorySheetParent.id
-                  ? { ...n, children: [...(n.children || []), node] }
-                  : { ...n, children: n.children ? attach(n.children) : [] },
-              );
-            setCategoryTree((prev) => attach(prev));
-          }
-          setCategoryFilter(id);
-          showToast(t("dictionary:toast.categoryAdded", { name }));
-        } else {
-          const created = await createDictionaryCategory({
-            parentId: categorySheetParent?.id ?? null,
-            key,
-            name,
-          });
-          await loadCategoryTree();
-          setCategoryFilter(created.id);
-          showToast(t("dictionary:toast.categoryAdded", { name: created.name || name }));
-        }
+        const created = await createDictionaryCategory({
+          parentId: categorySheetParent?.id ?? null,
+          key,
+          name,
+        });
+        await loadCategoryTree();
+        setCategoryFilter(created.id);
+        showToast(t("dictionary:toast.categoryAdded", { name: created.name || name }));
         closeCategorySheet();
       } catch {
         showToast(t("dictionary:toast.categorySaveFailed"));
@@ -571,20 +534,9 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       }
       setCategorySaving(true);
       try {
-        if (USE_MOCK) {
-          const rename = (list: CategoryNode[]): CategoryNode[] =>
-            list.map((n) =>
-              n.id === categorySheetTarget.id
-                ? { ...n, name }
-                : { ...n, children: n.children ? rename(n.children) : [] },
-            );
-          setCategoryTree((prev) => rename(prev));
-          showToast(t("dictionary:toast.categoryRenamed"));
-        } else {
-          await updateDictionaryCategory(categorySheetTarget.id, { name });
-          await loadCategoryTree();
-          showToast(t("dictionary:toast.categoryRenamed"));
-        }
+        await updateDictionaryCategory(categorySheetTarget.id, { name });
+        await loadCategoryTree();
+        showToast(t("dictionary:toast.categoryRenamed"));
         closeCategorySheet();
       } catch {
         showToast(t("dictionary:toast.categorySaveFailed"));
@@ -600,16 +552,8 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
       return;
     }
     try {
-      if (USE_MOCK) {
-        const remove = (list: CategoryNode[]): CategoryNode[] =>
-          list
-            .filter((n) => n.id !== node.id)
-            .map((n) => ({ ...n, children: n.children ? remove(n.children) : [] }));
-        setCategoryTree((prev) => remove(prev));
-      } else {
-        await deleteDictionaryCategory(node.id);
-        await loadCategoryTree();
-      }
+      await deleteDictionaryCategory(node.id);
+      await loadCategoryTree();
       if (categoryFilter === node.id) setCategoryFilter("ALL");
       showToast(t("dictionary:toast.categoryDeleted", { label: node.name }));
     } catch {

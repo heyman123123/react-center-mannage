@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
-import { USE_MOCK } from "../api/config";
 import * as messagingApi from "../api/modules/messaging";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -26,19 +25,9 @@ import { EmailChannelConfig } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 
-interface EmailChannelsViewProps {
-  channels: EmailChannelConfig[];
-  onUpdateChannel: (channel: EmailChannelConfig) => void;
-  onAddChannel?: (channel: EmailChannelConfig) => void;
-}
-
-export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
-  channels,
-  onUpdateChannel,
-  onAddChannel,
-}) => {
+export const EmailChannelsView: React.FC = () => {
   const { t } = useTranslation(["channels", "common"]);
-  const [channelList, setChannelList] = useState<EmailChannelConfig[]>(channels);
+  const [channelList, setChannelList] = useState<EmailChannelConfig[]>([]);
   const [modeFilter, setModeFilter] = useState<string>("all");
   const { currentPage, setCurrentPage, reset: _ecr, pageSize } = usePagination(10);
   const [testModalChannel, setTestModalChannel] = useState<EmailChannelConfig | null>(null);
@@ -89,15 +78,8 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
   }, [modeFilter, t]);
 
   useEffect(() => {
-    if (USE_MOCK) {
-      const list = modeFilter === "all"
-        ? channels
-        : channels.filter((c) => (c.mode || "live") === modeFilter);
-      setChannelList(list);
-      return;
-    }
     void loadChannels();
-  }, [channels, loadChannels, modeFilter]);
+  }, [loadChannels]);
 
   const openCreateSheet = () => {
     setNewForm({
@@ -135,7 +117,6 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         dailyQuota: newForm.dailyQuota || 50000,
       });
       setChannelList((prev) => [saved, ...prev]);
-      onAddChannel?.(saved);
       setIsCreateSheetOpen(false);
       showToast(t("email.toast.added", { name: saved.name }));
     } catch {
@@ -146,22 +127,16 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
   const handleSendTestEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!testModalChannel) return;
-    if (!USE_MOCK && testModalChannel.providerKey !== "resend") {
+    if (testModalChannel.providerKey !== "resend") {
       showToast(t("email.toast.resendOnly"));
       return;
     }
     setIsSendingTest(true);
     setTestFeedback(null);
     try {
-      if (USE_MOCK) {
-        setTestFeedback(
-          t("email.testSheet.success", { channel: testModalChannel.name, recipient: testRecipient })
-        );
-      } else {
-        const res = await messagingApi.testEmailChannel(testModalChannel.id, testRecipient);
-        setTestFeedback(t("email.toast.testSent", { id: res.messageId }));
-        await loadChannels();
-      }
+      const res = await messagingApi.testEmailChannel(testModalChannel.id, testRecipient);
+      setTestFeedback(t("email.toast.testSent", { id: res.messageId }));
+      await loadChannels();
       setTimeout(() => {
         setTestFeedback(null);
         setTestModalChannel(null);
@@ -702,7 +677,6 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 setChannelList((prev) =>
                   prev.map((c) => (c.id === saved.id ? saved : c)),
                 );
-                onUpdateChannel(saved);
                 setEditingChannel(null);
               } catch {
                 showToast(t("email.toast.saveFailed"));

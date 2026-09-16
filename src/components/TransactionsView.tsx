@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { USE_MOCK } from "../api/config";
 import * as transactionsApi from "../api/modules/transactions";
+import { resolveCurrentRole } from "../lib/permissions";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import {
@@ -20,7 +20,6 @@ import {
   TransactionRecord,
 } from "../types/payment";
 import { formatCurrency } from "../lib/utils";
-import { RBAC_ROLES } from "../data/mockData";
 import { TransactionDetailModal } from "./TransactionDetailModal";
 import { ShadcnSelect } from "./ui/select";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -28,24 +27,18 @@ import { Pagination, paginate, usePagination } from "./ui/Pagination";
 interface TransactionsViewProps {
   currentTenant: Tenant;
   currentUser: SystemUser;
-  transactions: TransactionRecord[];
-  onOpenDiscrepancy: (tx: TransactionRecord) => void;
+  onOpenDiscrepancy?: (tx: TransactionRecord) => void;
 }
 
 export const TransactionsView: React.FC<TransactionsViewProps> = ({
   currentTenant,
   currentUser,
-  transactions,
   onOpenDiscrepancy,
 }) => {
   const { t } = useTranslation(["transactions", "common"]);
-  const [transactionList, setTransactionList] = useState<TransactionRecord[]>(transactions);
+  const [transactionList, setTransactionList] = useState<TransactionRecord[]>([]);
 
   const loadTransactions = useCallback(async () => {
-    if (USE_MOCK) {
-      setTransactionList(transactions);
-      return;
-    }
     try {
       const res = await transactionsApi.listTransactions({
         page: 1,
@@ -56,7 +49,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     } catch {
       setTransactionList([]);
     }
-  }, [currentTenant.id, transactions]);
+  }, [currentTenant.id]);
 
   useEffect(() => {
     void loadTransactions();
@@ -69,7 +62,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   const { currentPage, setCurrentPage, reset: resetPage, pageSize } = usePagination(10);
   useEffect(() => { resetPage(); }, [selectedChannel, selectedStatus, searchQuery, resetPage]);
 
-  const currentRole = (currentUser?.roleKey && RBAC_ROLES[currentUser.roleKey]) || RBAC_ROLES["SUPER_ADMIN"];
+  const currentRole = resolveCurrentRole(currentUser, []);
 
   const channelOptions = useMemo(
     () => [
@@ -298,7 +291,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onOpenDiscrepancy(tx);
+                            onOpenDiscrepancy?.(tx);
                           }}
                           className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors"
                         >

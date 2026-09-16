@@ -18,6 +18,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import type { RbacRole, PermissionPack, PaymentApp } from "../types/payment";
+import * as appsApi from "../api/modules/apps";
 import { SideSheet } from "./ui/SideSheet";
 import { Popconfirm } from "./ui/Popconfirm";
 import { ContextMenu } from "./ui/ContextMenu";
@@ -27,7 +28,6 @@ import { AppScopeMultiSelect } from "./AppScopeMultiSelect";
 interface RolesViewProps {
   roles: RbacRole[];
   packs: PermissionPack[];
-  apps: PaymentApp[];
   onSaveRole: (role: RbacRole) => void;
   onDeleteRole?: (roleId: string) => void;
 }
@@ -35,12 +35,16 @@ interface RolesViewProps {
 export const RolesView: React.FC<RolesViewProps> = ({
   roles,
   packs,
-  apps,
   onSaveRole,
   onDeleteRole,
 }) => {
   const { t } = useTranslation(["settings", "common"]);
+  const [apps, setApps] = useState<PaymentApp[]>([]);
   const [roleList, setRoleList] = useState<RbacRole[]>(roles);
+
+  useEffect(() => {
+    void appsApi.getApps().then(setApps).catch(() => setApps([]));
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
   useEffect(() => {

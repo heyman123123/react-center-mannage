@@ -23,7 +23,7 @@ import {
   Check,
 } from "lucide-react";
 import { SystemUser, PaymentApp, RbacRole, Department } from "../types/payment";
-import { RBAC_ROLES } from "../data/mockData";
+import * as appsApi from "../api/modules/apps";
 import { ShadcnSelect } from "./ui/select";
 import { MultiSelect } from "./ui/MultiSelect";
 import { AppScopeMultiSelect } from "./AppScopeMultiSelect";
@@ -51,7 +51,6 @@ function generateRandomPassword(length = 14): string {
 interface SystemUserManagementViewProps {
   users: SystemUser[];
   roles: RbacRole[];
-  apps: PaymentApp[];
   departments: Department[];
   currentUser: SystemUser;
   onSaveUser: (user: SystemUser, opts?: { isNew?: boolean }) => void | Promise<SaveUserResult | void>;
@@ -64,7 +63,6 @@ type SaveUserResult = { user?: SystemUser; initialPassword?: string };
 export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> = ({
   users,
   roles,
-  apps,
   departments,
   currentUser,
   onSaveUser,
@@ -72,7 +70,12 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
   onResetPassword,
 }) => {
   const { t } = useTranslation(["rbac", "common"]);
+  const [apps, setApps] = useState<PaymentApp[]>([]);
   const [userList, setUserList] = useState<SystemUser[]>(users);
+
+  useEffect(() => {
+    void appsApi.getApps().then(setApps).catch(() => setApps([]));
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
   useEffect(() => { reset(); }, [searchQuery, reset]);
@@ -310,9 +313,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
   });
 
   const getRoleName = (key: string) => {
-    const r =
-      roles.find((role) => (role.key || role.id) === key) ||
-      RBAC_ROLES[key as keyof typeof RBAC_ROLES];
+    const r = roles.find((role) => (role.key || role.id) === key);
     return r?.name || key;
   };
 

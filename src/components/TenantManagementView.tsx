@@ -7,7 +7,6 @@ import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { Popconfirm } from "./ui/Popconfirm";
 import type { Tenant } from "../types/payment";
-import { USE_MOCK } from "../api/config";
 import * as tenantsApi from "../api/modules/tenants";
 
 const ISOLATION_OPTIONS = [
@@ -66,12 +65,14 @@ export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
   }, [onTenantsChange, t]);
 
   useEffect(() => {
-    if (USE_MOCK && tenantsProp) {
-      setRows(tenantsProp);
-      return;
-    }
     void loadRows();
-  }, [loadRows, tenantsProp]);
+  }, [loadRows]);
+
+  useEffect(() => {
+    if (tenantsProp?.length) {
+      setRows(tenantsProp);
+    }
+  }, [tenantsProp]);
 
   useEffect(() => {
     reset();

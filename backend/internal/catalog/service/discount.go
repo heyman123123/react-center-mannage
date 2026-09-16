@@ -168,6 +168,115 @@ func (s *Service) CreateDiscount(ctx context.Context, in DiscountInput) (*Discou
 	return &dto, nil
 }
 
+func (s *Service) UpdateDiscount(ctx context.Context, id string, in DiscountInput) (*DiscountDTO, error) {
+	var row persistence.CatalogDiscount
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	ch, err := s.payment.GetRawChannel(ctx, row.ChannelID)
+	if err != nil {
+		return nil, err
+	}
+	if ch.ChannelKey != "creem" {
+		return nil, apperr.ProviderNotSupported
+	}
+	code := strings.TrimSpace(in.Code)
+	name := strings.TrimSpace(in.Name)
+	if code == "" || name == "" {
+		return nil, apperr.InvalidArgument
+	}
+	productIds := in.AppliesToProductIds
+	if len(productIds) == 0 {
+		_ = json.Unmarshal([]byte(row.AppliesToProductsJSON), &productIds)
+	}
+	productSvc := &Service{db: s.db, payment: s.payment}
+	extProducts, err := productSvc.ResolveExternalProductIDs(ctx, row.ChannelID, productIds)
+	if err != nil {
+		return nil, err
+	}
+	if len(extProducts) == 0 {
+		return nil, apperr.New(42212, 422, "请至少选择一个已同步的 Creem 商品")
+	}
+	discountType := mapDiscountType(in.Type)
+	duration := defaultDuration(in.Duration)
+	if in.Duration == "" {
+		duration = row.Duration
+	}
+	appliesJSON, _ := json.Marshal(productIds)
+	updates := map[string]interface{}{
+		"code":                     strings.ToUpper(code),
+		"name":                     name,
+		"discount_type":            discountType,
+		"value":                    int(in.Value),
+		"currency":                 strings.ToUpper(defaultCurrency(in.Currency)),
+		"min_order_amount_cents":   int64(in.MinOrderAmount * 100),
+		"max_usage_limit":          in.MaxUsageLimit,
+		"start_date":               in.StartDate,
+		"end_date":                 in.EndDate,
+		"applicable_scope":         defaultScope(in.ApplicableScope),
+		"target_tenant_id":         in.TargetTenantID,
+		"duration":                 duration,
+		"duration_in_months":       in.DurationInMonths,
+		"applies_to_products_json": string(appliesJSON),
+	}
+	if in.Status != "" {
+		updates["status"] = in.Status
+	}
+	if discountType == "FIXED_AMOUNT" {
+		updates["value"] = int(in.Value * 100)
+	}
+	if strings.TrimSpace(ch.ApiKey) != "" {
+		req := creem.CreateDiscountReq{
+			Name:              name,
+			Code:              strings.ToUpper(code),
+			Type:              mapCreemDiscountType(discountType),
+			Duration:          duration,
+			AppliesToProducts: extProducts,
+		}
+		if in.EndDate != "" {
+			req.ExpiryDate = in.EndDate
+		}
+		if in.MaxUsageLimit > 0 {
+			req.MaxRedemptions = &in.MaxUsageLimit
+		}
+		if duration == "repeating" {
+			months := in.DurationInMonths
+			if months == 0 {
+				months = row.DurationInMonths
+			}
+			if months > 0 {
+				req.DurationInMonths = &months
+			}
+		}
+		if discountType == "PERCENTAGE" {
+			pct := int(in.Value)
+			req.Percentage = &pct
+		} else {
+			amt := int(in.Value * 100)
+			req.Amount = &amt
+			req.Currency = strings.ToUpper(defaultCurrency(in.Currency))
+		}
+		client := creem.NewClient(ch.Environment, ch.ApiKey)
+		if row.ExternalDiscountID != "" {
+			_ = client.DeleteDiscount(ctx, row.ExternalDiscountID)
+		}
+		disc, err := client.CreateDiscount(ctx, req)
+		if err != nil {
+			return nil, apperr.Wrap(50210, 502, "Creem 更新折扣失败: "+err.Error(), err)
+		}
+		updates["external_discount_id"] = disc.ID
+		updates["used_count"] = disc.RedeemCount
+		updates["sync_status"] = "SYNCED"
+		updates["sync_error"] = ""
+	}
+	if err := s.db.WithContext(ctx).Model(&row).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+	_ = s.db.WithContext(ctx).First(&row, "id = ?", id)
+	dto := toDiscountDTO(row)
+	return &dto, nil
+}
+
 func (s *Service) DeleteDiscount(ctx context.Context, id string) error {
 	var row persistence.CatalogDiscount
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {

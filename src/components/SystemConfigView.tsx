@@ -28,8 +28,6 @@ import {
   SystemConfigCategory,
   TaskRunStatus,
 } from "../types/payment";
-import { USE_MOCK } from "../api/config";
-import { INITIAL_SCHEDULED_TASKS, INITIAL_SYSTEM_CONFIGS } from "../data/mockData";
 import * as iamApi from "../api/modules/iam";
 import { formatUnix } from "../lib/time";
 
@@ -135,11 +133,6 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
   const loadData = useCallback(async () => {
     setDataLoading(true);
     try {
-      if (USE_MOCK) {
-        setParamRows(configs ?? INITIAL_SYSTEM_CONFIGS);
-        setTaskRows(tasks ?? INITIAL_SCHEDULED_TASKS);
-        return;
-      }
       const [cfgList, taskList] = await Promise.all([
         iamApi.listSystemConfigs(),
         iamApi.listScheduledTasks(),
@@ -181,19 +174,7 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
   const handleSaveParam = async () => {
     if (!paramForm.key.trim()) return;
     try {
-      if (USE_MOCK) {
-        const payload = {
-          key: paramForm.key, value: paramForm.value, description: paramForm.description,
-          category: paramForm.category, remark: paramForm.remark,
-          updatedAt: new Date().toISOString().replace("T", " ").substring(0, 16),
-          updatedBy: t("systemConfig.currentUser"),
-        };
-        if (editingParam) {
-          setParamRows((prev) => prev.map((p) => (p.id === editingParam.id ? { ...p, ...payload } : p)));
-        } else {
-          setParamRows((prev) => [{ id: `cfg_${Date.now().toString().slice(-6)}`, ...payload }, ...prev]);
-        }
-      } else if (editingParam) {
+      if (editingParam) {
         const saved = await iamApi.updateSystemConfig(editingParam.id, {
           value: paramForm.value,
           description: paramForm.description,
@@ -218,7 +199,7 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
   };
   const removeParam = async (p: SystemConfigParam) => {
     try {
-      if (!USE_MOCK) await iamApi.deleteSystemConfig(p.id);
+      await iamApi.deleteSystemConfig(p.id);
       setParamRows((prev) => prev.filter((x) => x.id !== p.id));
     } catch {
       /* ignore */
@@ -228,10 +209,6 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
   const toggleTask = async (task: ScheduledTask) => {
     const next = task.status === "ENABLED" ? "DISABLED" : "ENABLED";
     try {
-      if (USE_MOCK) {
-        setTaskRows((prev) => prev.map((x) => (x.id === task.id ? { ...x, status: next } : x)));
-        return;
-      }
       const saved = await iamApi.updateScheduledTaskStatus(task.id, next);
       setTaskRows((prev) => prev.map((x) => (x.id === saved.id ? mapTask(saved) : x)));
     } catch {
@@ -242,10 +219,6 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
   const triggerTask = async (task: ScheduledTask) => {
     setRunningTaskId(task.id);
     try {
-      if (USE_MOCK) {
-        setToast(t("systemConfig.executorDisabled"));
-        return;
-      }
       await iamApi.triggerScheduledTask(task.id);
       setToast(t("systemConfig.executorDisabled"));
     } catch (err) {

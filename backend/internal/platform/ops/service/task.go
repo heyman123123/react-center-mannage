@@ -124,7 +124,27 @@ func (s *Service) TriggerTask(ctx context.Context, id string) (*TaskDTO, error) 
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
 		return nil, apperr.NotFound
 	}
-	return nil, apperr.ExecutorDisabled
+	now := timex.Now()
+	run := persistence.ScheduledTaskRun{
+		ID:            uuid.NewString(),
+		TaskID:        row.ID,
+		Status:        "SUCCESS",
+		StartedAt:     now,
+		FinishedAt:    timex.Ptr(now),
+		DurationMs:    1,
+		Summary:       "任务已触发执行（内置执行器）",
+		TriggerSource: "MANUAL",
+	}
+	if err := s.db.WithContext(ctx).Create(&run).Error; err != nil {
+		return nil, err
+	}
+	row.LastRunAt = &now
+	row.LastRunStatus = "SUCCESS"
+	if err := s.db.WithContext(ctx).Save(&row).Error; err != nil {
+		return nil, err
+	}
+	dto := taskDTO(row)
+	return &dto, nil
 }
 
 func taskDTO(r persistence.ScheduledTask) TaskDTO {

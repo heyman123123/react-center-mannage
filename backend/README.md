@@ -30,7 +30,6 @@ make run    # 拉起 PG/Redis + 编译并启动 API（:8080）
 仓库根目录 `.env`（可参考 `.env.example`）：
 
 ```bash
-VITE_USE_MOCK=false
 VITE_API_BASE_URL=/api/v1
 ```
 
@@ -87,6 +86,31 @@ Creem Webhook 事件 `checkout.completed` / `subscription.paid` 等会自动写�
 Webhook 事件 `refund.created` / `dispute.created` 会自动写入 `payment_refunds` / `payment_chargebacks` 表，并联动更新交易流水对账状态。
 
 Creem Base URL：`live` → `api.creem.io`，`sandbox` → `test-api.creem.io`。Webhook 回调建议配置为 `/api/v1/hooks/creem/{channelId}`。
+
+## M5 API（接入应用 / 结算 / 运营扩展）
+
+| 前缀 | 说明 |
+|------|------|
+| `GET/POST/PUT/DELETE /api/v1/apps` | 接入应用 CRUD |
+| `GET /api/v1/settlements` | 结算批次列表 |
+| `GET /api/v1/settlements/:id` | 结算批次详情 |
+| `POST /api/v1/settlements/generate` | 从交易流水生成结算批次 |
+| `POST /api/v1/settlements/payout` | 出金确认 |
+| `GET/POST/PUT/DELETE /api/v1/promo-campaigns` | 促销邮件活动 |
+| `GET/POST/PUT/DELETE /api/v1/end-users` | 终端客户 |
+| `GET/POST/PUT/DELETE /api/v1/exchange-rates` | 汇率管理 |
+| `GET /api/v1/exchange-rates/:id/history` | 汇率历史 |
+| `GET/POST/PUT/DELETE /api/v1/fee-rules` | 费率规则 |
+| `GET/POST/PUT/DELETE /api/v1/risk-rules` | 风控规则 |
+| `GET/POST/DELETE /api/v1/blacklist` | 黑名单 |
+| `GET /api/v1/merchant-applications` | 商户 KYB 申请列表 |
+| `POST /api/v1/merchant-applications/:id/approve` | 审核通过 |
+| `POST /api/v1/merchant-applications/:id/reject` | 审核驳回 |
+| `GET/POST/PUT/DELETE /api/v1/alert-rules` | 告警规则 |
+| `POST /api/v1/alert-rules/:id/toggle` | 启用/禁用告警 |
+| `GET /api/v1/alert-history` | 告警历史 |
+| `GET /api/v1/reports/revenue` | 收入报表聚合 |
+| `POST /api/v1/payment-webhooks/:id/redeliver` | Webhook 重投递 |
 
 ## Cookie / CORS
 

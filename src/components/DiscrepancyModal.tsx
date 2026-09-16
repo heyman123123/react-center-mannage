@@ -8,7 +8,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { TransactionRecord, SystemUser } from "../types/payment";
-import { RBAC_ROLES } from "../data/mockData";
+import { resolveCurrentRole } from "../lib/permissions";
 import { formatCurrency } from "../lib/utils";
 import { SideSheet } from "./ui/SideSheet";
 
@@ -31,7 +31,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const currentRole = (currentUser?.roleKey && RBAC_ROLES[currentUser.roleKey]) || RBAC_ROLES["SUPER_ADMIN"];
+  const currentRole = resolveCurrentRole(currentUser, []);
   const canResolve = currentRole?.permissions?.canResolveDiscrepancy ?? true;
   const canManualAdjust = currentRole?.permissions?.canManualAdjustFund ?? true;
 

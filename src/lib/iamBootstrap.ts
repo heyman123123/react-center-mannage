@@ -1,8 +1,8 @@
 /**
- * 将一期后端 IAM/字典响应映射为前端壳层类型，并在非 Mock 时拉取。
+ * 将一期后端 IAM/字典响应映射为前端壳层类型。
  */
-import { USE_MOCK } from "../api/config";
 import * as iamApi from "../api/modules/iam";
+import { deriveRolePermissions } from "./permissions";
 import { formatUnix } from "./time";
 import type {
   DictionaryEntry,
@@ -62,8 +62,6 @@ export interface ShellIamData {
 }
 
 export async function loadShellIamData(): Promise<ShellIamData | null> {
-  if (USE_MOCK) return null;
-
   const [
     usersRes,
     rolesRes,
@@ -104,6 +102,10 @@ export async function loadShellIamData(): Promise<ShellIamData | null> {
     createdAt: formatUnix(u.createdAt),
   }));
 
+  const meMenuKeys = meRes.status === "fulfilled" && meRes.value?.menuKeys
+    ? meRes.value.menuKeys
+    : [];
+
   const roleList: RbacRole[] = roles.map((r) => ({
     id: r.id,
     key: r.key,
@@ -111,6 +113,7 @@ export async function loadShellIamData(): Promise<ShellIamData | null> {
     description: r.description,
     isCustom: r.isCustom,
     permissions: {
+      ...deriveRolePermissions(meMenuKeys),
       menuPermissionIds: [],
       appPermissionIds: r.appIds || [],
     },
