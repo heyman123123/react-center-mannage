@@ -22,6 +22,12 @@ type Client struct {
 	http    *http.Client
 }
 
+func (c *Client) WithBaseURL(url string) *Client {
+	nc := *c
+	nc.baseURL = strings.TrimRight(url, "/")
+	return &nc
+}
+
 func NewClient(environment, apiKey string) *Client {
 	base := ProdBase
 	if strings.ToLower(environment) == "sandbox" {
