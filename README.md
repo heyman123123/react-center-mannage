@@ -15,7 +15,22 @@
 
 ## 快速启动
 
-### 1. 后端
+### Docker 一键部署（推荐）
+
+适合内部运营单机环境，包含 Postgres、Redis、API 与 Nginx 前端：
+
+```bash
+cp .env.docker.example .env   # 编辑 NOVAS_JWT_SECRET 等
+make docker-up                # 或 docker compose up -d --build
+```
+
+访问 `http://localhost:3000`，默认管理员 `admin@novaspay.global` / `Admin@123456`。
+
+详见 [Docker 部署文档](./docs/deploy/docker.md)。
+
+### 本地开发
+
+#### 1. 后端
 
 ```bash
 cd backend
@@ -24,7 +39,7 @@ make run    # 拉起 Postgres(5433) + Redis(6380) + API(:8080)
 
 默认管理员：`admin@novaspay.global` / `Admin@123456`
 
-### 2. 前端
+#### 2. 前端
 
 ```bash
 cp .env.example .env   # 或手动设置 VITE_API_BASE_URL=/api/v1
@@ -34,7 +49,7 @@ npm run dev          # http://localhost:3000
 
 Vite 将 `/api` 代理到 `http://127.0.0.1:8080`，Cookie 会话同源。
 
-### 3. 健康检查
+#### 3. 健康检查
 
 ```bash
 curl http://localhost:8080/healthz
@@ -67,3 +82,4 @@ curl http://localhost:8080/healthz
 - [架构文档](./docs/backend-architecture.md)
 - [技术文档](./docs/backend-technical.md)
 - [协作约定](./AGENTS.md)
+- [Docker 单机部署](./docs/deploy/docker.md)
