@@ -50,6 +50,7 @@
     "fee_rules": "费率规则引擎",
     "risk_rules": "风控规则与黑名单",
     "merchant_review": "商户 / KYB 审核",
+    "tenants": "租户管理 (业务单元 BU)",
     "alerts": "告警与通知",
     "system_config": "系统参数与定时任务",
     "scheduled_tasks": "定时任务详情",

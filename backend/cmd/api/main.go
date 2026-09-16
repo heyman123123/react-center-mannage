@@ -5,9 +5,11 @@ import (
 	"github.com/novaspay/admin-api/internal/conf"
 	"github.com/novaspay/admin-api/internal/platform/dictionary"
 	"github.com/novaspay/admin-api/internal/infra"
+	"github.com/novaspay/admin-api/internal/platform/messaging"
 	"github.com/novaspay/admin-api/internal/platform/ops"
 	"github.com/novaspay/admin-api/internal/server"
 	"github.com/novaspay/admin-api/internal/platform/sys"
+	"github.com/novaspay/admin-api/internal/platform/tenant"
 	"go.uber.org/fx"
 )
 
@@ -19,6 +21,8 @@ func main() {
 		dictionary.Module,
 		audit.Module,
 		ops.Module,
+		tenant.Module,
+		messaging.Module,
 		server.Module,
 	).Run()
 }

@@ -24,6 +24,7 @@ func seedDefaults(db *gorm.DB) {
 	seedMenus(db)
 	migrateLegacyPermissionsMenu(db)
 	seedSuperAdmin(db)
+	seedTenants(db)
 	seedAuditActionDict(db)
 	seedDictionaryCategories(db)
 	MigrateRoleMenusToPacks(db)
@@ -72,6 +73,7 @@ func allMenuSeeds() []menuSeed {
 		{Logical: "menu_refunds", Key: "refunds", Title: "退款与拒付", MenuType: "route", Path: "/refunds", Icon: "RefreshCw", Sort: 5, Parent: "root_core"},
 		{Logical: "menu_users", Key: "users", Title: "终端客户管理", MenuType: "route", Path: "/users", Icon: "Users", Sort: 6, Parent: "root_core"},
 		{Logical: "menu_merchant_review", Key: "merchant_review", Title: "商户/KYB 审核", MenuType: "route", Path: "/merchant-review", Icon: "FileText", Sort: 7, Parent: "root_core"},
+		{Logical: "menu_tenants", Key: "tenants", Title: "租户管理", MenuType: "route", Path: "/tenants", Icon: "Building", Sort: 8, Parent: "root_core"},
 
 		// 商品与促销
 		{Logical: "root_commerce", Key: "root_commerce", Title: "商品与促销", MenuType: "directory", Path: "/commerce", Icon: "Folder", Sort: 2},
@@ -367,3 +369,23 @@ func seedDictionaryCategories(db *gorm.DB) {
 	log.Printf("seed: dictionary categories backend/audit_action; backfilled %d entries", res.RowsAffected)
 }
 
+func seedTenants(db *gorm.DB) {
+	var n int64
+	db.Model(&persistence.Tenant{}).Count(&n)
+	if n > 0 {
+		return
+	}
+	tenants := []persistence.Tenant{
+		{ID: "group_hq", Name: "全球海外总部 (Global HQ)", Code: "GLOBAL-HQ", Currency: "USD", Description: "集团中央外汇清结算、全球收单通道聚合与财务统一监管视图", Color: "#0f172a", DailyCap: 5000000, UsedToday: 1845200, ChannelsEnabledJSON: `["stripe","paypal","adyen","checkout","apple_pay","google_pay","klarna","sepa"]`, IsolationLevel: "GROUP_CONSOLIDATED", ActiveMerchantsCount: 86},
+		{ID: "bu_na_ecom", Name: "北美电商出海 BU (NA E-Commerce)", Code: "BU-NA-ECOM", Currency: "USD", Description: "北美独立站、Shopify 矩阵店、DTC 品牌出海信用卡与分期收单", Color: "#0284c7", DailyCap: 2000000, UsedToday: 892400, ChannelsEnabledJSON: `["stripe","paypal","apple_pay","google_pay","klarna"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 42},
+		{ID: "bu_eu_saas", Name: "欧洲 SaaS 订阅平台 BU (EU Cloud & SaaS)", Code: "BU-EU-SAAS", Currency: "EUR", Description: "欧洲企业级 SaaS 工具套件、GDPR 合规多币种定期扣费与 SEPA 借记", Color: "#4f46e5", DailyCap: 1500000, UsedToday: 512000, ChannelsEnabledJSON: `["stripe","adyen","sepa","paypal"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 28},
+		{ID: "bu_apac_japan", Name: "亚太及日本跨境 BU (APAC & Japan)", Code: "BU-APAC-JP", Currency: "JPY", Description: "日韩及东南亚移动端应用内购、Konbini 便利店支付与信用卡直连", Color: "#059669", DailyCap: 1200000, UsedToday: 341000, ChannelsEnabledJSON: `["stripe","adyen","paypal","apple_pay"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 16},
+		{ID: "bu_latam", Name: "拉美新兴市场 BU (LATAM Emerging)", Code: "BU-LATAM", Currency: "USD", Description: "巴西 PIX、墨西哥 OXXO 结汇直通与跨境本地化聚合收单", Color: "#d97706", DailyCap: 800000, UsedToday: 99800, ChannelsEnabledJSON: `["checkout","stripe","paypal"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 10},
+	}
+	for _, t := range tenants {
+		if err := db.Create(&t).Error; err != nil {
+			log.Printf("seed tenant %s: %v", t.ID, err)
+		}
+	}
+	log.Printf("seed: tenants created (%d)", len(tenants))
+}

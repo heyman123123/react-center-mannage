@@ -10,6 +10,7 @@ import { PaymentChannelsView } from "./components/PaymentChannelsView";
 import { PaymentWebhooksView } from "./components/PaymentWebhooksView";
 import { ApplicationManagementView } from "./components/ApplicationManagementView";
 import { EmailChannelsView } from "./components/EmailChannelsView";
+import { TenantManagementView } from "./components/TenantManagementView";
 import { EmailWebhooksView } from "./components/EmailWebhooksView";
 import { EmailTemplatesView } from "./components/EmailTemplatesView";
 import { UserManagementView } from "./components/UserManagementView";
@@ -91,6 +92,7 @@ import {
 import { filterMenusForUser, canAccessTab, firstAccessibleTab } from "./lib/menuAccess";
 import { PermissionGate, PermissionProvider } from "./lib/permission";
 import { USE_MOCK } from "./api/config";
+import * as tenantsApi from "./api/modules/tenants";
 import {
   INITIAL_TENANTS,
   SYSTEM_USERS,
@@ -175,7 +177,7 @@ export default function App() {
     "email_channels", "email_webhooks", "email_templates", "dictionary",
     "users", "roles", "permissions", "permission_packs", "menus", "departments", "system_users",
     "settlements", "refunds", "audit_logs",
-    "exchange_rates", "fee_rules", "risk_rules", "merchant_review",
+    "exchange_rates", "fee_rules", "risk_rules", "merchant_review", "tenants",
     "alerts", "system_config", "scheduled_tasks",
   ];
   const normalizeTab = (raw: string): string =>
@@ -376,6 +378,15 @@ export default function App() {
           setDepartments(data.departments);
           setDictionary(data.dictionary);
           if (data.me) setCurrentUser(data.me);
+          try {
+            const tenantRows = await tenantsApi.listTenants();
+            if (!cancelled && tenantRows.length > 0) {
+              setTenants(tenantRows);
+              setCurrentTenant(tenantRows[0]);
+            }
+          } catch {
+            /* tenants optional on bootstrap */
+          }
           const hashTab = tabFromHash();
           const accessKey = hashTab === "scheduled_tasks" ? "system_config" : hashTab;
           if (hashTab === "login" || !canAccessTab(accessKey, data.menus, data.me || currentUser, data.roles, data.departments)) {
@@ -1125,6 +1136,18 @@ export default function App() {
           {currentTab === "merchant_review" && (
             <MerchantReviewView
               applications={merchantApps}
+            />
+          )}
+
+          {currentTab === "tenants" && (
+            <TenantManagementView
+              tenants={tenants}
+              onTenantsChange={(list) => {
+                setTenants(list);
+                if (!list.find((x) => x.id === currentTenant.id)) {
+                  setCurrentTenant(list[0] || currentTenant);
+                }
+              }}
             />
           )}
 

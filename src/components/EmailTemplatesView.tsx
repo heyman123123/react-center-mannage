@@ -39,6 +39,8 @@ import { EmailTemplate, SupportedLanguage, DictionaryEntry, EmailCategory } from
 import { INITIAL_DICTIONARY } from "../data/mockData";
 import { REACT_EMAIL_PRESETS } from "../data/emailTemplatesData";
 import { ReactEmailRenderer } from "./ReactEmailRenderer";
+import { USE_MOCK } from "../api/config";
+import * as messagingApi from "../api/modules/messaging";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { Popconfirm } from "./ui/Popconfirm";
@@ -178,6 +180,22 @@ export const EmailTemplatesView: React.FC<EmailTemplatesViewProps> = ({
   );
 
   const [templateList, setTemplateList] = useState<EmailTemplate[]>(templates);
+
+  useEffect(() => {
+    if (USE_MOCK) {
+      setTemplateList(templates);
+      return;
+    }
+    void (async () => {
+      try {
+        const list = await messagingApi.listEmailTemplates();
+        setTemplateList(list);
+      } catch {
+        setTemplateList([]);
+      }
+    })();
+  }, [templates]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [langFilter, setLangFilter] = useState<string>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");

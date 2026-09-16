@@ -16,6 +16,7 @@ import rbac from "./rbac.json";
 import commerce from "./commerce.json";
 import apps from "./apps.json";
 import dictionary from "./dictionary.json";
+import tenants from "./tenants.json";
 
 const zhCN = {
   common,
@@ -36,6 +37,7 @@ const zhCN = {
   commerce,
   apps,
   dictionary,
+  tenants,
 };
 
 export default zhCN;

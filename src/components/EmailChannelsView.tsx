@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
+import { USE_MOCK } from "../api/config";
+import * as messagingApi from "../api/modules/messaging";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import {
@@ -37,6 +39,7 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
 }) => {
   const { t } = useTranslation(["channels", "common"]);
   const [channelList, setChannelList] = useState<EmailChannelConfig[]>(channels);
+  const [modeFilter, setModeFilter] = useState<string>("all");
   const { currentPage, setCurrentPage, reset: _ecr, pageSize } = usePagination(10);
   const [testModalChannel, setTestModalChannel] = useState<EmailChannelConfig | null>(null);
   const [testRecipient, setTestRecipient] = useState("admin@corp-finance.global");
@@ -56,16 +59,18 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
     smtpHost: string;
     smtpPort: number;
     dailyQuota: number;
+    mode: string;
   }>({
-    providerKey: "sendgrid",
+    providerKey: "resend",
     name: "",
     description: "",
     senderName: "",
     senderEmail: "",
     apiKey: "",
-    smtpHost: "",
-    smtpPort: 587,
+    smtpHost: "smtp.resend.com",
+    smtpPort: 465,
     dailyQuota: 50000,
+    mode: "live",
   });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -74,75 +79,112 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
     setTimeout(() => setToastMessage(null), 3200);
   };
 
+  const loadChannels = useCallback(async () => {
+    try {
+      const list = await messagingApi.listEmailChannels(modeFilter === "all" ? undefined : modeFilter);
+      setChannelList(list);
+    } catch {
+      showToast(t("email.toast.loadFailed"));
+    }
+  }, [modeFilter, t]);
+
+  useEffect(() => {
+    if (USE_MOCK) {
+      const list = modeFilter === "all"
+        ? channels
+        : channels.filter((c) => (c.mode || "live") === modeFilter);
+      setChannelList(list);
+      return;
+    }
+    void loadChannels();
+  }, [channels, loadChannels, modeFilter]);
+
   const openCreateSheet = () => {
     setNewForm({
-      providerKey: "sendgrid",
+      providerKey: "resend",
       name: "",
       description: "",
       senderName: "",
       senderEmail: "",
       apiKey: "",
-      smtpHost: "smtp.sendgrid.net",
-      smtpPort: 587,
+      smtpHost: "smtp.resend.com",
+      smtpPort: 465,
       dailyQuota: 50000,
+      mode: modeFilter === "sandbox" ? "sandbox" : "live",
     });
     setIsCreateSheetOpen(true);
   };
 
-  const handleAddChannel = (e: React.FormEvent) => {
+  const handleAddChannel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newForm.name.trim() || !newForm.senderEmail.trim()) {
       showToast(t("email.toast.fillRequired"));
       return;
     }
-    const newChannel: EmailChannelConfig = {
-      id: `ec_custom_${Date.now()}`,
-      providerKey: newForm.providerKey,
-      name: newForm.name.trim(),
-      description: newForm.description.trim() || t("email.defaults.description"),
-      enabled: true,
-      isPrimary: channelList.length === 0,
-      senderEmail: newForm.senderEmail.trim(),
-      senderName: newForm.senderName.trim() || "Novas Notifications",
-      apiKey: newForm.apiKey.trim() || "sk_live_placeholder",
-      smtpHost: newForm.smtpHost.trim() || "smtp.example.com",
-      smtpPort: newForm.smtpPort || 587,
-      dailyQuota: newForm.dailyQuota || 50000,
-      sentToday: 0,
-      verifiedDomain: newForm.senderEmail.split("@")[1] || "",
-      spfDkimStatus: "PENDING",
-      lastTestedAt: t("email.defaults.notTested"),
-    };
-    setChannelList((prev) => [newChannel, ...prev]);
-    if (onAddChannel) onAddChannel(newChannel);
-    setIsCreateSheetOpen(false);
-    showToast(t("email.toast.added", { name: newChannel.name }));
+    try {
+      const saved = await messagingApi.createEmailChannel({
+        providerKey: newForm.providerKey,
+        name: newForm.name.trim(),
+        description: newForm.description.trim() || t("email.defaults.description"),
+        mode: newForm.mode,
+        senderEmail: newForm.senderEmail.trim(),
+        senderName: newForm.senderName.trim() || "Novas Notifications",
+        apiKey: newForm.apiKey.trim(),
+        smtpHost: newForm.smtpHost.trim(),
+        smtpPort: newForm.smtpPort || 587,
+        dailyQuota: newForm.dailyQuota || 50000,
+      });
+      setChannelList((prev) => [saved, ...prev]);
+      onAddChannel?.(saved);
+      setIsCreateSheetOpen(false);
+      showToast(t("email.toast.added", { name: saved.name }));
+    } catch {
+      showToast(t("email.toast.saveFailed"));
+    }
   };
 
-  const handleSendTestEmail = (e: React.FormEvent) => {
+  const handleSendTestEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!testModalChannel) return;
+    if (!USE_MOCK && testModalChannel.providerKey !== "resend") {
+      showToast(t("email.toast.resendOnly"));
+      return;
+    }
     setIsSendingTest(true);
     setTestFeedback(null);
-
-    setTimeout(() => {
-      setIsSendingTest(false);
-      setTestFeedback(
-        t("email.testSheet.success", { channel: testModalChannel.name, recipient: testRecipient })
-      );
+    try {
+      if (USE_MOCK) {
+        setTestFeedback(
+          t("email.testSheet.success", { channel: testModalChannel.name, recipient: testRecipient })
+        );
+      } else {
+        const res = await messagingApi.testEmailChannel(testModalChannel.id, testRecipient);
+        setTestFeedback(t("email.toast.testSent", { id: res.messageId }));
+        await loadChannels();
+      }
       setTimeout(() => {
         setTestFeedback(null);
         setTestModalChannel(null);
       }, 3000);
-    }, 1200);
+    } catch {
+      showToast(t("email.toast.testFailed"));
+    } finally {
+      setIsSendingTest(false);
+    }
   };
 
-  const handleTogglePrimary = (targetId: string) => {
-    const updated = channelList.map((c) => ({
-      ...c,
-      isPrimary: c.id === targetId,
-    }));
-    setChannelList(updated);
+  const handleTogglePrimary = async (targetId: string) => {
+    try {
+      const saved = await messagingApi.setEmailChannelPrimary(targetId);
+      setChannelList((prev) =>
+        prev.map((c) => ({
+          ...c,
+          isPrimary: c.mode === saved.mode ? c.id === targetId : c.isPrimary,
+        })),
+      );
+    } catch {
+      showToast(t("email.toast.saveFailed"));
+    }
   };
 
   const copyText = (text: string, id: string) => {
@@ -172,7 +214,19 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="min-w-[140px]">
+            <ShadcnSelect
+              value={modeFilter}
+              onValueChange={setModeFilter}
+              options={[
+                { value: "all", label: t("email.modeAll") },
+                { value: "live", label: t("email.createSheet.modeLive") },
+                { value: "sandbox", label: t("email.createSheet.modeSandbox") },
+              ]}
+              placeholder={t("email.createSheet.modePlaceholder")}
+            />
+          </div>
           <button
             onClick={openCreateSheet}
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
@@ -212,6 +266,9 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                         <h3 className="font-bold text-fg text-sm">
                           {channel.name}
                         </h3>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">
+                          {channel.mode || "live"}
+                        </span>
                         {channel.isPrimary && (
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
                             {t("email.primary")}
@@ -473,13 +530,29 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                 }
                 options={[
                   { value: "sendgrid", label: t("email.providers.sendgrid") },
-                  { value: "ses", label: t("email.providers.ses") },
+                  { value: "aws_ses", label: t("email.providers.ses") },
                   { value: "resend", label: t("email.providers.resend") },
                   { value: "postmark", label: t("email.providers.postmark") },
                   { value: "mailgun", label: t("email.providers.mailgun") },
                 ]}
               />
             </div>
+            <div>
+              <label className="text-fg-secondary block mb-1 font-medium">
+                {t("email.createSheet.mode")}
+              </label>
+              <ShadcnSelect
+                value={newForm.mode}
+                onValueChange={(val) => setNewForm((f) => ({ ...f, mode: val }))}
+                options={[
+                  { value: "live", label: t("email.createSheet.modeLive") },
+                  { value: "sandbox", label: t("email.createSheet.modeSandbox") },
+                ]}
+                placeholder={t("email.createSheet.modePlaceholder")}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-2">
             <div>
               <label className="text-fg-secondary block mb-1 font-medium">
                 {t("email.createSheet.name")} <span className="text-rose-500">{t("email.createSheet.nameRequired")}</span>
@@ -613,13 +686,27 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
         {editingChannel && (
           <form
             id="form-edit-email-channel"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              setChannelList((prev) =>
-                prev.map((c) => (c.id === editingChannel.id ? editingChannel : c))
-              );
-              onUpdateChannel(editingChannel);
-              setEditingChannel(null);
+              try {
+                const saved = await messagingApi.updateEmailChannel(editingChannel.id, {
+                  name: editingChannel.name,
+                  mode: editingChannel.mode,
+                  senderEmail: editingChannel.senderEmail,
+                  senderName: editingChannel.senderName,
+                  apiKey: editingChannel.apiKey,
+                  smtpHost: editingChannel.smtpHost,
+                  smtpPort: editingChannel.smtpPort,
+                  dailyQuota: editingChannel.dailyQuota,
+                });
+                setChannelList((prev) =>
+                  prev.map((c) => (c.id === saved.id ? saved : c)),
+                );
+                onUpdateChannel(saved);
+                setEditingChannel(null);
+              } catch {
+                showToast(t("email.toast.saveFailed"));
+              }
             }}
             className="space-y-3 text-xs"
           >
@@ -633,6 +720,20 @@ export const EmailChannelsView: React.FC<EmailChannelsViewProps> = ({
                   }
                   className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="text-fg-secondary block mb-1 font-medium">{t("email.editSheet.mode")}</label>
+                <ShadcnSelect
+                  value={editingChannel.mode || "live"}
+                  onValueChange={(val) =>
+                    setEditingChannel({ ...editingChannel, mode: val })
+                  }
+                  options={[
+                    { value: "live", label: t("email.createSheet.modeLive") },
+                    { value: "sandbox", label: t("email.createSheet.modeSandbox") },
+                  ]}
                 />
               </div>
 

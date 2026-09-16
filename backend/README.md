@@ -1,6 +1,6 @@
 # NovasPay Admin API
 
-一期平台后端：IAM（Cookie 会话）+ 菜单/角色/用户/部门 + 字典。
+一期平台后端：IAM（Cookie 会话）+ 菜单/角色/用户/部门 + 字典；M2 起含租户与邮件（Resend）渠道。
 
 ## 快速启动（推荐 Make）
 
@@ -43,6 +43,16 @@ cd backend && make run
 # 终端 2
 npm run dev
 ```
+
+## M2 API（租户 / 邮件）
+
+| 前缀 | 说明 |
+|------|------|
+| `GET/POST/PUT/DELETE /api/v1/tenants` | 租户 CRUD |
+| `GET/POST/PUT/DELETE /api/v1/email-channels` | 邮件渠道（`mode`: `live` / `sandbox`） |
+| `POST /api/v1/email-channels/:id/test` | 发测试信（当前仅 **Resend**） |
+| `GET/POST/PUT/DELETE /api/v1/email-templates` | 多语言邮件模板 |
+| `GET /api/v1/email-webhooks` | 投递回执分页 |
 
 ## Cookie / CORS
 

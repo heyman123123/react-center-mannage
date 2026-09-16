@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { USE_MOCK } from "../api/config";
+import * as messagingApi from "../api/modules/messaging";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -27,7 +29,24 @@ interface EmailWebhooksViewProps {
 
 export const EmailWebhooksView: React.FC<EmailWebhooksViewProps> = ({ logs }) => {
   const { t } = useTranslation(["email", "common"]);
-  const [emailLogs] = useState<EmailWebhookLog[]>(logs);
+  const [emailLogs, setEmailLogs] = useState<EmailWebhookLog[]>(logs);
+
+  const loadLogs = useCallback(async () => {
+    if (USE_MOCK) {
+      setEmailLogs(logs);
+      return;
+    }
+    try {
+      const res = await messagingApi.listEmailWebhooks({ page: 1, pageSize: 100 });
+      setEmailLogs(res.list);
+    } catch {
+      setEmailLogs([]);
+    }
+  }, [logs]);
+
+  useEffect(() => {
+    void loadLogs();
+  }, [loadLogs]);
   const [filterType, setFilterType] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedLog, setSelectedLog] = useState<EmailWebhookLog | null>(null);

@@ -33,5 +33,7 @@ var (
 	InvalidAppEnv     = New(40001, 400, "非法的 X-App-Env")
 	InvalidCredential = New(40101, 401, "邮箱或密码错误")
 	EmailExists       = New(40901, 409, "邮箱已注册")
-	ExecutorDisabled  = New(50100, 200, "定时任务执行器未启用")
+	ExecutorDisabled     = New(50100, 200, "定时任务执行器未启用")
+	ProviderNotSupported = New(42210, 422, "该邮件服务商暂未接入")
+	SendFailed           = New(50210, 502, "邮件发送失败")
 )
