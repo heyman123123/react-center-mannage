@@ -617,7 +617,7 @@ type AlertHistory struct {
 type PaymentWebhookLog struct {
 	ID           string `gorm:"type:uuid;primaryKey" json:"id"`
 	ChannelID    string `gorm:"type:uuid;index" json:"channelId"`
-	EventID      string `gorm:"size:128;index" json:"eventId"`
+	EventID      string `gorm:"size:128;uniqueIndex" json:"eventId"`
 	EventType    string `gorm:"size:64;index" json:"eventType"`
 	Channel      string `gorm:"size:32" json:"channel"`
 	AppID        string `gorm:"size:64" json:"appId"`
