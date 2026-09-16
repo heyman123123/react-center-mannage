@@ -1,8 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** 是否使用前端 Mock 数据（"true" 启用，默认 true） */
-  /** 真实后端 API 基础地址 */
+  /** 后端 API 基础地址（默认 /api/v1，由 Vite 代理到 :8080） */
   readonly VITE_API_BASE_URL?: string;
 }
 

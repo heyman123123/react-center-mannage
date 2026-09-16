@@ -5,7 +5,7 @@ import zhCN from "../locales/zh-CN";
 /**
  * 管理端 UI i18n。默认 zh-CN。
  * 用户可见文案一律 t('namespace:key')，禁止在 TSX 硬编码中文/英文 UI 文案。
- * Mock 业务数据（订单标题、商户名等）除外，见 AGENTS.md。
+ * 后端下发的业务数据（订单标题、商户名等）除外，见 AGENTS.md。
  */
 void i18n.use(initReactI18next).init({
   resources: {

@@ -2,8 +2,8 @@ import { API_BASE_URL } from "./config";
 import { ApiError } from "./types";
 
 /**
- * fetch 封装：统一 baseURL、超时 15s、错误处理、自动 JSON 解析
- * 仅在 VITE_USE_MOCK=false 时被真实调用；当前为预留对接点。
+ * fetch 封装：统一 baseURL、超时 15s、错误处理、自动 JSON 解析。
+ * 所有 API 请求经此出口，携带 credentials: 'include'。
  */
 
 const DEFAULT_TIMEOUT = 15000;

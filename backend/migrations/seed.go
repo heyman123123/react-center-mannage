@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// 与前端 src/data/mockData.ts INITIAL_MENUS 对齐的稳定菜单 ID（SHA1 命名空间）
+// 稳定菜单 ID（SHA1 命名空间），便于幂等种子与跨环境一致。
 func menuID(logical string) string {
 	return uuid.NewSHA1(uuid.NameSpaceOID, []byte("novaspay/menu/"+logical)).String()
 }
@@ -23,7 +23,6 @@ func roleID(logical string) string {
 func seedDefaults(db *gorm.DB) {
 	seedLanguages(db)
 	seedMenus(db)
-	migrateLegacyPermissionsMenu(db)
 	seedSuperAdmin(db)
 	seedTenants(db)
 	seedPaymentApps(db)
@@ -35,7 +34,6 @@ func seedDefaults(db *gorm.DB) {
 	seedPromoCampaigns(db)
 	seedAuditActionDict(db)
 	seedDictionaryCategories(db)
-	MigrateRoleMenusToPacks(db)
 }
 
 func dictCategoryID(key string) string {
@@ -69,7 +67,6 @@ type menuSeed struct {
 	Parent   string // 父级 Logical，空为根
 }
 
-// 对齐前端 INITIAL_MENUS
 func allMenuSeeds() []menuSeed {
 	return []menuSeed{
 		// 核心运营
@@ -124,38 +121,6 @@ func allMenuSeeds() []menuSeed {
 
 func seedMenus(db *gorm.DB) {
 	seeds := allMenuSeeds()
-	var existing int64
-	db.Model(&persistence.Menu{}).Count(&existing)
-	var hasDashboard int64
-	db.Model(&persistence.Menu{}).Where("key = ?", "dashboard").Count(&hasDashboard)
-
-	// 旧种子 / 不完整时清空后全量重建
-	if existing == 0 || hasDashboard == 0 || existing < int64(len(seeds)) {
-		if existing > 0 {
-			log.Printf("seed: rebuilding menus (existing=%d, expected=%d)", existing, len(seeds))
-			_ = db.Exec("DELETE FROM role_menus").Error
-			_ = db.Unscoped().Where("1 = 1").Delete(&persistence.Menu{}).Error
-		}
-		for _, s := range seeds {
-			id := menuID(s.Logical)
-			var parentID *string
-			if s.Parent != "" {
-				pid := menuID(s.Parent)
-				parentID = &pid
-			}
-			m := persistence.Menu{
-				ID: id, ParentID: parentID, Key: s.Key, Title: s.Title,
-				MenuType: s.MenuType, Path: s.Path, Icon: s.Icon, SortOrder: s.Sort, Hidden: false,
-			}
-			if err := db.Create(&m).Error; err != nil {
-				log.Printf("seed menu %s: %v", s.Key, err)
-			}
-		}
-		log.Printf("seed: menus created (%d)", len(seeds))
-		return
-	}
-
-	// 已完整：按稳定 ID upsert 标题/图标等
 	for _, s := range seeds {
 		id := menuID(s.Logical)
 		var parentID *string
@@ -167,10 +132,12 @@ func seedMenus(db *gorm.DB) {
 			ID: id, ParentID: parentID, Key: s.Key, Title: s.Title,
 			MenuType: s.MenuType, Path: s.Path, Icon: s.Icon, SortOrder: s.Sort, Hidden: false,
 		}
-		_ = db.Clauses(clause.OnConflict{
+		if err := db.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"parent_id", "key", "title", "menu_type", "path", "icon", "sort_order", "hidden", "updated_at"}),
-		}).Create(&m).Error
+		}).Create(&m).Error; err != nil {
+			log.Printf("seed menu %s: %v", s.Key, err)
+		}
 	}
 	log.Printf("seed: menus upserted (%d)", len(seeds))
 }
@@ -194,18 +161,39 @@ func seedSuperAdmin(db *gorm.DB) {
 	}
 	rid = existingRole.ID
 
+	const packKey = "PACK_SUPER_ADMIN"
+	pid := packID(packKey)
+	pack := persistence.PermissionPack{
+		ID: pid, Key: packKey, Name: "超级管理员权限包",
+		Description: "系统内置，包含全部菜单权限",
+	}
+	_ = db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"name", "description", "updated_at"}),
+	}).Create(&pack).Error
+
+	var existingPack persistence.PermissionPack
+	if err := db.Where("key = ?", packKey).First(&existingPack).Error; err != nil {
+		log.Printf("seed SUPER_ADMIN pack: %v", err)
+		return
+	}
+	pid = existingPack.ID
+
 	var menus []persistence.Menu
 	if err := db.Find(&menus).Error; err != nil {
 		log.Printf("seed load menus: %v", err)
 		return
 	}
-
-	// 绑定全部菜单权限
-	_ = db.Where("role_id = ?", rid).Delete(&persistence.RoleMenu{}).Error
 	for _, m := range menus {
-		_ = db.Create(&persistence.RoleMenu{RoleID: rid, MenuID: m.ID}).Error
+		_ = db.Clauses(clause.OnConflict{DoNothing: true}).Create(&persistence.PermissionPackMenu{
+			PackID: pid, MenuID: m.ID,
+		}).Error
 	}
-	log.Printf("seed: SUPER_ADMIN bound to %d menus", len(menus))
+
+	_ = db.Clauses(clause.OnConflict{DoNothing: true}).Create(&persistence.RolePack{
+		RoleID: rid, PackID: pid,
+	}).Error
+	log.Printf("seed: SUPER_ADMIN pack bound to %d menus", len(menus))
 
 	// 默认管理员账号
 	const adminEmail = "admin@novaspay.global"
@@ -282,54 +270,6 @@ func seedAuditActionDict(db *gorm.DB) {
 	if err := db.Create(&rows).Error; err != nil {
 		log.Printf("seed audit_action dict: %v", err)
 	}
-}
-
-// migrateLegacyPermissionsMenu remaps old key=permissions menu to permission_packs (stable new logical ID).
-func migrateLegacyPermissionsMenu(db *gorm.DB) {
-	oldID := menuID("menu_permissions")
-	newID := menuID("menu_permission_packs")
-	if oldID == newID {
-		return
-	}
-
-	var oldMenu persistence.Menu
-	err := db.Where("id = ? OR key = ?", oldID, "permissions").First(&oldMenu).Error
-	if err != nil {
-		return
-	}
-	if oldMenu.ID == newID || oldMenu.Key == "permission_packs" {
-		return
-	}
-
-	parentID := oldMenu.ParentID
-	newMenu := persistence.Menu{
-		ID: newID, ParentID: parentID, Key: "permission_packs", Title: oldMenu.Title,
-		MenuType: oldMenu.MenuType, Path: "/permission_packs", Icon: oldMenu.Icon,
-		SortOrder: oldMenu.SortOrder, Hidden: oldMenu.Hidden,
-	}
-	_ = db.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"parent_id", "key", "title", "menu_type", "path", "icon", "sort_order", "hidden", "updated_at"}),
-	}).Create(&newMenu).Error
-
-	_ = db.Exec(`
-		UPDATE role_menus AS rm SET menu_id = ?
-		WHERE rm.menu_id = ?
-		  AND NOT EXISTS (
-			SELECT 1 FROM role_menus x WHERE x.role_id = rm.role_id AND x.menu_id = ?
-		)`, newID, oldMenu.ID, newID).Error
-	_ = db.Where("menu_id = ?", oldMenu.ID).Delete(&persistence.RoleMenu{}).Error
-
-	_ = db.Exec(`
-		UPDATE permission_pack_menus AS ppm SET menu_id = ?
-		WHERE ppm.menu_id = ?
-		  AND NOT EXISTS (
-			SELECT 1 FROM permission_pack_menus x WHERE x.pack_id = ppm.pack_id AND x.menu_id = ?
-		)`, newID, oldMenu.ID, newID).Error
-	_ = db.Where("menu_id = ?", oldMenu.ID).Delete(&persistence.PermissionPackMenu{}).Error
-
-	_ = db.Unscoped().Delete(&persistence.Menu{}, "id = ?", oldMenu.ID).Error
-	log.Printf("seed: migrated legacy permissions menu %s → %s", oldMenu.ID, newID)
 }
 
 func seedDictionaryCategories(db *gorm.DB) {
