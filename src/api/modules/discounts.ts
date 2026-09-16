@@ -32,6 +32,10 @@ export async function createDiscount(body: DiscountInput): Promise<DiscountConfi
   return http.post<DiscountConfig>("/discounts", body);
 }
 
+export async function updateDiscount(id: string, body: DiscountInput): Promise<DiscountConfig> {
+  return http.put<DiscountConfig>(`/discounts/${id}`, body);
+}
+
 export async function deleteDiscount(id: string): Promise<void> {
   await http.delete(`/discounts/${id}`);
 }

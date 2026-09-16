@@ -99,6 +99,21 @@ func (h *Handler) CreateDiscount(c *gin.Context) {
 	response.OK(c, item)
 }
 
+func (h *Handler) UpdateDiscount(c *gin.Context) {
+	var req catalogsvc.DiscountInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	item, err := h.svc.UpdateDiscount(c.Request.Context(), c.Param("id"), req)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "DISCOUNT_UPDATE", "DISCOUNT", item.ID, "更新折扣: "+item.Code)
+	response.OK(c, item)
+}
+
 func (h *Handler) DeleteDiscount(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.svc.DeleteDiscount(c.Request.Context(), id); err != nil {

@@ -228,12 +228,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
 
     try {
       if (editingDiscount) {
-        const updated: DiscountConfig = {
-          ...editingDiscount,
-          ...payload,
-          boundChannelIds: formBoundChannels,
-          appliesToProductIds: formAppliesToProducts,
-        };
+        const updated = await discountsApi.updateDiscount(editingDiscount.id, payload);
         setDiscountList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
         showToast(t("discounts.toast.updated", { code: updated.code }));
       } else {
