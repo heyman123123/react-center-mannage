@@ -57,6 +57,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&CatalogDiscount{},
 		&PaymentWebhookLog{},
 		&PaymentTransaction{},
+		&PaymentRefund{},
+		&PaymentChargeback{},
 	)
 }
 
@@ -436,6 +438,51 @@ type PaymentTransaction struct {
 	CreatedAt          int64          `gorm:"autoCreateTime;index" json:"createdAt"`
 	UpdatedAt          int64          `gorm:"autoUpdateTime" json:"updatedAt"`
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// PaymentRefund 退款单（Creem refund.created / 管理端发起）
+type PaymentRefund struct {
+	ID                  string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DisplayID           string         `gorm:"size:64;not null;uniqueIndex" json:"displayId"`
+	TransactionID       string         `gorm:"type:uuid;index" json:"transactionId"`
+	TransactionNo       string         `gorm:"size:64;index" json:"transactionNo"`
+	ChannelID           string         `gorm:"type:uuid;index" json:"channelId"`
+	TenantID            string         `gorm:"size:64;not null;index" json:"tenantId"`
+	Channel             string         `gorm:"size:32;not null;index" json:"channel"`
+	ExternalEventID     string         `gorm:"size:128;index" json:"externalEventId"`
+	RefundAmountCents   int64          `gorm:"not null;default:0" json:"refundAmountCents"`
+	OriginalAmountCents int64          `gorm:"not null;default:0" json:"originalAmountCents"`
+	Currency            string         `gorm:"size:8;not null" json:"currency"`
+	Reason              string         `gorm:"size:64" json:"reason"`
+	Status              string         `gorm:"size:32;not null;index" json:"status"`
+	RefundType          string         `gorm:"size:16;not null;default:FULL" json:"refundType"`
+	Note                string         `gorm:"type:text" json:"note"`
+	CreatedAt           int64          `gorm:"autoCreateTime;index" json:"createdAt"`
+	UpdatedAt           int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// PaymentChargeback 拒付/争议单（Creem dispute.created）
+type PaymentChargeback struct {
+	ID              string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DisplayID       string         `gorm:"size:64;not null;uniqueIndex" json:"displayId"`
+	TransactionID   string         `gorm:"type:uuid;index" json:"transactionId"`
+	TransactionNo   string         `gorm:"size:64;index" json:"transactionNo"`
+	ChannelID       string         `gorm:"type:uuid;index" json:"channelId"`
+	TenantID        string         `gorm:"size:64;not null;index" json:"tenantId"`
+	Channel         string         `gorm:"size:32;not null;index" json:"channel"`
+	ExternalEventID string         `gorm:"size:128;uniqueIndex" json:"externalEventId"`
+	AmountCents     int64          `gorm:"not null;default:0" json:"amountCents"`
+	Currency        string         `gorm:"size:8;not null" json:"currency"`
+	Reason          string         `gorm:"size:64" json:"reason"`
+	Status          string         `gorm:"size:32;not null;index" json:"status"`
+	DeadlineAt      int64          `gorm:"index" json:"deadlineAt"`
+	EvidenceJSON    string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	TimelineJSON    string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	Note            string         `gorm:"type:text" json:"note"`
+	CreatedAt       int64          `gorm:"autoCreateTime;index" json:"createdAt"`
+	UpdatedAt       int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // PaymentWebhookLog 支付 Webhook 入站记录

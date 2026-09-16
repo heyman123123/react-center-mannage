@@ -33,6 +33,28 @@ func NewPaymentRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFun
 			tx.GET("", mw.RequireMenu("transactions"), h.ListTransactions)
 			tx.GET("/:id", mw.RequireMenu("transactions"), h.GetTransaction)
 		}
+
+		rf := r.Group("/refunds", mw.Auth)
+		{
+			rf.GET("", mw.RequireMenu("refunds"), h.ListRefunds)
+			rf.POST("", mw.RequireMenu("refunds"), h.CreateRefund)
+			rf.POST("/:id/process", mw.RequireMenu("refunds"), h.ProcessRefund)
+		}
+
+		cb := r.Group("/chargebacks", mw.Auth)
+		{
+			cb.GET("", mw.RequireMenu("refunds"), h.ListChargebacks)
+			cb.POST("/:id/evidence", mw.RequireMenu("refunds"), h.AddChargebackEvidence)
+			cb.POST("/:id/submit", mw.RequireMenu("refunds"), h.SubmitChargeback)
+		}
+
+		rc := r.Group("/reconciliation", mw.Auth)
+		{
+			rc.GET("/summary", mw.RequireMenu("reconciliation"), h.GetReconciliationSummary)
+			rc.GET("/batches", mw.RequireMenu("reconciliation"), h.ListReconciliationBatches)
+			rc.POST("/run", mw.RequireMenu("reconciliation"), h.RunReconciliation)
+			rc.POST("/discrepancies/:id/resolve", mw.RequireMenu("reconciliation"), h.ResolveDiscrepancy)
+		}
 	}
 }
 

@@ -147,6 +147,8 @@
       "description": "选择退款方式与原因，提交后进入处理中，约 1 秒完成原路退回",
       "cancel": "取消",
       "submit": "提交退款",
+      "transactionNoLabel": "关联交易流水号",
+      "transactionNoPlaceholder": "如：TX-20260905-102900",
       "methodLabel": "退款方式",
       "full": "全额退款",
       "partial": "部分退款",

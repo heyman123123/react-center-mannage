@@ -126,6 +126,114 @@ func (h *Handler) GetTransaction(c *gin.Context) {
 	response.OK(c, item)
 }
 
+func (h *Handler) ListRefunds(c *gin.Context) {
+	list, err := h.svc.ListRefunds(c.Request.Context(), c.Query("tenantId"), c.Query("channel"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, list)
+}
+
+func (h *Handler) CreateRefund(c *gin.Context) {
+	var req paymentsvc.RefundInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	item, err := h.svc.CreateRefund(c.Request.Context(), req)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "REFUND_CREATE", "REFUND", item.ID, "创建退款单: "+item.ID)
+	response.OK(c, item)
+}
+
+func (h *Handler) ProcessRefund(c *gin.Context) {
+	item, err := h.svc.ProcessRefund(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
+}
+
+func (h *Handler) ListChargebacks(c *gin.Context) {
+	list, err := h.svc.ListChargebacks(c.Request.Context(), c.Query("tenantId"), c.Query("channel"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, list)
+}
+
+func (h *Handler) AddChargebackEvidence(c *gin.Context) {
+	var req paymentsvc.ChargebackEvidenceInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	item, err := h.svc.AddChargebackEvidence(c.Request.Context(), c.Param("id"), req)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
+}
+
+func (h *Handler) SubmitChargeback(c *gin.Context) {
+	item, err := h.svc.SubmitChargeback(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
+}
+
+func (h *Handler) GetReconciliationSummary(c *gin.Context) {
+	item, err := h.svc.GetReconciliationSummary(c.Request.Context(), c.Query("tenantId"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
+}
+
+func (h *Handler) ListReconciliationBatches(c *gin.Context) {
+	list, err := h.svc.ListReconciliationBatches(c.Request.Context(), c.Query("tenantId"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, list)
+}
+
+func (h *Handler) RunReconciliation(c *gin.Context) {
+	count, err := h.svc.RunReconciliation(c.Request.Context(), c.Query("tenantId"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "RECONCILIATION_RUN", "RECONCILIATION", "", "执行对账引擎")
+	response.OK(c, gin.H{"matchedCount": count})
+}
+
+func (h *Handler) ResolveDiscrepancy(c *gin.Context) {
+	var req paymentsvc.ResolveDiscrepancyInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	item, err := h.svc.ResolveDiscrepancy(c.Request.Context(), c.Param("id"), req)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "RECONCILIATION_RESOLVE", "TRANSACTION", item.ID, "核销差错流水")
+	response.OK(c, item)
+}
+
 func (h *Handler) CreemWebhook(c *gin.Context) {
 	channelID := c.Param("channelId")
 	raw, err := io.ReadAll(c.Request.Body)

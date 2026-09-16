@@ -55,7 +55,8 @@
     "engineComplete": "自动化三方对账引擎运行完毕，已匹配平账全部合格流水！"
   },
   "errors": {
-    "permissionDenied": "权限不足：当前登录角色无权发起跨租户或自动化对账任务！"
+    "permissionDenied": "权限不足：当前登录角色无权发起跨租户或自动化对账任务！",
+    "engineFailed": "对账引擎执行失败，请稍后重试"
   },
   "export": {
     "filename": "对账差异表",

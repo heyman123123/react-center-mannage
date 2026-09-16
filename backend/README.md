@@ -70,6 +70,22 @@ npm run dev
 
 Creem Webhook 事件 `checkout.completed` / `subscription.paid` 等会自动写入 `payment_transactions` 表。
 
+## M4 API（退款 / 拒付 / 对账）
+
+| 前缀 | 说明 |
+|------|------|
+| `GET/POST /api/v1/refunds` | 退款列表 / 创建退款（按流水号关联交易） |
+| `POST /api/v1/refunds/:id/process` | 处理退款（推送 Creem 或标记完成） |
+| `GET /api/v1/chargebacks` | 拒付列表 |
+| `POST /api/v1/chargebacks/:id/evidence` | 上传拒付证据 |
+| `POST /api/v1/chargebacks/:id/submit` | 提交拒付抗辩 |
+| `GET /api/v1/reconciliation/summary` | 对账摘要 KPI |
+| `GET /api/v1/reconciliation/batches` | 对账批次（按日/渠道聚合） |
+| `POST /api/v1/reconciliation/run` | 运行对账引擎 |
+| `POST /api/v1/reconciliation/discrepancies/:id/resolve` | 差错核销 |
+
+Webhook 事件 `refund.created` / `dispute.created` 会自动写入 `payment_refunds` / `payment_chargebacks` 表，并联动更新交易流水对账状态。
+
 Creem Base URL：`live` → `api.creem.io`，`sandbox` → `test-api.creem.io`。Webhook 回调建议配置为 `/api/v1/hooks/creem/{channelId}`。
 
 ## Cookie / CORS

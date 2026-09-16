@@ -68,7 +68,10 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 	if err := json.Unmarshal(rawBody, &payload); err != nil {
 		return apperr.InvalidArgument
 	}
-	eventType, _ := payload["event"].(string)
+	eventType, _ := payload["eventType"].(string)
+	if eventType == "" {
+		eventType, _ = payload["event"].(string)
+	}
 	if eventType == "" {
 		eventType, _ = payload["type"].(string)
 	}
@@ -92,7 +95,17 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
 		return err
 	}
-	return s.UpsertTransactionFromWebhook(ctx, channelID, rawBody, payload, eventType)
+	if err := s.UpsertTransactionFromWebhook(ctx, channelID, rawBody, payload, eventType); err != nil {
+		return err
+	}
+	parsed, ok := creem.ParseWebhookTransaction(eventType, payload)
+	if !ok {
+		return nil
+	}
+	if err := s.UpsertRefundFromWebhook(ctx, channelID, parsed, rawBody); err != nil {
+		return err
+	}
+	return s.UpsertChargebackFromWebhook(ctx, channelID, parsed)
 }
 
 func toWebhookDTO(r persistence.PaymentWebhookLog) WebhookDTO {
