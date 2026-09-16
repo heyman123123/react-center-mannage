@@ -133,7 +133,9 @@
       "statusActiveOnline": "已启用上线",
       "removedStandalone": "独立邮件【{{name}}】已成功移除",
       "clonedStandalone": "已成功将【{{sourceName}}】复制为新独立邮件【{{clonedName}}】(草稿状态)，请点击编辑微调文案！",
-      "testSent": "测试信已成功发送至 {{email}}，送达耗时 {{durationMs}}ms！"
+      "testSent": "测试信已成功发送至 {{email}}，送达耗时 {{durationMs}}ms！",
+      "presetApplied": "已成功应用 React Email 模板预设",
+      "componentInserted": "已插入 React Email 组件：{{name}}"
     },
     "confirm": {
       "deleteTitle": "确认删除模板【{{name}}】？",
@@ -242,6 +244,35 @@
       "dispatch": "发起投递",
       "successTitle": "投递响应成功",
       "messageIdLabel": "Message-ID:"
+    },
+    "reactEmail": {
+      "badge": "Resend React Email",
+      "badgeTooltip": "基于 https://github.com/resend/react-email 规范实时渲染",
+      "componentsLabel": "React Email 组件:",
+      "insertButton": "插入 <Button> 按钮",
+      "insertHeading": "插入 <Heading> 标题",
+      "insertText": "插入 <Text> 文本",
+      "insertHr": "插入 <Hr /> 分割线",
+      "insertSection": "插入 <Section> 区块",
+      "insertLink": "插入 <Link> 链接",
+      "insertContainer": "插入 <Container> 容器",
+      "tabVisual": "实时渲染",
+      "tabHtml": "生产 HTML",
+      "tabText": "纯文本",
+      "desktop": "桌面 (600px)",
+      "mobile": "移动 (375px)",
+      "copyHtml": "复制 HTML",
+      "copiedHtml": "HTML 已复制",
+      "copyFailed": "复制失败",
+      "htmlViewNote": "此 HTML 经由 @react-email/components 生产级静态编译，符合各主流邮件客户端（Gmail / Outlook / Apple Mail）排版标准。",
+      "presetsLabel": "React Email 官方模板结构预设:",
+      "presetReceipt": "💳 订阅账单收据模板",
+      "presetOtp": "🔐 双重验证码模板",
+      "presetRenewal": "🔄 订阅自动续约模板",
+      "presetWelcome": "🎉 新手欢迎入驻模板",
+      "applyPresetConfirm": "应用此 React Email 模板预设将替换当前编辑框中的正文，是否确认？",
+      "syntaxInfo": "支持 React Email 语义组件标签（<Container>, <Heading>, <Section>, <Button>, <Text>, <Hr>）与 Markdown 语法混合编排",
+      "charCount": "{{count}} 字符"
     }
   }
 }

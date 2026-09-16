@@ -1,5 +1,157 @@
 import { EmailTemplate } from "../types/payment";
 
+export interface ReactEmailPreset {
+  id: string;
+  nameKey: string;
+  content: string;
+}
+
+export const REACT_EMAIL_PRESETS: ReactEmailPreset[] = [
+  {
+    id: "preset_receipt",
+    nameKey: "templates.reactEmail.presetReceipt",
+    content: `<Container style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: '#ffffff', padding: '32px 24px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+  <Section style={{ textAlign: 'center', paddingBottom: '12px' }}>
+    <Heading as="h2" style={{ color: '#111827', fontSize: '22px', fontWeight: '700', margin: '0 0 8px 0' }}>
+      🧾 {{app_name}} 交易对账收据
+    </Heading>
+    <Text style={{ color: '#4b5563', fontSize: '14px', margin: '0' }}>
+      尊敬的 {{customer_name}}，感谢您订阅我们的出海服务！
+    </Text>
+  </Section>
+
+  <Hr style={{ borderColor: '#e5e7eb', margin: '18px 0' }} />
+
+  <Section style={{ backgroundColor: '#f9fafb', padding: '18px', borderRadius: '8px', border: '1px solid #f3f4f6' }}>
+    <Text style={{ margin: '4px 0', fontSize: '13px', color: '#374151' }}>• 订购套餐：{{plan_name}}</Text>
+    <Text style={{ margin: '4px 0', fontSize: '13px', color: '#374151' }}>• 实付金额：{{currency}} {{amount}}</Text>
+    <Text style={{ margin: '4px 0', fontSize: '13px', color: '#374151' }}>• 支付方式：{{payment_method}}</Text>
+    <Text style={{ margin: '4px 0', fontSize: '13px', color: '#374151' }}>• 账单单号：{{order_id}}</Text>
+    <Text style={{ margin: '4px 0', fontSize: '13px', color: '#374151' }}>• 计费周期：{{billing_period}}</Text>
+    <Text style={{ margin: '4px 0', fontSize: '13px', color: '#374151' }}>• 下次续订：{{next_renewal_date}}</Text>
+  </Section>
+
+  <Section style={{ textAlign: 'center', margin: '26px 0 16px 0' }}>
+    <Button href="{{billing_portal_url}}" style={{ backgroundColor: '#4f46e5', color: '#ffffff', padding: '12px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
+      进入商户账务中心
+    </Button>
+  </Section>
+
+  <Hr style={{ borderColor: '#e5e7eb', margin: '20px 0 16px 0' }} />
+
+  <Text style={{ color: '#6b7280', fontSize: '12px', textAlign: 'center', margin: '4px 0' }}>
+    {{dict.support.contact_247}}
+  </Text>
+  <Text style={{ color: '#9ca3af', fontSize: '11px', textAlign: 'center', margin: '4px 0' }}>
+    {{dict.email.footer.unsubscribe}}
+  </Text>
+</Container>`,
+  },
+  {
+    id: "preset_otp",
+    nameKey: "templates.reactEmail.presetOtp",
+    content: `<Container style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: '#ffffff', padding: '32px 24px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+  <Section style={{ textAlign: 'center', paddingBottom: '12px' }}>
+    <Heading as="h2" style={{ color: '#111827', fontSize: '22px', fontWeight: '700', margin: '0 0 8px 0' }}>
+      🔐 {{app_name}} 安全验证码
+    </Heading>
+    <Text style={{ color: '#4b5563', fontSize: '14px', margin: '0' }}>
+      Hi {{customer_name}}, 请在 10 分钟内完成操作验证。
+    </Text>
+  </Section>
+
+  <Hr style={{ borderColor: '#e5e7eb', margin: '18px 0' }} />
+
+  <Section style={{ backgroundColor: '#f3f4f6', padding: '24px', borderRadius: '10px', textAlign: 'center', margin: '20px 0' }}>
+    <Text style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 8px 0', letterSpacing: '1px' }}>一次性动态安全码 (OTP)</Text>
+    <Heading as="h1" style={{ fontSize: '36px', letterSpacing: '8px', color: '#4f46e5', margin: '0', fontFamily: 'monospace', fontWeight: 'bold' }}>
+      {{security_code}}
+    </Heading>
+    <Text style={{ fontSize: '11px', color: '#9ca3af', margin: '8px 0 0 0' }}>有效期 10 分钟，请勿向任何人泄露</Text>
+  </Section>
+
+  <Section style={{ textAlign: 'center', margin: '20px 0' }}>
+    <Button href="{{billing_portal_url}}" style={{ backgroundColor: '#111827', color: '#ffffff', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
+      返回应用安全验证
+    </Button>
+  </Section>
+
+  <Hr style={{ borderColor: '#e5e7eb', margin: '20px 0' }} />
+
+  <Text style={{ color: '#6b7280', fontSize: '12px', textAlign: 'center', margin: '4px 0' }}>
+    如非本人操作，请立即联系 {{dict.support.contact_247}} 冻结异常会话。
+  </Text>
+</Container>`,
+  },
+  {
+    id: "preset_renewal",
+    nameKey: "templates.reactEmail.presetRenewal",
+    content: `<Container style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: '#ffffff', padding: '32px 24px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+  <Section style={{ textAlign: 'center', paddingBottom: '12px' }}>
+    <Heading as="h2" style={{ color: '#111827', fontSize: '22px', fontWeight: '700', margin: '0 0 8px 0' }}>
+      🔄 订阅自动续订成功
+    </Heading>
+    <Text style={{ color: '#4b5563', fontSize: '14px', margin: '0' }}>
+      尊敬的 {{customer_name}}，您的 {{app_name}} 权益已顺延至下一计费周期。
+    </Text>
+  </Section>
+
+  <Hr style={{ borderColor: '#e5e7eb', margin: '18px 0' }} />
+
+  <Section style={{ backgroundColor: '#f9fafb', padding: '16px', borderRadius: '8px', border: '1px solid #f3f4f6' }}>
+    <Text style={{ margin: '4px 0', fontSize: '13px', color: '#374151' }}>• 续订方案：{{plan_name}}</Text>
+    <Text style={{ margin: '4px 0', fontSize: '13px', color: '#374151' }}>• 扣划金额：{{currency}} {{amount}}</Text>
+    <Text style={{ margin: '4px 0', fontSize: '13px', color: '#374151' }}>• 支付渠道：{{payment_method}}</Text>
+    <Text style={{ margin: '4px 0', fontSize: '13px', color: '#374151' }}>• 新权益有效期：{{next_renewal_date}}</Text>
+  </Section>
+
+  <Section style={{ textAlign: 'center', margin: '24px 0' }}>
+    <Button href="{{billing_portal_url}}" style={{ backgroundColor: '#059669', color: '#ffffff', padding: '12px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
+      查看最新消费账单
+    </Button>
+  </Section>
+
+  <Hr style={{ borderColor: '#e5e7eb', margin: '20px 0 16px 0' }} />
+
+  <Text style={{ color: '#6b7280', fontSize: '12px', textAlign: 'center', margin: '4px 0' }}>
+    {{dict.support.contact_247}}
+  </Text>
+</Container>`,
+  },
+  {
+    id: "preset_welcome",
+    nameKey: "templates.reactEmail.presetWelcome",
+    content: `<Container style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: '#ffffff', padding: '32px 24px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+  <Section style={{ textAlign: 'center', paddingBottom: '12px' }}>
+    <Heading as="h2" style={{ color: '#111827', fontSize: '22px', fontWeight: '700', margin: '0 0 8px 0' }}>
+      🎉 欢迎入驻 {{app_name}}
+    </Heading>
+    <Text style={{ color: '#4b5563', fontSize: '14px', margin: '0' }}>
+      Hi {{customer_name}}, 探索全球聚合结算与跨境支付的全新可能。
+    </Text>
+  </Section>
+
+  <Hr style={{ borderColor: '#e5e7eb', margin: '18px 0' }} />
+
+  <Text style={{ color: '#374151', fontSize: '14px', lineHeight: '24px' }}>
+    我们为您准备了完备的出海跨境收单指南、多币种虚拟账户及 24/7 全天候技术团队支持。
+  </Text>
+
+  <Section style={{ textAlign: 'center', margin: '24px 0' }}>
+    <Button href="{{billing_portal_url}}" style={{ backgroundColor: '#4f46e5', color: '#ffffff', padding: '12px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
+      立即开启管理后台
+    </Button>
+  </Section>
+
+  <Hr style={{ borderColor: '#e5e7eb', margin: '20px 0 16px 0' }} />
+
+  <Text style={{ color: '#6b7280', fontSize: '12px', textAlign: 'center', margin: '4px 0' }}>
+    {{dict.support.contact_247}}
+  </Text>
+</Container>`,
+  },
+];
+
 // 独立单一邮件列表 - 每封邮件归属独立单一语言，具备独立代码、主题与正文
 export const INITIAL_EMAIL_TEMPLATES: EmailTemplate[] = [
   {
@@ -27,14 +179,19 @@ Thank you for subscribing to **{{app_name}}**! Your payment has been successfull
 - **Billing Period:** {{billing_period}}
 - **Next Renewal Date:** {{next_renewal_date}}
 
-You can manage your subscription, download official VAT invoices, or update your payment details at any time in your **[Account Billing Portal]({{billing_portal_url}})**.
+<Button href="{{billing_portal_url}}" style={{ backgroundColor: '#4f46e5', color: '#ffffff', padding: '12px 28px', borderRadius: '8px' }}>
+  Access Account Billing Portal
+</Button>
+
+<Hr />
 
 {{dict.support.contact_247}}
 
 Best regards,  
 The {{app_name}} Billing & Success Team
 
----
+<Hr />
+
 {{dict.email.footer.unsubscribe}}`,
     status: "ACTIVE",
     updatedAt: "2026-09-05 10:00:00",
@@ -67,14 +224,19 @@ The {{app_name}} Billing & Success Team
 - **计费周期：** {{billing_period}}
 - **下次自动续费：** {{next_renewal_date}}
 
-您可以随时登录 **[商户账务服务门户]({{billing_portal_url}})** 下载正式 PDF 电子发票凭证，或管理您的付款信用卡。
+<Button href="{{billing_portal_url}}" style={{ backgroundColor: '#4f46e5', color: '#ffffff', padding: '12px 28px', borderRadius: '8px' }}>
+  进入商户账务服务门户
+</Button>
+
+<Hr />
 
 {{dict.support.contact_247}}
 
 顺祝商祺，  
 {{app_name}} 财务清算中心
 
----
+<Hr />
+
 {{dict.email.footer.unsubscribe}}`,
     status: "ACTIVE",
     updatedAt: "2026-09-05 10:15:00",

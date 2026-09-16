@@ -32,9 +32,13 @@ import {
   CheckCircle,
   Tag,
   Globe,
+  Layers,
+  ExternalLink,
 } from "lucide-react";
 import { EmailTemplate, SupportedLanguage, DictionaryEntry, EmailCategory } from "../types/payment";
 import { INITIAL_DICTIONARY } from "../data/mockData";
+import { REACT_EMAIL_PRESETS } from "../data/emailTemplatesData";
+import { ReactEmailRenderer } from "./ReactEmailRenderer";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { Popconfirm } from "./ui/Popconfirm";
@@ -390,25 +394,6 @@ The {{app_name}} Team`,
       });
       showToast(t("templates.toast.testSent", { email: testEmailAddress, durationMs: 342 }));
     }, 900);
-  };
-
-  // Helper to render preview text resolving variables and dictionary items
-  const renderResolvedContent = (rawMarkdown: string, lang: SupportedLanguage) => {
-    let text = rawMarkdown;
-
-    // 1. Resolve dynamic sample tags
-    commonDynamicTags.forEach((tag) => {
-      text = text.replaceAll(tag.tag, `**${tag.sample}**`);
-    });
-
-    // 2. Resolve {{dict.*}} tags using dictionary for this language
-    dictionary.forEach((dictEntry) => {
-      const dictTag = `{{dict.${dictEntry.key}}}`;
-      const translation = dictEntry.translations[lang] || dictEntry.translations["en-US"] || dictEntry.key;
-      text = text.replaceAll(dictTag, translation);
-    });
-
-    return text;
   };
 
   const getLanguageMeta = (code: SupportedLanguage) => {
@@ -1012,19 +997,149 @@ The {{app_name}} Team`,
                     </div>
                   </div>
 
-                  {/* Body Content Markdown Editor */}
+                  {/* Body Content React Email & Markdown Editor */}
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                       <label className="text-xs font-semibold text-fg-secondary flex items-center gap-1.5">
                         <FileText className="w-3.5 h-3.5 text-indigo-500" />
                         {t("templates.editor.bodyLabel")}
                       </label>
-                      <span className="text-[11px] text-fg-tertiary">{t("templates.editor.bodyHint")}</span>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href="https://github.com/resend/react-email"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded text-[10px] font-mono transition-colors"
+                        >
+                          <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                          <span>Resend React Email</span>
+                          <ExternalLink className="w-2.5 h-2.5 text-zinc-400" />
+                        </a>
+                        <span className="text-[11px] text-fg-tertiary">
+                          {t("templates.reactEmail.charCount", { count: editingEmail.contentMarkdown.length })}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Quick Variable Insertion Bar */}
-                    <div className="bg-hover p-2 rounded-t-xl border border-line border-b-0 space-y-1.5">
+                    {/* Quick Presets Bar */}
+                    <div className="bg-indigo-50/80 dark:bg-indigo-950/40 p-2 rounded-t-xl border border-line border-b-0 space-y-1">
                       <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                        <span className="text-[10px] text-indigo-700 dark:text-indigo-300 font-semibold flex items-center gap-1">
+                          <Layers className="w-3 h-3 text-indigo-600" />
+                          {t("templates.reactEmail.presetsLabel")}
+                        </span>
+                        {REACT_EMAIL_PRESETS.map((preset) => (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => {
+                              if (
+                                editingEmail.contentMarkdown.trim() &&
+                                !window.confirm(t("templates.reactEmail.applyPresetConfirm"))
+                              ) {
+                                return;
+                              }
+                              setEditingEmail({
+                                ...editingEmail,
+                                contentMarkdown: preset.content,
+                              });
+                              showToast(t("templates.toast.presetApplied"));
+                            }}
+                            className="px-2 py-0.5 bg-surface hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 rounded text-[10px] font-medium border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <span>{t(preset.nameKey)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* React Email Component Insert & Tag Bars */}
+                    <div className="bg-hover p-2 border border-line border-b-0 space-y-1.5">
+                      {/* React Email Components Insertion */}
+                      <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                        <span className="text-[10px] text-fg-secondary font-semibold flex items-center gap-1">
+                          <Code className="w-3 h-3 text-indigo-500" />
+                          {t("templates.reactEmail.componentsLabel")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const snippet = `<Button href="{{billing_portal_url}}" style={{ backgroundColor: '#4f46e5', color: '#ffffff', padding: '12px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>\n  访问商户账务门户\n</Button>`;
+                            setEditingEmail({
+                              ...editingEmail,
+                              contentMarkdown: `${editingEmail.contentMarkdown}\n\n${snippet}`,
+                            });
+                            showToast(t("templates.toast.componentInserted", { name: "<Button>" }));
+                          }}
+                          className="px-1.5 py-0.5 bg-surface hover:bg-hover text-indigo-600 rounded text-[10px] font-mono border border-indigo-200 flex items-center gap-1 cursor-pointer font-semibold"
+                          title={t("templates.reactEmail.insertButton")}
+                        >
+                          &lt;Button&gt;
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const snippet = `<Heading as="h2" style={{ color: '#111827', fontSize: '20px', fontWeight: '700', margin: '16px 0 8px 0' }}>\n  标题文字内容\n</Heading>`;
+                            setEditingEmail({
+                              ...editingEmail,
+                              contentMarkdown: `${editingEmail.contentMarkdown}\n\n${snippet}`,
+                            });
+                            showToast(t("templates.toast.componentInserted", { name: "<Heading>" }));
+                          }}
+                          className="px-1.5 py-0.5 bg-surface hover:bg-hover text-indigo-600 rounded text-[10px] font-mono border border-indigo-200 flex items-center gap-1 cursor-pointer font-semibold"
+                          title={t("templates.reactEmail.insertHeading")}
+                        >
+                          &lt;Heading&gt;
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const snippet = `<Text style={{ color: '#4b5563', fontSize: '14px', lineHeight: '24px', margin: '8px 0' }}>\n  段落正文文本...\n</Text>`;
+                            setEditingEmail({
+                              ...editingEmail,
+                              contentMarkdown: `${editingEmail.contentMarkdown}\n\n${snippet}`,
+                            });
+                            showToast(t("templates.toast.componentInserted", { name: "<Text>" }));
+                          }}
+                          className="px-1.5 py-0.5 bg-surface hover:bg-hover text-indigo-600 rounded text-[10px] font-mono border border-indigo-200 flex items-center gap-1 cursor-pointer font-semibold"
+                          title={t("templates.reactEmail.insertText")}
+                        >
+                          &lt;Text&gt;
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const snippet = `<Hr style={{ borderColor: '#e5e7eb', margin: '20px 0' }} />`;
+                            setEditingEmail({
+                              ...editingEmail,
+                              contentMarkdown: `${editingEmail.contentMarkdown}\n\n${snippet}`,
+                            });
+                            showToast(t("templates.toast.componentInserted", { name: "<Hr />" }));
+                          }}
+                          className="px-1.5 py-0.5 bg-surface hover:bg-hover text-indigo-600 rounded text-[10px] font-mono border border-indigo-200 flex items-center gap-1 cursor-pointer font-semibold"
+                          title={t("templates.reactEmail.insertHr")}
+                        >
+                          &lt;Hr /&gt;
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const snippet = `<Section style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #f3f4f6', margin: '14px 0' }}>\n  <Text style={{ margin: '0', fontSize: '13px', color: '#374151' }}>区块内容说明</Text>\n</Section>`;
+                            setEditingEmail({
+                              ...editingEmail,
+                              contentMarkdown: `${editingEmail.contentMarkdown}\n\n${snippet}`,
+                            });
+                            showToast(t("templates.toast.componentInserted", { name: "<Section>" }));
+                          }}
+                          className="px-1.5 py-0.5 bg-surface hover:bg-hover text-indigo-600 rounded text-[10px] font-mono border border-indigo-200 flex items-center gap-1 cursor-pointer font-semibold"
+                          title={t("templates.reactEmail.insertSection")}
+                        >
+                          &lt;Section&gt;
+                        </button>
+                      </div>
+
+                      {/* Dynamic Tags */}
+                      <div className="flex items-center gap-1.5 flex-wrap text-[11px] pt-1 border-t border-line">
                         <span className="text-[10px] text-fg-secondary font-semibold flex items-center gap-1">
                           <Tag className="w-3 h-3 text-amber-500" /> {t("templates.editor.dynamicTagsLabel")}
                         </span>
@@ -1039,7 +1154,7 @@ The {{app_name}} Team`,
                               });
                               copyToClipboard(item.tag, item.tag);
                             }}
-                            className="px-1.5 py-0.5 bg-surface hover:bg-hover text-fg-secondary rounded text-[10px] font-mono border border-line flex items-center gap-1"
+                            className="px-1.5 py-0.5 bg-surface hover:bg-hover text-fg-secondary rounded text-[10px] font-mono border border-line flex items-center gap-1 cursor-pointer"
                             title={t("templates.actions.insertTag", { label: item.label })}
                           >
                             <span>{item.tag}</span>
@@ -1050,7 +1165,7 @@ The {{app_name}} Team`,
 
                       {/* Dictionary Reference Tags */}
                       <div className="flex items-center gap-1.5 flex-wrap text-[11px] pt-1 border-t border-line">
-                        <span className="text-[10px] text-violet-700 font-semibold flex items-center gap-1">
+                        <span className="text-[10px] text-violet-700 dark:text-violet-300 font-semibold flex items-center gap-1">
                           <BookOpen className="w-3 h-3 text-violet-500" /> {t("templates.editor.dictTagsLabel")}
                         </span>
                         {dictionary.slice(0, 4).map((d) => (
@@ -1065,7 +1180,7 @@ The {{app_name}} Team`,
                               });
                               copyToClipboard(placeholder, d.id);
                             }}
-                            className="px-1.5 py-0.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded text-[10px] font-mono border border-violet-200 flex items-center gap-1"
+                            className="px-1.5 py-0.5 bg-violet-50 hover:bg-violet-100 text-violet-700 dark:text-violet-300 dark:bg-violet-950/40 rounded text-[10px] font-mono border border-violet-200 dark:border-violet-800 flex items-center gap-1 cursor-pointer"
                             title={t("templates.actions.insertDict", { description: d.description })}
                           >
                             <span>{`{{dict.${d.key}}}`}</span>
@@ -1081,46 +1196,26 @@ The {{app_name}} Team`,
                       onChange={(e) => setEditingEmail({ ...editingEmail, contentMarkdown: e.target.value })}
                       className="w-full p-3 font-mono text-xs bg-surface border border-line rounded-b-xl focus:border-indigo-500 focus:outline-hidden"
                     />
+                    <div className="mt-1 text-[11px] text-fg-tertiary">
+                      {t("templates.reactEmail.syntaxInfo")}
+                    </div>
                   </div>
                 </div>
 
-                {/* Right Side: Split-Pane Real-Time Render */}
+                {/* Right Side: Split-Pane Real-Time Render Powered by React Email */}
                 {activeTabInEditor === "SPLIT_PREVIEW" && (
-                  <div className="lg:col-span-5 bg-hover/70 p-3 rounded-xl border border-line/80 flex flex-col">
-                    <div className="flex items-center justify-between pb-3 border-b border-line mb-3">
-                      <span className="text-xs font-bold text-fg flex items-center gap-1.5">
-                        <Eye className="w-3.5 h-3.5 text-indigo-500" />
-                        {t("templates.editor.livePreview", { language: editingEmail.language })}
-                      </span>
-                      <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> {t("templates.editor.livePreviewHint")}
-                      </span>
-                    </div>
-
-                    <div className="flex-1 bg-surface rounded-xl border border-line p-3 overflow-y-auto text-xs space-y-3 shadow-card">
-                      {/* Email Header Preview */}
-                      <div className="pb-3 border-b border-line-subtle text-fg-secondary space-y-1 text-[11px]">
-                        <div>
-                          <span className="text-fg-tertiary">{t("templates.editor.previewFrom")}</span>{" "}
-                          <span className="font-semibold text-fg">{editingEmail.senderName}</span> &lt;
-                          {editingEmail.senderEmail}&gt;
-                        </div>
-                        <div>
-                          <span className="text-fg-tertiary">{t("templates.editor.previewSubject")}</span>{" "}
-                          <span className="font-bold text-fg">{editingEmail.subject}</span>
-                        </div>
-                        {editingEmail.previewText && (
-                          <div className="text-fg-tertiary text-[10px] italic">
-                            {t("templates.editor.preheaderPrefix")} {editingEmail.previewText}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Email Body Markdown Rendered */}
-                      <div className="whitespace-pre-wrap leading-relaxed text-fg font-sans text-xs">
-                        {renderResolvedContent(editingEmail.contentMarkdown, editingEmail.language)}
-                      </div>
-                    </div>
+                  <div className="lg:col-span-5 h-[620px] flex flex-col">
+                    <ReactEmailRenderer
+                      content={editingEmail.contentMarkdown}
+                      subject={editingEmail.subject}
+                      senderName={editingEmail.senderName}
+                      senderEmail={editingEmail.senderEmail}
+                      previewText={editingEmail.previewText}
+                      language={editingEmail.language}
+                      dictionary={dictionary}
+                      dynamicTags={commonDynamicTags}
+                      compact={true}
+                    />
                   </div>
                 )}
               </div>
@@ -1203,44 +1298,21 @@ The {{app_name}} Team`,
             </div>
           }
         >
-          {/* Email Canvas Preview */}
-          <div className="bg-hover p-3 sm:p-4 rounded-2xl flex justify-center">
-            <div
-              className={`bg-surface rounded-xl border border-line shadow-md p-4 transition-all ${
-                previewDevice === "desktop" ? "w-full max-w-[640px]" : "w-[375px]"
-              }`}
-            >
-              {/* Simulated Email Envelope Header */}
-              <div className="border-b border-line-subtle pb-4 mb-4 text-xs space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] text-fg-tertiary">
-                  <span>{t("templates.preview.fromLabel")}</span>
-                  <span className="font-mono">NovasPay Cloud Relays</span>
-                </div>
-                <div className="font-bold text-fg text-sm">{previewEmail.subject}</div>
-                <div className="text-fg-secondary text-xs flex items-center justify-between">
-                  <span>
-                    {previewEmail.senderName} &lt;{previewEmail.senderEmail}&gt;
-                  </span>
-                  <span className="text-[10px] text-fg-tertiary">{t("templates.preview.justDelivered")}</span>
-                </div>
-                {previewEmail.previewText && (
-                  <div className="text-fg-tertiary text-[11px] italic bg-subtle p-1.5 rounded">
-                    {previewEmail.previewText}
-                  </div>
-                )}
-              </div>
-
-              {/* Email Body Content */}
-              <div className="whitespace-pre-wrap leading-relaxed text-fg text-xs">
-                {renderResolvedContent(previewEmail.contentMarkdown, previewEmail.language)}
-              </div>
-
-              {/* Simulated Email Footer */}
-              <div className="mt-8 pt-4 border-t border-line-subtle text-[10px] text-fg-tertiary text-center space-y-1">
-                <div>NovasPay Global Financial Infrastructure Inc. · 100 Montgomery St, San Francisco, CA</div>
-                <div>This transaction confirmation is cryptographically certified for PCI-DSS compliance.</div>
-              </div>
-            </div>
+          {/* React Email Canvas Preview */}
+          <div className="h-[750px] flex flex-col">
+            <ReactEmailRenderer
+              content={previewEmail.contentMarkdown}
+              subject={previewEmail.subject}
+              senderName={previewEmail.senderName}
+              senderEmail={previewEmail.senderEmail}
+              previewText={previewEmail.previewText}
+              language={previewEmail.language}
+              dictionary={dictionary}
+              dynamicTags={commonDynamicTags}
+              device={previewDevice}
+              onDeviceChange={setPreviewDevice}
+              showHeader={true}
+            />
           </div>
         </SideSheet>
       )}
