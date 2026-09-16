@@ -32,6 +32,7 @@ var (
 	InvalidArgument   = New(42200, 422, "参数错误")
 	InvalidAppEnv     = New(40001, 400, "非法的 X-App-Env")
 	InvalidCredential = New(40101, 401, "邮箱或密码错误")
+	LoginLocked       = New(42901, 429, "登录失败次数过多，请 15 分钟后再试")
 	EmailExists       = New(40901, 409, "邮箱已注册")
 	ExecutorDisabled     = New(50100, 200, "定时任务执行器未启用")
 	ProviderNotSupported = New(42210, 422, "该邮件服务商暂未接入")

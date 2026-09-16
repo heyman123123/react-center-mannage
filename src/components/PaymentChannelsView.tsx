@@ -38,7 +38,7 @@ interface PaymentChannelsViewProps {
 }
 
 export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
-  const { t } = useTranslation(["channels", "common"]);
+  const { t } = useTranslation(["channels", "payments", "common"]);
   const testScenarios = useMemo(
     () =>
       (["SUCCESS", "3DS", "FRAUD", "INSUFFICIENT_FUNDS"] as const).map((id) => ({
@@ -114,6 +114,8 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
   const [testCurrency, setTestCurrency] = useState("USD");
   const [testAmount, setTestAmount] = useState("49.00");
   const [testAppName, setTestAppName] = useState("Novas AI Copilot (出海AI助手)");
+  const [testProductId, setTestProductId] = useState("");
+  const [testCustomerEmail, setTestCustomerEmail] = useState("");
   const [isExecutingTxTest, setIsExecutingTxTest] = useState(false);
   const [lastExecutedTxResult, setLastExecutedTxResult] = useState<{
     tx: TransactionRecord;
@@ -232,9 +234,55 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
     setAppSheetRelatedChannel(channel || null);
   };
 
-  const handleExecuteTestTransaction = () => {
+  const handleExecuteTestTransaction = async () => {
     const channel = selectedTestChannel || channelList[0];
     if (!channel) return;
+
+    if (channel.channelKey === "creem") {
+      if (!testProductId.trim()) {
+        showToast(t("payments:checkoutTest.productRequired"));
+        return;
+      }
+      setIsExecutingTxTest(true);
+      setLastExecutedTxResult(null);
+      try {
+        const result = await channelsApi.createCheckoutTest(channel.id, {
+          productId: testProductId.trim(),
+          customerEmail: testCustomerEmail.trim() || undefined,
+        });
+        window.open(result.checkoutUrl, "_blank", "noopener,noreferrer");
+        showToast(t("payments:checkoutTest.success"));
+        const now = new Date();
+        const timeString = now.toISOString().replace("T", " ").substring(0, 19);
+        setLastExecutedTxResult({
+          tx: {
+            id: result.sessionId,
+            tenantId: channel.tenantId || "group_hq",
+            channel: "creem",
+            orderTitle: t("payment.testTx.sandboxPrefix") + " Creem Checkout",
+            orderNumber: result.sessionId,
+            orderAmount: parseFloat(testAmount) || 0,
+            channelFee: 0,
+            currency: testCurrency,
+            createdAt: timeString,
+            status: "pending_check",
+            customerEmail: testCustomerEmail || undefined,
+            merchantName: channel.name,
+            paymentMethod: "Creem Checkout",
+            channelTradeNo: result.sessionId,
+            timeline: [],
+          },
+          rawJson: JSON.stringify(result, null, 2),
+          success: true,
+          message: t("payments:checkoutTest.success"),
+        });
+      } catch {
+        showToast(t("payments:checkoutTest.failed"));
+      } finally {
+        setIsExecutingTxTest(false);
+      }
+      return;
+    }
 
     setIsExecutingTxTest(true);
     setLastExecutedTxResult(null);
@@ -642,15 +690,34 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
 
               {/* Card Footer Actions */}
               <div className="mt-5 pt-4 border-t border-line-subtle flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      channel.testStatus === "HEALTHY" ? "bg-emerald-500" : "bg-amber-500"
-                    }`}
-                  />
-                  <span className="text-fg-secondary font-mono text-[11px]">
-{channel.latencyMs}ms • {t("payment.card.priority", { priority: channel.routingPriority })}
-                  </span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        (channel.healthStatus || channel.testStatus) === "HEALTHY"
+                          ? "bg-emerald-500"
+                          : (channel.healthStatus || channel.testStatus) === "DOWN"
+                          ? "bg-rose-500"
+                          : "bg-amber-500"
+                      }`}
+                    />
+                    <span className="text-fg-secondary font-mono text-[11px]">
+                      {channel.latencyMs}ms • {t("payment.card.priority", { priority: channel.routingPriority })}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-fg-tertiary">
+                    {t("payment.card.healthStatus")}:{" "}
+                    <span className="font-medium text-fg-secondary">
+                      {(channel.healthStatus || channel.testStatus) === "HEALTHY"
+                        ? t("payment.card.healthHealthy")
+                        : (channel.healthStatus || channel.testStatus) === "DOWN"
+                        ? t("payment.card.healthDown")
+                        : t("payment.card.healthUnknown")}
+                    </span>
+                    {channel.lastHealthAt
+                      ? ` • ${t("payment.card.lastHealthAt", { time: channel.lastHealthAt })}`
+                      : null}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -897,7 +964,11 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                   ) : (
                     <>
                       <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>{t("payment.testTx.execute")}</span>
+                      <span>
+                        {(selectedTestChannel?.channelKey || channelList[0]?.channelKey) === "creem"
+                          ? t("payments:checkoutTest.execute")
+                          : t("payment.testTx.execute")}
+                      </span>
                     </>
                   )}
                 </button>
@@ -1067,6 +1138,35 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                     </div>
                   </div>
 
+                  {(selectedTestChannel?.channelKey || channelList[0]?.channelKey) === "creem" && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-fg-secondary block mb-1 font-semibold text-xs">
+                          {t("payments:checkoutTest.productIdLabel")} <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={testProductId}
+                          onChange={(e) => setTestProductId(e.target.value)}
+                          className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg text-xs font-mono"
+                          placeholder={t("payments:checkoutTest.productIdPlaceholder")}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-fg-secondary block mb-1 font-semibold text-xs">
+                          {t("payments:checkoutTest.customerEmailLabel")}
+                        </label>
+                        <input
+                          type="email"
+                          value={testCustomerEmail}
+                          onChange={(e) => setTestCustomerEmail(e.target.value)}
+                          className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg text-xs font-mono"
+                          placeholder={t("payments:checkoutTest.customerEmailPlaceholder")}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Currency & Amount */}
                   <div className="grid grid-cols-3 gap-2">
                     <div>
@@ -1114,7 +1214,8 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                     </div>
                   </div>
 
-                  {/* Test Scenarios */}
+                  {/* Test Scenarios (non-Creem legacy simulation) */}
+                  {(selectedTestChannel?.channelKey || channelList[0]?.channelKey) !== "creem" && (
                   <div>
                     <label className="text-fg-secondary block mb-1.5 font-semibold text-xs">
 {t("payment.testTx.scenarioLabel")}
@@ -1146,6 +1247,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                       })}
                     </div>
                   </div>
+                  )}
 
                   {/* Latency & Encryption Notice */}
                   <div className="p-3 bg-subtle border border-line rounded-xl text-fg-secondary text-[11px] flex items-center gap-2">

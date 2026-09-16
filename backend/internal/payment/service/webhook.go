@@ -3,13 +3,17 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
 	"github.com/novaspay/admin-api/internal/payment/provider/creem"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
 	"github.com/novaspay/admin-api/internal/pkg/timex"
+	"gorm.io/gorm"
 )
 
 type WebhookDTO struct {
@@ -76,8 +80,20 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 		eventType, _ = payload["type"].(string)
 	}
 	eventID, _ := payload["id"].(string)
+	if eventID == "" {
+		eventID = uuid.NewString()
+	} else {
+		var existing persistence.PaymentWebhookLog
+		err := s.db.WithContext(ctx).Where("event_id = ?", eventID).First(&existing).Error
+		if err == nil {
+			return nil
+		}
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+	}
 	status := "DELIVERED"
-	if eventType == "subscription.past_due" || eventType == "dispute.created" {
+	if eventType == "subscription.past_due" || eventType == "dispute.created" || eventType == "payment.failed" || eventType == "checkout.expired" {
 		status = "FAILED"
 	}
 	row := persistence.PaymentWebhookLog{
@@ -93,8 +109,15 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 		PayloadJSON: string(rawBody),
 	}
 	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
+		if isDuplicateKeyError(err) {
+			return nil
+		}
 		return err
 	}
+	return s.processCreemWebhookPayload(ctx, channelID, rawBody, payload, eventType)
+}
+
+func (s *Service) processCreemWebhookPayload(ctx context.Context, channelID string, rawBody []byte, payload map[string]interface{}, eventType string) error {
 	if err := s.UpsertTransactionFromWebhook(ctx, channelID, rawBody, payload, eventType); err != nil {
 		return err
 	}
@@ -106,6 +129,44 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 		return err
 	}
 	return s.UpsertChargebackFromWebhook(ctx, channelID, parsed)
+}
+
+func (s *Service) RedeliverWebhook(ctx context.Context, id string) error {
+	var row persistence.PaymentWebhookLog
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return apperr.NotFound
+	}
+	payload := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(row.PayloadJSON), &payload); err != nil {
+		return apperr.InvalidArgument
+	}
+	eventType := row.EventType
+	if eventType == "" {
+		eventType, _ = payload["eventType"].(string)
+	}
+	if eventType == "" {
+		eventType, _ = payload["event"].(string)
+	}
+	if eventType == "" {
+		eventType, _ = payload["type"].(string)
+	}
+	start := time.Now()
+	err := s.processCreemWebhookPayload(ctx, row.ChannelID, []byte(row.PayloadJSON), payload, eventType)
+	latency := int(time.Since(start).Milliseconds())
+	status := "DELIVERED"
+	if err != nil {
+		status = "FAILED"
+	}
+	updates := map[string]interface{}{
+		"attempts":    row.Attempts + 1,
+		"status":      status,
+		"latency_ms":  latency,
+		"http_status": 200,
+	}
+	if err := s.db.WithContext(ctx).Model(&row).Updates(updates).Error; err != nil {
+		return err
+	}
+	return err
 }
 
 func toWebhookDTO(r persistence.PaymentWebhookLog) WebhookDTO {
@@ -127,6 +188,14 @@ func toWebhookDTO(r persistence.PaymentWebhookLog) WebhookDTO {
 		Payload:      payload,
 		ResponseBody: r.ResponseBody,
 	}
+}
+
+func isDuplicateKeyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "duplicate key") || strings.Contains(msg, "unique constraint")
 }
 
 func ParsePage(c string, def int) int {

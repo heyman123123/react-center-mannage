@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -222,6 +223,109 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	return res.Error
 }
 
+type SyncFromCreemResult struct {
+	Created int `json:"created"`
+	Updated int `json:"updated"`
+	Total   int `json:"total"`
+}
+
+func (s *Service) SyncFromCreem(ctx context.Context, channelID string) (*SyncFromCreemResult, error) {
+	channelID = strings.TrimSpace(channelID)
+	if channelID == "" {
+		return nil, apperr.InvalidArgument
+	}
+	ch, err := s.payment.GetRawChannel(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+	if ch.ChannelKey != "creem" {
+		return nil, apperr.ProviderNotSupported
+	}
+	client := creem.NewClient(ch.Environment, ch.ApiKey)
+	tenantID := ch.TenantID
+	if tenantID == "" || tenantID == "ALL" {
+		tenantID = "group_hq"
+	}
+
+	result := &SyncFromCreemResult{}
+	page := 1
+	for {
+		items, err := client.ListProducts(ctx, page, 100)
+		if err != nil {
+			return nil, apperr.Wrap(50210, 502, "Creem 拉取商品失败: "+err.Error(), err)
+		}
+		if len(items) == 0 {
+			break
+		}
+		for _, prod := range items {
+			if strings.TrimSpace(prod.ID) == "" {
+				continue
+			}
+			productType, billingInterval := mapCreemBilling(prod.BillingType, prod.BillingPeriod)
+			status := "ACTIVE"
+			if prod.Status == "archived" {
+				status = "ARCHIVED"
+			}
+			now := time.Now().Unix()
+			var existing persistence.CatalogProduct
+			err := s.db.WithContext(ctx).
+				Where("channel_id = ? AND external_product_id = ?", channelID, prod.ID).
+				First(&existing).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				code := "CREEM-" + strings.ToUpper(prod.ID)
+				if len(code) > 128 {
+					code = code[:128]
+				}
+				row := persistence.CatalogProduct{
+					ID:                uuid.NewString(),
+					ChannelID:         channelID,
+					TenantID:          tenantID,
+					Code:              code,
+					Name:              prod.Name,
+					Description:       prod.Description,
+					ProductType:       productType,
+					Currency:          strings.ToUpper(defaultCurrency(prod.Currency)),
+					PriceCents:        prod.Price,
+					BillingInterval:   billingInterval,
+					Status:            status,
+					ExternalProductID: prod.ID,
+					SyncStatus:        "SYNCED",
+					LastSyncedAt:      &now,
+				}
+				if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
+					return nil, err
+				}
+				result.Created++
+			} else if err != nil {
+				return nil, err
+			} else {
+				updates := map[string]interface{}{
+					"name":            prod.Name,
+					"description":     prod.Description,
+					"price_cents":     prod.Price,
+					"currency":        strings.ToUpper(defaultCurrency(prod.Currency)),
+					"product_type":    productType,
+					"billing_interval": billingInterval,
+					"status":          status,
+					"sync_status":     "SYNCED",
+					"sync_error":      "",
+					"last_synced_at":  now,
+				}
+				if err := s.db.WithContext(ctx).Model(&existing).Updates(updates).Error; err != nil {
+					return nil, err
+				}
+				result.Updated++
+			}
+			result.Total++
+		}
+		if len(items) < 100 {
+			break
+		}
+		page++
+	}
+	return result, nil
+}
+
 func (s *Service) SyncFromProvider(ctx context.Context, id string) (*ProductDTO, error) {
 	var row persistence.CatalogProduct
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
@@ -328,6 +432,20 @@ func defaultBillingInterval(interval, productType string) string {
 		return "ONE_TIME"
 	}
 	return "MONTHLY"
+}
+
+func mapCreemBilling(billingType, billingPeriod string) (string, string) {
+	switch strings.ToLower(billingType) {
+	case "onetime", "one_time":
+		return "ONE_TIME", "ONE_TIME"
+	default:
+		switch strings.ToLower(billingPeriod) {
+		case "every-year", "yearly":
+			return "SUBSCRIPTION", "YEARLY"
+		default:
+			return "SUBSCRIPTION", "MONTHLY"
+		}
+	}
 }
 
 func mapBilling(productType, interval string) (string, string) {

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -65,11 +66,21 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		response.Fail(c, apperr.InvalidArgument)
 		return
 	}
-	u, access, refresh, err := h.svc.Login(c.Request.Context(), req.Email, req.Password)
-	if err != nil {
+	ip := c.ClientIP()
+	if err := h.svc.CheckLoginRateLimit(c.Request.Context(), ip); err != nil {
 		response.Fail(c, err)
 		return
 	}
+	u, access, refresh, err := h.svc.Login(c.Request.Context(), req.Email, req.Password)
+	if err != nil {
+		var appErr *apperr.Error
+		if errors.As(err, &appErr) && appErr.Code == apperr.InvalidCredential.Code {
+			h.svc.RecordLoginFailure(c.Request.Context(), ip)
+		}
+		response.Fail(c, err)
+		return
+	}
+	h.svc.ClearLoginFailures(c.Request.Context(), ip)
 	h.setCookies(c, access, refresh)
 	h.audit.Write(c.Request.Context(), auditsvc.Entry{
 		Action:         "AUTH_LOGIN",

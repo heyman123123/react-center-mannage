@@ -75,6 +75,17 @@ func (h *Handler) SyncProduct(c *gin.Context) {
 	response.OK(c, item)
 }
 
+func (h *Handler) SyncFromCreem(c *gin.Context) {
+	channelID := c.Query("channelId")
+	result, err := h.svc.SyncFromCreem(c.Request.Context(), channelID)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "PRODUCT_SYNC_FROM_CREEM", "PAYMENT_CHANNEL", channelID, "从 Creem 同步商品")
+	response.OK(c, result)
+}
+
 func (h *Handler) ListDiscounts(c *gin.Context) {
 	list, err := h.svc.ListDiscounts(c.Request.Context(), c.Query("tenantId"), c.Query("channelId"))
 	if err != nil {

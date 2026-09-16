@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import * as transactionsApi from "../api/modules/transactions";
+import * as dashboardApi from "../api/modules/dashboard";
+import type { DashboardKPI } from "../api/modules/dashboard";
 import { resolveCurrentRole } from "../lib/permissions";
 import { useViewLoading } from "./ui/useViewLoading";
 import { DashboardSkeleton } from "./ui/Skeletons";
@@ -46,6 +48,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const { t } = useTranslation(["dashboard", "common"]);
   const [transactionList, setTransactionList] = useState<TransactionRecord[]>([]);
+  const [kpi, setKpi] = useState<DashboardKPI | null>(null);
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -60,9 +63,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   }, [currentTenant.id]);
 
+  const loadKPI = useCallback(async () => {
+    try {
+      const data = await dashboardApi.getDashboardKPI(
+        currentTenant.id === "group_hq" ? undefined : currentTenant.id
+      );
+      setKpi(data);
+    } catch {
+      setKpi(null);
+    }
+  }, [currentTenant.id]);
+
   useEffect(() => {
     void loadTransactions();
-  }, [loadTransactions]);
+    void loadKPI();
+  }, [loadTransactions, loadKPI]);
 
   const [timeRange, setTimeRange] = useState<"3m" | "30d" | "7d">("3m");
   const [activeTableTab, setActiveTableTab] = useState<
@@ -151,17 +166,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   };
 
-  // KPI calculations based on filtered dataset
-  const totalRevenue = useMemo(() => {
-    const sum = tenantScopedTransactions.reduce(
-      (acc, curr) => acc + curr.orderAmount,
-      0
-    );
-    return sum;
-  }, [tenantScopedTransactions]);
-
   const doneCount = tenantScopedTransactions.filter((t) => t.status === "done").length;
-  const uniqueChannels = new Set(tenantScopedTransactions.map((t) => t.channel)).size;
+
+  const formatPercentChange = (value: number) => {
+    const sign = value > 0 ? "+" : "";
+    return `${sign}${value.toFixed(1)}%`;
+  };
+
+  const revenueChange = kpi?.revenueChangePercent ?? 0;
+  const totalRevenue = kpi?.totalRevenue ?? 0;
+  const orderCount = kpi?.orderCount ?? tenantScopedTransactions.length;
+  const refundRate = kpi?.refundRate ?? 0;
+  const activeChannelCount = kpi?.channelBreakdown?.length ?? 0;
 
   const channelBadges: Record<string, { label: string; bg: string }> = {
     stripe: { label: t("channels.stripe"), bg: "bg-indigo-50 text-indigo-700 border-indigo-200" },
@@ -189,17 +205,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
             <span>{t("kpi.totalRevenue")}</span>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
-              <TrendingUp className="w-3 h-3" />
-              <span>+12.5%</span>
-            </span>
+            {kpi && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
+                {revenueChange >= 0 ? (
+                  <TrendingUp className="w-3 h-3" />
+                ) : (
+                  <TrendingDown className="w-3 h-3" />
+                )}
+                <span>{formatPercentChange(revenueChange)}</span>
+              </span>
+            )}
           </div>
           <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
             {formatCurrency(totalRevenue, currentTenant.currency)}
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
-            <span>{t("kpi.trendingUpMonth")}</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-fg-secondary" />
+            <span>{t("kpi.changeVsPrior30d")}</span>
+            {revenueChange >= 0 ? (
+              <ArrowUpRight className="w-3.5 h-3.5 text-fg-secondary" />
+            ) : (
+              <TrendingDown className="w-3.5 h-3.5 text-fg-secondary" />
+            )}
           </div>
           <div className="text-[11px] text-fg-tertiary mt-0.5">
             {t("kpi.visitorsHint")}
@@ -212,18 +238,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
-            <span>{t("kpi.newCustomers")}</span>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
-              <TrendingDown className="w-3 h-3" />
-              <span>-20%</span>
-            </span>
+            <span>{t("kpi.orderCount")}</span>
           </div>
           <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
-            {tenantScopedTransactions.length.toLocaleString()}
+            {orderCount.toLocaleString()}
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
-            <span>{t("kpi.downPeriod")}</span>
-            <TrendingDown className="w-3.5 h-3.5 text-fg-secondary" />
+            <span>{t("kpi.changeVsPrior30d")}</span>
           </div>
           <div className="text-[11px] text-fg-tertiary mt-0.5">
             {t("kpi.acquisitionHint")}
@@ -236,18 +257,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
-            <span>{t("kpi.activeAccounts")}</span>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
-              <TrendingUp className="w-3 h-3" />
-              <span>+12.5%</span>
-            </span>
+            <span>{t("kpi.channelCount")}</span>
           </div>
           <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
-            {doneCount.toLocaleString()}
+            {activeChannelCount.toLocaleString()}
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
-            <span>{t("kpi.retentionStrong")}</span>
-            <TrendingUp className="w-3.5 h-3.5 text-fg-secondary" />
+            <span>{t("kpi.engagementHint")}</span>
           </div>
           <div className="text-[11px] text-fg-tertiary mt-0.5">
             {t("kpi.engagementHint")}
@@ -260,20 +276,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className="bg-surface border border-line/90 rounded-xl p-2 shadow-2xs hover:shadow-card transition-all"
         >
           <div className="flex items-center justify-between text-fg-secondary text-xs font-medium">
-            <span>{t("kpi.growthRate")}</span>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-hover text-fg border border-line">
-              <TrendingUp className="w-3 h-3" />
-              <span>+4.5%</span>
-            </span>
+            <span>{t("kpi.refundRate")}</span>
           </div>
           <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-fg font-mono">
-            {tenantScopedTransactions.length > 0
-              ? `${((doneCount / tenantScopedTransactions.length) * 100).toFixed(1)}%`
-              : "0%"}
+            {refundRate.toFixed(1)}%
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-fg font-medium">
-            <span>{t("kpi.steadyIncrease")}</span>
-            <TrendingUp className="w-3.5 h-3.5 text-fg-secondary" />
+            <span>{t("kpi.growthHint")}</span>
           </div>
           <div className="text-[11px] text-fg-tertiary mt-0.5">
             {t("kpi.growthHint")}

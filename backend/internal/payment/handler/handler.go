@@ -87,6 +87,21 @@ func (h *Handler) TestChannel(c *gin.Context) {
 	response.OK(c, item)
 }
 
+func (h *Handler) CheckoutTestChannel(c *gin.Context) {
+	var req paymentsvc.CheckoutTestInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	item, err := h.svc.CreateCheckoutTest(c.Request.Context(), c.Param("id"), req)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "PAYMENT_CHANNEL_CHECKOUT_TEST", "PAYMENT_CHANNEL", c.Param("id"), "Sandbox 测试下单")
+	response.OK(c, item)
+}
+
 func (h *Handler) ListWebhooks(c *gin.Context) {
 	page := paymentsvc.ParsePage(c.Query("page"), 1)
 	pageSize := paymentsvc.ParsePage(c.Query("pageSize"), 20)
@@ -96,6 +111,25 @@ func (h *Handler) ListWebhooks(c *gin.Context) {
 		return
 	}
 	response.OKPage(c, list, total, page, pageSize)
+}
+
+func (h *Handler) RedeliverWebhook(c *gin.Context) {
+	id := c.Param("id")
+	if err := h.svc.RedeliverWebhook(c.Request.Context(), id); err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "PAYMENT_WEBHOOK_REDELIVER", "PAYMENT_WEBHOOK", id, "重新投递支付 Webhook")
+	response.OK(c, gin.H{"ok": true})
+}
+
+func (h *Handler) GetDashboardKPI(c *gin.Context) {
+	item, err := h.svc.GetDashboardKPI(c.Request.Context(), c.Query("tenantId"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
 }
 
 func (h *Handler) ListTransactions(c *gin.Context) {

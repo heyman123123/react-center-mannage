@@ -110,12 +110,47 @@ func (s *Service) ProcessRefund(ctx context.Context, id string) (*RefundDTO, err
 	if err := s.db.WithContext(ctx).Where("display_id = ? OR id = ?", id, id).First(&row).Error; err != nil {
 		return nil, apperr.NotFound
 	}
+	if row.ChannelID != "" {
+		ch, err := s.GetRawChannel(ctx, row.ChannelID)
+		if err != nil {
+			return nil, err
+		}
+		if ch.ChannelKey == "creem" && strings.TrimSpace(ch.ApiKey) != "" {
+			extID := ""
+			if row.TransactionID != "" {
+				var tx persistence.PaymentTransaction
+				if err := s.db.WithContext(ctx).First(&tx, "id = ?", row.TransactionID).Error; err == nil {
+					extID = firstNonEmpty(tx.ChannelTradeNo, tx.OrderNumber)
+				}
+			}
+			if extID == "" {
+				return nil, apperr.New(42211, 422, "无法确定 Creem 交易 ID")
+			}
+			client := newCreemClient(ch.Environment, ch.ApiKey)
+			if _, err := client.CreateRefund(ctx, extID, row.RefundAmountCents); err != nil {
+				return nil, apperr.Wrap(50211, 502, "Creem 退款失败", err)
+			}
+		}
+	}
 	if err := s.db.WithContext(ctx).Model(&row).Update("status", "SUCCESS").Error; err != nil {
 		return nil, err
 	}
 	_ = s.db.WithContext(ctx).First(&row, "id = ?", row.ID)
 	dto := toRefundDTO(row)
 	return &dto, nil
+}
+
+var newCreemClient = func(environment, apiKey string) *creem.Client {
+	return creem.NewClient(environment, apiKey)
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
 }
 
 func (s *Service) UpsertRefundFromWebhook(ctx context.Context, channelID string, parsed *creem.ParsedTransaction, rawBody []byte) error {

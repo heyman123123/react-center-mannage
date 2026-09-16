@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/novaspay/admin-api/internal/middleware"
 	"github.com/novaspay/admin-api/internal/payment/handler"
+	"github.com/novaspay/admin-api/internal/payment/jobs"
 	paymentsvc "github.com/novaspay/admin-api/internal/payment/service"
 	"github.com/novaspay/admin-api/internal/pkg/routing"
 	"go.uber.org/fx"
@@ -21,12 +22,16 @@ func NewPaymentRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFun
 			ch.PUT("/:id", mw.RequireMenu("payment_channels"), h.UpdateChannel)
 			ch.DELETE("/:id", mw.RequireMenu("payment_channels"), h.DeleteChannel)
 			ch.POST("/:id/test", mw.RequireMenu("payment_channels"), h.TestChannel)
+			ch.POST("/:id/checkout-test", mw.RequireMenu("payment_channels"), h.CheckoutTestChannel)
 		}
 
 		wh := r.Group("/payment-webhooks", mw.Auth)
 		{
 			wh.GET("", mw.RequireMenu("payment_webhooks"), h.ListWebhooks)
+			wh.POST("/:id/redeliver", mw.RequireMenu("payment_webhooks"), h.RedeliverWebhook)
 		}
+
+		r.GET("/dashboard/kpi", mw.Auth, mw.RequireMenu("dashboard"), h.GetDashboardKPI)
 
 		tx := r.Group("/transactions", mw.Auth)
 		{
@@ -67,4 +72,5 @@ var Module = fx.Options(
 			fx.ResultTags(`group:"routes"`),
 		),
 	),
+	fx.Invoke(jobs.RegisterChannelHealthJob),
 )

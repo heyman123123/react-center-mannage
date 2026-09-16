@@ -48,6 +48,25 @@ export async function testPaymentChannel(id: string): Promise<PaymentChannelConf
   return http.post<PaymentChannelConfig>(`/payment-channels/${id}/test`);
 }
 
+export type CheckoutTestInput = {
+  productId: string;
+  customerEmail?: string;
+  successUrl?: string;
+};
+
+export type CheckoutTestResult = {
+  checkoutUrl: string;
+  sessionId: string;
+  expiresAt: string;
+};
+
+export async function createCheckoutTest(
+  id: string,
+  body: CheckoutTestInput
+): Promise<CheckoutTestResult> {
+  return http.post<CheckoutTestResult>(`/payment-channels/${id}/checkout-test`, body);
+}
+
 /** @deprecated 使用 updatePaymentChannel */
 export async function updateChannel(payload: PaymentChannelConfig): Promise<{ ok: boolean }> {
   await updatePaymentChannel(payload.id, {

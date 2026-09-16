@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Copy,
   Check,
+  RefreshCw,
   Zap,
   Globe,
   Coins,
@@ -49,6 +50,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [productList, setProductList] = useState<ProductConfig[]>([]);
   const [paymentChannels, setPaymentChannels] = useState<PaymentChannelConfig[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [syncChannelId, setSyncChannelId] = useState("");
+  const [isSyncingFromCreem, setIsSyncingFromCreem] = useState(false);
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
@@ -84,6 +87,35 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     void loadProducts();
     void loadChannels();
   }, [loadProducts, loadChannels]);
+
+  useEffect(() => {
+    if (!syncChannelId && creemChannels.length > 0) {
+      setSyncChannelId(creemChannels[0].id);
+    }
+  }, [creemChannels, syncChannelId]);
+
+  const handleSyncFromCreem = async () => {
+    if (!syncChannelId) {
+      showToast(t("products.selectChannelToSync"));
+      return;
+    }
+    setIsSyncingFromCreem(true);
+    try {
+      const result = await productsApi.syncFromCreem(syncChannelId);
+      await loadProducts();
+      showToast(
+        t("products.toast.syncFromCreemSuccess", {
+          total: result.total,
+          created: result.created,
+          updated: result.updated,
+        })
+      );
+    } catch {
+      showToast(t("products.toast.syncFromCreemFailed"));
+    } finally {
+      setIsSyncingFromCreem(false);
+    }
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
@@ -285,7 +317,28 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <p className="text-xs text-fg-secondary mt-1 max-w-2xl">{t("products.subtitle")}</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {creemChannels.length > 0 && (
+            <>
+              {creemChannels.length > 1 && (
+                <ShadcnSelect
+                  value={syncChannelId}
+                  onValueChange={setSyncChannelId}
+                  options={channelOptions}
+                  placeholder={t("products.selectChannelToSync")}
+                  className="w-[200px]"
+                />
+              )}
+              <button
+                onClick={() => void handleSyncFromCreem()}
+                disabled={isSyncingFromCreem || !syncChannelId}
+                className="px-3.5 py-2 border border-line hover:bg-subtle text-fg rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingFromCreem ? "animate-spin" : ""}`} />
+                <span>{isSyncingFromCreem ? t("products.syncingFromCreem") : t("products.syncFromCreem")}</span>
+              </button>
+            </>
+          )}
           <button
             onClick={handleOpenAdd}
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"

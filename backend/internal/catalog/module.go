@@ -15,6 +15,7 @@ func NewCatalogRoute(h *cataloghandler.Handler, mw *middleware.Bundle) routing.R
 		{
 			p.GET("", mw.RequireMenu("products"), h.ListProducts)
 			p.POST("", mw.RequireMenu("products"), h.CreateProduct)
+			p.POST("/sync-from-creem", mw.RequireMenu("products"), h.SyncFromCreem)
 			p.PUT("/:id", mw.RequireMenu("products"), h.UpdateProduct)
 			p.DELETE("/:id", mw.RequireMenu("products"), h.DeleteProduct)
 			p.POST("/:id/sync", mw.RequireMenu("products"), h.SyncProduct)

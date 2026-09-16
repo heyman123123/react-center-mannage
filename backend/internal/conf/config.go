@@ -21,6 +21,7 @@ type Config struct {
 	RefreshTTL      time.Duration
 	JWTSecret       string
 	DefaultAppEnv   string
+	DataKey         string
 }
 
 func Load() *Config {
@@ -45,6 +46,7 @@ func Load() *Config {
 		RefreshTTL:    refreshTTL,
 		JWTSecret:     getenv("NOVAS_JWT_SECRET", "dev-change-me-novaspay-admin-secret"),
 		DefaultAppEnv: getenv("NOVAS_DEFAULT_APP_ENV", "live"),
+		DataKey:       getenv("NOVAS_DATA_KEY", ""),
 	}
 }
 

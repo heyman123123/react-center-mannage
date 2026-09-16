@@ -38,3 +38,11 @@ func (r *Redis) Get(ctx context.Context, key string) (string, error) {
 func (r *Redis) Del(ctx context.Context, keys ...string) error {
 	return r.Client.Del(ctx, keys...).Err()
 }
+
+func (r *Redis) Incr(ctx context.Context, key string) (int64, error) {
+	return r.Client.Incr(ctx, key).Result()
+}
+
+func (r *Redis) Expire(ctx context.Context, key string, ttl time.Duration) error {
+	return r.Client.Expire(ctx, key, ttl).Err()
+}

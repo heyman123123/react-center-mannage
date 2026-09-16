@@ -409,11 +409,3 @@ func (h *Handler) RevenueReport(c *gin.Context) {
 	response.OK(c, item)
 }
 
-// Webhook redeliver
-func (h *Handler) RedeliverWebhook(c *gin.Context) {
-	if err := h.svc.RedeliverPaymentWebhook(c.Request.Context(), c.Param("id")); err != nil {
-		response.Fail(c, err)
-		return
-	}
-	response.OK(c, gin.H{"ok": true})
-}

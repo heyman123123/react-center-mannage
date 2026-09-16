@@ -102,7 +102,6 @@ func NewBizRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFunc {
 			rp.GET("/revenue", mw.RequireMenu("financial_reports"), h.RevenueReport)
 		}
 
-		r.POST("/payment-webhooks/:id/redeliver", mw.Auth, mw.RequireMenu("payment_webhooks"), h.RedeliverWebhook)
 	}
 }
 

@@ -1,6 +1,12 @@
 {
   "kpi": {
     "totalRevenue": "总收入",
+    "orderCount": "订单数",
+    "refundRate": "退款率",
+    "channelCount": "活跃渠道",
+    "changeVsPrior30d": "较上 30 天",
+    "noChange": "持平",
+    "loadFailed": "KPI 数据加载失败",
     "trendingUpMonth": "本月呈上升趋势",
     "visitorsHint": "近 6 个月访客与交易概况",
     "newCustomers": "新增客户",
