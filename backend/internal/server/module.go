@@ -24,9 +24,9 @@ func NewGinEngine(mw *middleware.Bundle, cfg *conf.Config) *gin.Engine {
 	gin.DefaultErrorWriter = os.Stderr
 	r := gin.New()
 	r.Use(
+		gin.Logger(),
 		mw.Recovery(),
 		mw.RequestID(),
-		mw.AccessLog(),
 		mw.CORS(),
 		mw.Timeout(15*time.Second),
 	)
