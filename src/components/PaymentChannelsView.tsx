@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import * as channelsApi from "../api/modules/channels";
+import * as iamApi from "../api/modules/iam";
 import { useViewLoading } from "./ui/useViewLoading";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -31,13 +32,18 @@ import {
 import { PaymentChannelConfig, PaymentChannel, TransactionRecord, PaymentApp, DictionaryEntry, Tenant, SystemUser } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
+import { formatUnix } from "../lib/time";
 
 interface PaymentChannelsViewProps {
   currentTenant?: Tenant;
   currentUser?: SystemUser;
+  /** 可选：壳层已加载的字典；页面仍会按 namespace=channel 主动拉取兜底 */
+  dictionary?: DictionaryEntry[];
 }
 
-export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
+export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
+  dictionary: dictionaryProp,
+}) => {
   const { t } = useTranslation(["channels", "payments", "common"]);
   const testScenarios = useMemo(
     () =>
@@ -59,30 +65,10 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
   );
   const [channelList, setChannelList] = useState<PaymentChannelConfig[]>([]);
   const [apps] = useState<PaymentApp[]>([]);
-  const [dictionary] = useState<DictionaryEntry[]>([]);
+  const [dictionary, setDictionary] = useState<DictionaryEntry[]>(dictionaryProp || []);
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { currentPage, setCurrentPage, reset: _pcr, pageSize } = usePagination(10);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 4000);
-  };
-
-  const loadChannels = useCallback(async () => {
-    try {
-      const list = await channelsApi.listPaymentChannels(
-        modeFilter === "all" ? undefined : { mode: modeFilter }
-      );
-      setChannelList(list);
-    } catch {
-      showToast(t("payment.toast.loadFailed"));
-    }
-  }, [modeFilter, t]);
-
-  useEffect(() => {
-    void loadChannels();
-  }, [loadChannels]);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ id: string; msg: string; success: boolean } | null>(null);
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
@@ -99,9 +85,6 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
   const [formMode, setFormMode] = useState("live");
   const [formCurrencies, setFormCurrencies] = useState("USD,EUR,GBP");
   const [formFeeRate, setFormFeeRate] = useState("");
-
-  // 字典中"支付渠道"分类的候选渠道词条
-  const dictChannelEntries = dictionary.filter((d) => d.category === "PAYMENT_CHANNEL");
 
   // 应用详情 SideSheet（需求4：点击应用名 chips 查看其绑定渠道）
   const [selectedApp, setSelectedApp] = useState<PaymentApp | null>(null);
@@ -123,6 +106,68 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
     success: boolean;
     message: string;
   } | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const loadChannels = useCallback(async () => {
+    try {
+      const list = await channelsApi.listPaymentChannels(
+        modeFilter === "all" ? undefined : { mode: modeFilter }
+      );
+      setChannelList(list);
+    } catch {
+      showToast(t("payment.toast.loadFailed"));
+    }
+  }, [modeFilter, t]);
+
+  const loadChannelDictionary = useCallback(async () => {
+    try {
+      const page = await iamApi.listDictionaryEntries({
+        namespace: "channel",
+        page: 1,
+        pageSize: 100,
+      });
+      const mapped: DictionaryEntry[] = (page.list || []).map((d) => ({
+        id: d.id,
+        key: d.key || d.entryKey,
+        category: (d.category?.toUpperCase() as DictionaryEntry["category"]) || "PAYMENT_CHANNEL",
+        categoryId: d.categoryId || undefined,
+        description: d.description || d.label || "",
+        referencedTemplatesCount: 0,
+        translations: {
+          "zh-CN": d.translations?.["zh-CN"] || d.label || "",
+          "en-US": d.translations?.["en-US"] || "",
+        } as DictionaryEntry["translations"],
+        updatedAt: formatUnix(d.createdAt),
+      }));
+      if (mapped.length > 0) {
+        setDictionary(mapped);
+        return;
+      }
+      // 兜底：壳层字典里筛 PAYMENT_CHANNEL
+      if (dictionaryProp?.length) {
+        setDictionary(dictionaryProp.filter((d) => d.category === "PAYMENT_CHANNEL"));
+      }
+    } catch {
+      if (dictionaryProp?.length) {
+        setDictionary(dictionaryProp.filter((d) => d.category === "PAYMENT_CHANNEL"));
+      }
+    }
+  }, [dictionaryProp]);
+
+  useEffect(() => {
+    void loadChannels();
+  }, [loadChannels]);
+
+  useEffect(() => {
+    void loadChannelDictionary();
+  }, [loadChannelDictionary]);
+
+  // 字典中"支付渠道"分类的候选渠道词条
+  const dictChannelEntries = dictionary.filter((d) => d.category === "PAYMENT_CHANNEL");
 
   const toggleShowSecret = (id: string) => {
     setShowSecretMap((prev) => ({ ...prev, [id]: !prev[id] }));

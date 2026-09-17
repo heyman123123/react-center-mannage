@@ -497,6 +497,7 @@ export default function App() {
             <PaymentChannelsView
               currentTenant={currentTenant}
               currentUser={currentUser}
+              dictionary={dictionary}
             />
           )}
 

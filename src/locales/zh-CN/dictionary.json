@@ -154,7 +154,10 @@
     "PORTAL": "商户管理后台",
     "GATEWAY_ERRORS": "网关与错误码",
     "CURRENCY": "结算货币",
-    "PAYMENT_CHANNEL": "支付渠道"
+    "PAYMENT_CHANNEL": "支付渠道",
+    "i18n": "前端/产品字典",
+    "backend": "后端字典",
+    "audit_action": "审计操作"
   },
   "references": {
     "checkout": { "label": "海外收银台", "scope": "收银台按钮/提示文案" },
