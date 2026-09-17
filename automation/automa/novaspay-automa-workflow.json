@@ -1,0 +1,1523 @@
+{
+  "id": "novaspay-e2e-channel-email",
+  "name": "NovasPay - 渠道与邮件配置自动化测试",
+  "icon": "riFlashlightLine",
+  "folderId": null,
+  "drawflow": {
+    "edges": [
+      {
+        "id": "vueflow__edge-n1n1-output-1-n2n2-input-1",
+        "source": "n1",
+        "sourceHandle": "n1-output-1",
+        "target": "n2",
+        "targetHandle": "n2-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n2n2-output-1-n3n3-input-1",
+        "source": "n2",
+        "sourceHandle": "n2-output-1",
+        "target": "n3",
+        "targetHandle": "n3-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n3n3-output-1-n4n4-input-1",
+        "source": "n3",
+        "sourceHandle": "n3-output-1",
+        "target": "n4",
+        "targetHandle": "n4-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n4n4-output-1-n5n5-input-1",
+        "source": "n4",
+        "sourceHandle": "n4-output-1",
+        "target": "n5",
+        "targetHandle": "n5-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n5n5-output-1-n6n6-input-1",
+        "source": "n5",
+        "sourceHandle": "n5-output-1",
+        "target": "n6",
+        "targetHandle": "n6-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n6n6-output-1-n7n7-input-1",
+        "source": "n6",
+        "sourceHandle": "n6-output-1",
+        "target": "n7",
+        "targetHandle": "n7-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n7n7-output-1-n8n8-input-1",
+        "source": "n7",
+        "sourceHandle": "n7-output-1",
+        "target": "n8",
+        "targetHandle": "n8-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n8n8-output-1-n9n9-input-1",
+        "source": "n8",
+        "sourceHandle": "n8-output-1",
+        "target": "n9",
+        "targetHandle": "n9-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n9n9-output-1-n10n10-input-1",
+        "source": "n9",
+        "sourceHandle": "n9-output-1",
+        "target": "n10",
+        "targetHandle": "n10-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n10n10-output-1-n11n11-input-1",
+        "source": "n10",
+        "sourceHandle": "n10-output-1",
+        "target": "n11",
+        "targetHandle": "n11-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n11n11-output-1-n12n12-input-1",
+        "source": "n11",
+        "sourceHandle": "n11-output-1",
+        "target": "n12",
+        "targetHandle": "n12-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n12n12-output-1-n13n13-input-1",
+        "source": "n12",
+        "sourceHandle": "n12-output-1",
+        "target": "n13",
+        "targetHandle": "n13-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n13n13-output-1-n14n14-input-1",
+        "source": "n13",
+        "sourceHandle": "n13-output-1",
+        "target": "n14",
+        "targetHandle": "n14-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n14n14-output-1-n15n15-input-1",
+        "source": "n14",
+        "sourceHandle": "n14-output-1",
+        "target": "n15",
+        "targetHandle": "n15-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n15n15-output-1-n16n16-input-1",
+        "source": "n15",
+        "sourceHandle": "n15-output-1",
+        "target": "n16",
+        "targetHandle": "n16-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n16n16-output-1-n17n17-input-1",
+        "source": "n16",
+        "sourceHandle": "n16-output-1",
+        "target": "n17",
+        "targetHandle": "n17-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n17n17-output-1-n18n18-input-1",
+        "source": "n17",
+        "sourceHandle": "n17-output-1",
+        "target": "n18",
+        "targetHandle": "n18-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n18n18-output-1-n19n19-input-1",
+        "source": "n18",
+        "sourceHandle": "n18-output-1",
+        "target": "n19",
+        "targetHandle": "n19-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n19n19-output-1-n20n20-input-1",
+        "source": "n19",
+        "sourceHandle": "n19-output-1",
+        "target": "n20",
+        "targetHandle": "n20-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n20n20-output-1-n21n21-input-1",
+        "source": "n20",
+        "sourceHandle": "n20-output-1",
+        "target": "n21",
+        "targetHandle": "n21-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n21n21-output-1-n22n22-input-1",
+        "source": "n21",
+        "sourceHandle": "n21-output-1",
+        "target": "n22",
+        "targetHandle": "n22-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n22n22-output-1-n23n23-input-1",
+        "source": "n22",
+        "sourceHandle": "n22-output-1",
+        "target": "n23",
+        "targetHandle": "n23-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n23n23-output-1-n24n24-input-1",
+        "source": "n23",
+        "sourceHandle": "n23-output-1",
+        "target": "n24",
+        "targetHandle": "n24-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n24n24-output-1-n25n25-input-1",
+        "source": "n24",
+        "sourceHandle": "n24-output-1",
+        "target": "n25",
+        "targetHandle": "n25-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n25n25-output-1-n26n26-input-1",
+        "source": "n25",
+        "sourceHandle": "n25-output-1",
+        "target": "n26",
+        "targetHandle": "n26-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n26n26-output-1-n27n27-input-1",
+        "source": "n26",
+        "sourceHandle": "n26-output-1",
+        "target": "n27",
+        "targetHandle": "n27-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n27n27-output-1-n28n28-input-1",
+        "source": "n27",
+        "sourceHandle": "n27-output-1",
+        "target": "n28",
+        "targetHandle": "n28-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n28n28-output-1-n29n29-input-1",
+        "source": "n28",
+        "sourceHandle": "n28-output-1",
+        "target": "n29",
+        "targetHandle": "n29-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n29n29-output-1-n30n30-input-1",
+        "source": "n29",
+        "sourceHandle": "n29-output-1",
+        "target": "n30",
+        "targetHandle": "n30-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n30n30-output-1-n31n31-input-1",
+        "source": "n30",
+        "sourceHandle": "n30-output-1",
+        "target": "n31",
+        "targetHandle": "n31-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n31n31-output-1-n32n32-input-1",
+        "source": "n31",
+        "sourceHandle": "n31-output-1",
+        "target": "n32",
+        "targetHandle": "n32-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n32n32-output-1-n33n33-input-1",
+        "source": "n32",
+        "sourceHandle": "n32-output-1",
+        "target": "n33",
+        "targetHandle": "n33-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n33n33-output-1-n34n34-input-1",
+        "source": "n33",
+        "sourceHandle": "n33-output-1",
+        "target": "n34",
+        "targetHandle": "n34-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n34n34-output-1-n35n35-input-1",
+        "source": "n34",
+        "sourceHandle": "n34-output-1",
+        "target": "n35",
+        "targetHandle": "n35-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n35n35-output-1-n36n36-input-1",
+        "source": "n35",
+        "sourceHandle": "n35-output-1",
+        "target": "n36",
+        "targetHandle": "n36-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n36n36-output-1-n37n37-input-1",
+        "source": "n36",
+        "sourceHandle": "n36-output-1",
+        "target": "n37",
+        "targetHandle": "n37-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n37n37-output-1-n38n38-input-1",
+        "source": "n37",
+        "sourceHandle": "n37-output-1",
+        "target": "n38",
+        "targetHandle": "n38-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n38n38-output-1-n39n39-input-1",
+        "source": "n38",
+        "sourceHandle": "n38-output-1",
+        "target": "n39",
+        "targetHandle": "n39-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n39n39-output-1-n40n40-input-1",
+        "source": "n39",
+        "sourceHandle": "n39-output-1",
+        "target": "n40",
+        "targetHandle": "n40-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n40n40-output-1-n41n41-input-1",
+        "source": "n40",
+        "sourceHandle": "n40-output-1",
+        "target": "n41",
+        "targetHandle": "n41-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n41n41-output-1-n42n42-input-1",
+        "source": "n41",
+        "sourceHandle": "n41-output-1",
+        "target": "n42",
+        "targetHandle": "n42-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n42n42-output-1-n43n43-input-1",
+        "source": "n42",
+        "sourceHandle": "n42-output-1",
+        "target": "n43",
+        "targetHandle": "n43-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n43n43-output-1-n44n44-input-1",
+        "source": "n43",
+        "sourceHandle": "n43-output-1",
+        "target": "n44",
+        "targetHandle": "n44-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n44n44-output-1-n45n45-input-1",
+        "source": "n44",
+        "sourceHandle": "n44-output-1",
+        "target": "n45",
+        "targetHandle": "n45-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n14n14-output-2-nF1nF1-input-1",
+        "source": "n14",
+        "sourceHandle": "n14-output-2",
+        "target": "nF1",
+        "targetHandle": "nF1-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n17n17-output-2-nF1nF1-input-1",
+        "source": "n17",
+        "sourceHandle": "n17-output-2",
+        "target": "nF1",
+        "targetHandle": "nF1-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n28n28-output-2-nF1nF1-input-1",
+        "source": "n28",
+        "sourceHandle": "n28-output-2",
+        "target": "nF1",
+        "targetHandle": "nF1-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n34n34-output-2-nF1nF1-input-1",
+        "source": "n34",
+        "sourceHandle": "n34-output-2",
+        "target": "nF1",
+        "targetHandle": "nF1-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      },
+      {
+        "id": "vueflow__edge-n43n43-output-2-nF1nF1-input-1",
+        "source": "n43",
+        "sourceHandle": "n43-output-2",
+        "target": "nF1",
+        "targetHandle": "nF1-input-1",
+        "type": "custom",
+        "markerEnd": "arrowclosed",
+        "data": {}
+      }
+    ],
+    "zoom": 0.8,
+    "nodes": [
+      {
+        "id": "n1",
+        "label": "trigger",
+        "type": "BlockBasic",
+        "position": {
+          "x": 360,
+          "y": 300
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "手动触发",
+          "type": "manual",
+          "interval": 60,
+          "delay": 5,
+          "date": "",
+          "time": "00:00",
+          "url": "",
+          "shortcut": "",
+          "activeInInput": false,
+          "isUrlRegex": false,
+          "days": [],
+          "contextMenuName": "",
+          "contextTypes": [],
+          "parameters": [],
+          "preferParamsInTab": false,
+          "observeElement": {
+            "selector": "",
+            "baseSelector": "",
+            "matchPattern": "",
+            "targetOptions": {
+              "subtree": false,
+              "childList": true,
+              "attributes": false,
+              "attributeFilter": [],
+              "characterData": false
+            },
+            "baseElOptions": {
+              "subtree": false,
+              "childList": true,
+              "attributes": false,
+              "attributeFilter": [],
+              "characterData": false
+            }
+          }
+        }
+      },
+      {
+        "id": "n2",
+        "label": "new-tab",
+        "type": "BlockBasic",
+        "position": {
+          "x": 620,
+          "y": 300
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "打开管理端登录页",
+          "url": "{{globalData.baseUrl}}/#/login",
+          "userAgent": "",
+          "active": true,
+          "tabZoom": 1,
+          "inGroup": false,
+          "waitTabLoaded": true,
+          "updatePrevTab": false,
+          "customUserAgent": false
+        }
+      },
+      {
+        "id": "n3",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 880,
+          "y": 300
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待应用初始化",
+          "time": 1500
+        }
+      },
+      {
+        "id": "n4",
+        "label": "javascript-code",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1140,
+          "y": 300
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "强制登出，确保测试从干净状态开始（幂等前置步骤）",
+          "timeout": 20000,
+          "context": "website",
+          "code": "(async () => {\n  const cfg = automaRefData('globalData') || {};\n  const base = (cfg.baseUrl || '').replace(/\\/$/, '');\n  try {\n    await fetch(base + '/api/v1/auth/logout', { method: 'POST', credentials: 'include' });\n  } catch (e) {\n    console.warn('[NovasPay E2E] logout skipped:', e.message);\n  } finally {\n    automaNextBlock();\n  }\n})();\n",
+          "preloadScripts": [],
+          "everyNewTab": false,
+          "runBeforeLoad": false
+        }
+      },
+      {
+        "id": "n5",
+        "label": "new-tab",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1400,
+          "y": 300
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "重新加载到登录页",
+          "url": "{{globalData.baseUrl}}/#/login",
+          "userAgent": "",
+          "active": true,
+          "tabZoom": 1,
+          "inGroup": false,
+          "waitTabLoaded": true,
+          "updatePrevTab": true,
+          "customUserAgent": false
+        }
+      },
+      {
+        "id": "n6",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 1660,
+          "y": 300
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待登录表单渲染",
+          "time": 1200
+        }
+      },
+      {
+        "id": "n7",
+        "label": "forms",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1920,
+          "y": 300
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "填写管理员邮箱",
+          "findBy": "cssSelector",
+          "waitForSelector": true,
+          "waitSelectorTimeout": 8000,
+          "selector": "#email",
+          "markEl": false,
+          "multiple": false,
+          "selected": true,
+          "clearValue": true,
+          "getValue": false,
+          "saveData": false,
+          "dataColumn": "",
+          "selectOptionBy": "value",
+          "optionPosition": "1",
+          "assignVariable": false,
+          "variableName": "",
+          "type": "text-field",
+          "value": "{{globalData.adminEmail}}",
+          "delay": 0,
+          "events": []
+        }
+      },
+      {
+        "id": "n8",
+        "label": "forms",
+        "type": "BlockBasic",
+        "position": {
+          "x": 100,
+          "y": 520
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "填写管理员密码",
+          "findBy": "cssSelector",
+          "waitForSelector": false,
+          "waitSelectorTimeout": 5000,
+          "selector": "#password",
+          "markEl": false,
+          "multiple": false,
+          "selected": true,
+          "clearValue": true,
+          "getValue": false,
+          "saveData": false,
+          "dataColumn": "",
+          "selectOptionBy": "value",
+          "optionPosition": "1",
+          "assignVariable": false,
+          "variableName": "",
+          "type": "text-field",
+          "value": "{{globalData.adminPassword}}",
+          "delay": 0,
+          "events": []
+        }
+      },
+      {
+        "id": "n9",
+        "label": "event-click",
+        "type": "BlockBasic",
+        "position": {
+          "x": 360,
+          "y": 520
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "点击登录按钮",
+          "findBy": "cssSelector",
+          "waitForSelector": false,
+          "waitSelectorTimeout": 5000,
+          "selector": "button[type=\"submit\"]",
+          "markEl": false,
+          "multiple": false
+        }
+      },
+      {
+        "id": "n10",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 620,
+          "y": 520
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待登录完成并加载管理端主界面",
+          "time": 2500
+        }
+      },
+      {
+        "id": "n11",
+        "label": "javascript-code",
+        "type": "BlockBasic",
+        "position": {
+          "x": 880,
+          "y": 520
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "通过已登录浏览器会话调用后端 API 创建 Creem 沙箱支付渠道",
+          "timeout": 20000,
+          "context": "website",
+          "code": "(async () => {\n  const cfg = automaRefData('globalData') || {};\n  const base = (cfg.baseUrl || '').replace(/\\/$/, '');\n  const summary = { step: 'create_creem_channel' };\n  try {\n    const res = await fetch(base + '/api/v1/payment-channels', {\n      method: 'POST',\n      credentials: 'include',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        channelKey: 'creem',\n        name: cfg.creemAccountName || 'Automa 自动化测试账户',\n        accountName: cfg.creemAccountName || '',\n        description: 'Automa RPA 自动化测试创建，可安全删除',\n        mode: cfg.creemMode || 'sandbox',\n        apiSecretKey: cfg.creemApiSecret,\n        webhookSecret: cfg.creemWebhookSecret || '',\n        supportedCurrencies: ['USD'],\n        feeRateText: 'Automa Test',\n        routingPriority: 99,\n      }),\n    });\n    const json = await res.json();\n    summary.httpStatus = res.status;\n    summary.response = json;\n    if (res.ok && json && json.code === 0 && json.data && json.data.id) {\n      automaSetVariable('creemChannelId', json.data.id);\n      automaSetVariable('creemChannelOk', true);\n    } else {\n      automaSetVariable('creemChannelOk', false);\n    }\n  } catch (e) {\n    summary.error = e.message;\n    automaSetVariable('creemChannelOk', false);\n  }\n  automaSetVariable('creemCreateSummary', JSON.stringify(summary, null, 2));\n  automaNextBlock();\n})();\n",
+          "preloadScripts": [],
+          "everyNewTab": false,
+          "runBeforeLoad": false
+        }
+      },
+      {
+        "id": "n12",
+        "label": "new-tab",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1140,
+          "y": 520
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "跳转到『支付渠道』页面",
+          "url": "{{globalData.baseUrl}}/#/payment_channels",
+          "userAgent": "",
+          "active": true,
+          "tabZoom": 1,
+          "inGroup": false,
+          "waitTabLoaded": true,
+          "updatePrevTab": true,
+          "customUserAgent": false
+        }
+      },
+      {
+        "id": "n13",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 1400,
+          "y": 520
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待支付渠道列表加载",
+          "time": 1500
+        }
+      },
+      {
+        "id": "n14",
+        "label": "element-exists",
+        "type": "BlockElementExists",
+        "position": {
+          "x": 1660,
+          "y": 520
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "校验 Creem 渠道卡片已显示",
+          "findBy": "cssSelector",
+          "selector": ".shadow-card:has(h3:contains(\"{{globalData.creemAccountName}}\"))",
+          "tryCount": 6,
+          "timeout": 1000,
+          "markEl": false,
+          "throwError": false
+        }
+      },
+      {
+        "id": "n15",
+        "label": "event-click",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1920,
+          "y": 520
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "点击该渠道『测试连通性』",
+          "findBy": "cssSelector",
+          "waitForSelector": true,
+          "waitSelectorTimeout": 8000,
+          "selector": ".shadow-card:has(h3:contains(\"{{globalData.creemAccountName}}\")) button:contains(\"测试连通性\")",
+          "markEl": false,
+          "multiple": false
+        }
+      },
+      {
+        "id": "n16",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 100,
+          "y": 740
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待连通性测试完成",
+          "time": 1800
+        }
+      },
+      {
+        "id": "n17",
+        "label": "element-exists",
+        "type": "BlockElementExists",
+        "position": {
+          "x": 360,
+          "y": 740
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "校验连通性测试成功提示",
+          "findBy": "cssSelector",
+          "selector": "div:contains(\"API 握手成功\")",
+          "tryCount": 6,
+          "timeout": 1000,
+          "markEl": false,
+          "throwError": false
+        }
+      },
+      {
+        "id": "n18",
+        "label": "new-tab",
+        "type": "BlockBasic",
+        "position": {
+          "x": 620,
+          "y": 740
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "跳转到『邮件渠道』页面",
+          "url": "{{globalData.baseUrl}}/#/email_channels",
+          "userAgent": "",
+          "active": true,
+          "tabZoom": 1,
+          "inGroup": false,
+          "waitTabLoaded": true,
+          "updatePrevTab": true,
+          "customUserAgent": false
+        }
+      },
+      {
+        "id": "n19",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 880,
+          "y": 740
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待邮件渠道列表加载",
+          "time": 1200
+        }
+      },
+      {
+        "id": "n20",
+        "label": "event-click",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1140,
+          "y": 740
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "点击『添加发件渠道』",
+          "findBy": "cssSelector",
+          "waitForSelector": true,
+          "waitSelectorTimeout": 5000,
+          "selector": "button:contains(\"添加发件渠道\")",
+          "markEl": false,
+          "multiple": false
+        }
+      },
+      {
+        "id": "n21",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 1400,
+          "y": 740
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待新增渠道侧栏弹出",
+          "time": 600
+        }
+      },
+      {
+        "id": "n22",
+        "label": "forms",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1660,
+          "y": 740
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "填写渠道名称",
+          "findBy": "cssSelector",
+          "waitForSelector": true,
+          "waitSelectorTimeout": 5000,
+          "selector": "input[placeholder=\"如：SendGrid 主通道\"]",
+          "markEl": false,
+          "multiple": false,
+          "selected": true,
+          "clearValue": true,
+          "getValue": false,
+          "saveData": false,
+          "dataColumn": "",
+          "selectOptionBy": "value",
+          "optionPosition": "1",
+          "assignVariable": false,
+          "variableName": "",
+          "type": "text-field",
+          "value": "{{globalData.emailChannelName}}",
+          "delay": 0,
+          "events": []
+        }
+      },
+      {
+        "id": "n23",
+        "label": "forms",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1920,
+          "y": 740
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "填写发件人昵称",
+          "findBy": "cssSelector",
+          "waitForSelector": false,
+          "waitSelectorTimeout": 5000,
+          "selector": "input[placeholder=\"如：Novas Notifications\"]",
+          "markEl": false,
+          "multiple": false,
+          "selected": true,
+          "clearValue": true,
+          "getValue": false,
+          "saveData": false,
+          "dataColumn": "",
+          "selectOptionBy": "value",
+          "optionPosition": "1",
+          "assignVariable": false,
+          "variableName": "",
+          "type": "text-field",
+          "value": "{{globalData.resendSenderName}}",
+          "delay": 0,
+          "events": []
+        }
+      },
+      {
+        "id": "n24",
+        "label": "forms",
+        "type": "BlockBasic",
+        "position": {
+          "x": 100,
+          "y": 960
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "填写发件人邮箱",
+          "findBy": "cssSelector",
+          "waitForSelector": false,
+          "waitSelectorTimeout": 5000,
+          "selector": "input[placeholder=\"billing@yourdomain.com\"]",
+          "markEl": false,
+          "multiple": false,
+          "selected": true,
+          "clearValue": true,
+          "getValue": false,
+          "saveData": false,
+          "dataColumn": "",
+          "selectOptionBy": "value",
+          "optionPosition": "1",
+          "assignVariable": false,
+          "variableName": "",
+          "type": "text-field",
+          "value": "{{globalData.resendSenderEmail}}",
+          "delay": 0,
+          "events": []
+        }
+      },
+      {
+        "id": "n25",
+        "label": "forms",
+        "type": "BlockBasic",
+        "position": {
+          "x": 360,
+          "y": 960
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "填写 Resend API Key",
+          "findBy": "cssSelector",
+          "waitForSelector": false,
+          "waitSelectorTimeout": 5000,
+          "selector": "input[placeholder=\"服务商控制台生成的 API 密钥\"]",
+          "markEl": false,
+          "multiple": false,
+          "selected": true,
+          "clearValue": true,
+          "getValue": false,
+          "saveData": false,
+          "dataColumn": "",
+          "selectOptionBy": "value",
+          "optionPosition": "1",
+          "assignVariable": false,
+          "variableName": "",
+          "type": "text-field",
+          "value": "{{globalData.resendApiKey}}",
+          "delay": 0,
+          "events": []
+        }
+      },
+      {
+        "id": "n26",
+        "label": "event-click",
+        "type": "BlockBasic",
+        "position": {
+          "x": 620,
+          "y": 960
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "提交新增邮件渠道",
+          "findBy": "cssSelector",
+          "waitForSelector": false,
+          "waitSelectorTimeout": 5000,
+          "selector": "button[type=\"submit\"]:contains(\"确认添加渠道\")",
+          "markEl": false,
+          "multiple": false
+        }
+      },
+      {
+        "id": "n27",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 880,
+          "y": 960
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待渠道创建完成",
+          "time": 1200
+        }
+      },
+      {
+        "id": "n28",
+        "label": "element-exists",
+        "type": "BlockElementExists",
+        "position": {
+          "x": 1140,
+          "y": 960
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "校验邮件渠道创建成功提示",
+          "findBy": "cssSelector",
+          "selector": "div:contains(\"已成功添加\")",
+          "tryCount": 6,
+          "timeout": 1000,
+          "markEl": false,
+          "throwError": false
+        }
+      },
+      {
+        "id": "n29",
+        "label": "event-click",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1400,
+          "y": 960
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "点击该渠道『发测试信』",
+          "findBy": "cssSelector",
+          "waitForSelector": true,
+          "waitSelectorTimeout": 5000,
+          "selector": ".shadow-card:has(h3:contains(\"{{globalData.emailChannelName}}\")) button:contains(\"发测试信\")",
+          "markEl": false,
+          "multiple": false
+        }
+      },
+      {
+        "id": "n30",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 1660,
+          "y": 960
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待发送测试邮件侧栏弹出",
+          "time": 500
+        }
+      },
+      {
+        "id": "n31",
+        "label": "forms",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1920,
+          "y": 960
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "填写测试收件邮箱",
+          "findBy": "cssSelector",
+          "waitForSelector": false,
+          "waitSelectorTimeout": 5000,
+          "selector": "#form-test-email input[type=\"email\"]",
+          "markEl": false,
+          "multiple": false,
+          "selected": true,
+          "clearValue": true,
+          "getValue": false,
+          "saveData": false,
+          "dataColumn": "",
+          "selectOptionBy": "value",
+          "optionPosition": "1",
+          "assignVariable": false,
+          "variableName": "",
+          "type": "text-field",
+          "value": "{{globalData.testRecipientEmail}}",
+          "delay": 0,
+          "events": []
+        }
+      },
+      {
+        "id": "n32",
+        "label": "event-click",
+        "type": "BlockBasic",
+        "position": {
+          "x": 100,
+          "y": 1180
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "点击『立即发送测试信』",
+          "findBy": "cssSelector",
+          "waitForSelector": false,
+          "waitSelectorTimeout": 5000,
+          "selector": "#form-test-email button[type=\"submit\"]",
+          "markEl": false,
+          "multiple": false
+        }
+      },
+      {
+        "id": "n33",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 360,
+          "y": 1180
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待 Resend 真实发信完成",
+          "time": 2200
+        }
+      },
+      {
+        "id": "n34",
+        "label": "element-exists",
+        "type": "BlockElementExists",
+        "position": {
+          "x": 620,
+          "y": 1180
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "校验测试邮件发送成功提示",
+          "findBy": "cssSelector",
+          "selector": "div:contains(\"测试邮件投递成功\")",
+          "tryCount": 8,
+          "timeout": 1000,
+          "markEl": false,
+          "throwError": false
+        }
+      },
+      {
+        "id": "n35",
+        "label": "new-tab",
+        "type": "BlockBasic",
+        "position": {
+          "x": 880,
+          "y": 1180
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "返回『支付渠道』页面准备 Sandbox 下单测试",
+          "url": "{{globalData.baseUrl}}/#/payment_channels",
+          "userAgent": "",
+          "active": true,
+          "tabZoom": 1,
+          "inGroup": false,
+          "waitTabLoaded": true,
+          "updatePrevTab": true,
+          "customUserAgent": false
+        }
+      },
+      {
+        "id": "n36",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 1140,
+          "y": 1180
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待页面加载",
+          "time": 1200
+        }
+      },
+      {
+        "id": "n37",
+        "label": "event-click",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1400,
+          "y": 1180
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "点击『测试交易』打开 Sandbox 下单面板",
+          "findBy": "cssSelector",
+          "waitForSelector": true,
+          "waitSelectorTimeout": 5000,
+          "selector": ".shadow-card:has(h3:contains(\"{{globalData.creemAccountName}}\")) button:contains(\"测试交易\")",
+          "markEl": false,
+          "multiple": false
+        }
+      },
+      {
+        "id": "n38",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 1660,
+          "y": 1180
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待面板渲染",
+          "time": 600
+        }
+      },
+      {
+        "id": "n39",
+        "label": "forms",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1920,
+          "y": 1180
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "填写 Creem 商品 ID",
+          "findBy": "cssSelector",
+          "waitForSelector": true,
+          "waitSelectorTimeout": 5000,
+          "selector": "input[placeholder=\"prod_xxx\"]",
+          "markEl": false,
+          "multiple": false,
+          "selected": true,
+          "clearValue": true,
+          "getValue": false,
+          "saveData": false,
+          "dataColumn": "",
+          "selectOptionBy": "value",
+          "optionPosition": "1",
+          "assignVariable": false,
+          "variableName": "",
+          "type": "text-field",
+          "value": "{{globalData.creemProductId}}",
+          "delay": 0,
+          "events": []
+        }
+      },
+      {
+        "id": "n40",
+        "label": "forms",
+        "type": "BlockBasic",
+        "position": {
+          "x": 100,
+          "y": 1400
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "填写测试客户邮箱（可选）",
+          "findBy": "cssSelector",
+          "waitForSelector": false,
+          "waitSelectorTimeout": 5000,
+          "selector": "input[placeholder=\"tester@example.com\"]",
+          "markEl": false,
+          "multiple": false,
+          "selected": true,
+          "clearValue": true,
+          "getValue": false,
+          "saveData": false,
+          "dataColumn": "",
+          "selectOptionBy": "value",
+          "optionPosition": "1",
+          "assignVariable": false,
+          "variableName": "",
+          "type": "text-field",
+          "value": "{{globalData.creemCustomerEmail}}",
+          "delay": 0,
+          "events": []
+        }
+      },
+      {
+        "id": "n41",
+        "label": "event-click",
+        "type": "BlockBasic",
+        "position": {
+          "x": 360,
+          "y": 1400
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "执行 Sandbox 测试下单",
+          "findBy": "cssSelector",
+          "waitForSelector": false,
+          "waitSelectorTimeout": 5000,
+          "selector": "button:contains(\"Sandbox 测试下单\")",
+          "markEl": false,
+          "multiple": false
+        }
+      },
+      {
+        "id": "n42",
+        "label": "delay",
+        "type": "BlockDelay",
+        "position": {
+          "x": 620,
+          "y": 1400
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "等待 Creem Checkout 会话创建",
+          "time": 2500
+        }
+      },
+      {
+        "id": "n43",
+        "label": "element-exists",
+        "type": "BlockElementExists",
+        "position": {
+          "x": 880,
+          "y": 1400
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "校验 Checkout 创建成功提示",
+          "findBy": "cssSelector",
+          "selector": "div:contains(\"Checkout 已创建\")",
+          "tryCount": 8,
+          "timeout": 1000,
+          "markEl": false,
+          "throwError": false
+        }
+      },
+      {
+        "id": "n44",
+        "label": "javascript-code",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1140,
+          "y": 1400
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "汇总结果并按需清理测试创建的 Creem 渠道",
+          "timeout": 20000,
+          "context": "website",
+          "code": "(async () => {\n  const cfg = automaRefData('globalData') || {};\n  const channelId = automaRefData('variables', 'creemChannelId');\n  const result = { cleanedUp: false, channelId: channelId || null };\n  try {\n    if (cfg.cleanupAfterTest && channelId) {\n      const base = (cfg.baseUrl || '').replace(/\\/$/, '');\n      const res = await fetch(base + '/api/v1/payment-channels/' + channelId, {\n        method: 'DELETE',\n        credentials: 'include',\n      });\n      result.cleanedUp = res.ok;\n      result.httpStatus = res.status;\n    }\n  } catch (e) {\n    result.cleanupError = e.message;\n  }\n  automaSetVariable('finalSummary', JSON.stringify(result, null, 2));\n  automaNextBlock();\n})();\n",
+          "preloadScripts": [],
+          "everyNewTab": false,
+          "runBeforeLoad": false
+        }
+      },
+      {
+        "id": "n45",
+        "label": "notification",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1400,
+          "y": 1400
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "输出最终测试汇总通知",
+          "message": "登录、Creem 支付渠道创建与连通性测试、Resend 邮件渠道创建与发信测试、Checkout 沙箱下单均已执行完毕。\\n创建的 Creem 渠道ID: {{variables.creemChannelId}}\\n清理结果: {{variables.finalSummary}}\\n请在 Automa『日志』中查看每一步的详细执行结果。",
+          "iconUrl": "",
+          "imageUrl": "",
+          "title": "✅ NovasPay 渠道与邮件配置自动化测试完成"
+        }
+      },
+      {
+        "id": "nF1",
+        "label": "notification",
+        "type": "BlockBasic",
+        "position": {
+          "x": 1660,
+          "y": 560
+        },
+        "data": {
+          "disableBlock": false,
+          "description": "汇报失败原因",
+          "message": "某个关键校验步骤未在预期时间内通过。请打开 Automa 执行日志，定位具体失败的节点，\\n并检查：1) 登录态是否正常 2) 渠道/邮箱凭据是否正确 3) 网络是否可以访问 Creem / Resend 4) 页面文案是否因为切换了界面语言而与内置选择器不一致（默认按简体中文 zh-CN 文案编写）。",
+          "iconUrl": "",
+          "imageUrl": "",
+          "title": "❌ NovasPay 自动化测试步骤失败"
+        }
+      }
+    ]
+  },
+  "table": [],
+  "dataColumns": [],
+  "description": "登录 NovasPay 管理端，创建/测试 Creem 沙箱支付渠道（连通性测试 + Sandbox 测试下单）与 Resend 邮件渠道（创建 + 发送测试邮件），并对每一步的界面反馈做断言。运行前请先在『Global data』里填好你自己的渠道与邮箱账号信息。",
+  "trigger": {
+    "disableBlock": false,
+    "description": "手动触发",
+    "type": "manual",
+    "interval": 60,
+    "delay": 5,
+    "date": "",
+    "time": "00:00",
+    "url": "",
+    "shortcut": "",
+    "activeInInput": false,
+    "isUrlRegex": false,
+    "days": [],
+    "contextMenuName": "",
+    "contextTypes": [],
+    "parameters": [],
+    "preferParamsInTab": false,
+    "observeElement": {
+      "selector": "",
+      "baseSelector": "",
+      "matchPattern": "",
+      "targetOptions": {
+        "subtree": false,
+        "childList": true,
+        "attributes": false,
+        "attributeFilter": [],
+        "characterData": false
+      },
+      "baseElOptions": {
+        "subtree": false,
+        "childList": true,
+        "attributes": false,
+        "attributeFilter": [],
+        "characterData": false
+      }
+    }
+  },
+  "createdAt": 1789612999371,
+  "updatedAt": 1789612999371,
+  "isDisabled": false,
+  "settings": {
+    "publicId": "",
+    "blockDelay": 0,
+    "saveLog": true,
+    "debugMode": false,
+    "restartTimes": 1,
+    "notification": true,
+    "execContext": "popup",
+    "reuseLastState": false,
+    "inputAutocomplete": true,
+    "onError": "stop-workflow",
+    "executedBlockOnWeb": true,
+    "insertDefaultColumn": false,
+    "defaultColumnName": "column"
+  },
+  "version": "1.29.0",
+  "globalData": "{\n  \"baseUrl\": \"http://localhost:3000\",\n  \"adminEmail\": \"admin@novaspay.global\",\n  \"adminPassword\": \"Admin@123456\",\n  \"creemMode\": \"sandbox\",\n  \"creemAccountName\": \"Automa 自动化测试账户\",\n  \"creemApiSecret\": \"REPLACE_WITH_YOUR_CREEM_SANDBOX_API_SECRET\",\n  \"creemWebhookSecret\": \"\",\n  \"creemProductId\": \"REPLACE_WITH_YOUR_CREEM_PRODUCT_ID_prod_xxx\",\n  \"creemCustomerEmail\": \"tester@novaspay.global\",\n  \"emailChannelName\": \"Automa 自动化测试-邮件渠道\",\n  \"resendApiKey\": \"REPLACE_WITH_YOUR_RESEND_API_KEY\",\n  \"resendSenderEmail\": \"REPLACE_WITH_YOUR_RESEND_VERIFIED_SENDER@yourdomain.com\",\n  \"resendSenderName\": \"Novas Notifications (Automa Test)\",\n  \"testRecipientEmail\": \"REPLACE_WITH_RECIPIENT_TO_RECEIVE_TEST_EMAIL@example.com\",\n  \"cleanupAfterTest\": true\n}",
+  "connectedTable": null
+}
