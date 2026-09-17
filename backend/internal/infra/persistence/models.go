@@ -525,7 +525,7 @@ type SettlementBatch struct {
 
 // PromoCampaign 促销邮件活动
 type PromoCampaign struct {
-	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ID        string         `gorm:"size:64;primaryKey" json:"id"`
 	TenantID  string         `gorm:"size:64;index;default:ALL" json:"tenantId"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
@@ -535,7 +535,7 @@ type PromoCampaign struct {
 
 // EndUser 终端客户
 type EndUser struct {
-	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ID        string         `gorm:"size:64;primaryKey" json:"id"`
 	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
 	Email     string         `gorm:"size:255;index" json:"email"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
@@ -546,7 +546,7 @@ type EndUser struct {
 
 // ExchangeRate 汇率
 type ExchangeRate struct {
-	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ID        string         `gorm:"size:64;primaryKey" json:"id"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
@@ -556,14 +556,14 @@ type ExchangeRate struct {
 // ExchangeRateHistory 汇率历史
 type ExchangeRateHistory struct {
 	ID        string `gorm:"type:uuid;primaryKey" json:"id"`
-	RateID    string `gorm:"type:uuid;index" json:"rateId"`
+	RateID    string `gorm:"size:64;index" json:"rateId"`
 	Rate      float64 `json:"rate"`
 	RecordedAt int64 `gorm:"index" json:"recordedAt"`
 }
 
 // FeeRule 费率规则
 type FeeRule struct {
-	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ID        string         `gorm:"size:64;primaryKey" json:"id"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
@@ -572,7 +572,7 @@ type FeeRule struct {
 
 // RiskRule 风控规则
 type RiskRule struct {
-	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ID        string         `gorm:"size:64;primaryKey" json:"id"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
@@ -581,7 +581,7 @@ type RiskRule struct {
 
 // BlacklistEntry 黑名单
 type BlacklistEntry struct {
-	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ID        string         `gorm:"size:64;primaryKey" json:"id"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
@@ -590,7 +590,7 @@ type BlacklistEntry struct {
 
 // MerchantApplication 商户 KYB 申请
 type MerchantApplication struct {
-	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ID        string         `gorm:"size:64;primaryKey" json:"id"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
@@ -599,7 +599,7 @@ type MerchantApplication struct {
 
 // AlertRule 告警规则
 type AlertRule struct {
-	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ID        string         `gorm:"size:64;primaryKey" json:"id"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
@@ -609,7 +609,7 @@ type AlertRule struct {
 // AlertHistory 告警历史
 type AlertHistory struct {
 	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
-	RuleID    string         `gorm:"type:uuid;index" json:"ruleId"`
+	RuleID    string         `gorm:"size:64;index" json:"ruleId"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime;index" json:"createdAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
