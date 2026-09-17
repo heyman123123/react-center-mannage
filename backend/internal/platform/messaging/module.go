@@ -11,6 +11,8 @@ import (
 
 func NewMessagingRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFunc {
 	return func(r *gin.RouterGroup) {
+		r.POST("/messaging/dispatch", mw.AppSecretAuth, h.Dispatch)
+
 		ch := r.Group("/email-channels", mw.Auth)
 		{
 			ch.GET("", mw.RequireMenu("email_channels"), h.ListChannels)
@@ -37,6 +39,10 @@ func NewMessagingRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteF
 	}
 }
 
+func wireAppSecret(mw *middleware.Bundle, svc *msgsvc.Service) {
+	mw.SetAppSecretResolver(svc.FindAppIDBySecret)
+}
+
 var Module = fx.Options(
 	fx.Provide(
 		msgsvc.NewService,
@@ -46,4 +52,5 @@ var Module = fx.Options(
 			fx.ResultTags(`group:"routes"`),
 		),
 	),
+	fx.Invoke(wireAppSecret),
 )

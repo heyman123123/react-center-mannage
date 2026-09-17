@@ -57,6 +57,7 @@ type ChannelInput struct {
 	Mode                string   `json:"mode"`
 	Enabled             *bool    `json:"enabled"`
 	ApiSecretKey        string   `json:"apiSecretKey"`
+	ApiPublicKey        string   `json:"apiPublicKey"`
 	WebhookSecret       string   `json:"webhookSecret"`
 	SupportedCurrencies []string `json:"supportedCurrencies"`
 	FeeRateText         string   `json:"feeRateText"`
@@ -123,6 +124,7 @@ func (s *Service) Create(ctx context.Context, in ChannelInput) (*ChannelDTO, err
 		Environment:             normalizeMode(in.Mode),
 		Enabled:                 true,
 		ApiKey:                  sealedSecret,
+		ApiPublicKey:            strings.TrimSpace(in.ApiPublicKey),
 		ApiSecretKey:            sealedSecret,
 		WebhookSecret:           webhookSecret,
 		SupportedCurrenciesJSON: string(currenciesJSON),
@@ -164,6 +166,9 @@ func (s *Service) Update(ctx context.Context, id string, in ChannelInput) (*Chan
 		sealed := s.sealSecret(secret)
 		updates["api_key"] = sealed
 		updates["api_secret_key"] = sealed
+	}
+	if pub := strings.TrimSpace(in.ApiPublicKey); pub != "" && !strings.Contains(pub, "****") {
+		updates["api_public_key"] = pub
 	}
 	if wh := strings.TrimSpace(in.WebhookSecret); wh != "" && !strings.Contains(wh, "****") {
 		updates["webhook_secret"] = s.sealSecret(wh)

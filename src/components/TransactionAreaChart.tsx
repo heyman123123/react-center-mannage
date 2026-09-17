@@ -38,51 +38,20 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
   const { t } = useTranslation("dashboard");
 
   const dataPoints = useMemo<ChartPoint[]>(() => {
-    if (transactions.length > 0) {
-      const buckets = new Map<string, { gross: number; net: number }>();
-      for (const tx of transactions) {
-        const day = (tx.createdAt || "").slice(0, 10);
-        if (!day) continue;
-        const label = day.slice(5).replace("-", "/");
-        const prev = buckets.get(label) || { gross: 0, net: 0 };
-        prev.gross += tx.orderAmount || 0;
-        prev.net += tx.netAmount ?? (tx.orderAmount - (tx.channelFee || 0));
-        buckets.set(label, prev);
-      }
-      const entries = Array.from(buckets.entries()).slice(-15);
-      if (entries.length > 0) {
-        return entries.map(([date, v]) => ({ date, gross: Math.round(v.gross), net: Math.round(v.net) }));
-      }
+    if (transactions.length === 0) return [];
+    const buckets = new Map<string, { gross: number; net: number }>();
+    for (const tx of transactions) {
+      const day = (tx.createdAt || "").slice(0, 10);
+      if (!day) continue;
+      const label = day.slice(5).replace("-", "/");
+      const prev = buckets.get(label) || { gross: 0, net: 0 };
+      prev.gross += tx.orderAmount || 0;
+      prev.net += tx.netAmount ?? (tx.orderAmount - (tx.channelFee || 0));
+      buckets.set(label, prev);
     }
-    if (timeRange === "7d") {
-      const dates = ["8/29", "8/30", "8/31", "9/1", "9/2", "9/3", "9/4"];
-      return dates.map((date, i) => {
-        const gross = 420000 + i * 35000 + (i % 2) * 20000;
-        return { date, gross, net: Math.round(gross * 0.996) };
-      });
-    }
-
-    if (timeRange === "30d") {
-      const dates = [
-        "8/5", "8/8", "8/11", "8/14", "8/17", "8/20", "8/23", "8/26", "8/29", "9/1", "9/4",
-      ];
-      return dates.map((date, i) => {
-        const gross = 1250000 + i * 85000 + Math.sin(i * 0.9) * 40000;
-        return { date, gross: Math.round(gross), net: Math.round(gross * 0.995) };
-      });
-    }
-
-    const dates = [
-      "4/3", "4/9", "4/15", "4/21", "4/27",
-      "5/3", "5/9", "5/15", "5/22", "5/29",
-      "6/4", "6/10", "6/16", "6/22", "6/30",
-    ];
-    const rhythms = [35, 58, 42, 65, 40, 72, 38, 82, 52, 88, 44, 75, 50, 92, 60];
-    return dates.map((date, i) => {
-      const gross = 1850000 + rhythms[i] * 12000;
-      return { date, gross, net: Math.round(gross * 0.994) };
-    });
-  }, [timeRange, transactions]);
+    const entries = Array.from(buckets.entries()).slice(-15);
+    return entries.map(([date, v]) => ({ date, gross: Math.round(v.gross), net: Math.round(v.net) }));
+  }, [transactions]);
 
   const rangeLabel =
     timeRange === "3m"
@@ -130,82 +99,88 @@ export const TransactionAreaChart: React.FC<TransactionAreaChartProps> = ({
       </div>
 
       <div className="relative w-full flex-1 min-h-[300px] select-none">
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart
-            data={dataPoints}
-            margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="fillGross" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#27272a" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="#27272a" stopOpacity={0.02} />
-              </linearGradient>
-              <linearGradient id="fillNet" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#71717a" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#71717a" stopOpacity={0.04} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tick={{ fill: "#a1a1aa", fontSize: 11 }}
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              width={48}
-              tickFormatter={formatAxisAmount}
-              tick={{ fill: "#a1a1aa", fontSize: 11 }}
-            />
-            <Tooltip
-              cursor={{ stroke: "#18181b", strokeDasharray: "3 3" }}
-              content={({ active, payload, label }) => {
-                if (!active || !payload?.length) return null;
-                const gross = Number(payload.find((p) => p.dataKey === "gross")?.value ?? 0);
-                const net = Number(payload.find((p) => p.dataKey === "net")?.value ?? 0);
-                return (
-                  <div className="rounded-lg border border-line bg-primary px-3 py-2 text-xs text-primary-foreground shadow-xl">
-                    <div className="font-semibold border-b border-line pb-1 mb-1">{label}</div>
-                    <div className="flex justify-between gap-4 text-zinc-300">
-                      <span>{t("chart.gross")}</span>
-                      <span className="font-mono text-white">¥{gross.toLocaleString()}</span>
+        {dataPoints.length === 0 ? (
+          <div className="flex items-center justify-center h-[300px] text-sm text-fg-tertiary">
+            {t("chart.empty")}
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart
+              data={dataPoints}
+              margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="fillGross" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#27272a" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#27272a" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id="fillNet" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#71717a" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#71717a" stopOpacity={0.04} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fill: "#a1a1aa", fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                width={48}
+                tickFormatter={formatAxisAmount}
+                tick={{ fill: "#a1a1aa", fontSize: 11 }}
+              />
+              <Tooltip
+                cursor={{ stroke: "#18181b", strokeDasharray: "3 3" }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const gross = Number(payload.find((p) => p.dataKey === "gross")?.value ?? 0);
+                  const net = Number(payload.find((p) => p.dataKey === "net")?.value ?? 0);
+                  return (
+                    <div className="rounded-lg border border-line bg-primary px-3 py-2 text-xs text-primary-foreground shadow-xl">
+                      <div className="font-semibold border-b border-line pb-1 mb-1">{label}</div>
+                      <div className="flex justify-between gap-4 text-zinc-300">
+                        <span>{t("chart.gross")}</span>
+                        <span className="font-mono text-white">¥{gross.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between gap-4 text-zinc-300">
+                        <span>{t("chart.net")}</span>
+                        <span className="font-mono text-white">¥{net.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between gap-4 text-emerald-400 pt-1 mt-1 border-t border-line font-mono text-[11px]">
+                        <span>{t("chart.matchRate")}</span>
+                        <span>{gross ? ((net / gross) * 100).toFixed(2) : "0.00"}%</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between gap-4 text-zinc-300">
-                      <span>{t("chart.net")}</span>
-                      <span className="font-mono text-white">¥{net.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between gap-4 text-emerald-400 pt-1 mt-1 border-t border-line font-mono text-[11px]">
-                      <span>{t("chart.matchRate")}</span>
-                      <span>{gross ? ((net / gross) * 100).toFixed(2) : "0.00"}%</span>
-                    </div>
-                  </div>
-                );
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="gross"
-              name={t("chart.gross")}
-              stroke="#18181b"
-              strokeWidth={2}
-              fill="url(#fillGross)"
-              activeDot={{ r: 4.5, stroke: "#fff", strokeWidth: 2 }}
-            />
-            <Area
-              type="monotone"
-              dataKey="net"
-              name={t("chart.net")}
-              stroke="#52525b"
-              strokeWidth={1.75}
-              fill="url(#fillNet)"
-              activeDot={{ r: 3.5, stroke: "#fff", strokeWidth: 1.5 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+                  );
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="gross"
+                name={t("chart.gross")}
+                stroke="#18181b"
+                strokeWidth={2}
+                fill="url(#fillGross)"
+                activeDot={{ r: 4.5, stroke: "#fff", strokeWidth: 2 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="net"
+                name={t("chart.net")}
+                stroke="#52525b"
+                strokeWidth={1.75}
+                fill="url(#fillNet)"
+                activeDot={{ r: 3.5, stroke: "#fff", strokeWidth: 1.5 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

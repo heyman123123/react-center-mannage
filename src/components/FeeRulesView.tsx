@@ -21,17 +21,11 @@ import { ShadcnSelect } from "./ui/select";
 import { ContextMenu } from "./ui/ContextMenu";
 import { Popconfirm } from "./ui/Popconfirm";
 import { FeeRule, PaymentChannel, MerchantTier } from "../types/payment";
-
-
-const CHANNEL_LABEL: Record<string, string> = {
-  stripe: "Stripe", paypal: "PayPal", adyen: "Adyen", klarna: "Klarna",
-  checkout: "Checkout", apple_pay: "Apple Pay", google_pay: "Google Pay", sepa: "SEPA",
-};
-const ALL_CHANNELS: PaymentChannel[] = ["stripe", "paypal", "adyen", "klarna", "apple_pay", "checkout", "google_pay", "sepa"];
+import { loadPaymentChannelOptions, type PaymentChannelOption } from "../lib/paymentChannels";
 
 const emptyForm = {
   name: "",
-  channels: ["stripe"] as PaymentChannel[],
+  channels: [] as PaymentChannel[],
   currency: "USD",
   minAmount: "",
   maxAmount: "",
@@ -84,11 +78,26 @@ export const FeeRulesView: React.FC = () => {
     [t]
   );
 
-  const [calcChannel, setCalcChannel] = useState<string>("stripe");
+  const [channelOptions, setChannelOptions] = useState<PaymentChannelOption[]>([]);
+  const [calcChannel, setCalcChannel] = useState<string>("");
   const [calcCurrency, setCalcCurrency] = useState<string>("USD");
   const [calcAmount, setCalcAmount] = useState<string>("100");
   const [calcTier, setCalcTier] = useState<string>("NORMAL");
   const [calcResult, setCalcResult] = useState<{ rule: FeeRule; fee: number; percent: number; fixed: number; net: number } | null>(null);
+
+  useEffect(() => {
+    void loadPaymentChannelOptions().then((opts) => {
+      setChannelOptions(opts);
+      if (opts.length > 0) {
+        setCalcChannel((prev) => prev || opts[0].value);
+      }
+    });
+  }, []);
+
+  const channelLabel = useCallback(
+    (code: string) => channelOptions.find((o) => o.value === code)?.label || code,
+    [channelOptions]
+  );
 
   const filtered = useMemo(() => {
     return rows
@@ -172,7 +181,7 @@ export const FeeRulesView: React.FC = () => {
         </div>
         <div className="flex flex-col md:flex-row md:items-end gap-2 flex-wrap">
           <div className="w-full md:w-32"><label className="block text-[11px] text-fg-tertiary mb-1">{t("feeRules.calcChannel")}</label>
-            <ShadcnSelect value={calcChannel} onValueChange={setCalcChannel} options={ALL_CHANNELS.map((c) => ({ value: c, label: CHANNEL_LABEL[c] }))} />
+            <ShadcnSelect value={calcChannel} onValueChange={setCalcChannel} options={channelOptions.map((c) => ({ value: c.value, label: c.label }))} />
           </div>
           <div className="w-full md:w-28"><label className="block text-[11px] text-fg-tertiary mb-1">{t("feeRules.calcCurrency")}</label>
             <ShadcnSelect value={calcCurrency} onValueChange={setCalcCurrency} options={["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "HKD", "SGD"].map((c) => ({ value: c, label: c }))} />
@@ -248,7 +257,7 @@ export const FeeRulesView: React.FC = () => {
                         <td className="py-3 px-3 font-medium text-fg truncate max-w-[180px]" title={r.name}>{r.name}</td>
                         <td className="py-3 px-3">
                           <div className="flex gap-1 flex-wrap">
-                            {r.channels.slice(0, 3).map((c) => <span key={c} className="px-1.5 py-0.5 rounded text-[10px] bg-hover text-fg-secondary font-mono">{CHANNEL_LABEL[c] || c}</span>)}
+                            {r.channels.slice(0, 3).map((c) => <span key={c} className="px-1.5 py-0.5 rounded text-[10px] bg-hover text-fg-secondary font-mono">{channelLabel(c)}</span>)}
                             {r.channels.length > 3 && <span className="text-[10px] text-fg-tertiary">+{r.channels.length - 3}</span>}
                           </div>
                         </td>
@@ -302,12 +311,13 @@ export const FeeRulesView: React.FC = () => {
           <div>
             <label className="block text-fg-secondary mb-1.5 font-medium">{t("feeRules.form.channels")}</label>
             <div className="flex flex-wrap gap-1.5">
-              {ALL_CHANNELS.map((c) => {
-                const on = form.channels.includes(c);
+              {channelOptions.map((c) => {
+                const code = c.value as PaymentChannel;
+                const on = form.channels.includes(code);
                 return (
-                  <button key={c} type="button" onClick={() => setForm((f) => ({ ...f, channels: on ? f.channels.filter((x) => x !== c) : [...f.channels, c] }))}
+                  <button key={c.value} type="button" onClick={() => setForm((f) => ({ ...f, channels: on ? f.channels.filter((x) => x !== code) : [...f.channels, code] }))}
                     className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-colors ${on ? "bg-primary text-primary-foreground border-primary" : "bg-subtle text-fg-secondary border-line hover:bg-hover"}`}>
-                    {CHANNEL_LABEL[c]}
+                    {c.label || c.value}
                   </button>
                 );
               })}

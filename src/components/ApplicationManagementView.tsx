@@ -91,13 +91,13 @@ const AVAILABLE_LANGUAGES: { code: SupportedLanguage; flag: string; label: strin
   { code: "fr-FR", flag: "🇫🇷", label: "Français (French)" },
 ];
 
-const EMAIL_TRIGGER_EVENTS = [
-  { id: "subscription_welcome_receipt", label: "首次订阅欢迎与电子发票收据", desc: "客户成功付费拉起后立即发送" },
-  { id: "recurring_renewal_success", label: "周期性自动续订扣款凭据", desc: "每月/每年到期扣款成功自动送达" },
-  { id: "payment_failed_dunning", label: "扣款失败催付与重试挽留 (Dunning)", desc: "触发卡过期或余额不足时自动化催付" },
-  { id: "subscription_canceled_notice", label: "退订确认与专属权益挽回", desc: "用户主动取消订阅时发送挽回方案" },
-  { id: "security_password_reset", label: "账号密码重置与安全异地登录告警", desc: "触发终端用户账户安全事件时提醒" },
-];
+const EMAIL_TRIGGER_EVENT_IDS = [
+  "subscription_welcome_receipt",
+  "recurring_renewal_success",
+  "payment_failed_dunning",
+  "subscription_canceled_notice",
+  "security_password_reset",
+] as const;
 
 export const ApplicationManagementView: React.FC<ApplicationManagementViewProps> = ({
   currentTenant,
@@ -236,9 +236,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
   const [formSenderEmail, setFormSenderEmail] = useState("billing@novaspay.global");
   const [formSenderName, setFormSenderName] = useState("Novas AI Billing Team");
   const [formEnabledEmailEvents, setFormEnabledEmailEvents] = useState<string[]>([
-    "subscription_welcome_receipt",
-    "recurring_renewal_success",
-    "payment_failed_dunning",
+    ...EMAIL_TRIGGER_EVENT_IDS,
   ]);
 
   // Languages
@@ -290,11 +288,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
     setFormEmailChannelId(emailChannels[0]?.id || "ech_sendgrid_live");
     setFormSenderEmail("billing@yourdomain.com");
     setFormSenderName("Global Billing Operations");
-    setFormEnabledEmailEvents([
-      "subscription_welcome_receipt",
-      "recurring_renewal_success",
-      "payment_failed_dunning",
-    ]);
+    setFormEnabledEmailEvents([...EMAIL_TRIGGER_EVENT_IDS]);
     setFormSupportedLanguages(["en-US", "zh-CN", "ja-JP", "de-DE"]);
     setFormDefaultLanguage("en-US");
     setIsConfigModalOpen(true);
@@ -321,10 +315,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
     setFormSenderEmail(app.senderEmail || "billing@domain.com");
     setFormSenderName(app.senderName || "Billing Team");
     setFormEnabledEmailEvents(
-      app.enabledEmailEvents || [
-        "subscription_welcome_receipt",
-        "recurring_renewal_success",
-      ]
+      app.enabledEmailEvents?.length ? app.enabledEmailEvents : [...EMAIL_TRIGGER_EVENT_IDS]
     );
     setFormSupportedLanguages(app.supportedLanguages || ["en-US", "zh-CN"]);
     setFormDefaultLanguage(app.defaultLanguage || "en-US");
@@ -1359,11 +1350,11 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                       {t("apps:wizard.email.triggersLabel")}
                     </label>
                     <div className="space-y-2">
-                      {EMAIL_TRIGGER_EVENTS.map((evt) => {
-                        const isChecked = formEnabledEmailEvents.includes(evt.id);
+                      {EMAIL_TRIGGER_EVENT_IDS.map((evtId) => {
+                        const isChecked = formEnabledEmailEvents.includes(evtId);
                         return (
                           <label
-                            key={evt.id}
+                            key={evtId}
                             className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer transition-colors ${
                               isChecked ? "bg-indigo-50/40 border-indigo-200" : "bg-subtle border-line"
                             }`}
@@ -1373,18 +1364,22 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
                               checked={isChecked}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setFormEnabledEmailEvents([...formEnabledEmailEvents, evt.id]);
+                                  setFormEnabledEmailEvents([...formEnabledEmailEvents, evtId]);
                                 } else {
                                   setFormEnabledEmailEvents(
-                                    formEnabledEmailEvents.filter((id) => id !== evt.id)
+                                    formEnabledEmailEvents.filter((id) => id !== evtId)
                                   );
                                 }
                               }}
                               className="mt-0.5 rounded text-indigo-600"
                             />
                             <div>
-                              <div className="font-semibold text-fg">{evt.label}</div>
-                              <div className="text-[10px] text-fg-tertiary mt-0.5">{evt.desc}</div>
+                              <div className="font-semibold text-fg">
+                                {t(`apps:wizard.email.events.${evtId}.label`)}
+                              </div>
+                              <div className="text-[10px] text-fg-tertiary mt-0.5">
+                                {t(`apps:wizard.email.events.${evtId}.desc`)}
+                              </div>
                             </div>
                           </label>
                         );
@@ -1664,8 +1659,8 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
               </div>
               <div className="pt-1 flex flex-wrap gap-1 text-[10px]">
                 {viewingDetailApp.enabledEmailEvents?.map((evt) => (
-                  <span key={evt} className="bg-hover text-fg-secondary px-1.5 py-0.5 rounded font-mono">
-                    {evt}
+                  <span key={evt} className="bg-hover text-fg-secondary px-1.5 py-0.5 rounded">
+                    {t(`apps:wizard.email.events.${evt}.label`, { defaultValue: evt })}
                   </span>
                 ))}
               </div>

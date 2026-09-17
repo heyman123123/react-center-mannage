@@ -20,6 +20,7 @@ import {
   TransactionRecord,
 } from "../types/payment";
 import { formatCurrency } from "../lib/utils";
+import { loadPaymentChannelOptions, type PaymentChannelOption } from "../lib/paymentChannels";
 import { TransactionDetailModal } from "./TransactionDetailModal";
 import { ShadcnSelect } from "./ui/select";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
@@ -59,22 +60,21 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeTxDetail, setActiveTxDetail] = useState<TransactionRecord | null>(null);
+  const [channelDict, setChannelDict] = useState<PaymentChannelOption[]>([]);
   const { currentPage, setCurrentPage, reset: resetPage, pageSize } = usePagination(10);
   useEffect(() => { resetPage(); }, [selectedChannel, selectedStatus, searchQuery, resetPage]);
+  useEffect(() => {
+    void loadPaymentChannelOptions().then(setChannelDict);
+  }, []);
 
   const currentRole = resolveCurrentRole(currentUser, []);
 
   const channelOptions = useMemo(
     () => [
       { value: "all", label: t("list.channels.all") },
-      { value: "stripe", label: t("list.channels.stripe") },
-      { value: "paypal", label: t("list.channels.paypal") },
-      { value: "adyen", label: t("list.channels.adyen") },
-      { value: "apple_pay", label: t("list.channelsExtra.apple_pay") },
-      { value: "klarna", label: t("list.channels.klarna") },
-      { value: "creem", label: t("list.channels.creem") },
+      ...channelDict.map((c) => ({ value: c.value, label: c.label })),
     ],
-    [t]
+    [t, channelDict]
   );
 
   const statusOptions = useMemo(

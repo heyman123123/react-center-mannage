@@ -29,7 +29,8 @@
     "last7d": "近 7 天",
     "gross": "业务应收",
     "net": "渠道实收",
-    "matchRate": "平账率"
+    "matchRate": "平账率",
+    "empty": "暂无交易数据"
   },
   "tabs": {
     "all": "全部流水",

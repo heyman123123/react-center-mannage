@@ -59,6 +59,12 @@ export const EmailWebhooksView: React.FC = () => {
     return matchesFilter && matchesSearch;
   });
 
+  const totalLogs = emailLogs.length;
+  const deliveredCount = emailLogs.filter((l) => l.eventType.includes("delivered")).length;
+  const openedCount = emailLogs.filter((l) => l.eventType.includes("opened")).length;
+  const deliveryRate = totalLogs ? `${((deliveredCount / totalLogs) * 100).toFixed(2)}%` : "—";
+  const openRate = totalLogs ? `${((openedCount / totalLogs) * 100).toFixed(2)}%` : "—";
+
   const handleExport = () => {
     exportToCSV(
       t("webhooks.exportFilename"),
@@ -86,7 +92,7 @@ export const EmailWebhooksView: React.FC = () => {
             </h1>
           </div>
           <p className="text-xs text-fg-secondary mt-1 max-w-2xl">
-            实时汇总 SendGrid、AWS SES 与 Resend 的回执事件流（已投递、用户已打开、点击链接、硬退信与退订），保障出海邮件信誉与反垃圾合规。
+            {t("webhooks.subtitle")}
           </p>
         </div>
 
@@ -102,12 +108,12 @@ export const EmailWebhooksView: React.FC = () => {
           <div className="h-8 w-px bg-hover" />
           <div className="text-right">
             <span className="text-[11px] text-fg-tertiary block">{t("webhooks.stats.deliveryRate")}</span>
-            <span className="text-sm font-bold font-mono text-emerald-600">99.82%</span>
+            <span className="text-sm font-bold font-mono text-emerald-600">{deliveryRate}</span>
           </div>
           <div className="h-8 w-px bg-hover" />
           <div className="text-right">
             <span className="text-[11px] text-fg-tertiary block">{t("webhooks.stats.openRate")}</span>
-            <span className="text-sm font-bold font-mono text-purple-600">64.50%</span>
+            <span className="text-sm font-bold font-mono text-purple-600">{openRate}</span>
           </div>
         </div>
       </div>
