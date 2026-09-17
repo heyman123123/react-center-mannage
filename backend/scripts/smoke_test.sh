@@ -879,7 +879,12 @@ if [[ "$run_extended" == "true" ]]; then
     record "TC-ECH-005" "发送测试邮件成功（仅 Resend）" "EXTENDED" "SKIP" "未完整配置 RESEND_API_KEY / RESEND_SENDER_EMAIL / TEST_RECIPIENT_EMAIL"
   fi
 else
-  log_info "未配置 CREEM_API_SECRET / RESEND_API_KEY，跳过 EXTENDED 层（文档中 Y* 用例将显示为未执行）"
+  log_info "未配置 CREEM_API_SECRET / RESEND_API_KEY，EXTENDED 层记为 SKIP"
+  record "TC-PAYCH-003" "连通性测试成功返回 HEALTHY" "EXTENDED" "SKIP" "未配置 CREEM_API_SECRET"
+  record "TC-PAYCH-005" "Sandbox 测试下单成功创建 Checkout" "EXTENDED" "SKIP" "未配置 CREEM_API_SECRET"
+  record "TC-PROD-004" "从 Creem 批量同步商品" "EXTENDED" "SKIP" "未配置 CREEM_API_SECRET"
+  record "TC-PROD-001" "创建商品 SKU 成功" "EXTENDED" "SKIP" "未设置 ALLOW_CREEM_WRITE=true 或未配置 CREEM_API_SECRET"
+  record "TC-ECH-005" "发送测试邮件成功（仅 Resend）" "EXTENDED" "SKIP" "未完整配置 RESEND_API_KEY / RESEND_SENDER_EMAIL / TEST_RECIPIENT_EMAIL"
 fi
 
 log_info "CORE 执行结束，FAIL=$FAIL_COUNT"
