@@ -34,5 +34,9 @@ export default defineConfig(() => {
       port: 3000,
       strictPort: true,
     },
+    build: {
+      outDir: 'backend/web/dist',
+      emptyOutDir: true,
+    },
   };
 });

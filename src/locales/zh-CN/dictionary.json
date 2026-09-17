@@ -1,4 +1,6 @@
 {
+  "title": "多语言字典",
+  "subtitle": "维护词条分类、多语言译文与导出，支持批量补全与语种配置。",
   "toolbar": {
     "refresh": "刷新",
     "refreshTitle": "刷新字典数据",

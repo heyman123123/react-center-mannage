@@ -132,7 +132,7 @@
       "loadFailed": "加载支付渠道失败",
       "saveFailed": "保存渠道配置失败",
       "added": "支付渠道【{{name}}】已成功接入",
-      "fillRequired": "请填写渠道名称与 API Secret"
+      "fillRequired": "请填写当前渠道的必填凭证字段"
     },
     "editSheet": {
       "title": "编辑支付渠道配置",
@@ -150,15 +150,15 @@
       "routingPriority": "路由优先级 (越小越优先)"
     },
     "checkoutTest": {
-      "productIdLabel": "Creem 商品 ID",
-      "productIdPlaceholder": "prod_xxx",
+      "productIdLabel": "Creem 商品",
+      "productIdPlaceholder": "搜索商品名称 / SKU / Creem ID",
       "customerEmailLabel": "客户邮箱（可选）",
       "customerEmailPlaceholder": "tester@example.com",
       "execute": "Sandbox 测试下单",
       "processing": "正在创建 Checkout…",
       "success": "Checkout 已创建，请在新窗口完成支付。支付结果将通过 Webhook 自动入账。",
       "failed": "创建 Checkout 失败",
-      "productRequired": "请填写 Creem 商品 ID",
+      "productRequired": "请选择已配置的 Creem 商品",
       "creemOnly": "仅 Creem 渠道支持 Sandbox 测试下单"
     },
     "testTx": {
@@ -187,7 +187,11 @@
       "channelLabel": "测试收单渠道 (Channel Gateway)",
       "channelPlaceholder": "选择测试渠道",
       "appLabel": "关联出海业务应用 (Client App)",
-      "appPlaceholder": "选择业务应用",
+      "appPlaceholder": "搜索并选择真实接入应用…",
+      "appEmpty": "暂无接入应用，请先在「接入应用」中创建",
+      "productPlaceholder": "搜索并选择渠道商品…",
+      "productEmpty": "当前渠道暂无商品，请先同步或创建商品",
+      "productSummary": "将按商品结算：{{currency}} {{amount}} · SKU {{sku}}",
       "currencyLabel": "交易结算货币:",
       "currencyPlaceholder": "选择结算货币",
       "amountLabel": "模拟扣款金额 (Amount):",
@@ -217,30 +221,198 @@
         "insufficientFunds": "发卡行返回 51: Insufficient funds (持卡人账户可用余额不足)"
       },
       "scenarios": {
-        "SUCCESS": { "title": "正常收单扣款成功", "desc": "模拟 Visa 4242 测试卡，无阻力扣款成功并完成入账结算" },
-        "3DS": { "title": "3D-Secure 强身份核身挑战", "desc": "模拟 PSD2 / SCA 强认证，自动调用 3DS 2.2 协议完成核身" },
-        "FRAUD": { "title": "Stripe Radar 欺诈风控拦截", "desc": "模拟异地可疑卡号，Radar 评分超过阈值强制 Reject" },
-        "INSUFFICIENT_FUNDS": { "title": "发卡行余额不足拒付", "desc": "模拟发卡行响应 Decline Code 51，触发后续 Dunning 催付流程" }
+        "SUCCESS": {
+          "title": "正常收单扣款成功",
+          "desc": "模拟 Visa 4242 测试卡，无阻力扣款成功并完成入账结算"
+        },
+        "3DS": {
+          "title": "3D-Secure 强身份核身挑战",
+          "desc": "模拟 PSD2 / SCA 强认证，自动调用 3DS 2.2 协议完成核身"
+        },
+        "FRAUD": {
+          "title": "Stripe Radar 欺诈风控拦截",
+          "desc": "模拟异地可疑卡号，Radar 评分超过阈值强制 Reject"
+        },
+        "INSUFFICIENT_FUNDS": {
+          "title": "发卡行余额不足拒付",
+          "desc": "模拟发卡行响应 Decline Code 51，触发后续 Dunning 催付流程"
+        }
       }
     },
     "addSheet": {
       "title": "接入新支付渠道",
-      "description": "从字典「支付渠道」选择一个渠道，再填写该渠道的账号信息；每个账号生成一张渠道配置卡片",
+      "description": "先选择渠道类型，再填写该渠道所需的专用凭证字段；每个账号生成一张渠道配置卡片。",
       "selectChannel": "选择渠道 *",
       "selectPlaceholder": "选择要接入的渠道…",
       "integrated": "（已接入）",
       "dictHint": "候选渠道来自字典「支付渠道」分类（共 {{count}} 个）",
+      "pickChannelFirst": "请先选择渠道，再填写对应凭证。",
       "accountName": "账号名称",
-      "accountPlaceholder": "如：Stripe 主账号",
-      "apiKey": "商户号 / API Key",
+      "accountPlaceholder": "如：主账号 / EU 站",
       "mode": "运行模式",
       "modeLive": "live（生产）",
       "modeSandbox": "sandbox（沙箱）",
-      "apiSecret": "API Secret",
-      "webhookSecret": "Webhook Secret",
-      "currencies": "支持币种（逗号分隔）",
+      "currencies": "支持币种",
       "feeRate": "费率说明",
-      "confirm": "确认接入"
+      "confirm": "确认接入",
+      "webhookUrlHint": "保存后请在渠道控制台配置 Webhook URL：/api/v1/hooks/{{channel}}/{channelId}",
+      "fields": {
+        "accountName": {
+          "label": "账号名称",
+          "placeholder": "便于识别的内部备注名"
+        },
+        "mode": { "label": "运行模式" },
+        "apiPublicKey": {
+          "label": "公钥 / Client ID",
+          "placeholder": "pk_… / client id"
+        },
+        "apiSecretKey": {
+          "label": "私钥 / API Secret",
+          "placeholder": "sk_… / secret"
+        },
+        "webhookSecret": {
+          "label": "Webhook Secret",
+          "placeholder": "whsec_…"
+        },
+        "merchantAccount": {
+          "label": "商户号 / Merchant Account",
+          "placeholder": "merchant_…"
+        },
+        "currencies": {
+          "label": "支持币种",
+          "placeholder": "选择支持的结算币种…"
+        },
+        "feeRate": { "label": "费率说明", "placeholder": "如 2.9% + $0.30" }
+      },
+      "byChannel": {
+        "creem": {
+          "intro": "Creem 使用单一 API Key；Webhook Signing Secret 用于验签。",
+          "apiSecretKey": {
+            "label": "API Key *",
+            "placeholder": "creem_test_… / creem_…",
+            "hint": "Dashboard → Developers → API Keys（注意 Test/Live 切换）"
+          },
+          "webhookSecret": {
+            "label": "Webhook Signing Secret",
+            "placeholder": "whsec_…",
+            "hint": "Developers → Webhooks → 打开端点复制 Signing Secret"
+          }
+        },
+        "stripe": {
+          "intro": "Stripe 需要 Publishable Key、Secret Key 与 Webhook Signing Secret。",
+          "apiPublicKey": {
+            "label": "Publishable Key *",
+            "placeholder": "pk_live_… / pk_test_…",
+            "hint": "Developers → API keys"
+          },
+          "apiSecretKey": {
+            "label": "Secret Key *",
+            "placeholder": "sk_live_… / sk_test_…",
+            "hint": "Developers → API keys（勿暴露到前端）"
+          },
+          "webhookSecret": {
+            "label": "Webhook Signing Secret *",
+            "placeholder": "whsec_…",
+            "hint": "Developers → Webhooks → 端点 Signing secret"
+          }
+        },
+        "paypal": {
+          "intro": "PayPal REST：Client ID + Client Secret；Webhook 可选填 ID/Secret。",
+          "apiPublicKey": {
+            "label": "Client ID *",
+            "placeholder": "AXxxxx…",
+            "hint": "Developer Dashboard → Apps & Credentials"
+          },
+          "apiSecretKey": {
+            "label": "Client Secret *",
+            "placeholder": "ELxxxx…",
+            "hint": "同一应用下的 Secret"
+          },
+          "webhookSecret": {
+            "label": "Webhook ID / Secret",
+            "placeholder": "可选",
+            "hint": "Webhooks 配置页"
+          }
+        },
+        "adyen": {
+          "intro": "Adyen：API Key + Merchant Account；Client Key / HMAC 可选。",
+          "merchantAccount": {
+            "label": "Merchant Account *",
+            "placeholder": "YourCompanyECOM",
+            "hint": "Customer Area → Account"
+          },
+          "apiSecretKey": {
+            "label": "API Key *",
+            "placeholder": "AQE…",
+            "hint": "Developers → API credentials"
+          },
+          "apiPublicKey": {
+            "label": "Client Key",
+            "placeholder": "可选",
+            "hint": "用于前端 Components"
+          },
+          "webhookSecret": {
+            "label": "HMAC Key",
+            "placeholder": "可选",
+            "hint": "Webhooks → HMAC"
+          }
+        },
+        "checkout": {
+          "intro": "Checkout.com：Public Key + Secret Key。",
+          "apiPublicKey": {
+            "label": "Public Key *",
+            "placeholder": "pk_…",
+            "hint": "Dashboard → Settings → Channels"
+          },
+          "apiSecretKey": {
+            "label": "Secret Key *",
+            "placeholder": "sk_…",
+            "hint": "同一渠道凭证"
+          },
+          "webhookSecret": {
+            "label": "Webhook Authorization / Signature Key",
+            "placeholder": "可选"
+          }
+        },
+        "klarna": {
+          "intro": "Klarna：API Username + Password。",
+          "apiPublicKey": {
+            "label": "API Username *",
+            "placeholder": "Kxxxx",
+            "hint": "Merchant Portal → Settings → API credentials"
+          },
+          "apiSecretKey": {
+            "label": "API Password *",
+            "placeholder": "••••",
+            "hint": "与 Username 成对"
+          }
+        },
+        "sepa": {
+          "intro": "SEPA 借记通常经由 Adyen/Stripe 等网关；请填写关联网关密钥与商户标识。",
+          "merchantAccount": {
+            "label": "债权人标识 / Creditor ID",
+            "placeholder": "可选"
+          },
+          "apiSecretKey": {
+            "label": "关联网关 API Secret *",
+            "placeholder": "sk_… / AQE…"
+          }
+        },
+        "apple_pay": {
+          "intro": "Apple Pay 多由 Stripe/Adyen 托管；请填写关联网关 Secret，并在对应控制台完成域名校验。",
+          "apiSecretKey": {
+            "label": "关联网关 API Secret *",
+            "placeholder": "sk_…"
+          }
+        },
+        "google_pay": {
+          "intro": "Google Pay 多由 Stripe/Adyen 托管；请填写关联网关 Secret。",
+          "apiSecretKey": {
+            "label": "关联网关 API Secret *",
+            "placeholder": "sk_…"
+          }
+        }
+      }
     },
     "appSheet": {
       "title": "应用：{{name}}",

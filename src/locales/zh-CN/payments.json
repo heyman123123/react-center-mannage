@@ -1,7 +1,7 @@
 {
   "checkoutTest": {
-    "productIdLabel": "Creem 商品 ID",
-    "productIdPlaceholder": "prod_xxx",
+    "productIdLabel": "Creem 商品",
+    "productIdPlaceholder": "搜索商品名称 / SKU / Creem ID",
     "customerEmailLabel": "客户邮箱（可选）",
     "customerEmailPlaceholder": "tester@example.com",
     "successUrlLabel": "支付成功跳转 URL（可选）",
@@ -11,7 +11,7 @@
     "success": "Checkout 已创建，请在新窗口完成支付。支付结果将通过 Webhook 自动入账。",
     "failed": "创建 Checkout 失败",
     "openCheckout": "打开支付页",
-    "productRequired": "请填写 Creem 商品 ID",
+    "productRequired": "请选择已配置的 Creem 商品",
     "creemOnly": "仅 Creem 渠道支持 Sandbox 测试下单"
   },
   "webhooks": {

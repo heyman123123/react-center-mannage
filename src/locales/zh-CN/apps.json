@@ -120,7 +120,29 @@
       "senderEmailLabel": "发件人专属邮箱地址 (Sender Email):",
       "senderEmailPlaceholder": "billing@yourbrand.global",
       "senderEmailHint": "客户收到付款发票与系统通知时展示的 From 邮箱，需与 SPF/DKIM 认证域名一致",
-      "triggersLabel": "启用的生命周期业务邮件自动化事件 (Email Triggers):"
+      "triggersLabel": "启用的生命周期业务邮件自动化事件 (Email Triggers):",
+      "events": {
+        "subscription_welcome_receipt": {
+          "label": "首次订阅欢迎与电子发票收据",
+          "desc": "客户成功付费拉起后立即发送"
+        },
+        "recurring_renewal_success": {
+          "label": "周期性自动续订扣款凭据",
+          "desc": "每月/每年到期扣款成功自动送达"
+        },
+        "payment_failed_dunning": {
+          "label": "扣款失败催付与重试挽留 (Dunning)",
+          "desc": "触发卡过期或余额不足时自动化催付"
+        },
+        "subscription_canceled_notice": {
+          "label": "退订确认与专属权益挽回",
+          "desc": "用户主动取消订阅时发送挽回方案"
+        },
+        "security_password_reset": {
+          "label": "账号密码重置与安全异地登录告警",
+          "desc": "触发终端用户账户安全事件时提醒"
+        }
+      }
     },
     "languages": {
       "defaultLabel": "1. 设定收银台与邮件默认基准语言 (Default Language):",

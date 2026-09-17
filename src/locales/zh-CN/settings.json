@@ -157,6 +157,8 @@
     }
   },
   "departments": {
+    "title": "部门组织管理",
+    "subtitle": "维护组织架构树、部门角色绑定与成员归属，支持批量转移与删除。",
     "allDepts": "全部部门",
     "refreshTitle": "刷新部门数据",
     "batchDeleteTitle": "删除选中的 {{count}} 个部门？",

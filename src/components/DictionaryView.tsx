@@ -976,21 +976,17 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               type="button"
               onClick={() => setCategoryFilter(node.id)}
               style={{ paddingLeft: `${8 + depth * 12}px` }}
-              className={`relative w-full flex items-center gap-2 pr-2 py-1.5 rounded text-xs cursor-pointer transition-all border ${
+              className={`relative w-full flex items-center gap-2 pr-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
                 active
-                  ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm"
+                  ? "bg-primary/5 text-fg font-semibold border-primary/20"
                   : "text-fg-secondary hover:bg-hover border-transparent"
               }`}
             >
               {active && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-r-full" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r-full" />
               )}
-              <span
-                className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
-                  active ? "bg-blue-500" : "bg-subtle border border-line-subtle"
-                }`}
-              >
-                <FolderTree className={`w-3.5 h-3.5 ${active ? "text-white" : "text-fg-tertiary"}`} />
+              <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-subtle">
+                <FolderTree className={`w-3.5 h-3.5 ${active ? "text-primary" : "text-fg-tertiary"}`} />
               </span>
               <span className="flex-1 text-left truncate flex items-center gap-1">
                 <span className="truncate">{node.name}</span>
@@ -1001,8 +997,8 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 )}
               </span>
               <span
-                className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
-                  active ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
+                className={`text-[10px] font-mono px-1.5 py-0.5 rounded-lg shrink-0 ${
+                  active ? "bg-primary/10 text-primary font-bold" : "bg-hover text-fg-tertiary"
                 }`}
               >
                 {count}
@@ -1025,22 +1021,42 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   if (loading) return <TableSkeleton rows={9} />;
 
   return (
-    <div className="space-y-3 font-sans">
+    <div className="space-y-4 font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* ===== 顶部操作栏（截图风格） ===== */}
-      <div className="bg-surface border border-line rounded-md shadow-card px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 bg-violet-50 text-violet-600 rounded-lg">
+              <BookOpen className="w-5 h-5" />
+            </span>
+            <h1 className="text-xl font-bold text-fg tracking-tight">{t("dictionary:title")}</h1>
+          </div>
+          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">{t("dictionary:subtitle")}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => handleOpenAdd()}
+          className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors self-start md:self-auto cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          {t("dictionary:toolbar.add")}
+        </button>
+      </div>
+
+      {/* ===== 顶部操作栏 ===== */}
+      <div className="bg-surface border border-line/80 rounded-xl shadow-card px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
             type="button"
             onClick={handleRefresh}
-            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             title={t("dictionary:toolbar.refreshTitle")}
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -1050,7 +1066,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <button
             type="button"
             onClick={() => handleOpenAdd()}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             {t("dictionary:toolbar.add")}
@@ -1060,7 +1076,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <button
               type="button"
               disabled
-              className="px-3 py-1.5 border border-rose-200 text-rose-600 rounded text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 border border-rose-200 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Trash2 className="w-3.5 h-3.5" />
               {t("dictionary:toolbar.delete")}
@@ -1073,7 +1089,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             >
               <button
                 type="button"
-                className="px-3 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 {t("dictionary:toolbar.delete")}
@@ -1086,7 +1102,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <button
             type="button"
             onClick={handleBatchAutoComplete}
-            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             title={t("dictionary:toolbar.autoCompleteTitle")}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
@@ -1096,38 +1112,29 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <button
             type="button"
             onClick={handleExportWebJSON}
-            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             title={t("dictionary:toolbar.exportI18nTitle")}
           >
-            <Download className="w-3.5 h-3.5 text-blue-600" />
+            <Download className="w-3.5 h-3.5 text-primary" />
             {t("dictionary:toolbar.exportI18n")}
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <div className="relative w-64">
-            <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder={t("dictionary:toolbar.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-          <button
-            type="button"
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Search className="w-3.5 h-3.5" />
-            {t("dictionary:toolbar.search")}
-          </button>
+        <div className="relative w-64">
+          <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder={t("dictionary:toolbar.searchPlaceholder")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+          />
         </div>
       </div>
 
       <div className="flex gap-3 items-start">
       {/* ===== 左侧：类型分类栏 ===== */}
-      <div className="w-48 shrink-0 bg-surface border border-line rounded-md shadow-card overflow-hidden lg:sticky lg:top-4">
+      <div className="w-56 shrink-0 bg-surface border border-line/80 rounded-xl shadow-card overflow-hidden lg:sticky lg:top-4">
         <div className="px-3 py-2.5 border-b border-line flex items-center justify-between">
           <span className="text-xs font-bold text-fg flex items-center gap-1.5">
             <ListFilter className="w-3.5 h-3.5 text-fg-secondary" />
@@ -1137,7 +1144,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             type="button"
             onClick={handleRefreshTree}
             title={t("dictionary:tree.refreshTitle")}
-            className="p-1 rounded text-fg-tertiary hover:bg-hover hover:text-fg transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-fg-tertiary hover:bg-hover hover:text-fg transition-colors cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${treeRefreshing ? "animate-spin" : ""}`} />
           </button>
@@ -1151,7 +1158,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               placeholder={t("dictionary:tree.searchPlaceholder")}
               value={treeKeyword}
               onChange={(e) => setTreeKeyword(e.target.value)}
-              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
@@ -1160,30 +1167,28 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
           <button
             type="button"
             onClick={() => setCategoryFilter("ALL")}
-            className={`relative w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-all border ${
+            className={`relative w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
               categoryFilter === "ALL"
-                ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm"
+                ? "bg-primary/5 text-fg font-semibold border-primary/20"
                 : "text-fg-secondary hover:bg-hover border-transparent"
             }`}
           >
             {categoryFilter === "ALL" && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-r-full" />
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r-full" />
             )}
-            <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
-              categoryFilter === "ALL" ? "bg-blue-500" : "bg-subtle border border-line-subtle"
-            }`}>
-              <BookOpen className={`w-3.5 h-3.5 ${categoryFilter === "ALL" ? "text-white" : "text-fg-tertiary"}`} />
+            <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-subtle">
+              <BookOpen className={`w-3.5 h-3.5 ${categoryFilter === "ALL" ? "text-primary" : "text-fg-tertiary"}`} />
             </span>
             <span className="flex-1 text-left truncate">{t("dictionary:tree.all")}</span>
-            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-              categoryFilter === "ALL" ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
+            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-lg ${
+              categoryFilter === "ALL" ? "bg-primary/10 text-primary font-bold" : "bg-hover text-fg-tertiary"
             }`}>{entryList.length}</span>
           </button>
 
           <button
             type="button"
             onClick={() => openCreateCategorySheet(null)}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-[11px] text-blue-600 hover:bg-blue-50 border border-transparent cursor-pointer"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] text-primary hover:bg-primary/5 border border-transparent cursor-pointer"
           >
             <Plus className="w-3 h-3" />
             {t("dictionary:tree.addSibling")}
@@ -1204,7 +1209,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         </div>
 
         {/* 语种切换 */}
-        <div className="bg-surface border border-line rounded-md shadow-card px-3 py-2 flex items-center justify-between gap-2 flex-wrap">
+        <div className="bg-surface border border-line/80 rounded-xl shadow-card px-3 py-2 flex items-center justify-between gap-2 flex-wrap">
           <span className="text-xs text-fg-secondary flex items-center gap-1.5">
             <Languages className="w-3.5 h-3.5 text-violet-500" />
             {t("dictionary:list.previewLang")}
@@ -1215,9 +1220,9 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 key={l.code}
                 type="button"
                 onClick={() => setPreviewLanguage(l.code)}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 cursor-pointer ${
+                className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-colors flex items-center gap-1 cursor-pointer ${
                   previewLanguage === l.code
-                    ? "bg-blue-600 text-white font-semibold"
+                    ? "bg-primary text-primary-foreground font-semibold"
                     : "bg-hover text-fg-secondary hover:bg-hover"
                 }`}
               >
@@ -1228,7 +1233,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <button
               type="button"
               onClick={() => setIsLangModalOpen(true)}
-              className="px-2 py-1 rounded text-[11px] font-medium flex items-center gap-1 cursor-pointer bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 transition-colors"
+              className="px-2 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1 cursor-pointer bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 transition-colors"
               title={t("dictionary:list.manageLanguagesTitle")}
             >
               <Settings2 className="w-3 h-3" />
@@ -1238,7 +1243,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         </div>
 
         {/* 表格 */}
-        <div className="bg-surface border border-line rounded-md shadow-card overflow-hidden">
+        <div className="bg-surface border border-line/80 rounded-xl shadow-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-[960px] w-full text-left text-xs border-collapse">
               <thead>
@@ -1280,7 +1285,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
 
                     return (
                       <React.Fragment key={item.id}>
-                        <tr className="hover:bg-subtle/80 transition-colors group">
+                        <tr className="hover:bg-subtle/60 transition-colors group">
                           <td className="py-2 px-3">
                             <input
                               type="checkbox"
@@ -1299,7 +1304,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                           <td className="py-2 px-3">
                             <div className="flex items-start gap-1.5">
                               <span
-                                className="font-mono font-bold text-xs text-fg bg-hover px-2 py-0.5 rounded border border-line break-all"
+                                className="font-mono font-bold text-xs text-fg bg-hover px-2 py-0.5 rounded-lg border border-line break-all"
                                 title={item.key}
                               >
                                 {item.key}
@@ -1334,7 +1339,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleOpenEdit(item)}
-                                className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                                className="text-primary hover:text-primary-hover font-medium cursor-pointer"
                                 title={t("dictionary:table.editTitle")}
                               >
                                 {t("dictionary:table.edit")}
@@ -1362,7 +1367,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                         {isExpanded && (
                           <tr className="bg-violet-50/40">
                             <td colSpan={7} className="p-3 border-b border-line">
-                              <div className="bg-surface rounded p-3 border border-violet-200 shadow-card space-y-3">
+                              <div className="bg-surface rounded-xl p-3 border border-violet-200 shadow-card space-y-3">
                                 <div className="flex items-center justify-between text-xs font-bold text-fg pb-2 border-b border-line-subtle">
                                   <span className="flex items-center gap-1.5">
                                     <Languages className="w-4 h-4 text-violet-600" />
@@ -1371,7 +1376,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                   {languages.map((l) => (
-                                    <div key={l.code} className="bg-subtle p-2.5 rounded border border-line text-xs space-y-1">
+                                    <div key={l.code} className="bg-subtle p-2.5 rounded-xl border border-line text-xs space-y-1">
                                       <div className="flex items-center justify-between text-[11px] font-semibold text-fg-secondary">
                                         <span className="flex items-center gap-1">
                                           <span>{l.flag}</span>
@@ -1379,7 +1384,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                                         </span>
                                         <span className="font-mono text-fg-tertiary text-[10px]">{l.code}</span>
                                       </div>
-                                      <div className="text-fg font-sans text-xs bg-surface p-2 rounded border border-line/80 leading-relaxed min-h-[42px]">
+                                      <div className="text-fg font-sans text-xs bg-surface p-2 rounded-lg border border-line/80 leading-relaxed min-h-[42px]">
                                         {item.translations[l.code] || (
                                           <span className="text-fg-tertiary italic">{t("dictionary:table.notFilled")}</span>
                                         )}
@@ -1417,7 +1422,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <button
               type="button"
               onClick={() => setIsCodeModalOpen(false)}
-              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold cursor-pointer"
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
             >
               {t("dictionary:codeSheet.close")}
             </button>
@@ -1433,7 +1438,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleCopy(`t("${activeCodeEntry.key}")`, "code_react")}
-                  className="text-blue-600 hover:text-blue-800 text-[11px] flex items-center gap-1 cursor-pointer"
+                  className="text-primary hover:text-primary-hover text-[11px] flex items-center gap-1 cursor-pointer"
                 >
                   <Copy className="w-3 h-3" />
                   <span>{t("dictionary:codeSheet.copy")}</span>
@@ -1455,7 +1460,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                   onClick={() =>
                     handleCopy(`i18n.resolve(req.locale, "${activeCodeEntry.key}")`, "code_api")
                   }
-                  className="text-blue-600 hover:text-blue-800 text-[11px] flex items-center gap-1 cursor-pointer"
+                  className="text-primary hover:text-primary-hover text-[11px] flex items-center gap-1 cursor-pointer"
                 >
                   <Copy className="w-3 h-3" />
                   <span>{t("dictionary:codeSheet.copy")}</span>
@@ -1487,7 +1492,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleCopy(`{{dict.${activeCodeEntry.key}}}`, "code_mail")}
-                  className="text-blue-600 hover:text-blue-800 text-[11px] flex items-center gap-1 cursor-pointer"
+                  className="text-primary hover:text-primary-hover text-[11px] flex items-center gap-1 cursor-pointer"
                 >
                   <Copy className="w-3 h-3" />
                   <span>{t("dictionary:codeSheet.copy")}</span>
@@ -1510,15 +1515,15 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
         description={t("dictionary:langSheet.description")}
         icon={<Languages className="w-5 h-5 text-violet-600" />}
         widthClass="max-w-xl"
-        footer={
-          <button
-            type="button"
-            onClick={() => setIsLangModalOpen(false)}
-            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold cursor-pointer"
-          >
-            {t("dictionary:langSheet.done")}
-          </button>
-        }
+          footer={
+            <button
+              type="button"
+              onClick={() => setIsLangModalOpen(false)}
+              className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer"
+            >
+              {t("dictionary:langSheet.done")}
+            </button>
+          }
       >
         <div className="space-y-5 text-xs">
           {/* 当前已配置语言 */}
@@ -1668,14 +1673,14 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-3 py-2 border border-line text-fg-secondary rounded hover:bg-hover font-semibold cursor-pointer"
+                className="px-3 py-2 border border-line text-fg-secondary rounded-lg hover:bg-hover font-semibold cursor-pointer"
               >
                 {t("dictionary:editSheet.cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded font-semibold cursor-pointer"
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg font-semibold cursor-pointer"
               >
                 {editingEntry ? t("dictionary:editSheet.saveEdit") : t("dictionary:editSheet.saveCreate")}
               </button>
@@ -1841,7 +1846,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
             <button
               type="button"
               onClick={closeCategorySheet}
-              className="px-3 py-2 border border-line text-fg-secondary rounded hover:bg-hover font-semibold cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary rounded-lg hover:bg-hover font-semibold cursor-pointer"
             >
               {t("dictionary:categorySheet.cancel")}
             </button>
@@ -1851,7 +1856,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               onClick={() => {
                 void handleSubmitCategorySheet();
               }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded font-semibold cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-60 text-primary-foreground rounded-lg font-semibold cursor-pointer"
             >
               {categorySheetMode === "rename"
                 ? t("dictionary:categorySheet.submitRename")

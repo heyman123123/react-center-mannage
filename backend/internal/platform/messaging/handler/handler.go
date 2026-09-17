@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	auditsvc "github.com/novaspay/admin-api/internal/platform/audit/service"
 	msgsvc "github.com/novaspay/admin-api/internal/platform/messaging/service"
+	"github.com/novaspay/admin-api/internal/middleware"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
 	"github.com/novaspay/admin-api/internal/pkg/response"
 )
@@ -160,4 +161,28 @@ func (h *Handler) ListWebhooks(c *gin.Context) {
 		return
 	}
 	response.OKPage(c, list, total, page, pageSize)
+}
+
+func (h *Handler) Dispatch(c *gin.Context) {
+	var req msgsvc.DispatchInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	appIDVal, ok := c.Get(middleware.CtxPaymentAppID)
+	if !ok {
+		response.Fail(c, apperr.Unauthorized)
+		return
+	}
+	appID, _ := appIDVal.(string)
+	if appID == "" {
+		response.Fail(c, apperr.Unauthorized)
+		return
+	}
+	result, err := h.svc.Dispatch(c.Request.Context(), appID, req)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, result)
 }

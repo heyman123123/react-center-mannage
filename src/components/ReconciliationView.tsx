@@ -86,6 +86,11 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       (currentTenant.id === "group_hq" || t.tenantId === currentTenant.id)
   );
 
+  const discrepancyDiffAmount = discrepancies.reduce((sum, d) => {
+    if (d.settleAmount == null) return sum + (d.orderAmount || 0);
+    return sum + Math.abs(d.orderAmount - d.settleAmount);
+  }, 0);
+
   const pendingRecon = transactionList.filter(
     (t) =>
       (t.status === "in_process" || t.status === "pending_check") &&
@@ -278,7 +283,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
           </div>
           <div className="mt-2 pt-3 border-t border-line-subtle text-[11px] text-red-600 font-medium flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
-            <span>{t("nodes.discrepancyPending", { count: discrepancies.length })}</span>
+            <span>{t("nodes.discrepancyPending", { count: discrepancies.length, amount: formatCurrency(discrepancyDiffAmount, currentTenant.currency) })}</span>
           </div>
         </div>
       </div>

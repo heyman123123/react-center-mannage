@@ -24,7 +24,6 @@ const emptyForm = {
   dailyCap: "",
   description: "",
   isolationLevel: "LOGICAL_TENANT" as Tenant["isolationLevel"],
-  activeMerchantsCount: "",
 };
 
 interface TenantManagementViewProps {
@@ -107,7 +106,6 @@ export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
       dailyCap: String(row.dailyCap),
       description: row.description,
       isolationLevel: row.isolationLevel,
-      activeMerchantsCount: String(row.activeMerchantsCount),
     });
     setSheetOpen(true);
   };
@@ -127,7 +125,7 @@ export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
       description: form.description.trim(),
       dailyCap: Number(form.dailyCap) || 0,
       isolationLevel: form.isolationLevel,
-      activeMerchantsCount: Number(form.activeMerchantsCount) || 0,
+      activeMerchantsCount: 0,
     };
     try {
       if (editing) {
@@ -203,7 +201,6 @@ export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
               <th className="text-left py-3 px-3 font-medium">{t("columns.currency")}</th>
               <th className="text-left py-3 px-3 font-medium">{t("columns.isolation")}</th>
               <th className="text-left py-3 px-3 font-medium">{t("columns.dailyCap")}</th>
-              <th className="text-left py-3 px-3 font-medium">{t("columns.merchants")}</th>
               <th className="text-right py-3 px-3 font-medium">{t("columns.actions")}</th>
             </tr>
           </thead>
@@ -225,7 +222,6 @@ export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
                 <td className="py-3 px-3 font-mono whitespace-nowrap">
                   {row.dailyCap.toLocaleString()}
                 </td>
-                <td className="py-3 px-3 whitespace-nowrap">{row.activeMerchantsCount}</td>
                 <td className="py-3 px-3 text-right whitespace-nowrap">
                   <button
                     type="button"
@@ -340,25 +336,14 @@ export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
               }))}
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block mb-1 font-medium text-fg-secondary">{t("sheet.dailyCap")}</label>
-              <input
-                type="number"
-                value={form.dailyCap}
-                onChange={(e) => setForm((f) => ({ ...f, dailyCap: e.target.value }))}
-                className="w-full px-3 py-2 border border-line rounded-lg bg-subtle font-mono"
-              />
-            </div>
-            <div>
-              <label className="block mb-1 font-medium text-fg-secondary">{t("sheet.merchants")}</label>
-              <input
-                type="number"
-                value={form.activeMerchantsCount}
-                onChange={(e) => setForm((f) => ({ ...f, activeMerchantsCount: e.target.value }))}
-                className="w-full px-3 py-2 border border-line rounded-lg bg-subtle font-mono"
-              />
-            </div>
+          <div>
+            <label className="block mb-1 font-medium text-fg-secondary">{t("sheet.dailyCap")}</label>
+            <input
+              type="number"
+              value={form.dailyCap}
+              onChange={(e) => setForm((f) => ({ ...f, dailyCap: e.target.value }))}
+              className="w-full px-3 py-2 border border-line rounded-lg bg-subtle font-mono"
+            />
           </div>
           <div>
             <label className="block mb-1 font-medium text-fg-secondary">{t("sheet.descriptionLabel")}</label>

@@ -1,78 +1,65 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Check, ChevronDown, X } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
-import { Check, ChevronDown, Search, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export interface SearchableSelectOption {
   value: string;
-  label: React.ReactNode;
-  searchText?: string;
+  label: string;
+  description?: string;
   disabled?: boolean;
 }
 
-export interface SearchableSelectProps {
-  value?: string;
+interface SearchableSelectProps {
+  value: string;
   onValueChange: (val: string) => void;
-  options: (SearchableSelectOption | string)[];
+  options: SearchableSelectOption[];
   placeholder?: string;
   searchPlaceholder?: string;
+  emptyText?: string;
   className?: string;
   triggerClassName?: string;
-  contentClassName?: string;
   disabled?: boolean;
-  /** 无匹配结果时的提示 */
-  emptyText?: string;
 }
 
-/**
- * 可搜索下拉选择（基于 Radix Popover + 输入过滤）
- * 用于选项较多（如邮件模板、应用列表）时支持键入查找。
- */
+/** 单选 + 面板内模糊搜索（Portal，避免 SideSheet 裁剪） */
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   value,
   onValueChange,
   options,
-  placeholder = "请选择...",
-  searchPlaceholder = "输入关键字查找...",
+  placeholder,
+  searchPlaceholder,
+  emptyText,
   className,
   triggerClassName,
-  contentClassName,
   disabled,
-  emptyText = "未找到匹配项",
 }) => {
+  const { t } = useTranslation("shell");
   const [open, setOpen] = useState(false);
-  const [keyword, setKeyword] = useState("");
+  const [search, setSearch] = useState("");
 
-  const normalizedOptions: SearchableSelectOption[] = options.map((opt) =>
-    typeof opt === "string"
-      ? { value: opt, label: opt }
-      : {
-          ...opt,
-          searchText: opt.searchText || (typeof opt.label === "string" ? opt.label : ""),
-        }
-  );
+  const resolvedPlaceholder = placeholder ?? t("multiSelect.placeholder");
+  const resolvedSearch = searchPlaceholder ?? t("multiSelect.searchPlaceholder");
+  const resolvedEmpty = emptyText ?? t("multiSelect.empty");
 
-  const selected = normalizedOptions.find((o) => o.value === value);
-
-  const filtered = normalizedOptions.filter((o) => {
-    if (!keyword.trim()) return true;
-    const kw = keyword.toLowerCase();
-    const hay = `${o.value} ${typeof o.label === "string" ? o.label : ""} ${o.searchText || ""}`.toLowerCase();
-    return hay.includes(kw);
-  });
-
-  const handleSelect = (val: string) => {
-    onValueChange(val);
-    setOpen(false);
-    setKeyword("");
-  };
+  const selected = options.find((o) => o.value === value);
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? options.filter(
+        (o) =>
+          o.label.toLowerCase().includes(q) ||
+          o.value.toLowerCase().includes(q) ||
+          (o.description || "").toLowerCase().includes(q)
+      )
+    : options;
 
   return (
     <Popover.Root
       open={open}
-      onOpenChange={(v) => {
-        setOpen(v);
-        if (v) setKeyword("");
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSearch("");
       }}
     >
       <Popover.Trigger asChild>
@@ -80,87 +67,81 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           type="button"
           disabled={disabled}
           className={cn(
-            "flex min-h-9 w-full items-center justify-between gap-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-fg shadow-2xs transition-all cursor-pointer hover:border-line focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-line disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-9 w-full items-center justify-between gap-1 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-fg shadow-2xs transition-all cursor-pointer hover:border-line focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50",
             open && "border-line ring-2 ring-primary/10",
-            triggerClassName
+            triggerClassName,
+            className
           )}
         >
-          <span className="truncate text-left">
-            {selected ? (
-              <span className="text-fg">{selected.label}</span>
-            ) : (
-              <span className="text-fg-tertiary">{placeholder}</span>
-            )}
+          <span className={cn("truncate text-left", !selected && "text-fg-tertiary")}>
+            {selected ? selected.label : resolvedPlaceholder}
           </span>
-          <ChevronDown
-            className={cn(
-              "h-3.5 w-3.5 text-fg-tertiary shrink-0 transition-transform",
-              open && "rotate-180"
-            )}
-          />
+          <ChevronDown className="h-3.5 w-3.5 text-fg-tertiary shrink-0" />
         </button>
       </Popover.Trigger>
-
       <Popover.Portal>
         <Popover.Content
           align="start"
-          sideOffset={6}
-          className={cn(
-            "z-[9999] w-[var(--radix-popover-trigger-width)] min-w-[14rem] rounded-xl border border-line bg-surface text-fg shadow-2xl animate-in fade-in zoom-in-95 outline-none",
-            contentClassName
-          )}
+          sideOffset={4}
+          className="z-50 w-[var(--radix-popover-trigger-width)] min-w-[220px] overflow-hidden rounded-xl border border-line bg-surface p-1.5 shadow-xl animate-in fade-in zoom-in-95"
         >
-          {/* Search Input */}
-          <div className="p-2 border-b border-line-subtle">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                autoFocus
-                placeholder={searchPlaceholder}
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                className="w-full pl-8 pr-7 py-1.5 text-xs bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:bg-surface placeholder:text-fg-tertiary"
-              />
-              {keyword && (
-                <button
-                  type="button"
-                  onClick={() => setKeyword("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-tertiary hover:text-fg-secondary cursor-pointer"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
+          <div className="px-1 pb-1.5">
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={resolvedSearch}
+              className="w-full rounded-lg border border-line bg-subtle px-2.5 py-1.5 text-xs text-fg outline-none focus:ring-1 focus:ring-primary/20"
+            />
           </div>
-
-          {/* Options */}
-          <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
+          <div className="max-h-56 overflow-y-auto">
             {filtered.length === 0 ? (
-              <div className="py-6 text-center text-xs text-fg-tertiary">
-                {emptyText}
-              </div>
+              <div className="py-6 text-center text-xs text-fg-tertiary">{resolvedEmpty}</div>
             ) : (
               filtered.map((opt) => {
-                const isChecked = opt.value === value;
+                const active = opt.value === value;
                 return (
                   <button
                     key={opt.value}
                     type="button"
                     disabled={opt.disabled}
-                    onClick={() => handleSelect(opt.value)}
+                    onClick={() => {
+                      onValueChange(opt.value);
+                      setOpen(false);
+                      setSearch("");
+                    }}
                     className={cn(
-                      "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-fg-secondary transition-colors cursor-pointer hover:bg-hover hover:text-fg disabled:opacity-40 disabled:cursor-not-allowed",
-                      isChecked && "bg-subtle text-fg font-medium"
+                      "flex w-full items-start gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer hover:bg-hover disabled:opacity-40",
+                      active ? "bg-subtle text-fg font-medium" : "text-fg-secondary"
                     )}
                   >
-                    <span className="truncate">{opt.label}</span>
-                    {isChecked && <Check className="w-3.5 h-3.5 text-fg shrink-0" />}
+                    <span
+                      className={cn(
+                        "mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0",
+                        active ? "bg-primary border-primary text-primary-foreground" : "border-line bg-surface"
+                      )}
+                    >
+                      {active && <Check className="w-3 h-3 stroke-[3]" />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{opt.label}</span>
+                      {opt.description ? (
+                        <span className="block truncate text-[10px] text-fg-tertiary mt-0.5">
+                          {opt.description}
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                 );
               })
             )}
           </div>
+          <Popover.Close
+            className="absolute right-2 top-2 p-1 text-fg-tertiary hover:text-fg-secondary rounded cursor-pointer"
+            aria-label={t("sideSheet.close")}
+          >
+            <X className="w-3.5 h-3.5" />
+          </Popover.Close>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

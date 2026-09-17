@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import * as channelsApi from "../api/modules/channels";
-import * as iamApi from "../api/modules/iam";
 import { useViewLoading } from "./ui/useViewLoading";
 import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -29,21 +28,27 @@ import {
   ShieldAlert,
   Layers,
 } from "lucide-react";
-import { PaymentChannelConfig, PaymentChannel, TransactionRecord, PaymentApp, DictionaryEntry, Tenant, SystemUser } from "../types/payment";
+import { MultiSelect } from "./ui/MultiSelect";
+import { SearchableSelect } from "./ui/SearchableSelect";
+import * as appsApi from "../api/modules/apps";
+import * as productsApi from "../api/modules/products";
+import { PaymentChannelConfig, PaymentChannel, TransactionRecord, PaymentApp, ProductConfig, Tenant, SystemUser } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
-import { formatUnix } from "../lib/time";
+import { loadPaymentChannelOptions, type PaymentChannelOption } from "../lib/paymentChannels";
+import { getChannelFormSchema, type ChannelFormFieldId } from "../lib/channelFormSchemas";
+
+const CURRENCY_OPTIONS = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "SGD", "HKD", "CNY"].map((c) => ({
+  value: c,
+  label: c,
+}));
 
 interface PaymentChannelsViewProps {
   currentTenant?: Tenant;
   currentUser?: SystemUser;
-  /** 可选：壳层已加载的字典；页面仍会按 namespace=channel 主动拉取兜底 */
-  dictionary?: DictionaryEntry[];
 }
 
-export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
-  dictionary: dictionaryProp,
-}) => {
+export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
   const { t } = useTranslation(["channels", "payments", "common"]);
   const testScenarios = useMemo(
     () =>
@@ -64,48 +69,12 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     [t]
   );
   const [channelList, setChannelList] = useState<PaymentChannelConfig[]>([]);
-  const [apps] = useState<PaymentApp[]>([]);
-  const [dictionary, setDictionary] = useState<DictionaryEntry[]>(dictionaryProp || []);
+  const [appList, setAppList] = useState<PaymentApp[]>([]);
+  const [productList, setProductList] = useState<ProductConfig[]>([]);
+  const [dictChannelOptions, setDictChannelOptions] = useState<PaymentChannelOption[]>([]);
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { currentPage, setCurrentPage, reset: _pcr, pageSize } = usePagination(10);
-  const [testingId, setTestingId] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<{ id: string; msg: string; success: boolean } | null>(null);
-  const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [editingChannel, setEditingChannel] = useState<PaymentChannelConfig | null>(null);
-
-  // 接入新渠道（需求9：从字典选渠道 + 填写账号信息）
-  const [isAddChannelOpen, setIsAddChannelOpen] = useState(false);
-  const [formChannelKey, setFormChannelKey] = useState("");
-  const [formAccountName, setFormAccountName] = useState("");
-  const [formApiKey, setFormApiKey] = useState("");
-  const [formApiSecret, setFormApiSecret] = useState("");
-  const [formWebhookSecret, setFormWebhookSecret] = useState("");
-  const [formMode, setFormMode] = useState("live");
-  const [formCurrencies, setFormCurrencies] = useState("USD,EUR,GBP");
-  const [formFeeRate, setFormFeeRate] = useState("");
-
-  // 应用详情 SideSheet（需求4：点击应用名 chips 查看其绑定渠道）
-  const [selectedApp, setSelectedApp] = useState<PaymentApp | null>(null);
-  const [appSheetRelatedChannel, setAppSheetRelatedChannel] = useState<PaymentChannelConfig | null>(null);
-
-  // Test Transaction Modal State
-  const [isTestTxModalOpen, setIsTestTxModalOpen] = useState(false);
-  const [selectedTestChannel, setSelectedTestChannel] = useState<PaymentChannelConfig | null>(null);
-  const [testScenario, setTestScenario] = useState<"SUCCESS" | "3DS" | "FRAUD" | "INSUFFICIENT_FUNDS">("SUCCESS");
-  const [testCurrency, setTestCurrency] = useState("USD");
-  const [testAmount, setTestAmount] = useState("49.00");
-  const [testAppName, setTestAppName] = useState("Novas AI Copilot (出海AI助手)");
-  const [testProductId, setTestProductId] = useState("");
-  const [testCustomerEmail, setTestCustomerEmail] = useState("");
-  const [isExecutingTxTest, setIsExecutingTxTest] = useState(false);
-  const [lastExecutedTxResult, setLastExecutedTxResult] = useState<{
-    tx: TransactionRecord;
-    rawJson: string;
-    success: boolean;
-    message: string;
-  } | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -123,51 +92,145 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     }
   }, [modeFilter, t]);
 
-  const loadChannelDictionary = useCallback(async () => {
+  const loadDictChannels = useCallback(async () => {
+    const opts = await loadPaymentChannelOptions();
+    setDictChannelOptions(opts);
+  }, []);
+
+  const loadApps = useCallback(async () => {
     try {
-      const page = await iamApi.listDictionaryEntries({
-        namespace: "channel",
-        page: 1,
-        pageSize: 100,
-      });
-      const mapped: DictionaryEntry[] = (page.list || []).map((d) => ({
-        id: d.id,
-        key: d.key || d.entryKey,
-        category: (d.category?.toUpperCase() as DictionaryEntry["category"]) || "PAYMENT_CHANNEL",
-        categoryId: d.categoryId || undefined,
-        description: d.description || d.label || "",
-        referencedTemplatesCount: 0,
-        translations: {
-          "zh-CN": d.translations?.["zh-CN"] || d.label || "",
-          "en-US": d.translations?.["en-US"] || "",
-        } as DictionaryEntry["translations"],
-        updatedAt: formatUnix(d.createdAt),
-      }));
-      if (mapped.length > 0) {
-        setDictionary(mapped);
-        return;
-      }
-      // 兜底：壳层字典里筛 PAYMENT_CHANNEL
-      if (dictionaryProp?.length) {
-        setDictionary(dictionaryProp.filter((d) => d.category === "PAYMENT_CHANNEL"));
-      }
+      const apps = await appsApi.getApps();
+      setAppList(apps);
     } catch {
-      if (dictionaryProp?.length) {
-        setDictionary(dictionaryProp.filter((d) => d.category === "PAYMENT_CHANNEL"));
-      }
+      setAppList([]);
     }
-  }, [dictionaryProp]);
+  }, []);
 
   useEffect(() => {
     void loadChannels();
   }, [loadChannels]);
 
   useEffect(() => {
-    void loadChannelDictionary();
-  }, [loadChannelDictionary]);
+    void loadDictChannels();
+    void loadApps();
+  }, [loadDictChannels, loadApps]);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ id: string; msg: string; success: boolean } | null>(null);
+  const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [editingChannel, setEditingChannel] = useState<PaymentChannelConfig | null>(null);
 
-  // 字典中"支付渠道"分类的候选渠道词条
-  const dictChannelEntries = dictionary.filter((d) => d.category === "PAYMENT_CHANNEL");
+  // 接入新渠道（需求9：从字典选渠道 + 填写账号信息）
+  const [isAddChannelOpen, setIsAddChannelOpen] = useState(false);
+  const [formChannelKey, setFormChannelKey] = useState("");
+  const [formAccountName, setFormAccountName] = useState("");
+  const [formMerchantAccount, setFormMerchantAccount] = useState("");
+  const [formApiPublicKey, setFormApiPublicKey] = useState("");
+  const [formApiSecret, setFormApiSecret] = useState("");
+  const [formWebhookSecret, setFormWebhookSecret] = useState("");
+  const [formMode, setFormMode] = useState("live");
+  const [formCurrencies, setFormCurrencies] = useState<string[]>(["USD", "EUR", "GBP"]);
+  const [formFeeRate, setFormFeeRate] = useState("");
+
+  const addFormSchema = useMemo(
+    () => (formChannelKey ? getChannelFormSchema(formChannelKey) : null),
+    [formChannelKey]
+  );
+
+  const resetAddFormCredentials = () => {
+    setFormAccountName("");
+    setFormMerchantAccount("");
+    setFormApiPublicKey("");
+    setFormApiSecret("");
+    setFormWebhookSecret("");
+    setFormFeeRate("");
+  };
+
+  const handleSelectChannelKey = (key: string) => {
+    setFormChannelKey(key);
+    resetAddFormCredentials();
+    const schema = getChannelFormSchema(key);
+    setFormMode(schema.defaultMode);
+    setFormCurrencies(
+      schema.defaultCurrencies
+        .split(",")
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean)
+    );
+  };
+
+  const fieldLabel = (fieldId: ChannelFormFieldId) => {
+    const byCh = formChannelKey
+      ? t(`payment.addSheet.byChannel.${formChannelKey}.${fieldId}.label`, { defaultValue: "" })
+      : "";
+    if (byCh) return byCh;
+    return t(`payment.addSheet.fields.${fieldId}.label`);
+  };
+
+  const fieldPlaceholder = (fieldId: ChannelFormFieldId) => {
+    const byCh = formChannelKey
+      ? t(`payment.addSheet.byChannel.${formChannelKey}.${fieldId}.placeholder`, { defaultValue: "" })
+      : "";
+    if (byCh) return byCh;
+    return t(`payment.addSheet.fields.${fieldId}.placeholder`, { defaultValue: "" });
+  };
+
+  const fieldHint = (fieldId: ChannelFormFieldId) => {
+    if (!formChannelKey) return "";
+    return t(`payment.addSheet.byChannel.${formChannelKey}.${fieldId}.hint`, { defaultValue: "" });
+  };
+
+  // 应用详情 SideSheet（需求4：点击应用名 chips 查看其绑定渠道）
+  const [selectedApp, setSelectedApp] = useState<PaymentApp | null>(null);
+  const [appSheetRelatedChannel, setAppSheetRelatedChannel] = useState<PaymentChannelConfig | null>(null);
+
+  // Test Transaction Modal State
+  const [isTestTxModalOpen, setIsTestTxModalOpen] = useState(false);
+  const [selectedTestChannel, setSelectedTestChannel] = useState<PaymentChannelConfig | null>(null);
+  const [testScenario, setTestScenario] = useState<"SUCCESS" | "3DS" | "FRAUD" | "INSUFFICIENT_FUNDS">("SUCCESS");
+  const [testAppId, setTestAppId] = useState("");
+  const [testProductLocalId, setTestProductLocalId] = useState("");
+  const [testCustomerEmail, setTestCustomerEmail] = useState("");
+  const [isExecutingTxTest, setIsExecutingTxTest] = useState(false);
+  const [lastExecutedTxResult, setLastExecutedTxResult] = useState<{
+    tx: TransactionRecord;
+    rawJson: string;
+    success: boolean;
+    message: string;
+  } | null>(null);
+
+  const selectedTestApp = useMemo(
+    () => appList.find((a) => a.id === testAppId) || null,
+    [appList, testAppId]
+  );
+
+  const selectedTestProduct = useMemo(
+    () => productList.find((p) => p.id === testProductLocalId) || null,
+    [productList, testProductLocalId]
+  );
+
+  const creemProductIdForTest = selectedTestProduct
+    ? (selectedTestProduct.creemProductId || selectedTestProduct.externalProductId || selectedTestProduct.code || "").trim()
+    : "";
+
+  const loadProductsForChannel = useCallback(async (channelId: string) => {
+    if (!channelId) {
+      setProductList([]);
+      return;
+    }
+    try {
+      const rows = await productsApi.listProducts({ channelId });
+      setProductList(rows.filter((p) => p.status !== "ARCHIVED"));
+    } catch {
+      setProductList([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isTestTxModalOpen) return;
+    const ch = selectedTestChannel || channelList[0];
+    if (ch?.id) void loadProductsForChannel(ch.id);
+  }, [isTestTxModalOpen, selectedTestChannel, channelList, loadProductsForChannel]);
 
   const toggleShowSecret = (id: string) => {
     setShowSecretMap((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -213,6 +276,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
             description: editingChannel.description,
             mode: editingChannel.mode,
             enabled: editingChannel.enabled,
+            apiPublicKey: editingChannel.apiPublicKey,
             apiSecretKey: editingChannel.apiSecretKey,
             webhookSecret: editingChannel.webhookSecret,
             supportedCurrencies: editingChannel.supportedCurrencies,
@@ -226,20 +290,36 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     }
   };
 
-  // 接入新渠道：从渠道池批量创建并同步父级 App 的 paymentChannels
+  // 接入新渠道：按渠道 schema 校验并创建
   const handleConfirmNewChannel = async () => {
-    if (!formChannelKey) {
+    if (!formChannelKey || !addFormSchema) {
       showToast(t("payment.selectChannelFirst"));
       return;
     }
-    const entry = dictChannelEntries.find((e) => e.key === formChannelKey);
-    const slug = (formChannelKey.match(/^channel\.(.+)\.name$/)?.[1]) || formChannelKey;
-    const channelName = (entry?.translations?.["zh-CN"] || entry?.translations?.["en-US"] || entry?.key || slug) as string;
-    const displayName = formAccountName.trim()
-      ? `${channelName} · ${formAccountName.trim()}`
-      : channelName;
+    const opt = dictChannelOptions.find((o) => o.value === formChannelKey);
+    const slug = formChannelKey.trim();
+    const channelName = opt?.label || slug;
+    const accountLabel = formAccountName.trim() || formMerchantAccount.trim();
+    const displayName = accountLabel ? `${channelName} · ${accountLabel}` : channelName;
 
-    if (slug === "creem" && !formApiSecret.trim()) {
+    const requiredMissing = addFormSchema.fields.some((f) => {
+      if (!f.required) return false;
+      switch (f.id) {
+        case "mode":
+          return !formMode.trim();
+        case "apiPublicKey":
+          return !formApiPublicKey.trim();
+        case "apiSecretKey":
+          return !formApiSecret.trim();
+        case "webhookSecret":
+          return !formWebhookSecret.trim();
+        case "merchantAccount":
+          return !formMerchantAccount.trim();
+        default:
+          return false;
+      }
+    });
+    if (requiredMissing) {
       showToast(t("payment.toast.fillRequired"));
       return;
     }
@@ -248,12 +328,18 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
       const newChannel: PaymentChannelConfig = await channelsApi.createPaymentChannel({
             channelKey: slug as PaymentChannelConfig["channelKey"],
             name: displayName,
-            accountName: formAccountName.trim() || undefined,
-            description: entry?.description || channelName,
+            accountName: accountLabel || undefined,
+            description: [
+              channelName,
+              formMerchantAccount.trim() ? `merchant=${formMerchantAccount.trim()}` : "",
+            ]
+              .filter(Boolean)
+              .join(" · "),
             mode: formMode,
+            apiPublicKey: formApiPublicKey.trim() || undefined,
             apiSecretKey: formApiSecret.trim(),
             webhookSecret: formWebhookSecret.trim(),
-            supportedCurrencies: formCurrencies.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
+            supportedCurrencies: formCurrencies,
             feeRateText: formFeeRate.trim() || "—",
             routingPriority: channelList.length + 1,
           });
@@ -262,12 +348,9 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
       setIsAddChannelOpen(false);
       showToast(t("payment.toast.added", { name: newChannel.name }));
       setFormChannelKey("");
-      setFormAccountName("");
-      setFormApiKey("");
-      setFormApiSecret("");
-      setFormWebhookSecret("");
-      setFormCurrencies("USD,EUR,GBP");
-      setFormFeeRate("");
+      resetAddFormCredentials();
+      setFormMode("live");
+      setFormCurrencies(["USD", "EUR", "GBP"]);
     } catch {
       showToast(t("payment.toast.saveFailed"));
     }
@@ -283,8 +366,12 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
     const channel = selectedTestChannel || channelList[0];
     if (!channel) return;
 
+    const appName = selectedTestApp?.name || channel.name;
+    const productAmount = selectedTestProduct?.price ?? 0;
+    const productCurrency = selectedTestProduct?.currency || "USD";
+
     if (channel.channelKey === "creem") {
-      if (!testProductId.trim()) {
+      if (!creemProductIdForTest) {
         showToast(t("payments:checkoutTest.productRequired"));
         return;
       }
@@ -292,7 +379,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
       setLastExecutedTxResult(null);
       try {
         const result = await channelsApi.createCheckoutTest(channel.id, {
-          productId: testProductId.trim(),
+          productId: creemProductIdForTest,
           customerEmail: testCustomerEmail.trim() || undefined,
         });
         window.open(result.checkoutUrl, "_blank", "noopener,noreferrer");
@@ -302,17 +389,20 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
         setLastExecutedTxResult({
           tx: {
             id: result.sessionId,
-            tenantId: channel.tenantId || "group_hq",
+            tenantId: channel.tenantId || selectedTestApp?.tenantId || "group_hq",
             channel: "creem",
-            orderTitle: t("payment.testTx.sandboxPrefix") + " Creem Checkout",
+            orderTitle:
+              t("payment.testTx.sandboxPrefix") +
+              " " +
+              (selectedTestProduct?.name || "Creem Checkout"),
             orderNumber: result.sessionId,
-            orderAmount: parseFloat(testAmount) || 0,
+            orderAmount: productAmount,
             channelFee: 0,
-            currency: testCurrency,
+            currency: productCurrency,
             createdAt: timeString,
             status: "pending_check",
             customerEmail: testCustomerEmail || undefined,
-            merchantName: channel.name,
+            merchantName: appName,
             paymentMethod: "Creem Checkout",
             channelTradeNo: result.sessionId,
             timeline: [],
@@ -334,7 +424,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
 
     setTimeout(() => {
       setIsExecutingTxTest(false);
-      const parsedAmount = parseFloat(testAmount) || 49.00;
+      const parsedAmount = productAmount;
       const isSuccessScenario = testScenario === "SUCCESS" || testScenario === "3DS";
       const simulatedLatency = Math.floor(Math.random() * 60) + 85;
       const now = new Date();
@@ -369,39 +459,43 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
         id: `TX-TEST-${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, "0")}-${Math.floor(
           100000 + Math.random() * 900000
         )}`,
-        tenantId: "bu_na_ecom",
+        tenantId: selectedTestApp?.tenantId || "bu_na_ecom",
         channel: channel.channelKey as PaymentChannel,
-        orderTitle: `${t("payment.testTx.sandboxPrefix")} ${testAppName} - ${
+        orderTitle: `${t("payment.testTx.sandboxPrefix")} ${appName} - ${
           testScenario === "3DS" ? t("payment.testTx.orderTitle3ds") : t("payment.testTx.orderTitleOnline")
         }`,
         orderNumber: `ORD-TEST-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
         orderAmount: parsedAmount,
         channelFee: Math.round(parsedAmount * 0.029 * 100) / 100,
-        currency: testCurrency,
+        currency: productCurrency,
         createdAt: timeString,
         status: reconStatus as any,
         discrepancyType,
         discrepancyNote,
         customerName: "Alex Vance (海外测试专员)",
-        customerEmail: "tester.alex@northam-corp.io",
-        customerCountry: "🇺🇸 US",
+        customerEmail: testCustomerEmail || "tester.alex@northam-corp.io",
+        customerCountry: "US",
         merchantName: channel.name,
         paymentMethod:
           channel.channelKey === "paypal"
             ? "PayPal Wallet Sandbox"
             : testScenario === "3DS"
-            ? "Visa 3DS Verified (•••• 4000)"
-            : "Visa Test Card (•••• 4242)",
+            ? "Visa 3DS Verified"
+            : "Visa Test Card",
         channelTradeNo: gatewayTradeNo,
         riskScore: testScenario === "FRAUD" ? 88 : 12,
         timeline: [
           {
             id: "step_1",
             title: t("payment.testTx.timeline.step1Title"),
-            description: t("payment.testTx.timeline.step1Desc", { app: testAppName, amount: parsedAmount, currency: testCurrency }),
+            description: t("payment.testTx.timeline.step1Desc", {
+              app: appName,
+              amount: parsedAmount,
+              currency: productCurrency,
+            }),
             timestamp: timeString,
             status: "completed",
-            actor: testAppName,
+            actor: appName,
           },
           {
             id: "step_2",
@@ -450,7 +544,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
           id: gatewayTradeNo,
           object: "payment_intent",
           amount: Math.round(parsedAmount * 100),
-          currency: testCurrency.toLowerCase(),
+          currency: productCurrency.toLowerCase(),
           status: isSuccessScenario ? "succeeded" : "requires_payment_method",
           payment_method: newTx.paymentMethod,
           channel: channel.channelKey,
@@ -693,7 +787,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
 
                 {/* 关联应用（使用了该支付渠道的应用） */}
                 {(() => {
-                  const relatedApps = apps.filter((app) =>
+                  const relatedApps = appList.filter((app) =>
                     (app.enabledChannels || []).includes(channel.channelKey)
                   );
                   if (relatedApps.length === 0) return null;
@@ -769,8 +863,11 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
                   <button
                     onClick={() => {
                       setSelectedTestChannel(channel);
+                      setTestProductLocalId("");
+                      setTestAppId("");
                       setIsTestTxModalOpen(true);
                       setLastExecutedTxResult(null);
+                      void loadProductsForChannel(channel.id);
                     }}
                     className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg font-medium flex items-center gap-1 transition-colors cursor-pointer text-xs"
                     title={t("payment.card.testTxTitle")}
@@ -1145,17 +1242,20 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
               ) : (
                 /* Test Configuration Inputs */
                 <div className="space-y-4">
-                  {/* Channel & App Selection */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold text-xs">
-{t("payment.testTx.channelLabel")} <span className="text-rose-500">*</span>:
+                        {t("payment.testTx.channelLabel")} <span className="text-rose-500">*</span>
                       </label>
                       <ShadcnSelect
                         value={selectedTestChannel?.id || channelList[0]?.id || ""}
                         onValueChange={(val) => {
                           const found = channelList.find((c) => c.id === val);
-                          if (found) setSelectedTestChannel(found);
+                          if (found) {
+                            setSelectedTestChannel(found);
+                            setTestProductLocalId("");
+                            void loadProductsForChannel(found.id);
+                          }
                         }}
                         options={channelList.map((ch) => ({
                           value: ch.id,
@@ -1167,95 +1267,62 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
 
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold text-xs">
-{t("payment.testTx.appLabel")}
+                        {t("payment.testTx.appLabel")}
                       </label>
-                      <ShadcnSelect
-                        value={testAppName}
-                        onValueChange={setTestAppName}
-                        options={[
-                          { value: "Novas AI Copilot (出海AI助手)", label: "Novas AI Copilot (出海AI助手)" },
-                          { value: "Global VPN Shield Pro", label: "Global VPN Shield Pro (隐私工具)" },
-                          { value: "PixelMagic Studio 创意设计套件", label: "PixelMagic Studio 创意设计套件" },
-                          { value: "Nordic Living 出海独立站品牌店", label: "Nordic Living 出海独立站品牌店" },
-                        ]}
+                      <SearchableSelect
+                        value={testAppId}
+                        onValueChange={setTestAppId}
+                        options={appList.map((a) => ({
+                          value: a.id,
+                          label: a.name,
+                          description: a.code,
+                        }))}
                         placeholder={t("payment.testTx.appPlaceholder")}
+                        emptyText={t("payment.testTx.appEmpty")}
                       />
                     </div>
                   </div>
 
-                  {(selectedTestChannel?.channelKey || channelList[0]?.channelKey) === "creem" && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-fg-secondary block mb-1 font-semibold text-xs">
-                          {t("payments:checkoutTest.productIdLabel")} <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={testProductId}
-                          onChange={(e) => setTestProductId(e.target.value)}
-                          className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg text-xs font-mono"
-                          placeholder={t("payments:checkoutTest.productIdPlaceholder")}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-fg-secondary block mb-1 font-semibold text-xs">
-                          {t("payments:checkoutTest.customerEmailLabel")}
-                        </label>
-                        <input
-                          type="email"
-                          value={testCustomerEmail}
-                          onChange={(e) => setTestCustomerEmail(e.target.value)}
-                          className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg text-xs font-mono"
-                          placeholder={t("payments:checkoutTest.customerEmailPlaceholder")}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Currency & Amount */}
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-fg-secondary block mb-1 font-semibold text-xs">
-{t("payment.testTx.currencyLabel")}
+                        {t("payments:checkoutTest.productIdLabel")}
+                        {(selectedTestChannel?.channelKey || channelList[0]?.channelKey) === "creem" ? (
+                          <span className="text-rose-500"> *</span>
+                        ) : null}
                       </label>
-                      <ShadcnSelect
-                        value={testCurrency}
-                        onValueChange={setTestCurrency}
-                        options={[
-                          { value: "USD", label: "USD ($ 美元)" },
-                          { value: "EUR", label: "EUR (€ 欧元)" },
-                          { value: "GBP", label: "GBP (£ 英镑)" },
-                          { value: "JPY", label: "JPY (¥ 日元)" },
-                          { value: "CAD", label: "CAD (C$ 加元)" },
-                          { value: "AUD", label: "AUD (A$ 澳元)" },
-                        ]}
-                        placeholder={t("payment.testTx.currencyPlaceholder")}
+                      <SearchableSelect
+                        value={testProductLocalId}
+                        onValueChange={setTestProductLocalId}
+                        options={productList.map((p) => ({
+                          value: p.id,
+                          label: `${p.name} · ${p.currency} ${p.price}`,
+                          description: p.creemProductId || p.externalProductId || p.code,
+                        }))}
+                        placeholder={t("payment.testTx.productPlaceholder")}
+                        emptyText={t("payment.testTx.productEmpty")}
                       />
+                      {selectedTestProduct ? (
+                        <p className="text-[10px] text-fg-tertiary mt-1">
+                          {t("payment.testTx.productSummary", {
+                            currency: selectedTestProduct.currency,
+                            amount: selectedTestProduct.price,
+                            sku: creemProductIdForTest || selectedTestProduct.code,
+                          })}
+                        </p>
+                      ) : null}
                     </div>
-
-                    <div className="col-span-2">
+                    <div>
                       <label className="text-fg-secondary block mb-1 font-semibold text-xs">
-{t("payment.testTx.amountLabel")}
+                        {t("payments:checkoutTest.customerEmailLabel")}
                       </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={testAmount}
-                          onChange={(e) => setTestAmount(e.target.value)}
-                          className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg text-xs font-mono font-bold pl-8"
-                          placeholder="49.00"
-                        />
-                        <span className="absolute left-2.5 top-2 text-fg-tertiary font-mono text-xs">
-                          {testCurrency === "USD" || testCurrency === "CAD" || testCurrency === "AUD"
-                            ? "$"
-                            : testCurrency === "EUR"
-                            ? "€"
-                            : testCurrency === "GBP"
-                            ? "£"
-                            : "¥"}
-                        </span>
-                      </div>
+                      <input
+                        type="email"
+                        value={testCustomerEmail}
+                        onChange={(e) => setTestCustomerEmail(e.target.value)}
+                        className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg text-xs font-mono"
+                        placeholder={t("payments:checkoutTest.customerEmailPlaceholder")}
+                      />
                     </div>
                   </div>
 
@@ -1317,91 +1384,131 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
         widthClass="max-w-xl"
       >
         <div className="space-y-4 text-xs">
-          {/* 上部：选择渠道（来自字典"支付渠道"分类） */}
           <div>
             <label className="font-semibold text-fg block mb-1.5">{t("payment.addSheet.selectChannel")}</label>
             <ShadcnSelect
               value={formChannelKey}
-              onValueChange={setFormChannelKey}
+              onValueChange={handleSelectChannelKey}
               placeholder={t("payment.addSheet.selectPlaceholder")}
-              options={dictChannelEntries.map((e) => {
-                const name = (e.translations?.["zh-CN"] || e.translations?.["en-US"] || e.key) as string;
-                const integrated = channelList.some((c) => c.channelKey === (e.key.match(/^channel\.(.+)\.name$/)?.[1]));
-                return { value: e.key, label: integrated ? `${name}${t("payment.addSheet.integrated")}` : name };
+              options={dictChannelOptions.map((o) => {
+                const integrated = channelList.some((c) => c.channelKey === o.value);
+                return {
+                  value: o.value,
+                  label: integrated ? `${o.label}${t("payment.addSheet.integrated")}` : o.label,
+                };
               })}
             />
             <div className="text-[10px] text-fg-tertiary mt-1.5">
-{t("payment.addSheet.dictHint", { count: dictChannelEntries.length })}
+              {t("payment.addSheet.dictHint", { count: dictChannelOptions.length })}
             </div>
           </div>
 
-          {/* 下部：账号信息表单 */}
-          <div>
-            <label className="font-semibold text-fg block mb-1.5">{t("payment.addSheet.accountName")}</label>
-            <input
-              value={formAccountName}
-              onChange={(e) => setFormAccountName(e.target.value)}
-              placeholder={t("payment.addSheet.accountPlaceholder")}
-              className="w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="font-semibold text-fg block mb-1.5">{t("payment.addSheet.apiKey")}</label>
-              <input
-                value={formApiKey}
-                onChange={(e) => setFormApiKey(e.target.value)}
-                placeholder="pk_live_..."
-                className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+          {!formChannelKey || !addFormSchema ? (
+            <div className="rounded-xl border border-dashed border-line bg-subtle/60 px-3 py-6 text-center text-fg-tertiary">
+              {t("payment.addSheet.pickChannelFirst")}
             </div>
-            <div>
-              <label className="font-semibold text-fg block mb-1.5">{t("payment.addSheet.mode")}</label>
-              <input
-                value={formMode}
-                onChange={(e) => setFormMode(e.target.value)}
-                className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+          ) : (
+            <div className="space-y-3 animate-in fade-in">
+              <p className="text-[11px] text-fg-secondary leading-relaxed rounded-lg bg-subtle border border-line px-3 py-2">
+                {t(`payment.addSheet.byChannel.${formChannelKey}.intro`, {
+                  defaultValue: t("payment.addSheet.description"),
+                })}
+              </p>
+
+              {addFormSchema.fields.map((field) => {
+                const hint = fieldHint(field.id);
+                if (field.id === "mode") {
+                  return (
+                    <div key={field.id}>
+                      <label className="font-semibold text-fg block mb-1.5">{fieldLabel(field.id)}</label>
+                      <ShadcnSelect
+                        value={formMode}
+                        onValueChange={setFormMode}
+                        options={[
+                          { value: "live", label: t("payment.addSheet.modeLive") },
+                          { value: "sandbox", label: t("payment.addSheet.modeSandbox") },
+                        ]}
+                      />
+                    </div>
+                  );
+                }
+
+                if (field.id === "currencies") {
+                  return (
+                    <div key={field.id}>
+                      <label className="font-semibold text-fg block mb-1.5">{fieldLabel(field.id)}</label>
+                      <MultiSelect
+                        searchable
+                        value={formCurrencies}
+                        onValueChange={setFormCurrencies}
+                        options={CURRENCY_OPTIONS}
+                        placeholder={t("payment.addSheet.fields.currencies.placeholder")}
+                      />
+                    </div>
+                  );
+                }
+
+                const value =
+                  field.id === "accountName"
+                    ? formAccountName
+                    : field.id === "merchantAccount"
+                    ? formMerchantAccount
+                    : field.id === "apiPublicKey"
+                    ? formApiPublicKey
+                    : field.id === "apiSecretKey"
+                    ? formApiSecret
+                    : field.id === "webhookSecret"
+                    ? formWebhookSecret
+                    : formFeeRate;
+
+                const onChange = (v: string) => {
+                  switch (field.id) {
+                    case "accountName":
+                      setFormAccountName(v);
+                      break;
+                    case "merchantAccount":
+                      setFormMerchantAccount(v);
+                      break;
+                    case "apiPublicKey":
+                      setFormApiPublicKey(v);
+                      break;
+                    case "apiSecretKey":
+                      setFormApiSecret(v);
+                      break;
+                    case "webhookSecret":
+                      setFormWebhookSecret(v);
+                      break;
+                    case "feeRate":
+                      setFormFeeRate(v);
+                      break;
+                  }
+                };
+
+                const mono = ["apiPublicKey", "apiSecretKey", "webhookSecret"].includes(field.id);
+
+                return (
+                  <div key={field.id}>
+                    <label className="font-semibold text-fg block mb-1.5">{fieldLabel(field.id)}</label>
+                    <input
+                      value={value}
+                      onChange={(e) => onChange(e.target.value)}
+                      placeholder={fieldPlaceholder(field.id)}
+                      className={`w-full p-2 bg-subtle border border-line rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary ${
+                        mono ? "font-mono" : ""
+                      }`}
+                    />
+                    {hint ? <p className="text-[10px] text-fg-tertiary mt-1">{hint}</p> : null}
+                  </div>
+                );
+              })}
+
+              {addFormSchema.showWebhookUrlHint ? (
+                <p className="text-[10px] text-fg-tertiary leading-relaxed">
+                  {t("payment.addSheet.webhookUrlHint", { channel: formChannelKey })}
+                </p>
+              ) : null}
             </div>
-          </div>
-          <div>
-            <label className="font-semibold text-fg block mb-1.5">{t("payment.addSheet.apiSecret")}</label>
-            <input
-              value={formApiSecret}
-              onChange={(e) => setFormApiSecret(e.target.value)}
-              placeholder="sk_live_..."
-              className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-          <div>
-            <label className="font-semibold text-fg block mb-1.5">{t("payment.addSheet.webhookSecret")}</label>
-            <input
-              value={formWebhookSecret}
-              onChange={(e) => setFormWebhookSecret(e.target.value)}
-              placeholder="whsec_..."
-              className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="font-semibold text-fg block mb-1.5">{t("payment.addSheet.currencies")}</label>
-              <input
-                value={formCurrencies}
-                onChange={(e) => setFormCurrencies(e.target.value)}
-                placeholder="USD,EUR,GBP"
-                className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <div>
-              <label className="font-semibold text-fg block mb-1.5">{t("payment.addSheet.feeRate")}</label>
-              <input
-                value={formFeeRate}
-                onChange={(e) => setFormFeeRate(e.target.value)}
-                placeholder="如 2.9% + $0.30"
-                className="w-full p-2 bg-subtle border border-line rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-          </div>
+          )}
 
           <div className="pt-3 flex items-center justify-end gap-2 border-t border-line">
             <button
@@ -1417,7 +1524,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = ({
               onClick={handleConfirmNewChannel}
               className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl font-semibold shadow-card cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
-{t("payment.addSheet.confirm")}
+              {t("payment.addSheet.confirm")}
             </button>
           </div>
         </div>

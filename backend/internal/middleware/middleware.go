@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"context"
+	"log"
 	"strings"
 	"time"
 
@@ -13,21 +15,26 @@ import (
 )
 
 const (
-	CtxUserID    = "user_id"
-	CtxUserName  = "user_name"
-	CtxAppEnv    = "app_env"
-	CtxRequestID = "request_id"
+	CtxUserID       = "user_id"
+	CtxUserName     = "user_name"
+	CtxAppEnv       = "app_env"
+	CtxRequestID    = "request_id"
+	CtxPaymentAppID = "payment_app_id"
 )
 
 type SessionVerifier interface {
 	VerifyAccess(token string) (userID, userName string, err error)
 }
 
+// AppSecretResolver maps an application secretKey to payment app id.
+type AppSecretResolver func(ctx context.Context, secretKey string) (appID string, err error)
+
 type Bundle struct {
 	cfg               *conf.Config
 	sessions          SessionVerifier
 	enforcer          *casbin.Enforcer
 	superAdminChecker func(userID string) bool
+	appSecretResolver AppSecretResolver
 }
 
 func NewBundle(cfg *conf.Config) *Bundle {
@@ -44,6 +51,10 @@ func (b *Bundle) SetEnforcer(e *casbin.Enforcer) {
 
 func (b *Bundle) SetSuperAdminChecker(fn func(userID string) bool) {
 	b.superAdminChecker = fn
+}
+
+func (b *Bundle) SetAppSecretResolver(r AppSecretResolver) {
+	b.appSecretResolver = r
 }
 
 func (b *Bundle) Recovery() gin.HandlerFunc {
@@ -66,7 +77,25 @@ func (b *Bundle) RequestID() gin.HandlerFunc {
 }
 
 func (b *Bundle) AccessLog() gin.HandlerFunc {
-	return gin.Logger()
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+		c.Next()
+		if query != "" {
+			path = path + "?" + query
+		}
+		rid, _ := c.Get(CtxRequestID)
+		log.Printf(
+			"access method=%s path=%s status=%d latency=%s ip=%s request_id=%v",
+			c.Request.Method,
+			path,
+			c.Writer.Status(),
+			time.Since(start).Round(time.Microsecond),
+			c.ClientIP(),
+			rid,
+		)
+	}
 }
 
 func (b *Bundle) CORS() gin.HandlerFunc {
@@ -79,7 +108,7 @@ func (b *Bundle) CORS() gin.HandlerFunc {
 		if _, ok := allowed[origin]; ok {
 			c.Header("Access-Control-Allow-Origin", origin)
 			c.Header("Access-Control-Allow-Credentials", "true")
-			c.Header("Access-Control-Allow-Headers", "Content-Type, X-Request-Id, X-App-Env")
+			c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-Id, X-App-Env")
 			c.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
 		}
 		if c.Request.Method == "OPTIONS" {
@@ -134,6 +163,36 @@ func (b *Bundle) Auth(c *gin.Context) {
 	}
 	c.Set(CtxUserID, uid)
 	c.Set(CtxUserName, name)
+	c.Next()
+}
+
+// AppSecretAuth authenticates payment apps via Authorization: Bearer <secretKey>.
+func (b *Bundle) AppSecretAuth(c *gin.Context) {
+	if b.appSecretResolver == nil {
+		response.Fail(c, apperr.Unauthorized)
+		c.Abort()
+		return
+	}
+	auth := strings.TrimSpace(c.GetHeader("Authorization"))
+	const prefix = "Bearer "
+	if !strings.HasPrefix(auth, prefix) {
+		response.Fail(c, apperr.Unauthorized)
+		c.Abort()
+		return
+	}
+	secret := strings.TrimSpace(strings.TrimPrefix(auth, prefix))
+	if secret == "" {
+		response.Fail(c, apperr.Unauthorized)
+		c.Abort()
+		return
+	}
+	appID, err := b.appSecretResolver(c.Request.Context(), secret)
+	if err != nil || appID == "" {
+		response.Fail(c, apperr.Unauthorized)
+		c.Abort()
+		return
+	}
+	c.Set(CtxPaymentAppID, appID)
 	c.Next()
 }
 

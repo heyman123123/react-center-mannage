@@ -7,3 +7,7 @@ coverage/
 .env*
 !.env.example
 !.env.docker.example
+
+# E2E 测试脚本本地配置（含真实渠道密钥），仅保留 .example 模板
+backend/scripts/*.env
+!backend/scripts/*.env.example
