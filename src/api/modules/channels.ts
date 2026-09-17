@@ -9,6 +9,7 @@ export type PaymentChannelInput = {
   mode?: string;
   enabled?: boolean;
   apiSecretKey?: string;
+  apiPublicKey?: string;
   webhookSecret?: string;
   supportedCurrencies?: string[];
   feeRateText?: string;

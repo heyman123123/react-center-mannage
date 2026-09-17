@@ -1,16 +1,17 @@
-.PHONY: help up down tidy build run restart stop status logs
+.PHONY: help up down tidy build run restart stop status logs frontend
 
 help:
 	@echo "NovasPay Admin API"
-	@echo "  make up       启动 Postgres(5433) + Redis(6380)"
-	@echo "  make down     停止依赖容器"
-	@echo "  make tidy     go mod tidy"
-	@echo "  make build    编译到 bin/api"
-	@echo "  make run      编译并前台启动 API（:8080）"
-	@echo "  make restart  等价 make run"
-	@echo "  make stop     结束占用 :8080 的进程"
-	@echo "  make status   健康检查"
-	@echo "  make logs     docker compose 日志"
+	@echo "  make up        启动 Postgres(5433) + Redis(6380)"
+	@echo "  make down      停止依赖容器"
+	@echo "  make tidy      go mod tidy"
+	@echo "  make build     编译到 bin/api"
+	@echo "  make frontend  构建前端到 web/dist（pnpm build）"
+	@echo "  make run       编译并前台启动 API（:8080）"
+	@echo "  make restart   等价 make run"
+	@echo "  make stop      结束占用 :8080 的进程"
+	@echo "  make status    健康检查"
+	@echo "  make logs      docker compose 日志"
 
 up:
 	docker compose up -d
@@ -27,6 +28,9 @@ tidy:
 build:
 	@mkdir -p bin
 	go build -o bin/api ./cmd/api
+
+frontend:
+	cd .. && pnpm build
 
 run: up build
 	./bin/api

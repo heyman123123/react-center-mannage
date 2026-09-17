@@ -128,10 +128,10 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
         ...c,
         status: "SENT",
         sentTime: new Date().toISOString().replace("T", " ").substring(0, 19),
-        deliveredCount: c.totalRecipients - 8,
-        openRate: 41.5,
-        clickRate: 17.8,
-        conversionRate: 8.6,
+        deliveredCount: c.totalRecipients,
+        openRate: 0,
+        clickRate: 0,
+        conversionRate: 0,
       };
       setCampaignList((prev) => prev.map((item) => (item.id === c.id ? updated : item)));
       showToast(t("promo.toast.sent", { name: c.name, count: c.totalRecipients }));
@@ -161,10 +161,10 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
       scheduledTime: isNow ? undefined : formScheduleTime.replace("T", " ") + ":00",
       sentTime: isNow ? new Date().toISOString().replace("T", " ").substring(0, 19) : undefined,
       totalRecipients: recipientCount,
-      deliveredCount: isNow ? recipientCount - 6 : 0,
-      openRate: isNow ? 38.6 : 0,
-      clickRate: isNow ? 15.2 : 0,
-      conversionRate: isNow ? 7.4 : 0,
+      deliveredCount: 0,
+      openRate: 0,
+      clickRate: 0,
+      conversionRate: 0,
       createdAt: new Date().toISOString().slice(0, 10),
     };
 

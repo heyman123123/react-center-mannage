@@ -39,10 +39,12 @@ func seedDefaults(db *gorm.DB) {
 	seedLanguages(db)
 	seedMenus(db)
 	seedSuperAdmin(db)
+	seedAuditActionDict(db)
+	seedDictionaryCategories(db)
+	seedPaymentChannelDict(db)
+	seedDefaultEmailTemplates(db)
 	if !seedDemoEnabled() {
 		log.Printf("migrations: SEED_DEMO=false, skipping demo business data")
-		seedAuditActionDict(db)
-		seedDictionaryCategories(db)
 		return
 	}
 	seedTenants(db)
@@ -53,8 +55,6 @@ func seedDefaults(db *gorm.DB) {
 	seedBlacklistEntries(db)
 	seedAlertRules(db)
 	seedPromoCampaigns(db)
-	seedAuditActionDict(db)
-	seedDictionaryCategories(db)
 }
 
 func dictCategoryID(key string) string {
@@ -337,6 +337,93 @@ func seedDictionaryCategories(db *gorm.DB) {
 		return
 	}
 	log.Printf("seed: dictionary categories backend/audit_action; backfilled %d entries", res.RowsAffected)
+
+	// 业务分类：支付渠道（非系统，可增删改）
+	pcID := dictCategoryID("PAYMENT_CHANNEL")
+	pc := persistence.DictionaryCategory{
+		ID: pcID, Key: "PAYMENT_CHANNEL", Name: "支付渠道", IsSystem: false, SortOrder: 10,
+	}
+	_ = db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"name", "sort_order", "updated_at"}),
+	}).Create(&pc).Error
+}
+
+func dictEntryID(ns, key string) string {
+	return uuid.NewSHA1(uuid.NameSpaceOID, []byte("novaspay/dict/"+ns+"/"+key)).String()
+}
+
+func seedPaymentChannelDict(db *gorm.DB) {
+	var cat persistence.DictionaryCategory
+	if err := db.Where("key = ?", "PAYMENT_CHANNEL").First(&cat).Error; err != nil {
+		log.Printf("seed payment channels: category missing: %v", err)
+		return
+	}
+	channels := []struct {
+		Key, Zh, En, Desc string
+	}{
+		{"stripe", "Stripe", "Stripe", "Stripe 卡支付"},
+		{"paypal", "PayPal", "PayPal", "PayPal 钱包"},
+		{"adyen", "Adyen", "Adyen", "Adyen 聚合"},
+		{"klarna", "Klarna", "Klarna", "Klarna 分期"},
+		{"apple_pay", "Apple Pay", "Apple Pay", "Apple Pay"},
+		{"google_pay", "Google Pay", "Google Pay", "Google Pay"},
+		{"checkout", "Checkout.com", "Checkout.com", "Checkout.com"},
+		{"sepa", "SEPA", "SEPA", "SEPA 借记"},
+		{"creem", "Creem", "Creem", "Creem 渠道"},
+	}
+	cid := cat.ID
+	for _, ch := range channels {
+		tr, _ := json.Marshal(map[string]string{"zh-CN": ch.Zh, "en-US": ch.En})
+		row := persistence.DictionaryEntry{
+			ID: dictEntryID("payment_channel", ch.Key), Namespace: "payment_channel",
+			EntryKey: ch.Key, Description: ch.Desc, Translations: string(tr),
+			Category: "PAYMENT_CHANNEL", CategoryID: &cid,
+		}
+		_ = db.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "namespace"}, {Name: "entry_key"}},
+			DoNothing: true,
+		}).Create(&row).Error
+	}
+	log.Printf("seed: PAYMENT_CHANNEL dictionary entries (%d)", len(channels))
+}
+
+func seedDefaultEmailTemplates(db *gorm.DB) {
+	defaults := []struct {
+		Code, Name, Category, Trigger, Subject, Preview, Body string
+	}{
+		{"DEFAULT_BILLING_EN", "Default Billing (EN)", "BILLING", "subscription_welcome_receipt", "Your receipt from {{app_name}}", "Payment confirmation", "<p>Hi {{customer_name}},</p><p>Thanks for your payment of {{currency}} {{amount}}.</p><p>Order: {{order_id}}</p>"},
+		{"DEFAULT_SECURITY_EN", "Default Security (EN)", "SECURITY", "security_password_reset", "Security alert for your account", "Security notification", "<p>Hi {{customer_name}},</p><p>We detected a security-related event on your account. If this was not you, please reset your password.</p>"},
+		{"DEFAULT_LIFECYCLE_EN", "Default Lifecycle (EN)", "LIFECYCLE", "subscription_canceled_notice", "Welcome to {{app_name}}", "Welcome email", "<p>Hi {{customer_name}},</p><p>Welcome aboard. Your subscription to {{plan_name}} is now active.</p>"},
+		{"DEFAULT_RISK_EN", "Default Risk (EN)", "RISK", "payment_failed_dunning", "Action required on your payment", "Risk review", "<p>Hi {{customer_name}},</p><p>Your recent payment requires additional verification. Please follow the link in your merchant portal.</p>"},
+		{"DEFAULT_PROMOTION_EN", "Default Promotion (EN)", "PROMOTION", "", "A special offer from {{app_name}}", "Promotional offer", "<p>Hi {{customer_name}},</p><p>Enjoy {{discount_code}} on your next purchase.</p>"},
+		{"DEFAULT_SYSTEM_EN", "Default System (EN)", "SYSTEM", "", "System notification from {{app_name}}", "System notice", "<p>Hi {{customer_name}},</p><p>This is a system notification from NovasPay Admin.</p>"},
+	}
+	for _, d := range defaults {
+		var n int64
+		db.Model(&persistence.EmailTemplate{}).Where("code = ?", d.Code).Count(&n)
+		if n > 0 {
+			// Ensure trigger_event is set for existing default rows
+			if d.Trigger != "" {
+				_ = db.Model(&persistence.EmailTemplate{}).Where("code = ?", d.Code).
+					Update("trigger_event", d.Trigger).Error
+			}
+			continue
+		}
+		row := persistence.EmailTemplate{
+			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("novaspay/email_tpl/"+d.Code)).String(),
+			Code: d.Code, Name: d.Name, Language: "en-US", Category: d.Category,
+			Description: "Default English template for " + d.Category,
+			TriggerEvent: d.Trigger,
+			Subject: d.Subject, PreviewText: d.Preview, ContentMarkdown: d.Body,
+			Status: "ACTIVE", AssociatedTenantID: "ALL",
+			VariablesJSON: "[]", DictReferencesJSON: "[]",
+		}
+		if err := db.Create(&row).Error; err != nil {
+			log.Printf("seed email template %s: %v", d.Code, err)
+		}
+	}
+	log.Printf("seed: default EN email templates ensured (%d categories)", len(defaults))
 }
 
 func seedTenants(db *gorm.DB) {
@@ -346,11 +433,11 @@ func seedTenants(db *gorm.DB) {
 		return
 	}
 	tenants := []persistence.Tenant{
-		{ID: "group_hq", Name: "全球海外总部 (Global HQ)", Code: "GLOBAL-HQ", Currency: "USD", Description: "集团中央外汇清结算、全球收单通道聚合与财务统一监管视图", Color: "#0f172a", DailyCap: 5000000, UsedToday: 1845200, ChannelsEnabledJSON: `["stripe","paypal","adyen","checkout","apple_pay","google_pay","klarna","sepa"]`, IsolationLevel: "GROUP_CONSOLIDATED", ActiveMerchantsCount: 86},
-		{ID: "bu_na_ecom", Name: "北美电商出海 BU (NA E-Commerce)", Code: "BU-NA-ECOM", Currency: "USD", Description: "北美独立站、Shopify 矩阵店、DTC 品牌出海信用卡与分期收单", Color: "#0284c7", DailyCap: 2000000, UsedToday: 892400, ChannelsEnabledJSON: `["stripe","paypal","apple_pay","google_pay","klarna"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 42},
-		{ID: "bu_eu_saas", Name: "欧洲 SaaS 订阅平台 BU (EU Cloud & SaaS)", Code: "BU-EU-SAAS", Currency: "EUR", Description: "欧洲企业级 SaaS 工具套件、GDPR 合规多币种定期扣费与 SEPA 借记", Color: "#4f46e5", DailyCap: 1500000, UsedToday: 512000, ChannelsEnabledJSON: `["stripe","adyen","sepa","paypal"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 28},
-		{ID: "bu_apac_japan", Name: "亚太及日本跨境 BU (APAC & Japan)", Code: "BU-APAC-JP", Currency: "JPY", Description: "日韩及东南亚移动端应用内购、Konbini 便利店支付与信用卡直连", Color: "#059669", DailyCap: 1200000, UsedToday: 341000, ChannelsEnabledJSON: `["stripe","adyen","paypal","apple_pay"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 16},
-		{ID: "bu_latam", Name: "拉美新兴市场 BU (LATAM Emerging)", Code: "BU-LATAM", Currency: "USD", Description: "巴西 PIX、墨西哥 OXXO 结汇直通与跨境本地化聚合收单", Color: "#d97706", DailyCap: 800000, UsedToday: 99800, ChannelsEnabledJSON: `["checkout","stripe","paypal"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 10},
+		{ID: "group_hq", Name: "全球海外总部 (Global HQ)", Code: "GLOBAL-HQ", Currency: "USD", Description: "集团中央外汇清结算、全球收单通道聚合与财务统一监管视图", Color: "#0f172a", DailyCap: 5000000, UsedToday: 1845200, ChannelsEnabledJSON: `["stripe","paypal","adyen","checkout","apple_pay","google_pay","klarna","sepa"]`, IsolationLevel: "GROUP_CONSOLIDATED", ActiveMerchantsCount: 0},
+		{ID: "bu_na_ecom", Name: "北美电商出海 BU (NA E-Commerce)", Code: "BU-NA-ECOM", Currency: "USD", Description: "北美独立站、Shopify 矩阵店、DTC 品牌出海信用卡与分期收单", Color: "#0284c7", DailyCap: 2000000, UsedToday: 892400, ChannelsEnabledJSON: `["stripe","paypal","apple_pay","google_pay","klarna"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 0},
+		{ID: "bu_eu_saas", Name: "欧洲 SaaS 订阅平台 BU (EU Cloud & SaaS)", Code: "BU-EU-SAAS", Currency: "EUR", Description: "欧洲企业级 SaaS 工具套件、GDPR 合规多币种定期扣费与 SEPA 借记", Color: "#4f46e5", DailyCap: 1500000, UsedToday: 512000, ChannelsEnabledJSON: `["stripe","adyen","sepa","paypal"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 0},
+		{ID: "bu_apac_japan", Name: "亚太及日本跨境 BU (APAC & Japan)", Code: "BU-APAC-JP", Currency: "JPY", Description: "日韩及东南亚移动端应用内购、Konbini 便利店支付与信用卡直连", Color: "#059669", DailyCap: 1200000, UsedToday: 341000, ChannelsEnabledJSON: `["stripe","adyen","paypal","apple_pay"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 0},
+		{ID: "bu_latam", Name: "拉美新兴市场 BU (LATAM Emerging)", Code: "BU-LATAM", Currency: "USD", Description: "巴西 PIX、墨西哥 OXXO 结汇直通与跨境本地化聚合收单", Color: "#d97706", DailyCap: 800000, UsedToday: 99800, ChannelsEnabledJSON: `["checkout","stripe","paypal"]`, IsolationLevel: "STRICT_ISOLATED", ActiveMerchantsCount: 0},
 	}
 	for _, t := range tenants {
 		if err := db.Create(&t).Error; err != nil {
@@ -377,9 +464,9 @@ func seedPaymentApps(db *gorm.DB) {
 	}
 	apps := []persistence.PaymentApp{
 		{
-			ID: "app_vpn_shield", TenantID: "bu_na_ecom", Code: "APP-VPN-SHIELD",
+			ID: "a1111111-1111-4111-8111-111111111111", TenantID: "bu_na_ecom", Code: "APP-VPN-SHIELD",
 			DataJSON: mustSeedJSON(map[string]interface{}{
-				"id": "app_vpn_shield", "name": "Global VPN Shield Pro", "code": "APP-VPN-SHIELD",
+				"id": "a1111111-1111-4111-8111-111111111111", "name": "Global VPN Shield Pro", "code": "APP-VPN-SHIELD",
 				"description": "全球高速隐私网络与数据安全防护客户端，跨 80+ 节点自动连线",
 				"environment": "Production",
 				"publishableKey": "np_pub_live_551029381029",
@@ -396,6 +483,7 @@ func seedPaymentApps(db *gorm.DB) {
 				"senderName":     "Global VPN Security Team",
 				"enabledEmailEvents": []string{
 					"subscription_welcome_receipt", "recurring_renewal_success", "payment_failed_dunning",
+					"subscription_canceled_notice", "security_password_reset",
 				},
 				"supportedLanguages": []string{"en-US", "zh-CN", "de-DE", "es-ES"},
 				"defaultLanguage":          "en-US",
@@ -406,9 +494,9 @@ func seedPaymentApps(db *gorm.DB) {
 			}),
 		},
 		{
-			ID: "app_shopify_store", TenantID: "bu_na_ecom", Code: "APP-NORDIC-STORE",
+			ID: "a2222222-2222-4222-8222-222222222222", TenantID: "bu_na_ecom", Code: "APP-NORDIC-STORE",
 			DataJSON: mustSeedJSON(map[string]interface{}{
-				"id": "app_shopify_store", "name": "Nordic Living Shopify DTC", "code": "APP-NORDIC-STORE",
+				"id": "a2222222-2222-4222-8222-222222222222", "name": "Nordic Living Shopify DTC", "code": "APP-NORDIC-STORE",
 				"description": "北欧极简智能家居独立站矩阵，主打北美及欧洲中产消费群体",
 				"environment": "Production",
 				"publishableKey": "np_pub_live_331029381029",
@@ -424,7 +512,8 @@ func seedPaymentApps(db *gorm.DB) {
 				"senderEmail":    "orders@nordicliving.store",
 				"senderName":     "Nordic Living Dispatch",
 				"enabledEmailEvents": []string{
-					"subscription_welcome_receipt", "subscription_canceled_notice",
+					"subscription_welcome_receipt", "recurring_renewal_success", "payment_failed_dunning",
+					"subscription_canceled_notice", "security_password_reset",
 				},
 				"supportedLanguages": []string{"en-US", "de-DE", "fr-FR", "es-ES"},
 				"defaultLanguage":          "en-US",

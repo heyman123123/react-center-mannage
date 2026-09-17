@@ -266,6 +266,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
     }
     setDeptList((prev) => prev.filter((d) => d.id !== id));
     if (onDeleteDepartment) onDeleteDepartment(id);
+    if (selectedDeptId === id) setSelectedDeptId("ALL");
     showToast(t("departments.toast.deleted", { name }));
   };
 
@@ -391,20 +392,8 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
   // 部门节点右键菜单项（需求6）
   const deptNodeMenu = (node: DeptTreeNode) => [
     { key: "add", label: t("departments.menu.addChild"), onClick: () => handleOpenAdd(node.id) },
-    {
-      key: "rename", label: t("departments.menu.rename"), onClick: () => {
-        const name = window.prompt(t("departments.menu.renamePrompt"), node.name);
-        if (name && name.trim()) setDeptList((prev) => prev.map((d) => (d.id === node.id ? { ...d, name: name.trim() } : d)));
-      },
-    },
-    {
-      key: "del", label: t("departments.menu.delete"), danger: true, onClick: () => {
-        if (!window.confirm(t("departments.deleteConfirm", { name: node.name }))) return;
-        setDeptList((prev) => prev.filter((d) => d.id !== node.id));
-        if (selectedDeptId === node.id) setSelectedDeptId("ALL");
-        showToast(t("departments.toast.nodeDeleted", { name: node.name }));
-      },
-    },
+    { key: "rename", label: t("departments.menu.rename"), onClick: () => handleOpenEdit(node) },
+    { key: "del", label: t("departments.menu.delete"), danger: true, onClick: () => handleDelete(node.id, node.name) },
     { key: "refresh", label: t("departments.menu.refresh"), onClick: handleRefresh },
   ];
 
@@ -421,9 +410,9 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           items={deptNodeMenu(node)}
           trigger={(
           <div
-          className={`relative flex items-center gap-1.5 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+          className={`relative flex items-center gap-1.5 py-1.5 pr-2 rounded-lg text-xs cursor-pointer transition-all border ${
             isActive
-              ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm"
+              ? "bg-primary/5 text-fg font-semibold border-primary/20"
               : "text-fg-secondary hover:bg-hover border-transparent"
           }`}
           style={{ paddingLeft: `${6 + node.level * 14}px` }}
@@ -434,7 +423,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           }}
         >
           {isActive && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-r-full" />
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r-full" />
           )}
           {hasChildren ? (
             <button
@@ -454,14 +443,12 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           ) : (
             <span className="w-3.5 shrink-0" />
           )}
-          <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
-            isActive ? "bg-blue-500" : "bg-subtle border border-line-subtle"
-          }`}>
-            <Building2 className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-fg-tertiary"}`} />
+          <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-subtle">
+            <Building2 className={`w-3.5 h-3.5 ${isActive ? "text-primary" : "text-fg-tertiary"}`} />
           </span>
           <span className="truncate flex-1">{node.name}</span>
-          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-            isActive ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
+          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-lg ${
+            isActive ? "bg-primary/10 text-primary font-bold" : "bg-hover text-fg-tertiary"
           }`}>
             {node.memberCount ?? 0}
           </span>
@@ -482,22 +469,42 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
   if (loading) return <TableSkeleton rows={8} />;
 
   return (
-    <div className="space-y-3 font-sans">
+    <div className="space-y-4 font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 bg-primary text-primary-foreground px-3 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* ===== 顶部操作栏（截图风格：扁平、无圆角 / 简洁） ===== */}
-      <div className="bg-surface border border-line rounded-md shadow-card px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-line/80 shadow-card">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+              <Building2 className="w-5 h-5" />
+            </span>
+            <h1 className="text-xl font-bold text-fg tracking-tight">{t("departments.title")}</h1>
+          </div>
+          <p className="text-xs text-fg-secondary mt-1 max-w-2xl">{t("departments.subtitle")}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => handleOpenAdd()}
+          className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card transition-colors self-start md:self-auto cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          {t("common:actions.add")}
+        </button>
+      </div>
+
+      {/* ===== 顶部操作栏 ===== */}
+      <div className="bg-surface border border-line/80 rounded-xl shadow-card px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
             type="button"
             onClick={handleRefresh}
-            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 border border-line hover:bg-hover text-fg-secondary rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             title={t("departments.refreshTitle")}
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -507,7 +514,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           <button
             type="button"
             onClick={() => handleOpenAdd()}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             {t("common:actions.add")}
@@ -517,7 +524,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             <button
               type="button"
               disabled
-              className="px-3 py-1.5 border border-rose-200 text-rose-600 rounded text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 border border-rose-200 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Trash2 className="w-3.5 h-3.5" />
               {t("common:actions.delete")}
@@ -530,7 +537,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             >
               <button
                 type="button"
-                className="px-3 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 {t("common:actions.delete")}
@@ -542,7 +549,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             <button
               type="button"
               disabled
-              className="px-3 py-1.5 border border-emerald-200 text-emerald-600 rounded text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 border border-emerald-200 text-emerald-600 rounded-lg text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ArrowRightLeft className="w-3.5 h-3.5" />
               {t("common:actions.transfer")}
@@ -551,7 +558,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             <button
               type="button"
               onClick={handleBatchTransfer}
-              className="px-3 py-1.5 border border-emerald-200 hover:bg-emerald-50 text-emerald-600 rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 border border-emerald-200 hover:bg-emerald-50 text-emerald-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <ArrowRightLeft className="w-3.5 h-3.5" />
               {t("common:actions.transfer")}
@@ -560,11 +567,11 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
 
           <div className="w-px h-5 bg-hover mx-1" />
 
-          <div className="flex items-center bg-hover p-0.5 rounded">
+          <div className="flex items-center bg-hover p-0.5 rounded-lg">
             <button
               type="button"
               onClick={() => setViewMode("DEPT")}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 viewMode === "DEPT" ? "bg-surface text-fg shadow-card" : "text-fg-secondary hover:text-fg"
               }`}
             >
@@ -575,7 +582,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             <button
               type="button"
               onClick={() => setViewMode("MEMBER")}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 viewMode === "MEMBER" ? "bg-surface text-fg shadow-card" : "text-fg-secondary hover:text-fg"
               }`}
             >
@@ -586,30 +593,21 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <div className="relative w-56">
-            <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder={t("departments.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-          <button
-            type="button"
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Search className="w-3.5 h-3.5" />
-            {t("common:actions.search")}
-          </button>
+        <div className="relative w-56">
+          <Search className="w-3 h-3 text-fg-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder={t("departments.searchPlaceholder")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-2 py-1.5 text-xs bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+          />
         </div>
       </div>
 
       <div className="flex gap-3 items-start">
       {/* ===== 左侧：类型 / 部门树 ===== */}
-      <div className="w-52 shrink-0 bg-surface border border-line rounded-md shadow-card overflow-hidden lg:sticky lg:top-4">
+      <div className="w-56 shrink-0 bg-surface border border-line/80 rounded-xl shadow-card overflow-hidden lg:sticky lg:top-4">
         <div className="px-3 py-2.5 border-b border-line flex items-center justify-between">
           <span className="text-xs font-bold text-fg flex items-center gap-1.5">
             <ListTree className="w-3.5 h-3.5 text-fg-secondary" />
@@ -618,7 +616,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           <button
             type="button"
             onClick={() => setSelectedDeptId("ALL")}
-            className="text-[10px] text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+            className="text-[10px] text-primary hover:text-primary-hover font-medium cursor-pointer"
           >
             {t("departments.all")}
           </button>
@@ -632,15 +630,15 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
               placeholder={t("departments.treeSearchPlaceholder")}
               value={treeKeyword}
               onChange={(e) => setTreeKeyword(e.target.value)}
-              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-subtle border border-line rounded focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-subtle border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
 
         <div className="p-2 space-y-0.5">
           <div
-            className={`relative flex items-center gap-1.5 px-2 py-1.5 rounded text-xs cursor-pointer transition-all border ${
-              selectedDeptId === "ALL" ? "bg-blue-50/90 text-fg font-semibold border-blue-200 shadow-sm" : "text-fg-secondary hover:bg-hover border-transparent"
+            className={`relative flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+              selectedDeptId === "ALL" ? "bg-primary/5 text-fg font-semibold border-primary/20" : "text-fg-secondary hover:bg-hover border-transparent"
             }`}
             onClick={() => {
               setSelectedDeptId("ALL");
@@ -648,16 +646,14 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             }}
           >
             {selectedDeptId === "ALL" && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-r-full" />
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r-full" />
             )}
-            <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
-              selectedDeptId === "ALL" ? "bg-blue-500" : "bg-subtle border border-line-subtle"
-            }`}>
-              <FolderTree className={`w-3.5 h-3.5 ${selectedDeptId === "ALL" ? "text-white" : "text-fg-tertiary"}`} />
+            <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-subtle">
+              <FolderTree className={`w-3.5 h-3.5 ${selectedDeptId === "ALL" ? "text-primary" : "text-fg-tertiary"}`} />
             </span>
             <span className="truncate flex-1">{t("departments.allDepts")}</span>
-            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-              selectedDeptId === "ALL" ? "bg-blue-100 text-blue-700 font-bold" : "bg-hover text-fg-tertiary"
+            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-lg ${
+              selectedDeptId === "ALL" ? "bg-primary/10 text-primary font-bold" : "bg-hover text-fg-tertiary"
             }`}>{deptList.length}</span>
           </div>
           {tree.map((node) => renderTreeNode(node))}
@@ -674,7 +670,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
 
         {viewMode === "DEPT" ? (
           /* ===== 部门列表表格 ===== */
-          <div className="bg-surface border border-line rounded-md shadow-card overflow-hidden">
+          <div className="bg-surface border border-line/80 rounded-xl shadow-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
@@ -710,7 +706,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                       const parent = deptList.find((d) => d.id === dept.parentId);
                       const roleKeys = dept.roleKeys || [];
                       return (
-                        <tr key={dept.id} className="hover:bg-subtle/80 transition-colors">
+                        <tr key={dept.id} className="hover:bg-subtle/60 transition-colors">
                           <td className="py-2 px-3">
                             <input
                               type="checkbox"
@@ -727,7 +723,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                           </td>
                           <td className="py-2 px-3">
                             <div className="flex items-center gap-2">
-                              <span className="p-1 rounded-md bg-hover text-fg-secondary">
+                              <span className="p-1 rounded-lg bg-subtle text-fg-secondary">
                                 <Building2 className="w-3.5 h-3.5" />
                               </span>
                               <div>
@@ -777,14 +773,14 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                               <button
                                 type="button"
                                 onClick={() => openTransferSheet([dept.id], "DEPT")}
-                                className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                                className="text-primary hover:text-primary-hover font-medium cursor-pointer"
                               >
                                 {t("departments.transfer.rowAction")}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleOpenEdit(dept)}
-                                className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                                className="text-primary hover:text-primary-hover font-medium cursor-pointer"
                               >
                                 {t("common:actions.edit")}
                               </button>
@@ -813,10 +809,10 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
           </div>
         ) : (
           /* ===== 部门成员视图 ===== */
-          <div className="bg-surface border border-line rounded-md shadow-card overflow-hidden">
+          <div className="bg-surface border border-line/80 rounded-xl shadow-card overflow-hidden">
             <div className="px-3 py-2 border-b border-line-subtle flex items-center justify-between">
               <span className="text-xs text-fg-secondary">
-                <Eye className="w-3.5 h-3.5 inline mr-1 text-blue-500" />
+                <Eye className="w-3.5 h-3.5 inline mr-1 text-primary" />
 {t("departments.memberSummary", { name: selectedDeptName, count: scopeMembers.length })}
               </span>
               <span className="text-[11px] text-fg-tertiary">{t("departments.memberHint")}</span>
@@ -858,7 +854,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                         (id) => deptList.find((d) => d.id === id)?.name
                       ).filter(Boolean);
                       return (
-                        <tr key={u.id} className="hover:bg-subtle/80 transition-colors">
+                        <tr key={u.id} className="hover:bg-subtle/60 transition-colors">
                           <td className="py-2 px-3">
                             <input
                               type="checkbox"
@@ -926,7 +922,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                             <button
                               type="button"
                               onClick={() => openTransferSheet([u.id], "MEMBER")}
-                              className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer text-[11px]"
+                              className="text-primary hover:text-primary-hover font-medium cursor-pointer text-[11px]"
                             >
                               {t("departments.transfer.rowAction")}
                             </button>
@@ -963,14 +959,14 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             <button
               type="button"
               onClick={() => setIsTransferSheetOpen(false)}
-              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded text-xs font-semibold transition-colors cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-lg text-xs font-semibold transition-colors cursor-pointer"
             >
               {t("common:actions.cancel")}
             </button>
             <button
               type="button"
               onClick={handleConfirmTransfer}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold transition-colors cursor-pointer"
             >
               {t("departments.transfer.confirm")}
             </button>
@@ -1009,14 +1005,14 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
             <button
               type="button"
               onClick={() => setIsSheetOpen(false)}
-              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded text-xs font-semibold transition-colors cursor-pointer"
+              className="px-3 py-2 border border-line text-fg-secondary hover:bg-hover rounded-lg text-xs font-semibold transition-colors cursor-pointer"
             >
               {t("common:actions.cancel")}
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-colors cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold transition-colors cursor-pointer"
             >
               {editingDept ? t("departments.sheet.saveEdit") : t("departments.sheet.saveCreate")}
             </button>

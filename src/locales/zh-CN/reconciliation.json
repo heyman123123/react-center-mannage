@@ -17,7 +17,7 @@
     "matchRate": "平账率：",
     "orderHint": "涵盖连锁零售门店、SaaS订阅、跨境订单与医院挂号",
     "gatewayHint": "智能路由至微信、支付宝、银联、数字人民币与SWIFT",
-    "discrepancyPending": "差错待调账: {{count}} 笔 (差异 ¥10,450.00)"
+    "discrepancyPending": "差错待调账: {{count}} 笔 (差异 {{amount}})"
   },
   "workbench": {
     "title": "差错账协同工作台",
