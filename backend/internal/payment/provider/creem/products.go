@@ -13,7 +13,8 @@ func (c *Client) ListProducts(ctx context.Context, page, pageSize int) ([]Produc
 	if pageSize < 1 {
 		pageSize = 20
 	}
-	path := fmt.Sprintf("/products/search?page=%d&page_size=%d", page, pageSize)
+	// Creem API uses page_number (not page); page is rejected with 400.
+	path := fmt.Sprintf("/products/search?page_number=%d&page_size=%d", page, pageSize)
 	var wrapper productListWrapper
 	_, err := c.do(ctx, http.MethodGet, path, nil, &wrapper)
 	if err != nil {

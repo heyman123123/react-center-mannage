@@ -96,6 +96,13 @@ func TestListProducts(t *testing.T) {
 		if r.Method != http.MethodGet || !strings.HasPrefix(r.URL.Path, "/v1/products/search") {
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
+		q := r.URL.Query()
+		if q.Get("page") != "" {
+			t.Fatalf("legacy query param page must not be sent: %s", r.URL.RawQuery)
+		}
+		if q.Get("page_number") != "1" || q.Get("page_size") != "10" {
+			t.Fatalf("unexpected query: %s", r.URL.RawQuery)
+		}
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"items": []map[string]interface{}{
 				{"id": "prod_1", "name": "Pro", "price": 999, "currency": "USD", "status": "active"},

@@ -125,15 +125,20 @@ func (s *Service) Create(ctx context.Context, in ProductInput) (*ProductDTO, err
 	}
 	client := creem.NewClient(ch.Environment, ch.ApiKey)
 	billingType, billingPeriod := mapBilling(row.ProductType, row.BillingInterval)
-	creemProd, err := client.CreateProduct(ctx, creem.CreateProductReq{
-		Name:          row.Name,
-		Description:   row.Description,
-		Price:         row.PriceCents,
-		Currency:      row.Currency,
-		BillingType:   billingType,
-		BillingPeriod: billingPeriod,
-		TaxCategory:   "saas",
-	})
+	creemReq := creem.CreateProductReq{
+		Name:        row.Name,
+		Description: row.Description,
+		Price:       row.PriceCents,
+		Currency:    row.Currency,
+		BillingType: billingType,
+		TaxCategory: "saas",
+	}
+	// Creem: billing_period is only for recurring; sending it with onetime
+	// can be rejected or mis-classified as recurring.
+	if billingType == "recurring" && billingPeriod != "" {
+		creemReq.BillingPeriod = billingPeriod
+	}
+	creemProd, err := client.CreateProduct(ctx, creemReq)
 	if err != nil {
 		row.SyncStatus = "ERROR"
 		row.SyncError = err.Error()
@@ -450,7 +455,8 @@ func mapCreemBilling(billingType, billingPeriod string) (string, string) {
 
 func mapBilling(productType, interval string) (string, string) {
 	if productType == "ONE_TIME" || productType == "ADDON" || interval == "ONE_TIME" || interval == "LIFETIME" {
-		return "onetime", "once"
+		// billing_period must be omitted for onetime (empty second return)
+		return "onetime", ""
 	}
 	switch interval {
 	case "YEARLY":
