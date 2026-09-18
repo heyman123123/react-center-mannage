@@ -357,3 +357,33 @@ Sandbox Checkout → Webhook → 交易 → 对账 → 结算批次 → 出金 �
 3. Resend API Key + 发件人邮箱 + 测试收件邮箱  
 
 拿到后将续跑：`渠道探活 → 商品同步/创建 → Checkout →（模拟）Webhook 正反向 → 交易 → 退款边界 → 邮件测试发送与密钥是否明文`。
+
+---
+
+## 11. 缺陷修复回验（2026-09-18 00:15 UTC+8）
+
+> 在临时进程 `NOVAS_HTTP_ADDR=:18080 ./bin/api` 上复测；**`:8080` 若仍是旧进程需手动重启才能吃到补丁**。未提交 git。
+
+### 11.1 已修复并复测
+
+| 优先级 | 项 | 修复要点 | 复测 |
+|--------|----|----------|------|
+| P0 | Refresh 并发原子消费 | Redis `GetDel` | 同 Cookie 并发 40 → **成功 1 / 401×39** |
+| P0 | PUT path `:id` | `bindMapWithPathID` | `PUT /fee-rules/:id` 以 path id 更新，body 伪 id 被忽略 |
+| P0 | Webhook FAILED 可重试 | 仅 SUCCESS/DELIVERED 短路 | 代码 + 单测 |
+| P0 | 退款金额上限 + Process 幂等 | PENDING→PROCESSING→SUCCESS | 单测 |
+| P1 | 邮件 API Key 加密 + `email.accepted` | seal/open + 明文升级 | 列表掩码 `re_****`；不伪造 delivered |
+| P1 | 空/错 Webhook 签名拒绝 | 空 secret 直接 401 | 无签回调 → **40102** |
+| P1 | 支付密钥掩码 | `********` / 尾四位 | 渠道列表已掩码 |
+| P1 | CSRF | Origin / Sec-Fetch-Site | cross-site / 恶意 Origin → **40301** |
+| P1 | 对账不再批量假成功 | 按金额+渠道单号一致性落 done/discrepancy；汇总用 `net_amount_cents` | `run`→`matchedCount=0`；summary bank=净额 |
+| P1 | Webhook 重投前端假成功 | 调真实 `redeliver` API | 代码已接 |
+| P1 | 非 Creem 测试下单假成功 | toast「仅 Creem」 | 代码已改 |
+
+### 11.2 仍为债（未本轮清零）
+
+1. **租户/对象级 IDOR**：菜单权限 ≠ 数据隔离；后端用户无强制 tenant 绑定。  
+2. **对账非真三方账单**：现为内部一致性，未拉 Creem/银行对账单。  
+3. **大量前端 PARTIAL/MOCK**：结算出金、邮件模板 CRUD、促销派发、应用启停密钥轮换、告警闭环等刷新仍可能丢。  
+4. **本机无公网**：Creem 真实 Webhook 仍需隧道。  
+5. **生产 Secure Cookie / 双提交 CSRF Token**：当前为 Origin 校验 + SameSite=Lax。
