@@ -4,7 +4,7 @@ import * as channelsApi from "../api/modules/channels";
 import * as productsApi from "../api/modules/products";
 import * as discountsApi from "../api/modules/discounts";
 import * as messagingApi from "../api/modules/messaging";
-import * as tenantsApi from "../api/modules/tenants";
+import { fetchTenantList } from "../lib/tenants";
 import { useTranslation } from "react-i18next";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -122,7 +122,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           productsApi.listProducts({ tenantId }),
           discountsApi.listDiscounts({ tenantId }),
           messagingApi.listEmailTemplates(),
-          tenantsApi.listTenants(),
+          fetchTenantList(),
         ]);
       setAppList(apps);
       setPaymentChannels(channels);

@@ -70,7 +70,7 @@ import {
 } from "./lib/iamActions";
 import { filterMenusForUser, canAccessTab, firstAccessibleTab } from "./lib/menuAccess";
 import { PermissionGate, PermissionProvider } from "./lib/permission";
-import * as tenantsApi from "./api/modules/tenants";
+import { fetchTenantList } from "./lib/tenants";
 import * as reconciliationApi from "./api/modules/reconciliation";
 
 const EMPTY_TENANT: Tenant = {
@@ -233,7 +233,7 @@ export default function App() {
           return;
         }
         applyShellData(data);
-        void tenantsApi.listTenants().then((tenantRows) => {
+        void fetchTenantList().then((tenantRows) => {
           if (tenantRows.length > 0) {
             setTenants(tenantRows);
             setCurrentTenant(tenantRows[0]);
@@ -299,7 +299,7 @@ export default function App() {
           if (cancelled || !data) return;
           applyShellData(data);
           try {
-            const tenantRows = await tenantsApi.listTenants();
+            const tenantRows = await fetchTenantList();
             if (!cancelled && tenantRows.length > 0) {
               setTenants(tenantRows);
               setCurrentTenant(tenantRows[0]);
@@ -768,7 +768,6 @@ export default function App() {
 
           {currentTab === "tenants" && (
             <TenantManagementView
-              tenants={tenants}
               onTenantsChange={(list) => {
                 setTenants(list);
                 if (!list.find((x) => x.id === currentTenant.id)) {

@@ -86,6 +86,52 @@ func (h *Handler) SyncFromCreem(c *gin.Context) {
 	response.OK(c, result)
 }
 
+type copyBetweenChannelsBody struct {
+	SourceChannelID string `json:"sourceChannelId"`
+	TargetChannelID string `json:"targetChannelId"`
+}
+
+func (h *Handler) CopyProductsToChannel(c *gin.Context) {
+	var req copyBetweenChannelsBody
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	result, err := h.svc.CopyProductsBetweenChannels(c.Request.Context(), req.SourceChannelID, req.TargetChannelID)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "PRODUCT_COPY_CHANNEL", "PAYMENT_CHANNEL", req.TargetChannelID, "复制商品到另一渠道账号")
+	response.OK(c, result)
+}
+
+func (h *Handler) SyncDiscountsFromCreem(c *gin.Context) {
+	channelID := c.Query("channelId")
+	result, err := h.svc.SyncDiscountsFromCreem(c.Request.Context(), channelID)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "DISCOUNT_SYNC_FROM_CREEM", "PAYMENT_CHANNEL", channelID, "从 Creem 同步折扣")
+	response.OK(c, result)
+}
+
+func (h *Handler) CopyDiscountsToChannel(c *gin.Context) {
+	var req copyBetweenChannelsBody
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	result, err := h.svc.CopyDiscountsBetweenChannels(c.Request.Context(), req.SourceChannelID, req.TargetChannelID)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "DISCOUNT_COPY_CHANNEL", "PAYMENT_CHANNEL", req.TargetChannelID, "复制折扣到另一渠道账号")
+	response.OK(c, result)
+}
+
 func (h *Handler) ListDiscounts(c *gin.Context) {
 	list, err := h.svc.ListDiscounts(c.Request.Context(), c.Query("tenantId"), c.Query("channelId"))
 	if err != nil {

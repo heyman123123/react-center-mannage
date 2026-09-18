@@ -13,6 +13,7 @@ export * as refundsApi from "./modules/refunds";
 export * as channelsApi from "./modules/channels";
 export * as appsApi from "./modules/apps";
 export * as tenantsApi from "./modules/tenants";
+export { fetchTenantList } from "../lib/tenants";
 export * as productsApi from "./modules/products";
 export * as discountsApi from "./modules/discounts";
 export * as reconciliationApi from "./modules/reconciliation";

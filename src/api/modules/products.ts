@@ -51,3 +51,19 @@ export async function syncFromCreem(channelId: string): Promise<SyncFromCreemRes
     `/products/sync-from-creem?channelId=${encodeURIComponent(channelId)}`
   );
 }
+
+export type CopyToChannelResult = {
+  created: number;
+  skipped: number;
+  total: number;
+};
+
+export async function copyProductsToChannel(
+  sourceChannelId: string,
+  targetChannelId: string
+): Promise<CopyToChannelResult> {
+  return http.post<CopyToChannelResult>("/products/copy-to-channel", {
+    sourceChannelId,
+    targetChannelId,
+  });
+}
