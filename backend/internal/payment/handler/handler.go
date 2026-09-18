@@ -276,7 +276,8 @@ func (h *Handler) CreemWebhook(c *gin.Context) {
 		return
 	}
 	sig := c.GetHeader("creem-signature")
-	if err := h.svc.HandleCreemWebhook(c.Request.Context(), channelID, sig, raw); err != nil {
+	inboundPath := c.Request.URL.Path
+	if err := h.svc.HandleCreemWebhook(c.Request.Context(), channelID, sig, raw, inboundPath); err != nil {
 		response.Fail(c, err)
 		return
 	}

@@ -51,14 +51,10 @@ func AutoMigrate(db *gorm.DB) error {
 		&Tenant{},
 		&EmailChannel{},
 		&EmailTemplate{},
-		&EmailWebhookLog{},
 		&PaymentChannel{},
 		&CatalogProduct{},
 		&CatalogDiscount{},
-		&PaymentWebhookLog{},
-		&PaymentTransaction{},
-		&PaymentRefund{},
-		&PaymentChargeback{},
+		// 订单 / Webhook / 退款 / 拒付 / 审计 / 邮件 Webhook 日志按月分表，见 internal/infra/sharding
 		&PaymentApp{},
 		&SettlementBatch{},
 		&PromoCampaign{},
@@ -426,11 +422,11 @@ type CatalogDiscount struct {
 // PaymentTransaction 支付交易流水（由 Creem Webhook 落库）
 type PaymentTransaction struct {
 	ID                 string         `gorm:"type:uuid;primaryKey" json:"id"`
-	DisplayID          string         `gorm:"size:64;not null;uniqueIndex" json:"displayId"`
-	ChannelID          string         `gorm:"type:uuid;not null;uniqueIndex:idx_tx_channel_event" json:"channelId"`
+	DisplayID          string         `gorm:"size:64;not null;index" json:"displayId"`
+	ChannelID          string         `gorm:"type:uuid;not null;index" json:"channelId"`
 	TenantID           string         `gorm:"size:64;not null;index" json:"tenantId"`
 	Channel            string         `gorm:"size:32;not null;index" json:"channel"`
-	ExternalEventID    string         `gorm:"size:128;not null;uniqueIndex:idx_tx_channel_event" json:"externalEventId"`
+	ExternalEventID    string         `gorm:"size:128;not null;index" json:"externalEventId"`
 	ChannelTradeNo     string         `gorm:"size:128;index" json:"channelTradeNo"`
 	OrderNumber        string         `gorm:"size:128;index" json:"orderNumber"`
 	OrderTitle         string         `gorm:"size:512" json:"orderTitle"`
@@ -457,7 +453,7 @@ type PaymentTransaction struct {
 // PaymentRefund 退款单（Creem refund.created / 管理端发起）
 type PaymentRefund struct {
 	ID                  string         `gorm:"type:uuid;primaryKey" json:"id"`
-	DisplayID           string         `gorm:"size:64;not null;uniqueIndex" json:"displayId"`
+	DisplayID           string         `gorm:"size:64;not null;index" json:"displayId"`
 	TransactionID       string         `gorm:"type:uuid;index" json:"transactionId"`
 	TransactionNo       string         `gorm:"size:64;index" json:"transactionNo"`
 	ChannelID           string         `gorm:"type:uuid;index" json:"channelId"`
@@ -479,13 +475,13 @@ type PaymentRefund struct {
 // PaymentChargeback 拒付/争议单（Creem dispute.created）
 type PaymentChargeback struct {
 	ID              string         `gorm:"type:uuid;primaryKey" json:"id"`
-	DisplayID       string         `gorm:"size:64;not null;uniqueIndex" json:"displayId"`
+	DisplayID       string         `gorm:"size:64;not null;index" json:"displayId"`
 	TransactionID   string         `gorm:"type:uuid;index" json:"transactionId"`
 	TransactionNo   string         `gorm:"size:64;index" json:"transactionNo"`
 	ChannelID       string         `gorm:"type:uuid;index" json:"channelId"`
 	TenantID        string         `gorm:"size:64;not null;index" json:"tenantId"`
 	Channel         string         `gorm:"size:32;not null;index" json:"channel"`
-	ExternalEventID string         `gorm:"size:128;uniqueIndex" json:"externalEventId"`
+	ExternalEventID string         `gorm:"size:128;index" json:"externalEventId"`
 	AmountCents     int64          `gorm:"not null;default:0" json:"amountCents"`
 	Currency        string         `gorm:"size:8;not null" json:"currency"`
 	Reason          string         `gorm:"size:64" json:"reason"`
@@ -619,7 +615,7 @@ type AlertHistory struct {
 type PaymentWebhookLog struct {
 	ID           string `gorm:"type:uuid;primaryKey" json:"id"`
 	ChannelID    string `gorm:"type:uuid;index" json:"channelId"`
-	EventID      string `gorm:"size:128;uniqueIndex" json:"eventId"`
+	EventID      string `gorm:"size:128;index" json:"eventId"`
 	EventType    string `gorm:"size:64;index" json:"eventType"`
 	Channel      string `gorm:"size:32" json:"channel"`
 	AppID        string `gorm:"size:64" json:"appId"`

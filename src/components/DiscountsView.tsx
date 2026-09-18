@@ -254,14 +254,36 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     setIsModalOpen(true);
   };
 
-  const handleToggleStatus = (d: DiscountConfig) => {
+  const handleToggleStatus = async (d: DiscountConfig) => {
     const nextStatus = d.status === "ACTIVE" ? "DISABLED" : "ACTIVE";
-    const updated: DiscountConfig = { ...d, status: nextStatus };
-    setDiscountList((prev) => prev.map((item) => (item.id === d.id ? updated : item)));
-    showToast(t("discounts.toast.toggled", {
+    const channelId = d.boundChannelIds?.[0] || d.channelId || "";
+    const tenantId = currentTenant.id === "group_hq" ? "bu_na_ecom" : currentTenant.id;
+    const payload: discountsApi.DiscountInput = {
+      channelId,
+      tenantId,
       code: d.code,
-      status: nextStatus === "ACTIVE" ? t("discounts.toast.enabled") : t("discounts.toast.disabled"),
-    }));
+      name: d.name,
+      type: d.type,
+      value: d.value,
+      currency: d.currency,
+      minOrderAmount: d.minOrderAmount,
+      maxUsageLimit: d.maxUsageLimit,
+      startDate: d.startDate,
+      endDate: d.endDate,
+      applicableScope: d.applicableScope,
+      appliesToProductIds: d.appliesToProductIds || [],
+      status: nextStatus as DiscountConfig["status"],
+    };
+    try {
+      const updated = await discountsApi.updateDiscount(d.id, payload);
+      setDiscountList((prev) => prev.map((item) => (item.id === d.id ? updated : item)));
+      showToast(t("discounts.toast.toggled", {
+        code: d.code,
+        status: nextStatus === "ACTIVE" ? t("discounts.toast.enabled") : t("discounts.toast.disabled"),
+      }));
+    } catch {
+      showToast(t("discounts.toast.saveFailed"));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

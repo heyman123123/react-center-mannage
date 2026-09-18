@@ -7,6 +7,7 @@ import (
 
 	"github.com/novaspay/admin-api/internal/infra/persistence"
 	"github.com/novaspay/admin-api/internal/pkg/timex"
+	"gorm.io/gorm"
 )
 
 type WebhookDTO struct {
@@ -31,21 +32,18 @@ func (s *Service) ListWebhooks(ctx context.Context, page, pageSize int, keyword,
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 20
 	}
-	q := s.db.WithContext(ctx).Model(&persistence.EmailWebhookLog{})
-	if kw := strings.TrimSpace(keyword); kw != "" {
-		like := "%" + kw + "%"
-		q = q.Where("recipient ILIKE ? OR subject ILIKE ? OR message_id ILIKE ?", like, like, like)
+	filter := func(q *gorm.DB) *gorm.DB {
+		if kw := strings.TrimSpace(keyword); kw != "" {
+			like := "%" + kw + "%"
+			q = q.Where("recipient ILIKE ? OR subject ILIKE ? OR message_id ILIKE ?", like, like, like)
+		}
+		if et := strings.TrimSpace(eventType); et != "" && et != "ALL" {
+			q = q.Where("event_type = ?", et)
+		}
+		return q
 	}
-	if et := strings.TrimSpace(eventType); et != "" && et != "ALL" {
-		q = q.Where("event_type = ?", et)
-	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	var rows []persistence.EmailWebhookLog
-	offset := (page - 1) * pageSize
-	if err := q.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&rows).Error; err != nil {
+	rows, total, err := s.shards.ListEmailWebhookLogs(ctx, page, pageSize, filter)
+	if err != nil {
 		return nil, 0, err
 	}
 	out := make([]WebhookDTO, 0, len(rows))
