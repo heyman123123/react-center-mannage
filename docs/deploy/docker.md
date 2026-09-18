@@ -1,6 +1,6 @@
 # Docker 单机部署
 
-使用 Docker Compose 一键启动 PostgreSQL、Redis、API 与 Nginx 静态前端，适合内部运营团队单机部署。
+使用 Docker Compose 一键启动 PostgreSQL、Redis、API、**Worker**（定时任务）与 Nginx 静态前端，适合内部运营团队单机部署。
 
 ## 前置条件
 
@@ -65,6 +65,7 @@ NOVAS_CORS_ORIGINS=https://ops.example.com
 | `NOVAS_COOKIE_SECURE` | Cookie Secure 标志（HTTPS 反代后设为 `true`） | `false` |
 | `NOVAS_CORS_ORIGINS` | 允许的 CORS 来源 | `http://localhost:3000` |
 | `SEED_DEMO` | 是否写入演示业务数据（租户、应用等） | `true` |
+| `NOVAS_EMBEDDED_JOBS` | API 进程内是否跑渠道健康 goroutine；Compose 默认 `false`，由 `worker` 服务承担 | `false` |
 | `POSTGRES_USER` | 数据库用户 | `novas` |
 | `POSTGRES_PASSWORD` | 数据库密码 | `novas` |
 | `POSTGRES_DB` | 数据库名 | `novaspay` |
