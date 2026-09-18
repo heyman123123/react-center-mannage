@@ -22,6 +22,8 @@ import {
   Trash2,
   Sparkles,
   TrendingUp,
+  RefreshCw,
+  ArrowRightLeft,
 } from "lucide-react";
 import { DiscountConfig, DiscountType, Tenant, PaymentChannelConfig, ProductConfig } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
@@ -72,6 +74,12 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
   const [discountList, setDiscountList] = useState<DiscountConfig[]>([]);
   const [products, setProducts] = useState<ProductConfig[]>([]);
   const [paymentChannels, setPaymentChannels] = useState<PaymentChannelConfig[]>([]);
+  const [filterChannelId, setFilterChannelId] = useState("");
+  const [syncChannelId, setSyncChannelId] = useState("");
+  const [copyTargetChannelId, setCopyTargetChannelId] = useState("");
+  const [copySheetOpen, setCopySheetOpen] = useState(false);
+  const [isSyncingFromCreem, setIsSyncingFromCreem] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -88,18 +96,22 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
     try {
       const list = await discountsApi.listDiscounts({
         tenantId: currentTenant.id === "group_hq" ? undefined : currentTenant.id,
+        channelId: filterChannelId || undefined,
       });
       setDiscountList(list);
     } catch {
       showToast(t("discounts.toast.loadFailed"));
     }
-  }, [currentTenant.id, t]);
+  }, [currentTenant.id, filterChannelId, t]);
 
   const loadCatalog = useCallback(async () => {
     const tenantId = currentTenant.id === "group_hq" ? undefined : currentTenant.id;
     try {
       const [productRows, channelRows] = await Promise.all([
-        productsApi.listProducts({ tenantId }),
+        productsApi.listProducts({
+          tenantId,
+          channelId: filterChannelId || undefined,
+        }),
         channelsApi.listPaymentChannels(),
       ]);
       setProducts(productRows);
@@ -108,12 +120,68 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
       setProducts([]);
       setPaymentChannels([]);
     }
-  }, [currentTenant.id]);
+  }, [currentTenant.id, filterChannelId]);
 
   useEffect(() => {
     void loadDiscounts();
     void loadCatalog();
   }, [loadDiscounts, loadCatalog]);
+
+  useEffect(() => {
+    if (!syncChannelId && creemChannels.length > 0) {
+      setSyncChannelId(creemChannels[0].id);
+    }
+  }, [creemChannels, syncChannelId]);
+
+  const handleSyncFromCreem = async () => {
+    const channelId = syncChannelId || filterChannelId;
+    if (!channelId) {
+      showToast(t("discounts.selectChannelToSync"));
+      return;
+    }
+    setIsSyncingFromCreem(true);
+    try {
+      const result = await discountsApi.syncFromCreem(channelId);
+      await loadDiscounts();
+      await loadCatalog();
+      showToast(
+        t("discounts.toast.syncFromCreemSuccess", {
+          total: result.total,
+          created: result.created,
+          updated: result.updated,
+        })
+      );
+    } catch {
+      showToast(t("discounts.toast.syncFromCreemFailed"));
+    } finally {
+      setIsSyncingFromCreem(false);
+    }
+  };
+
+  const handleCopyToChannel = async () => {
+    const sourceChannelId = filterChannelId || syncChannelId;
+    if (!sourceChannelId || !copyTargetChannelId) {
+      showToast(t("discounts.copyChannel.selectBoth"));
+      return;
+    }
+    setIsCopying(true);
+    try {
+      const result = await discountsApi.copyDiscountsToChannel(sourceChannelId, copyTargetChannelId);
+      await loadDiscounts();
+      setCopySheetOpen(false);
+      showToast(
+        t("discounts.toast.copyToChannelSuccess", {
+          total: result.total,
+          created: result.created,
+          skipped: result.skipped,
+        })
+      );
+    } catch {
+      showToast(t("discounts.toast.copyToChannelFailed"));
+    } finally {
+      setIsCopying(false);
+    }
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
@@ -288,7 +356,54 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {creemChannels.length > 0 && (
+            <>
+              <ShadcnSelect
+                value={filterChannelId}
+                onValueChange={(v) => {
+                  setFilterChannelId(v);
+                  if (!syncChannelId) setSyncChannelId(v);
+                }}
+                options={[{ value: "", label: t("discounts.filterChannelAll") }, ...channelOptions]}
+                placeholder={t("discounts.filterByChannel")}
+                className="w-[220px]"
+              />
+              {creemChannels.length > 1 && (
+                <ShadcnSelect
+                  value={syncChannelId}
+                  onValueChange={setSyncChannelId}
+                  options={channelOptions}
+                  placeholder={t("discounts.selectChannelToSync")}
+                  className="w-[200px]"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => void handleSyncFromCreem()}
+                disabled={isSyncingFromCreem || !(syncChannelId || filterChannelId)}
+                className="px-3.5 py-2 border border-line hover:bg-subtle text-fg rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingFromCreem ? "animate-spin" : ""}`} />
+                <span>
+                  {isSyncingFromCreem ? t("discounts.syncingFromCreem") : t("discounts.syncFromCreem")}
+                </span>
+              </button>
+              {creemChannels.length > 1 && (filterChannelId || syncChannelId) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCopyTargetChannelId("");
+                    setCopySheetOpen(true);
+                  }}
+                  className="px-3.5 py-2 border border-line hover:bg-subtle text-fg rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
+                >
+                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                  <span>{t("discounts.copyToChannel")}</span>
+                </button>
+              )}
+            </>
+          )}
           <button
             onClick={handleOpenAdd}
             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
@@ -742,6 +857,49 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
           </form>
         </SideSheet>
       )}
+
+      <SideSheet
+        isOpen={copySheetOpen}
+        onClose={() => setCopySheetOpen(false)}
+        title={t("discounts.copyChannel.title")}
+        description={t("discounts.copyChannel.description")}
+        footer={
+          <button
+            type="button"
+            disabled={isCopying || !copyTargetChannelId}
+            onClick={() => void handleCopyToChannel()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold disabled:opacity-50"
+          >
+            {isCopying ? t("common:status.loading") : t("discounts.copyChannel.confirm")}
+          </button>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          <div>
+            <label className="font-semibold text-fg-secondary block mb-1">
+              {t("discounts.copyChannel.sourceLabel")}
+            </label>
+            <p className="font-mono text-fg">
+              {channelOptions.find((o) => o.value === (filterChannelId || syncChannelId))?.label ||
+                t("discounts.selectChannelToSync")}
+            </p>
+          </div>
+          <div>
+            <label className="font-semibold text-fg-secondary block mb-1">
+              {t("discounts.copyChannel.targetLabel")}
+            </label>
+            <ShadcnSelect
+              value={copyTargetChannelId}
+              onValueChange={setCopyTargetChannelId}
+              options={channelOptions.filter(
+                (o) => o.value !== (filterChannelId || syncChannelId)
+              )}
+              placeholder={t("discounts.copyChannel.targetPlaceholder")}
+              className="w-full"
+            />
+          </div>
+        </div>
+      </SideSheet>
     </div>
   );
 };

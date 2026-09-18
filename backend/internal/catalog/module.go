@@ -16,6 +16,7 @@ func NewCatalogRoute(h *cataloghandler.Handler, mw *middleware.Bundle) routing.R
 			p.GET("", mw.RequireMenu("products"), h.ListProducts)
 			p.POST("", mw.RequireMenu("products"), h.CreateProduct)
 			p.POST("/sync-from-creem", mw.RequireMenu("products"), h.SyncFromCreem)
+			p.POST("/copy-to-channel", mw.RequireMenu("products"), h.CopyProductsToChannel)
 			p.PUT("/:id", mw.RequireMenu("products"), h.UpdateProduct)
 			p.DELETE("/:id", mw.RequireMenu("products"), h.DeleteProduct)
 			p.POST("/:id/sync", mw.RequireMenu("products"), h.SyncProduct)
@@ -24,6 +25,8 @@ func NewCatalogRoute(h *cataloghandler.Handler, mw *middleware.Bundle) routing.R
 		d := r.Group("/discounts", mw.Auth)
 		{
 			d.GET("", mw.RequireMenu("discounts"), h.ListDiscounts)
+			d.POST("/sync-from-creem", mw.RequireMenu("discounts"), h.SyncDiscountsFromCreem)
+			d.POST("/copy-to-channel", mw.RequireMenu("discounts"), h.CopyDiscountsToChannel)
 			d.POST("", mw.RequireMenu("discounts"), h.CreateDiscount)
 			d.PUT("/:id", mw.RequireMenu("discounts"), h.UpdateDiscount)
 			d.DELETE("/:id", mw.RequireMenu("discounts"), h.DeleteDiscount)

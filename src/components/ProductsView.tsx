@@ -50,8 +50,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [productList, setProductList] = useState<ProductConfig[]>([]);
   const [paymentChannels, setPaymentChannels] = useState<PaymentChannelConfig[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [filterChannelId, setFilterChannelId] = useState("");
   const [syncChannelId, setSyncChannelId] = useState("");
+  const [copyTargetChannelId, setCopyTargetChannelId] = useState("");
+  const [copySheetOpen, setCopySheetOpen] = useState(false);
   const [isSyncingFromCreem, setIsSyncingFromCreem] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
@@ -67,12 +71,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     try {
       const list = await productsApi.listProducts({
         tenantId: currentTenant.id === "group_hq" ? undefined : currentTenant.id,
+        channelId: filterChannelId || undefined,
       });
       setProductList(list);
     } catch {
       showToast(t("products.toast.loadFailed"));
     }
-  }, [currentTenant.id, t]);
+  }, [currentTenant.id, filterChannelId, t]);
 
   const loadChannels = useCallback(async () => {
     try {
@@ -93,6 +98,31 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       setSyncChannelId(creemChannels[0].id);
     }
   }, [creemChannels, syncChannelId]);
+
+  const handleCopyToChannel = async () => {
+    const sourceChannelId = filterChannelId || syncChannelId;
+    if (!sourceChannelId || !copyTargetChannelId) {
+      showToast(t("products.copyChannel.selectBoth"));
+      return;
+    }
+    setIsCopying(true);
+    try {
+      const result = await productsApi.copyProductsToChannel(sourceChannelId, copyTargetChannelId);
+      await loadProducts();
+      setCopySheetOpen(false);
+      showToast(
+        t("products.toast.copyToChannelSuccess", {
+          total: result.total,
+          created: result.created,
+          skipped: result.skipped,
+        })
+      );
+    } catch {
+      showToast(t("products.toast.copyToChannelFailed"));
+    } finally {
+      setIsCopying(false);
+    }
+  };
 
   const handleSyncFromCreem = async () => {
     if (!syncChannelId) {
@@ -320,6 +350,16 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         <div className="flex items-center gap-2 flex-wrap justify-end">
           {creemChannels.length > 0 && (
             <>
+              <ShadcnSelect
+                value={filterChannelId}
+                onValueChange={(v) => {
+                  setFilterChannelId(v);
+                  if (!syncChannelId) setSyncChannelId(v);
+                }}
+                options={[{ value: "", label: t("products.filterChannelAll") }, ...channelOptions]}
+                placeholder={t("products.filterByChannel")}
+                className="w-[220px]"
+              />
               {creemChannels.length > 1 && (
                 <ShadcnSelect
                   value={syncChannelId}
@@ -328,6 +368,19 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   placeholder={t("products.selectChannelToSync")}
                   className="w-[200px]"
                 />
+              )}
+              {creemChannels.length > 1 && (filterChannelId || syncChannelId) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCopyTargetChannelId("");
+                    setCopySheetOpen(true);
+                  }}
+                  className="px-3.5 py-2 border border-line hover:bg-subtle text-fg rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-card transition-colors"
+                >
+                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                  <span>{t("products.copyToChannel")}</span>
+                </button>
               )}
               <button
                 onClick={() => void handleSyncFromCreem()}
@@ -926,6 +979,49 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           </form>
         </SideSheet>
       )}
+
+      <SideSheet
+        isOpen={copySheetOpen}
+        onClose={() => setCopySheetOpen(false)}
+        title={t("products.copyChannel.title")}
+        description={t("products.copyChannel.description")}
+        footer={
+          <button
+            type="button"
+            disabled={isCopying || !copyTargetChannelId}
+            onClick={() => void handleCopyToChannel()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold disabled:opacity-50"
+          >
+            {isCopying ? t("common:status.loading") : t("products.copyChannel.confirm")}
+          </button>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          <div>
+            <label className="font-semibold text-fg-secondary block mb-1">
+              {t("products.copyChannel.sourceLabel")}
+            </label>
+            <p className="font-mono text-fg">
+              {channelOptions.find((o) => o.value === (filterChannelId || syncChannelId))?.label ||
+                t("products.selectChannelToSync")}
+            </p>
+          </div>
+          <div>
+            <label className="font-semibold text-fg-secondary block mb-1">
+              {t("products.copyChannel.targetLabel")}
+            </label>
+            <ShadcnSelect
+              value={copyTargetChannelId}
+              onValueChange={setCopyTargetChannelId}
+              options={channelOptions.filter(
+                (o) => o.value !== (filterChannelId || syncChannelId)
+              )}
+              placeholder={t("products.copyChannel.targetPlaceholder")}
+              className="w-full"
+            />
+          </div>
+        </div>
+      </SideSheet>
     </div>
   );
 };

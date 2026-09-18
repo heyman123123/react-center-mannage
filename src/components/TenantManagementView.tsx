@@ -8,6 +8,7 @@ import { ShadcnSelect } from "./ui/select";
 import { Popconfirm } from "./ui/Popconfirm";
 import type { Tenant } from "../types/payment";
 import * as tenantsApi from "../api/modules/tenants";
+import { fetchTenantList } from "../lib/tenants";
 
 const ISOLATION_OPTIONS = [
   "STRICT_ISOLATED",
@@ -27,16 +28,14 @@ const emptyForm = {
 };
 
 interface TenantManagementViewProps {
-  tenants?: Tenant[];
   onTenantsChange?: (tenants: Tenant[]) => void;
 }
 
 export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
-  tenants: tenantsProp,
   onTenantsChange,
 }) => {
   const { t } = useTranslation(["tenants", "common"]);
-  const [rows, setRows] = useState<Tenant[]>(tenantsProp || []);
+  const [rows, setRows] = useState<Tenant[]>([]);
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Tenant | null>(null);
@@ -53,7 +52,7 @@ export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
   const loadRows = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await tenantsApi.listTenants();
+      const list = await fetchTenantList();
       setRows(list);
       onTenantsChange?.(list);
     } catch {
@@ -66,12 +65,6 @@ export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
   useEffect(() => {
     void loadRows();
   }, [loadRows]);
-
-  useEffect(() => {
-    if (tenantsProp?.length) {
-      setRows(tenantsProp);
-    }
-  }, [tenantsProp]);
 
   useEffect(() => {
     reset();

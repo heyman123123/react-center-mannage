@@ -29,7 +29,8 @@ export async function createTenant(body: TenantInput & { id: string }): Promise<
 }
 
 export async function updateTenant(id: string, body: TenantInput): Promise<ApiTenant> {
-  return http.put<ApiTenant>(`/tenants/${id}`, body);
+  const { id: _omit, ...payload } = body;
+  return http.put<ApiTenant>(`/tenants/${id}`, payload);
 }
 
 export async function deleteTenant(id: string): Promise<void> {

@@ -39,3 +39,31 @@ export async function updateDiscount(id: string, body: DiscountInput): Promise<D
 export async function deleteDiscount(id: string): Promise<void> {
   await http.delete(`/discounts/${id}`);
 }
+
+export type SyncFromCreemResult = {
+  created: number;
+  updated: number;
+  total: number;
+};
+
+export async function syncFromCreem(channelId: string): Promise<SyncFromCreemResult> {
+  return http.post<SyncFromCreemResult>(
+    `/discounts/sync-from-creem?channelId=${encodeURIComponent(channelId)}`
+  );
+}
+
+export type CopyToChannelResult = {
+  created: number;
+  skipped: number;
+  total: number;
+};
+
+export async function copyDiscountsToChannel(
+  sourceChannelId: string,
+  targetChannelId: string
+): Promise<CopyToChannelResult> {
+  return http.post<CopyToChannelResult>("/discounts/copy-to-channel", {
+    sourceChannelId,
+    targetChannelId,
+  });
+}
