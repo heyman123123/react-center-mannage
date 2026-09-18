@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -77,8 +76,8 @@ func (s *Service) Dispatch(ctx context.Context, appID string, in DispatchInput) 
 	if err := s.db.WithContext(ctx).First(&appRow, "id = ?", appID).Error; err != nil {
 		return nil, apperr.Unauthorized
 	}
-	var app map[string]interface{}
-	if err := json.Unmarshal([]byte(appRow.DataJSON), &app); err != nil {
+	app, err := persistence.PaymentAppToMap(appRow)
+	if err != nil {
 		return nil, apperr.Internal
 	}
 

@@ -69,7 +69,7 @@ func (s *Service) GetApp(ctx context.Context, id string) (map[string]interface{}
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
 		return nil, apperr.NotFound
 	}
-	return unmarshalMap(row.DataJSON)
+	return paymentAppToMap(row)
 }
 
 func (s *Service) SaveApp(ctx context.Context, payload map[string]interface{}) (map[string]interface{}, error) {
@@ -84,22 +84,19 @@ func (s *Service) SaveApp(ctx context.Context, payload map[string]interface{}) (
 		code = id
 		payload["code"] = code
 	}
-	data, err := json.Marshal(payload)
-	if err != nil {
-		return nil, apperr.Internal
-	}
 	var existing persistence.PaymentApp
-	err = s.db.WithContext(ctx).First(&existing, "id = ?", id).Error
+	err := s.db.WithContext(ctx).First(&existing, "id = ?", id).Error
 	if err == nil {
 		existing.TenantID = tenantID
 		existing.Code = code
-		existing.DataJSON = string(data)
+		applyPaymentAppPayload(&existing, payload)
 		if err := s.db.WithContext(ctx).Save(&existing).Error; err != nil {
 			return nil, err
 		}
 		return payload, nil
 	}
-	row := persistence.PaymentApp{ID: id, TenantID: tenantID, Code: code, DataJSON: string(data)}
+	row := persistence.PaymentApp{ID: id, TenantID: tenantID, Code: code}
+	applyPaymentAppPayload(&row, payload)
 	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
 		return nil, apperr.Wrap(40900, 409, "应用编码冲突", err)
 	}
@@ -113,7 +110,7 @@ func (s *Service) DeleteApp(ctx context.Context, id string) error {
 func appsFromRows(rows []persistence.PaymentApp) ([]map[string]interface{}, error) {
 	out := make([]map[string]interface{}, 0, len(rows))
 	for _, r := range rows {
-		m, err := unmarshalMap(r.DataJSON)
+		m, err := paymentAppToMap(r)
 		if err != nil {
 			continue
 		}
@@ -143,7 +140,7 @@ func (s *Service) ListSettlements(ctx context.Context, tenantID string) ([]map[s
 	}
 	out := make([]map[string]interface{}, 0, len(rows))
 	for _, r := range rows {
-		m, err := unmarshalMap(r.DataJSON)
+		m, err := s.settlementDTO(ctx, r)
 		if err != nil {
 			continue
 		}
@@ -152,12 +149,18 @@ func (s *Service) ListSettlements(ctx context.Context, tenantID string) ([]map[s
 	return out, nil
 }
 
+func (s *Service) settlementDTO(ctx context.Context, row persistence.SettlementBatch) (map[string]interface{}, error) {
+	var items []persistence.SettlementBatchItem
+	_ = s.db.WithContext(ctx).Where("batch_id = ?", row.ID).Order("created_at ASC").Find(&items).Error
+	return settlementToMap(row, items)
+}
+
 func (s *Service) GetSettlement(ctx context.Context, id string) (map[string]interface{}, error) {
 	var row persistence.SettlementBatch
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
 		return nil, apperr.NotFound
 	}
-	return unmarshalMap(row.DataJSON)
+	return s.settlementDTO(ctx, row)
 }
 
 func (s *Service) GenerateSettlements(ctx context.Context, tenantID string) (int, error) {
@@ -200,18 +203,30 @@ func (s *Service) GenerateSettlements(ctx context.Context, tenantID string) (int
 			"status":           "PENDING",
 			"cycle":            "T+1",
 			"createdAt":        timex.FormatDateTime(time.Now().Unix()),
-			"txItems":          []interface{}{},
 			"fees": map[string]interface{}{
 				"channelFee": float64(fee) / 100,
 			},
 		}
-		data, _ := json.Marshal(payload)
 		row := persistence.SettlementBatch{
-			ID: batchID, TenantID: tid, Channel: ch, BatchDate: day, Status: "PENDING", DataJSON: string(data),
+			ID: batchID, TenantID: tid, Channel: ch, BatchDate: day, Status: "PENDING",
 		}
-		if err := s.db.WithContext(ctx).Create(&row).Error; err == nil {
-			created++
+		applySettlementFromPayload(&row, payload)
+		if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
+			continue
 		}
+		for _, tx := range items {
+			item := persistence.SettlementBatchItem{
+				ID:                   newID(),
+				BatchID:              batchID,
+				TransactionID:        tx.ID,
+				TransactionDisplayID: tx.DisplayID,
+				OrderAmountCents:     tx.OrderAmountCents,
+				ChannelFeeCents:      tx.ChannelFeeCents,
+				Currency:             tx.Currency,
+			}
+			_ = s.db.WithContext(ctx).Create(&item).Error
+		}
+		created++
 	}
 	return created, nil
 }
@@ -221,15 +236,15 @@ func (s *Service) CreatePayout(ctx context.Context, batchID string, amount float
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", batchID).Error; err != nil {
 		return apperr.NotFound
 	}
-	m, err := unmarshalMap(row.DataJSON)
+	m, err := s.settlementDTO(ctx, row)
 	if err != nil {
 		return apperr.Internal
 	}
 	m["status"] = "PAID"
 	m["remark"] = fmt.Sprintf("出金 %.2f", amount)
-	data, _ := json.Marshal(m)
 	row.Status = "PAID"
-	row.DataJSON = string(data)
+	row.Remark = fmt.Sprintf("出金 %.2f", amount)
+	applySettlementFromPayload(&row, m)
 	return s.db.WithContext(ctx).Save(&row).Error
 }
 

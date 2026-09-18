@@ -35,7 +35,7 @@
 ## 阶段 2 — 数据与权限
 
 - [x] 支付域查询/写入走分表
-- [ ] `biz` 域 JSON 表拆 relational（`payment_apps` / `settlement_batches` 等）— **后续迭代**
+- [x] `payment_apps` / `settlement_batches` 核心字段列化 + `settlement_batch_items` 子表；启动回填 `data_json`
 - [ ] 全链路 `X-App-Env` 强制过滤 — **后续迭代**
 
 ## 阶段 3 — 自动化
@@ -47,7 +47,7 @@
 ## 阶段 4 — 生产友好
 
 - [x] 已有 `/healthz`、`/readyz`；`NOVAS_COOKIE_SECURE` 生产 HTTPS
-- [ ] `docker-compose` 增加可选 `worker` 服务 — **后续迭代**
+- [x] `docker-compose` 增加 `worker` 服务；API 默认 `NOVAS_EMBEDDED_JOBS=false`
 - [ ] K8s Helm / Ingress 样例 — **后续迭代**
 
 ---

@@ -57,6 +57,7 @@ func AutoMigrate(db *gorm.DB) error {
 		// 订单 / Webhook / 退款 / 拒付 / 审计 / 邮件 Webhook 日志按月分表，见 internal/infra/sharding
 		&PaymentApp{},
 		&SettlementBatch{},
+		&SettlementBatchItem{},
 		&PromoCampaign{},
 		&EndUser{},
 		&ExchangeRate{},
@@ -495,28 +496,68 @@ type PaymentChargeback struct {
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// PaymentApp 接入应用（JSON 存完整前端结构）
+// PaymentApp 接入应用（核心字段列化；DataJSON 为完整 API 镜像，兼容旧读路径）
 type PaymentApp struct {
-	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
-	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
-	Code      string         `gorm:"size:128;uniqueIndex" json:"code"`
-	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
-	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
-	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                        string         `gorm:"type:uuid;primaryKey" json:"id"`
+	TenantID                  string         `gorm:"size:64;index" json:"tenantId"`
+	Code                      string         `gorm:"size:128;uniqueIndex" json:"code"`
+	Name                      string         `gorm:"size:256" json:"name"`
+	Description               string         `gorm:"type:text" json:"description"`
+	Environment               string         `gorm:"size:32" json:"environment"`
+	PublishableKey            string         `gorm:"size:128" json:"publishableKey"`
+	SecretKey                 string         `gorm:"size:256" json:"-"`
+	WebhookURL                string         `gorm:"size:512" json:"webhookUrl"`
+	DefaultCurrency           string         `gorm:"size:8" json:"defaultCurrency"`
+	Status                    string         `gorm:"size:16;index" json:"status"`
+	RoutingStrategy           string         `gorm:"size:32" json:"routingStrategy"`
+	EmailChannelID            string         `gorm:"size:64" json:"emailChannelId"`
+	SenderEmail               string         `gorm:"size:255" json:"senderEmail"`
+	SenderName                string         `gorm:"size:128" json:"senderName"`
+	DefaultLanguage           string         `gorm:"size:16" json:"defaultLanguage"`
+	ActiveSubscribersCount    int            `gorm:"not null;default:0" json:"activeSubscribersCount"`
+	TotalGmv                  float64        `gorm:"not null;default:0" json:"totalGmv"`
+	EnabledChannelsJSON       string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	EnabledPaymentMethodsJSON string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	AssociatedProductCodesJSON string        `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	AssociatedDiscountCodesJSON string       `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	EnabledEmailEventsJSON    string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	SupportedLanguagesJSON    string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	DataJSON                  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt                 int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt                 int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt                 gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// SettlementBatch 结算批次
+// SettlementBatch 结算批次（金额列化 + 明细子表）
 type SettlementBatch struct {
-	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
-	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
-	Channel   string         `gorm:"size:32;index" json:"channel"`
-	BatchDate string         `gorm:"size:16;index" json:"batchDate"`
-	Status    string         `gorm:"size:32;index" json:"status"`
-	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
-	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
-	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                  string         `gorm:"size:64;primaryKey" json:"id"`
+	TenantID            string         `gorm:"size:64;index" json:"tenantId"`
+	Channel             string         `gorm:"size:32;index" json:"channel"`
+	BatchDate           string         `gorm:"size:16;index" json:"batchDate"`
+	Status              string         `gorm:"size:32;index" json:"status"`
+	Currency            string         `gorm:"size:8" json:"currency"`
+	ReceivableAmountCents int64        `gorm:"not null;default:0" json:"-"`
+	FeeCents            int64          `gorm:"not null;default:0" json:"-"`
+	NetAmountCents      int64          `gorm:"not null;default:0" json:"-"`
+	Cycle               string         `gorm:"size:16" json:"cycle"`
+	Remark              string         `gorm:"size:512" json:"remark"`
+	FeesJSON            string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	DataJSON            string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt           int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt           int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// SettlementBatchItem 结算批次关联流水
+type SettlementBatchItem struct {
+	ID                    string `gorm:"type:uuid;primaryKey" json:"id"`
+	BatchID               string `gorm:"size:64;not null;index" json:"batchId"`
+	TransactionID         string `gorm:"type:uuid;index" json:"transactionId"`
+	TransactionDisplayID  string `gorm:"size:64;index" json:"transactionDisplayId"`
+	OrderAmountCents      int64  `gorm:"not null;default:0" json:"orderAmountCents"`
+	ChannelFeeCents       int64  `gorm:"not null;default:0" json:"channelFeeCents"`
+	Currency              string `gorm:"size:8" json:"currency"`
+	CreatedAt             int64  `gorm:"autoCreateTime" json:"createdAt"`
 }
 
 // PromoCampaign 促销邮件活动

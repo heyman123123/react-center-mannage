@@ -38,8 +38,26 @@ services:
       NOVAS_CORS_ORIGINS: ${NOVAS_CORS_ORIGINS:-http://localhost:3000}
       # 生产环境设为 false，跳过演示租户/应用等种子数据（仍保留超管与菜单）
       SEED_DEMO: ${SEED_DEMO:-true}
+      # 与 worker 分工：API 不内嵌渠道健康 goroutine
+      NOVAS_EMBEDDED_JOBS: ${NOVAS_EMBEDDED_JOBS:-false}
     ports:
       - "8080:8080"
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["./worker"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      NOVAS_MODE: ${NOVAS_MODE:-release}
+      NOVAS_POSTGRES_DSN: host=postgres user=${POSTGRES_USER:-novas} password=${POSTGRES_PASSWORD:-novas} dbname=${POSTGRES_DB:-novaspay} port=5432 sslmode=disable TimeZone=UTC
+      NOVAS_REDIS_ADDR: redis:6379
+      NOVAS_JWT_SECRET: ${NOVAS_JWT_SECRET:-dev-change-me}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      NOVAS_EMBEDDED_JOBS: "false"
 
   web:
     build:
