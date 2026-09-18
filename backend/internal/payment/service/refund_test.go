@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/novaspay/admin-api/internal/conf"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
+	"github.com/novaspay/admin-api/internal/infra/sharding"
 	"github.com/novaspay/admin-api/internal/payment/provider/creem"
 	"gorm.io/gorm"
 )
@@ -38,17 +39,17 @@ func TestProcessRefund_CreemAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(
-		&persistence.PaymentChannel{},
-		&persistence.PaymentTransaction{},
-		&persistence.PaymentRefund{},
-	); err != nil {
+	if err := db.AutoMigrate(&persistence.PaymentChannel{}); err != nil {
+		t.Fatal(err)
+	}
+	shards := sharding.NewShards(db)
+	if err := shards.EnsureOnStartup(); err != nil {
 		t.Fatal(err)
 	}
 
 	channelID := uuid.NewString()
 	txID := uuid.NewString()
-	svc := NewService(db, &conf.Config{})
+	svc := NewService(db, &conf.Config{}, shards)
 	secret := svc.sealSecret("test_api_key")
 	if err := db.Create(&persistence.PaymentChannel{
 		ID:           channelID,
@@ -61,7 +62,8 @@ func TestProcessRefund_CreemAPI(t *testing.T) {
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Create(&persistence.PaymentTransaction{
+	ctx := context.Background()
+	if err := shards.CreatePaymentTransaction(ctx, &persistence.PaymentTransaction{
 		ID:               txID,
 		DisplayID:        "TX-TEST-001",
 		ChannelID:        channelID,
@@ -72,10 +74,10 @@ func TestProcessRefund_CreemAPI(t *testing.T) {
 		OrderAmountCents: 1999,
 		Currency:         "USD",
 		Status:           "done",
-	}).Error; err != nil {
+	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Create(&persistence.PaymentRefund{
+	if err := shards.CreatePaymentRefund(ctx, &persistence.PaymentRefund{
 		ID:                  uuid.NewString(),
 		DisplayID:           "ref_test_001",
 		TransactionID:       txID,
@@ -89,7 +91,7 @@ func TestProcessRefund_CreemAPI(t *testing.T) {
 		Reason:              "客户要求",
 		Status:              "PENDING",
 		RefundType:          "FULL",
-	}).Error; err != nil {
+	}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -125,11 +127,13 @@ func TestCreateRefund_RejectsInvalidAmount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(&persistence.PaymentTransaction{}, &persistence.PaymentRefund{}); err != nil {
+	shards := sharding.NewShards(db)
+	if err := shards.EnsureOnStartup(); err != nil {
 		t.Fatal(err)
 	}
 	txID := uuid.NewString()
-	if err := db.Create(&persistence.PaymentTransaction{
+	ctx := context.Background()
+	if err := shards.CreatePaymentTransaction(ctx, &persistence.PaymentTransaction{
 		ID:               txID,
 		DisplayID:        "TX-AMT-001",
 		TenantID:         "group_hq",
@@ -137,11 +141,10 @@ func TestCreateRefund_RejectsInvalidAmount(t *testing.T) {
 		OrderAmountCents: 1000,
 		Currency:         "USD",
 		Status:           "done",
-	}).Error; err != nil {
+	}); err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(db, &conf.Config{})
-	ctx := context.Background()
+	svc := NewService(db, &conf.Config{}, shards)
 
 	if _, err := svc.CreateRefund(ctx, RefundInput{TransactionNo: "TX-AMT-001", RefundAmount: 0}); err == nil {
 		t.Fatal("expected reject amount=0")

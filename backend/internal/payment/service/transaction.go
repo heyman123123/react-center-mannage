@@ -59,30 +59,28 @@ func (s *Service) ListTransactions(ctx context.Context, page, pageSize int, tena
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 20
 	}
-	q := s.db.WithContext(ctx).Model(&persistence.PaymentTransaction{})
-	if tenantID != "" && tenantID != "ALL" && tenantID != "group_hq" {
-		q = q.Where("tenant_id = ?", tenantID)
+	filter := func(q *gorm.DB) *gorm.DB {
+		q = q.Where("deleted_at IS NULL")
+		if tenantID != "" && tenantID != "ALL" && tenantID != "group_hq" {
+			q = q.Where("tenant_id = ?", tenantID)
+		}
+		if ch := strings.TrimSpace(channel); ch != "" && ch != "all" {
+			q = q.Where("channel = ?", ch)
+		}
+		if st := strings.TrimSpace(status); st != "" && st != "all" {
+			q = q.Where("status = ?", st)
+		}
+		if kw := strings.TrimSpace(keyword); kw != "" {
+			like := "%" + kw + "%"
+			q = q.Where(
+				"id ILIKE ? OR display_id ILIKE ? OR order_title ILIKE ? OR channel_trade_no ILIKE ? OR order_number ILIKE ? OR customer_email ILIKE ?",
+				like, like, like, like, like, like,
+			)
+		}
+		return q
 	}
-	if ch := strings.TrimSpace(channel); ch != "" && ch != "all" {
-		q = q.Where("channel = ?", ch)
-	}
-	if st := strings.TrimSpace(status); st != "" && st != "all" {
-		q = q.Where("status = ?", st)
-	}
-	if kw := strings.TrimSpace(keyword); kw != "" {
-		like := "%" + kw + "%"
-		q = q.Where(
-			"id ILIKE ? OR order_title ILIKE ? OR channel_trade_no ILIKE ? OR order_number ILIKE ? OR customer_email ILIKE ?",
-			like, like, like, like, like,
-		)
-	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	var rows []persistence.PaymentTransaction
-	offset := (page - 1) * pageSize
-	if err := q.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&rows).Error; err != nil {
+	rows, total, err := s.shards.ListPaymentTransactions(ctx, page, pageSize, filter)
+	if err != nil {
 		return nil, 0, err
 	}
 	channelNames := s.loadChannelNames(ctx, rows)
@@ -94,12 +92,12 @@ func (s *Service) ListTransactions(ctx context.Context, page, pageSize int, tena
 }
 
 func (s *Service) GetTransaction(ctx context.Context, id string) (*TransactionDTO, error) {
-	var row persistence.PaymentTransaction
-	if err := s.db.WithContext(ctx).Where("display_id = ? OR id = ?", id, id).First(&row).Error; err != nil {
+	row, _, err := s.shards.GetPaymentTransaction(ctx, id)
+	if err != nil {
 		return nil, apperr.NotFound
 	}
-	names := s.loadChannelNames(ctx, []persistence.PaymentTransaction{row})
-	dto := toTransactionDTO(row, names[row.ChannelID], true)
+	names := s.loadChannelNames(ctx, []persistence.PaymentTransaction{*row})
+	dto := toTransactionDTO(*row, names[row.ChannelID], true)
 	return &dto, nil
 }
 
@@ -117,9 +115,8 @@ func (s *Service) UpsertTransactionFromWebhook(ctx context.Context, channelID st
 		tenantID = "group_hq"
 	}
 
-	var existing persistence.PaymentTransaction
-	err = s.db.WithContext(ctx).Where("channel_id = ? AND external_event_id = ?", channelID, parsed.ExternalEventID).First(&existing).Error
-	if err == nil {
+	existing, err := s.shards.FindPaymentTransactionByChannelEvent(ctx, channelID, parsed.ExternalEventID)
+	if err == nil && existing != nil {
 		return nil
 	}
 	if err != nil && err != gorm.ErrRecordNotFound {
@@ -162,7 +159,7 @@ func (s *Service) UpsertTransactionFromWebhook(ctx context.Context, channelID st
 	if parsed.CreatedAt > 0 {
 		row.CreatedAt = parsed.CreatedAt
 	}
-	return s.db.WithContext(ctx).Create(&row).Error
+	return s.shards.CreatePaymentTransaction(ctx, &row)
 }
 
 func (s *Service) loadChannelNames(ctx context.Context, rows []persistence.PaymentTransaction) map[string]string {

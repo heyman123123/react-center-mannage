@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/novaspay/admin-api/internal/conf"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
+	"github.com/novaspay/admin-api/internal/infra/sharding"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
 	"gorm.io/gorm"
 )
@@ -22,22 +23,22 @@ func signCreemBody(secret string, raw []byte) string {
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
-func setupWebhookTest(t *testing.T, webhookSecret string) (*Service, string) {
+func setupWebhookTest(t *testing.T, webhookSecret string) (*Service, *sharding.Shards, string) {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(
-		&persistence.PaymentChannel{},
-		&persistence.PaymentWebhookLog{},
-		&persistence.PaymentTransaction{},
-	); err != nil {
+	if err := db.AutoMigrate(&persistence.PaymentChannel{}); err != nil {
+		t.Fatal(err)
+	}
+	shards := sharding.NewShards(db)
+	if err := shards.EnsureOnStartup(); err != nil {
 		t.Fatal(err)
 	}
 
 	channelID := uuid.NewString()
-	svc := NewService(db, &conf.Config{})
+	svc := NewService(db, &conf.Config{}, shards)
 	row := persistence.PaymentChannel{
 		ID:           channelID,
 		ChannelKey:   "creem",
@@ -53,22 +54,23 @@ func setupWebhookTest(t *testing.T, webhookSecret string) (*Service, string) {
 	if err := db.Create(&row).Error; err != nil {
 		t.Fatal(err)
 	}
-	return svc, channelID
+	return svc, shards, channelID
 }
 
 func TestHandleCreemWebhook_Idempotent(t *testing.T) {
 	secret := "whsec_test"
-	svc, channelID := setupWebhookTest(t, secret)
+	svc, shards, channelID := setupWebhookTest(t, secret)
 
 	raw := []byte(`{"id":"evt_dup_1","eventType":"checkout.expired","object":{"id":"ch_1","product":{"id":"prod_1","name":"Test"}}}`)
 	sig := signCreemBody(secret, raw)
 	ctx := context.Background()
-	if err := svc.HandleCreemWebhook(ctx, channelID, sig, raw); err != nil {
+	path := "/api/v1/hooks/creem/" + channelID
+	if err := svc.HandleCreemWebhook(ctx, channelID, sig, raw, path); err != nil {
 		t.Fatal(err)
 	}
 
-	var afterFirst persistence.PaymentWebhookLog
-	if err := svc.db.Where("event_id = ?", "evt_dup_1").First(&afterFirst).Error; err != nil {
+	afterFirst, _, err := shards.FindPaymentWebhookByEventID(ctx, "evt_dup_1")
+	if err != nil {
 		t.Fatal(err)
 	}
 	if afterFirst.Status != "DELIVERED" {
@@ -78,33 +80,26 @@ func TestHandleCreemWebhook_Idempotent(t *testing.T) {
 		t.Fatalf("expected 1 attempt after first delivery, got %d", afterFirst.Attempts)
 	}
 
-	if err := svc.HandleCreemWebhook(ctx, channelID, sig, raw); err != nil {
+	if err := svc.HandleCreemWebhook(ctx, channelID, sig, raw, path); err != nil {
 		t.Fatal(err)
 	}
 
-	var count int64
-	if err := svc.db.Model(&persistence.PaymentWebhookLog{}).Where("event_id = ?", "evt_dup_1").Count(&count).Error; err != nil {
+	again, _, err := shards.FindPaymentWebhookByEventID(ctx, "evt_dup_1")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if count != 1 {
-		t.Fatalf("expected 1 webhook log, got %d", count)
+	if again.Status != "DELIVERED" {
+		t.Fatalf("expected DELIVERED, got %s", again.Status)
 	}
-	var row persistence.PaymentWebhookLog
-	if err := svc.db.Where("event_id = ?", "evt_dup_1").First(&row).Error; err != nil {
-		t.Fatal(err)
-	}
-	if row.Status != "DELIVERED" {
-		t.Fatalf("expected DELIVERED, got %s", row.Status)
-	}
-	if row.Attempts != 1 {
-		t.Fatalf("idempotent success should keep attempts=1, got %d", row.Attempts)
+	if again.Attempts != 1 {
+		t.Fatalf("idempotent success should keep attempts=1, got %d", again.Attempts)
 	}
 }
 
 func TestHandleCreemWebhook_EmptySecretRejects(t *testing.T) {
-	svc, channelID := setupWebhookTest(t, "")
+	svc, _, channelID := setupWebhookTest(t, "")
 	raw := []byte(`{"id":"evt_unsigned","eventType":"checkout.expired"}`)
-	err := svc.HandleCreemWebhook(context.Background(), channelID, "any", raw)
+	err := svc.HandleCreemWebhook(context.Background(), channelID, "any", raw, "/hooks")
 	if err == nil {
 		t.Fatal("expected rejection when webhook secret is empty")
 	}
@@ -116,13 +111,13 @@ func TestHandleCreemWebhook_EmptySecretRejects(t *testing.T) {
 
 func TestHandleCreemWebhook_FailedAllowsReprocess(t *testing.T) {
 	secret := "whsec_retry"
-	svc, channelID := setupWebhookTest(t, secret)
+	svc, shards, channelID := setupWebhookTest(t, secret)
 	ctx := context.Background()
 
 	raw := []byte(`{"id":"evt_retry_1","eventType":"checkout.expired","object":{"id":"ch_1","product":{"id":"prod_1","name":"Test"}}}`)
 	sig := signCreemBody(secret, raw)
 
-	if err := svc.db.Create(&persistence.PaymentWebhookLog{
+	if err := shards.CreatePaymentWebhookLog(ctx, &persistence.PaymentWebhookLog{
 		ID:          uuid.NewString(),
 		ChannelID:   channelID,
 		EventID:     "evt_retry_1",
@@ -131,16 +126,16 @@ func TestHandleCreemWebhook_FailedAllowsReprocess(t *testing.T) {
 		Status:      "FAILED",
 		Attempts:    1,
 		PayloadJSON: string(raw),
-	}).Error; err != nil {
+	}); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := svc.HandleCreemWebhook(ctx, channelID, sig, raw); err != nil {
+	if err := svc.HandleCreemWebhook(ctx, channelID, sig, raw, "/hooks"); err != nil {
 		t.Fatal(err)
 	}
 
-	var row persistence.PaymentWebhookLog
-	if err := svc.db.Where("event_id = ?", "evt_retry_1").First(&row).Error; err != nil {
+	row, _, err := shards.FindPaymentWebhookByEventID(ctx, "evt_retry_1")
+	if err != nil {
 		t.Fatal(err)
 	}
 	if row.Status != "DELIVERED" {

@@ -160,7 +160,7 @@ func (s *Service) Dispatch(ctx context.Context, appID string, in DispatchInput) 
 		status = "FAILED"
 		eventType = "email.failed"
 		details = "dispatch failed: " + sendErr.Error()
-		_ = s.db.WithContext(ctx).Create(&persistence.EmailWebhookLog{
+		_ = s.shards.CreateEmailWebhookLog(ctx, &persistence.EmailWebhookLog{
 			ID:           uuid.NewString(),
 			MessageID:    "",
 			EventType:    eventType,
@@ -177,7 +177,7 @@ func (s *Service) Dispatch(ctx context.Context, appID string, in DispatchInput) 
 	_ = s.db.WithContext(ctx).Model(&channel).Updates(map[string]interface{}{
 		"sent_today": gorm.Expr("sent_today + 1"),
 	}).Error
-	_ = s.db.WithContext(ctx).Create(&persistence.EmailWebhookLog{
+	_ = s.shards.CreateEmailWebhookLog(ctx, &persistence.EmailWebhookLog{
 		ID:           uuid.NewString(),
 		MessageID:    msgID,
 		EventType:    eventType,

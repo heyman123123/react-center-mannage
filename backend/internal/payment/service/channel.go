@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/novaspay/admin-api/internal/conf"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
+	"github.com/novaspay/admin-api/internal/infra/sharding"
 	"github.com/novaspay/admin-api/internal/payment/provider/creem"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
 	"github.com/novaspay/admin-api/internal/pkg/timex"
@@ -18,12 +19,13 @@ import (
 
 type Service struct {
 	db      *gorm.DB
+	shards  *sharding.Shards
 	dataKey []byte
 }
 
-func NewService(db *gorm.DB, cfg *conf.Config) *Service {
+func NewService(db *gorm.DB, cfg *conf.Config, shards *sharding.Shards) *Service {
 	key, _ := resolveDataKey(cfg)
-	return &Service{db: db, dataKey: key}
+	return &Service{db: db, shards: shards, dataKey: key}
 }
 
 type ChannelDTO struct {

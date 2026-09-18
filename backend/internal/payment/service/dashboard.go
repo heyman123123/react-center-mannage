@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/novaspay/admin-api/internal/infra/sharding"
 	"gorm.io/gorm"
 )
 
@@ -32,76 +33,66 @@ func (s *Service) GetDashboardKPI(ctx context.Context, tenantID string) (*KPIDTO
 		tenantFilter = ""
 	}
 
-	var currentRevenue int64
-	var currentOrders int64
-	var priorRevenue int64
-	var refundCents int64
-
-	currentBase := func() *gorm.DB {
-		q := s.db.WithContext(ctx).Table("payment_transactions").
-			Where("deleted_at IS NULL").
-			Where("status = ?", "done").
-			Where("created_at >= ?", currentStart)
+	baseFilter := func(q *gorm.DB) *gorm.DB {
+		q = q.Where("deleted_at IS NULL").Where("status = ?", "done")
 		if tenantFilter != "" {
 			q = q.Where("tenant_id = ?", tenantFilter)
 		}
 		return q
 	}
 
-	if err := currentBase().Select("COALESCE(SUM(order_amount_cents), 0)").Scan(&currentRevenue).Error; err != nil {
-		return nil, err
-	}
-	if err := currentBase().Count(&currentOrders).Error; err != nil {
-		return nil, err
-	}
-
-	priorQ := s.db.WithContext(ctx).Table("payment_transactions").
-		Where("deleted_at IS NULL").
-		Where("status = ?", "done").
-		Where("created_at >= ? AND created_at < ?", priorStart, currentStart)
-	if tenantFilter != "" {
-		priorQ = priorQ.Where("tenant_id = ?", tenantFilter)
-	}
-	if err := priorQ.Select("COALESCE(SUM(order_amount_cents), 0)").Scan(&priorRevenue).Error; err != nil {
+	currentRevenue, currentOrders, channelParts, err := s.shards.AggregatePaymentTransactions(ctx, currentStart, baseFilter, true)
+	if err != nil {
 		return nil, err
 	}
 
-	refundQ := s.db.WithContext(ctx).Table("payment_refunds").
-		Where("deleted_at IS NULL").
-		Where("status = ?", "SUCCESS").
-		Where("created_at >= ?", currentStart)
-	if tenantFilter != "" {
-		refundQ = refundQ.Where("tenant_id = ?", tenantFilter)
+	priorFilter := func(q *gorm.DB) *gorm.DB {
+		q = q.Where("deleted_at IS NULL").Where("status = ?", "done").
+			Where("created_at >= ? AND created_at < ?", priorStart, currentStart)
+		if tenantFilter != "" {
+			q = q.Where("tenant_id = ?", tenantFilter)
+		}
+		return q
 	}
-	if err := refundQ.Select("COALESCE(SUM(refund_amount_cents), 0)").Scan(&refundCents).Error; err != nil {
+	monthsPrior := sharding.MonthsSpanningUnix(priorStart, currentStart)
+	var priorRevenue int64
+	for _, ym := range monthsPrior {
+		tbl := sharding.Table(sharding.BasePaymentTransactions, ym)
+		if !s.shards.DB().Migrator().HasTable(tbl) {
+			continue
+		}
+		q := s.shards.DB().WithContext(ctx).Table(tbl)
+		q = priorFilter(q)
+		var part int64
+		if err := q.Select("COALESCE(SUM(order_amount_cents), 0)").Scan(&part).Error; err != nil {
+			return nil, err
+		}
+		priorRevenue += part
+	}
+
+	refundFilter := func(q *gorm.DB) *gorm.DB {
+		q = q.Where("deleted_at IS NULL").Where("status = ?", "SUCCESS").Where("created_at >= ?", currentStart)
+		if tenantFilter != "" {
+			q = q.Where("tenant_id = ?", tenantFilter)
+		}
+		return q
+	}
+	refundCents, err := s.shards.SumRefundAmountCents(ctx, currentStart, refundFilter)
+	if err != nil {
 		return nil, err
 	}
 
-	type channelRow struct {
-		Channel string
-		Revenue int64
-		Count   int64
+	channelMap := map[string]ChannelBreakdownItem{}
+	for _, part := range channelParts {
+		cur := channelMap[part.Channel]
+		cur.Channel = part.Channel
+		cur.Revenue += float64(part.Revenue) / 100
+		cur.Count += part.Count
+		channelMap[part.Channel] = cur
 	}
-	var channelRows []channelRow
-	channelQ := s.db.WithContext(ctx).Table("payment_transactions").
-		Select("channel, COALESCE(SUM(order_amount_cents), 0) as revenue, COUNT(*) as count").
-		Where("deleted_at IS NULL").
-		Where("status = ?", "done").
-		Where("created_at >= ?", currentStart)
-	if tenantFilter != "" {
-		channelQ = channelQ.Where("tenant_id = ?", tenantFilter)
-	}
-	if err := channelQ.Group("channel").Order("revenue DESC").Scan(&channelRows).Error; err != nil {
-		return nil, err
-	}
-
-	breakdown := make([]ChannelBreakdownItem, 0, len(channelRows))
-	for _, row := range channelRows {
-		breakdown = append(breakdown, ChannelBreakdownItem{
-			Channel: row.Channel,
-			Revenue: float64(row.Revenue) / 100,
-			Count:   row.Count,
-		})
+	breakdown := make([]ChannelBreakdownItem, 0, len(channelMap))
+	for _, v := range channelMap {
+		breakdown = append(breakdown, v)
 	}
 
 	var revenueChange float64

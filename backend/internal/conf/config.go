@@ -22,6 +22,7 @@ type Config struct {
 	JWTSecret       string
 	DefaultAppEnv   string
 	DataKey         string
+	EmbeddedJobs    bool
 }
 
 func Load() *Config {
@@ -47,6 +48,7 @@ func Load() *Config {
 		JWTSecret:     getenv("NOVAS_JWT_SECRET", "dev-change-me-novaspay-admin-secret"),
 		DefaultAppEnv: getenv("NOVAS_DEFAULT_APP_ENV", "live"),
 		DataKey:       getenv("NOVAS_DATA_KEY", ""),
+		EmbeddedJobs:  getenv("NOVAS_EMBEDDED_JOBS", "true") == "true",
 	}
 }
 

@@ -9,17 +9,43 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
+	"github.com/novaspay/admin-api/internal/infra/sharding"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
 	"github.com/novaspay/admin-api/internal/pkg/timex"
 	"gorm.io/gorm"
 )
 
 type Service struct {
-	db *gorm.DB
+	db     *gorm.DB
+	shards *sharding.Shards
 }
 
-func NewService(db *gorm.DB) *Service {
-	return &Service{db: db}
+func NewService(db *gorm.DB, shards *sharding.Shards) *Service {
+	return &Service{db: db, shards: shards}
+}
+
+func (s *Service) listDoneTransactions(ctx context.Context, tenantID string) ([]persistence.PaymentTransaction, error) {
+	filter := func(q *gorm.DB) *gorm.DB {
+		q = q.Where("deleted_at IS NULL").Where("status = ?", "done")
+		if tenantID != "" && tenantID != "group_hq" {
+			q = q.Where("tenant_id = ?", tenantID)
+		}
+		return q
+	}
+	months := sharding.RecentMonthsNewestFirst(sharding.DefaultListMonths)
+	var txs []persistence.PaymentTransaction
+	for _, ym := range months {
+		tbl := sharding.Table(sharding.BasePaymentTransactions, ym)
+		if !s.shards.DB().Migrator().HasTable(tbl) {
+			continue
+		}
+		var chunk []persistence.PaymentTransaction
+		if err := filter(s.shards.DB().WithContext(ctx).Table(tbl)).Find(&chunk).Error; err != nil {
+			return nil, err
+		}
+		txs = append(txs, chunk...)
+	}
+	return txs, nil
 }
 
 // --- Apps ---
@@ -135,12 +161,8 @@ func (s *Service) GetSettlement(ctx context.Context, id string) (map[string]inte
 }
 
 func (s *Service) GenerateSettlements(ctx context.Context, tenantID string) (int, error) {
-	q := s.db.WithContext(ctx).Model(&persistence.PaymentTransaction{}).Where("status = ?", "done")
-	if tenantID != "" && tenantID != "group_hq" {
-		q = q.Where("tenant_id = ?", tenantID)
-	}
-	var txs []persistence.PaymentTransaction
-	if err := q.Find(&txs).Error; err != nil {
+	txs, err := s.listDoneTransactions(ctx, tenantID)
+	if err != nil {
 		return 0, err
 	}
 	groups := map[string][]persistence.PaymentTransaction{}
@@ -483,12 +505,8 @@ func (s *Service) SaveAlertHistory(ctx context.Context, p map[string]interface{}
 // --- Reports ---
 
 func (s *Service) RevenueReport(ctx context.Context, tenantID, from, to string) (map[string]interface{}, error) {
-	q := s.db.WithContext(ctx).Model(&persistence.PaymentTransaction{}).Where("status = ?", "done")
-	if tenantID != "" && tenantID != "group_hq" {
-		q = q.Where("tenant_id = ?", tenantID)
-	}
-	var txs []persistence.PaymentTransaction
-	if err := q.Find(&txs).Error; err != nil {
+	txs, err := s.listDoneTransactions(ctx, tenantID)
+	if err != nil {
 		return nil, err
 	}
 	var total int64

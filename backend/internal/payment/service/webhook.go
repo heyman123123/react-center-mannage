@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
+	"github.com/novaspay/admin-api/internal/infra/sharding"
 	"github.com/novaspay/admin-api/internal/payment/provider/creem"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
 	"github.com/novaspay/admin-api/internal/pkg/timex"
@@ -34,23 +35,14 @@ type WebhookDTO struct {
 }
 
 func (s *Service) ListWebhooks(ctx context.Context, page, pageSize int, channelID string) ([]WebhookDTO, int64, error) {
-	if page < 1 {
-		page = 1
+	filter := func(q *gorm.DB) *gorm.DB {
+		if channelID != "" {
+			q = q.Where("channel_id = ?", channelID)
+		}
+		return q
 	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-	q := s.db.WithContext(ctx).Model(&persistence.PaymentWebhookLog{})
-	if channelID != "" {
-		q = q.Where("channel_id = ?", channelID)
-	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	var rows []persistence.PaymentWebhookLog
-	offset := (page - 1) * pageSize
-	if err := q.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&rows).Error; err != nil {
+	rows, total, err := s.shards.ListPaymentWebhooks(ctx, page, pageSize, filter)
+	if err != nil {
 		return nil, 0, err
 	}
 	out := make([]WebhookDTO, 0, len(rows))
@@ -69,12 +61,11 @@ func webhookProcessingSucceeded(status string) bool {
 	}
 }
 
-func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, signature string, rawBody []byte) error {
+func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, signature string, rawBody []byte, inboundPath string) error {
 	ch, err := s.GetRawChannel(ctx, channelID)
 	if err != nil {
 		return err
 	}
-	// Empty webhook secret must reject — never accept unsigned callbacks.
 	if strings.TrimSpace(ch.WebhookSecret) == "" || !creem.VerifySignature(ch.WebhookSecret, rawBody, signature) {
 		return apperr.New(40102, 401, "Webhook 签名校验失败")
 	}
@@ -93,15 +84,17 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 	if eventID == "" {
 		eventID = uuid.NewString()
 	}
+	targetURL := strings.TrimSpace(inboundPath)
+	if targetURL == "" {
+		targetURL = "/api/v1/hooks/creem/" + channelID
+	}
 
-	var existing persistence.PaymentWebhookLog
-	err = s.db.WithContext(ctx).Where("event_id = ?", eventID).First(&existing).Error
+	existing, tbl, err := s.shards.FindPaymentWebhookByEventID(ctx, eventID)
 	if err == nil {
-		// Only short-circuit successful processing; FAILED/PENDING may be redelivered.
 		if webhookProcessingSucceeded(existing.Status) {
 			return nil
 		}
-		return s.finalizeWebhookProcess(ctx, &existing, channelID, rawBody, payload, eventType, true)
+		return s.finalizeWebhookProcess(ctx, existing, tbl, channelID, rawBody, payload, eventType, true)
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
@@ -114,32 +107,33 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 		EventType:   eventType,
 		Channel:     ch.ChannelKey,
 		AppName:     ch.Name,
-		TargetURL:   "/hooks/creem/" + channelID,
+		TargetURL:   targetURL,
 		HTTPStatus:  200,
 		Attempts:    1,
 		Status:      "PENDING",
 		PayloadJSON: string(rawBody),
 	}
-	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
+	if err := s.shards.CreatePaymentWebhookLog(ctx, &row); err != nil {
 		if isDuplicateKeyError(err) {
-			var again persistence.PaymentWebhookLog
-			if e := s.db.WithContext(ctx).Where("event_id = ?", eventID).First(&again).Error; e == nil {
+			again, againTbl, e := s.shards.FindPaymentWebhookByEventID(ctx, eventID)
+			if e == nil {
 				if webhookProcessingSucceeded(again.Status) {
 					return nil
 				}
-				return s.finalizeWebhookProcess(ctx, &again, channelID, rawBody, payload, eventType, true)
+				return s.finalizeWebhookProcess(ctx, again, againTbl, channelID, rawBody, payload, eventType, true)
 			}
 			return nil
 		}
 		return err
 	}
-	// First attempt already counted on insert; only bump on redelivery.
-	return s.finalizeWebhookProcess(ctx, &row, channelID, rawBody, payload, eventType, false)
+	tbl = sharding.Table(sharding.BasePaymentWebhookLogs, sharding.MonthSuffixFromUnix(row.CreatedAt))
+	return s.finalizeWebhookProcess(ctx, &row, tbl, channelID, rawBody, payload, eventType, false)
 }
 
 func (s *Service) finalizeWebhookProcess(
 	ctx context.Context,
 	row *persistence.PaymentWebhookLog,
+	tbl string,
 	channelID string,
 	rawBody []byte,
 	payload map[string]interface{},
@@ -167,7 +161,7 @@ func (s *Service) finalizeWebhookProcess(
 	if len(rawBody) > 0 {
 		updates["payload_json"] = string(rawBody)
 	}
-	if dbErr := s.db.WithContext(ctx).Model(row).Updates(updates).Error; dbErr != nil && err == nil {
+	if dbErr := s.shards.UpdatePaymentWebhook(ctx, tbl, row.ID, updates); dbErr != nil && err == nil {
 		return dbErr
 	}
 	return err
@@ -188,8 +182,8 @@ func (s *Service) processCreemWebhookPayload(ctx context.Context, channelID stri
 }
 
 func (s *Service) RedeliverWebhook(ctx context.Context, id string) error {
-	var row persistence.PaymentWebhookLog
-	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+	row, tbl, err := s.shards.GetPaymentWebhookByID(ctx, id)
+	if err != nil {
 		return apperr.NotFound
 	}
 	payload := map[string]interface{}{}
@@ -206,7 +200,7 @@ func (s *Service) RedeliverWebhook(ctx context.Context, id string) error {
 	if eventType == "" {
 		eventType, _ = payload["type"].(string)
 	}
-	return s.finalizeWebhookProcess(ctx, &row, row.ChannelID, []byte(row.PayloadJSON), payload, eventType, true)
+	return s.finalizeWebhookProcess(ctx, row, tbl, row.ChannelID, []byte(row.PayloadJSON), payload, eventType, true)
 }
 
 func toWebhookDTO(r persistence.PaymentWebhookLog) WebhookDTO {

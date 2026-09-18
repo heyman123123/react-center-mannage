@@ -52,15 +52,18 @@ type ChargebackEvidenceInput struct {
 }
 
 func (s *Service) ListChargebacks(ctx context.Context, tenantID, channel string) ([]ChargebackDTO, error) {
-	q := s.db.WithContext(ctx).Model(&persistence.PaymentChargeback{})
-	if tenantID != "" && tenantID != "ALL" && tenantID != "group_hq" {
-		q = q.Where("tenant_id = ?", tenantID)
+	filter := func(q *gorm.DB) *gorm.DB {
+		q = q.Where("deleted_at IS NULL")
+		if tenantID != "" && tenantID != "ALL" && tenantID != "group_hq" {
+			q = q.Where("tenant_id = ?", tenantID)
+		}
+		if ch := strings.TrimSpace(channel); ch != "" && ch != "all" {
+			q = q.Where("channel = ?", ch)
+		}
+		return q
 	}
-	if ch := strings.TrimSpace(channel); ch != "" && ch != "all" {
-		q = q.Where("channel = ?", ch)
-	}
-	var rows []persistence.PaymentChargeback
-	if err := q.Order("created_at DESC").Find(&rows).Error; err != nil {
+	rows, err := s.shards.ListPaymentChargebacks(ctx, filter)
+	if err != nil {
 		return nil, err
 	}
 	out := make([]ChargebackDTO, 0, len(rows))
@@ -71,10 +74,11 @@ func (s *Service) ListChargebacks(ctx context.Context, tenantID, channel string)
 }
 
 func (s *Service) AddChargebackEvidence(ctx context.Context, id string, in ChargebackEvidenceInput) (*ChargebackDTO, error) {
-	var row persistence.PaymentChargeback
-	if err := s.db.WithContext(ctx).Where("display_id = ? OR id = ?", id, id).First(&row).Error; err != nil {
+	found, tbl, err := s.shards.GetPaymentChargeback(ctx, id)
+	if err != nil {
 		return nil, apperr.NotFound
 	}
+	row := *found
 	evidence := []ChargebackEvidenceDTO{}
 	_ = json.Unmarshal([]byte(row.EvidenceJSON), &evidence)
 	evidence = append(evidence, ChargebackEvidenceDTO{
@@ -88,23 +92,25 @@ func (s *Service) AddChargebackEvidence(ctx context.Context, id string, in Charg
 		"evidence_json": string(evidenceJSON),
 		"status":        "已提交证据",
 	}
-	if err := s.db.WithContext(ctx).Model(&row).Updates(updates).Error; err != nil {
+	if err := s.shards.UpdatePaymentChargeback(ctx, tbl, row.ID, updates); err != nil {
 		return nil, err
 	}
-	_ = s.db.WithContext(ctx).First(&row, "id = ?", row.ID)
+	row.EvidenceJSON = string(evidenceJSON)
+	row.Status = "已提交证据"
 	dto := toChargebackDTO(row)
 	return &dto, nil
 }
 
 func (s *Service) SubmitChargeback(ctx context.Context, id string) (*ChargebackDTO, error) {
-	var row persistence.PaymentChargeback
-	if err := s.db.WithContext(ctx).Where("display_id = ? OR id = ?", id, id).First(&row).Error; err != nil {
+	found, tbl, err := s.shards.GetPaymentChargeback(ctx, id)
+	if err != nil {
 		return nil, apperr.NotFound
 	}
-	if err := s.db.WithContext(ctx).Model(&row).Update("status", "已提交证据").Error; err != nil {
+	row := *found
+	if err := s.shards.UpdatePaymentChargeback(ctx, tbl, row.ID, map[string]interface{}{"status": "已提交证据"}); err != nil {
 		return nil, err
 	}
-	_ = s.db.WithContext(ctx).First(&row, "id = ?", row.ID)
+	row.Status = "已提交证据"
 	dto := toChargebackDTO(row)
 	return &dto, nil
 }
@@ -113,10 +119,9 @@ func (s *Service) UpsertChargebackFromWebhook(ctx context.Context, channelID str
 	if parsed == nil || parsed.EventType != "dispute.created" {
 		return nil
 	}
-	var existing persistence.PaymentChargeback
-	if err := s.db.WithContext(ctx).Where("external_event_id = ?", parsed.ExternalEventID).First(&existing).Error; err == nil {
+	if existing, err := s.shards.FindPaymentChargebackByExternalEvent(ctx, parsed.ExternalEventID); err == nil && existing != nil {
 		return nil
-	} else if err != gorm.ErrRecordNotFound {
+	} else if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
 	ch, err := s.GetRawChannel(ctx, channelID)
@@ -171,7 +176,7 @@ func (s *Service) UpsertChargebackFromWebhook(ctx context.Context, channelID str
 	if parsed.CreatedAt > 0 {
 		row.CreatedAt = parsed.CreatedAt
 	}
-	return s.db.WithContext(ctx).Create(&row).Error
+	return s.shards.CreatePaymentChargeback(ctx, &row)
 }
 
 func toChargebackDTO(r persistence.PaymentChargeback) ChargebackDTO {

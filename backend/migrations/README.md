@@ -1,6 +1,8 @@
 # Seed（初始化数据）
 
-v1 使用 GORM `AutoMigrate` 建表；**初始化数据**在启动时由 `migrations.ApplySeed` 幂等写入：
+v1 使用 GORM `AutoMigrate` 建表（**不含**按月分表的高写入表）；订单 / Webhook / 审计等分表由 `internal/infra/sharding` 在启动时 `EnsureOnStartup` 创建 `{table}_{YYYYMM}`。
+
+**初始化数据**在启动时由 `migrations.ApplySeed` 幂等写入：
 
 | 内容 | 说明 |
 |------|------|

@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/novaspay/admin-api/internal/conf"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
+	"github.com/novaspay/admin-api/internal/infra/sharding"
 	"github.com/novaspay/admin-api/internal/platform/messaging/provider"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
 	"github.com/novaspay/admin-api/internal/pkg/crypto"
@@ -18,13 +19,14 @@ import (
 
 type Service struct {
 	db      *gorm.DB
+	shards  *sharding.Shards
 	dataKey []byte
 	resend  *provider.ResendClient
 }
 
-func NewService(db *gorm.DB, cfg *conf.Config) *Service {
+func NewService(db *gorm.DB, cfg *conf.Config, shards *sharding.Shards) *Service {
 	key, _ := resolveDataKey(cfg)
-	return &Service{db: db, dataKey: key, resend: provider.NewResendClient()}
+	return &Service{db: db, shards: shards, dataKey: key, resend: provider.NewResendClient()}
 }
 
 type ChannelDTO struct {
@@ -257,7 +259,7 @@ func (s *Service) SendTestEmail(ctx context.Context, id string, recipient string
 		"last_tested_at": now,
 		"sent_today":     gorm.Expr("sent_today + 1"),
 	})
-	_ = s.db.WithContext(ctx).Create(&persistence.EmailWebhookLog{
+	_ = s.shards.CreateEmailWebhookLog(ctx, &persistence.EmailWebhookLog{
 		ID:           uuid.NewString(),
 		MessageID:    msgID,
 		EventType:    "email.accepted",

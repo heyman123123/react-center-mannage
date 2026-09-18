@@ -24,20 +24,25 @@
    - **Webhook Secret**（可选）：用于验签
 3. 保存后点击 **连通性测试**，确认状态正常。
 
-### 1.3 配置 Webhook URL
+### 1.3 配置 Webhook URL（支持多域名）
 
-Creem 控制台中将 Webhook 端点设为（将 `{channelId}` 替换为管理端渠道 ID）：
+Creem 按**渠道 ID** 区分回调，路径固定为：
 
 ```
-https://<你的公网域名>/api/v1/hooks/creem/{channelId}
+https://<任意可达公网主机>/api/v1/hooks/creem/{channelId}
 ```
+
+同一套 API 可同时挂在多个域名或 Ingress 上（例如运营入口域名、专用 Webhook 子域、不同区域的反代）。**无需**在代码或环境变量里配置「唯一 Webhook 域名」；验签只依赖该渠道的 `Webhook Secret` 与路径中的 `{channelId}`。
 
 | 场景 | URL 示例 |
 |------|----------|
-| Docker 本地 + 内网穿透 | `https://xxxx.ngrok.io/api/v1/hooks/creem/abc-123` |
+| 内网穿透 A | `https://tunnel-a.ngrok.io/api/v1/hooks/creem/abc-123` |
+| 内网穿透 B | `https://hooks.corp.example/api/v1/hooks/creem/abc-123` |
 | 生产 Ingress | `https://ops.example.com/api/v1/hooks/creem/abc-123` |
 
-**注意：** Creem 必须能访问该 URL；本地 `localhost` 无法接收 Webhook，需 ngrok / Cloudflare Tunnel 等公网入口。
+管理端 **支付 Webhook** 列表中的「目标 URL」记录的是 Creem **实际请求的路径**（含 `/api/v1/...`），便于对照不同域名下的投递。
+
+**注意：** Creem 必须能 HTTPS 访问该 URL；本机 `localhost` 无法直接收 Webhook，需公网入口或隧道。
 
 ---
 
