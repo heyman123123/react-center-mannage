@@ -28,6 +28,7 @@ func NewGinEngine(mw *middleware.Bundle, cfg *conf.Config) *gin.Engine {
 		mw.Recovery(),
 		mw.RequestID(),
 		mw.CORS(),
+		mw.CSRF(),
 		mw.Timeout(15*time.Second),
 	)
 	return r

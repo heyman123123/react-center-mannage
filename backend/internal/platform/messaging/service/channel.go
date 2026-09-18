@@ -7,20 +7,24 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/novaspay/admin-api/internal/conf"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
 	"github.com/novaspay/admin-api/internal/platform/messaging/provider"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
+	"github.com/novaspay/admin-api/internal/pkg/crypto"
 	"github.com/novaspay/admin-api/internal/pkg/timex"
 	"gorm.io/gorm"
 )
 
 type Service struct {
-	db     *gorm.DB
-	resend *provider.ResendClient
+	db      *gorm.DB
+	dataKey []byte
+	resend  *provider.ResendClient
 }
 
-func NewService(db *gorm.DB) *Service {
-	return &Service{db: db, resend: provider.NewResendClient()}
+func NewService(db *gorm.DB, cfg *conf.Config) *Service {
+	key, _ := resolveDataKey(cfg)
+	return &Service{db: db, dataKey: key, resend: provider.NewResendClient()}
 }
 
 type ChannelDTO struct {
@@ -70,7 +74,7 @@ func (s *Service) ListChannels(ctx context.Context, mode string) ([]ChannelDTO, 
 	}
 	out := make([]ChannelDTO, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, toChannelDTO(r))
+		out = append(out, s.toChannelDTO(r))
 	}
 	return out, nil
 }
@@ -80,7 +84,7 @@ func (s *Service) GetChannel(ctx context.Context, id string) (*ChannelDTO, error
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
 		return nil, apperr.NotFound
 	}
-	dto := toChannelDTO(row)
+	dto := s.toChannelDTO(row)
 	return &dto, nil
 }
 
@@ -96,7 +100,7 @@ func (s *Service) CreateChannel(ctx context.Context, in ChannelInput) (*ChannelD
 	}
 	env := normalizeMode(in.Mode)
 	apiKey := strings.TrimSpace(in.ApiKey)
-	if apiKey == "" {
+	if apiKey == "" || isMaskedSecret(apiKey) {
 		return nil, apperr.InvalidArgument
 	}
 	domain := strings.TrimSpace(in.VerifiedDomain)
@@ -115,7 +119,7 @@ func (s *Service) CreateChannel(ctx context.Context, in ChannelInput) (*ChannelD
 		Enabled:        true,
 		SenderEmail:    email,
 		SenderName:     strings.TrimSpace(in.SenderName),
-		ApiKey:         apiKey,
+		ApiKey:         s.sealSecret(apiKey),
 		SmtpHost:       strings.TrimSpace(in.SmtpHost),
 		SmtpPort:       defaultPort(in.SmtpPort, providerKey),
 		DailyQuota:     defaultQuota(in.DailyQuota),
@@ -130,7 +134,7 @@ func (s *Service) CreateChannel(ctx context.Context, in ChannelInput) (*ChannelD
 	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
 		return nil, err
 	}
-	dto := toChannelDTO(row)
+	dto := s.toChannelDTO(row)
 	return &dto, nil
 }
 
@@ -158,8 +162,8 @@ func (s *Service) UpdateChannel(ctx context.Context, id string, in ChannelInput)
 	if in.SenderName != "" {
 		updates["sender_name"] = strings.TrimSpace(in.SenderName)
 	}
-	if key := strings.TrimSpace(in.ApiKey); key != "" && !strings.Contains(key, "****") {
-		updates["api_key"] = key
+	if key := strings.TrimSpace(in.ApiKey); key != "" && !isMaskedSecret(key) && !crypto.IsEncrypted(key) {
+		updates["api_key"] = s.sealSecret(key)
 	}
 	if in.SmtpHost != "" {
 		updates["smtp_host"] = strings.TrimSpace(in.SmtpHost)
@@ -183,7 +187,7 @@ func (s *Service) UpdateChannel(ctx context.Context, id string, in ChannelInput)
 		return nil, err
 	}
 	_ = s.db.WithContext(ctx).First(&row, "id = ?", id)
-	dto := toChannelDTO(row)
+	dto := s.toChannelDTO(row)
 	return &dto, nil
 }
 
@@ -204,7 +208,7 @@ func (s *Service) SetPrimary(ctx context.Context, id string) (*ChannelDTO, error
 		return nil, err
 	}
 	_ = s.db.WithContext(ctx).First(&row, "id = ?", id)
-	dto := toChannelDTO(row)
+	dto := s.toChannelDTO(row)
 	return &dto, nil
 }
 
@@ -237,7 +241,7 @@ func (s *Service) SendTestEmail(ctx context.Context, id string, recipient string
 <p><strong>环境：</strong>%s</p>
 <p><strong>发件人：</strong>%s &lt;%s&gt;</p>`, row.Name, row.Environment, row.SenderName, row.SenderEmail)
 	msgID, err := s.resend.Send(ctx, provider.SendEmailInput{
-		ApiKey:    row.ApiKey,
+		ApiKey:    s.openSecret(row.ApiKey),
 		FromName:  row.SenderName,
 		FromEmail: row.SenderEmail,
 		To:        recipient,
@@ -256,13 +260,13 @@ func (s *Service) SendTestEmail(ctx context.Context, id string, recipient string
 	_ = s.db.WithContext(ctx).Create(&persistence.EmailWebhookLog{
 		ID:           uuid.NewString(),
 		MessageID:    msgID,
-		EventType:    "email.delivered",
+		EventType:    "email.accepted",
 		Provider:     "resend",
 		Recipient:    recipient,
 		Subject:      subject,
 		TemplateCode: "CHANNEL_TEST",
 		Status:       "SUCCESS",
-		Details:      "手动连通性测试",
+		Details:      "Resend 已接受发送请求（连通性测试，非投递确认）",
 	}).Error
 	return msgID, nil
 }
@@ -303,14 +307,26 @@ func defaultStatus(s string) string {
 	return "PENDING"
 }
 
-func maskApiKey(key string) string {
-	if len(key) <= 8 {
-		return "****"
+func (s *Service) maskApiKey(stored string) string {
+	stored = strings.TrimSpace(stored)
+	if stored == "" {
+		return ""
 	}
-	return key[:4] + "****" + key[len(key)-4:]
+	plain := s.openSecret(stored)
+	if crypto.IsEncrypted(plain) {
+		// Decrypt failed / still ciphertext — never leak suffix.
+		return "********"
+	}
+	if strings.HasPrefix(plain, "re_") {
+		return "re_****"
+	}
+	if len(plain) >= 4 {
+		return "****" + plain[len(plain)-4:]
+	}
+	return "****"
 }
 
-func toChannelDTO(r persistence.EmailChannel) ChannelDTO {
+func (s *Service) toChannelDTO(r persistence.EmailChannel) ChannelDTO {
 	lastTested := ""
 	if r.LastTestedAt != nil {
 		lastTested = timex.FormatUTC(*r.LastTestedAt)
@@ -325,7 +341,7 @@ func toChannelDTO(r persistence.EmailChannel) ChannelDTO {
 		IsPrimary:      r.IsPrimary,
 		SenderEmail:    r.SenderEmail,
 		SenderName:     r.SenderName,
-		ApiKey:         maskApiKey(r.ApiKey),
+		ApiKey:         s.maskApiKey(r.ApiKey),
 		SmtpHost:       r.SmtpHost,
 		SmtpPort:       r.SmtpPort,
 		DailyQuota:     r.DailyQuota,

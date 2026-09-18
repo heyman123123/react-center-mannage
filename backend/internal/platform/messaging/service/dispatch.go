@@ -144,7 +144,7 @@ func (s *Service) Dispatch(ctx context.Context, appID string, in DispatchInput) 
 	}
 
 	msgID, sendErr := s.resend.Send(ctx, provider.SendEmailInput{
-		ApiKey:    channel.ApiKey,
+		ApiKey:    s.upgradeSecretIfPlain(channel.ID, channel.ApiKey),
 		FromName:  fromName,
 		FromEmail: fromEmail,
 		To:        to,

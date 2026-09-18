@@ -36,7 +36,7 @@ func (s *Service) sealSecret(plain string) string {
 	}
 	out, err := crypto.Encrypt(plain, s.dataKey)
 	if err != nil {
-		log.Printf("WARNING: encrypt secret failed: %v; storing plaintext", err)
+		log.Printf("WARNING: encrypt email secret failed: %v; storing plaintext", err)
 		return plain
 	}
 	return out
@@ -48,19 +48,26 @@ func (s *Service) openSecret(stored string) string {
 	}
 	out, err := crypto.Decrypt(stored, s.dataKey)
 	if err != nil {
-		log.Printf("WARNING: decrypt secret failed: %v", err)
+		// Legacy plaintext rows: return as-is so existing Resend channels keep working.
+		log.Printf("WARNING: decrypt email secret failed: %v; treating as plaintext", err)
 		return stored
 	}
 	return out
 }
 
-func (s *Service) decryptChannel(row *persistence.PaymentChannel) *persistence.PaymentChannel {
-	if row == nil {
-		return nil
+// upgradeSecretIfPlain re-encrypts legacy plaintext keys in-place when used.
+func (s *Service) upgradeSecretIfPlain(id, stored string) string {
+	plain := s.openSecret(stored)
+	if plain == "" || crypto.IsEncrypted(stored) {
+		return plain
 	}
-	cp := *row
-	cp.ApiKey = s.openSecret(row.ApiKey)
-	cp.ApiSecretKey = s.openSecret(row.ApiSecretKey)
-	cp.WebhookSecret = s.openSecret(row.WebhookSecret)
-	return &cp
+	sealed := s.sealSecret(plain)
+	if sealed != "" && sealed != stored && crypto.IsEncrypted(sealed) {
+		_ = s.db.Model(&persistence.EmailChannel{}).Where("id = ?", id).Update("api_key", sealed).Error
+	}
+	return plain
+}
+
+func isMaskedSecret(value string) bool {
+	return strings.Contains(value, "****") || strings.Contains(value, "********")
 }

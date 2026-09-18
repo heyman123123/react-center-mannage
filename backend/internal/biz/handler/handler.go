@@ -26,6 +26,18 @@ func bindMap(c *gin.Context) (map[string]interface{}, bool) {
 	return m, true
 }
 
+// bindMapWithPathID makes path :id authoritative for PUT updates.
+func bindMapWithPathID(c *gin.Context) (map[string]interface{}, bool) {
+	m, ok := bindMap(c)
+	if !ok {
+		return nil, false
+	}
+	if id := c.Param("id"); id != "" {
+		m["id"] = id
+	}
+	return m, true
+}
+
 // Apps
 func (h *Handler) ListApps(c *gin.Context) {
 	list, err := h.svc.ListApps(c.Request.Context(), c.Query("tenantId"))
@@ -135,7 +147,7 @@ func (h *Handler) ListPromo(c *gin.Context) {
 }
 
 func (h *Handler) SavePromo(c *gin.Context) {
-	m, ok := bindMap(c)
+	m, ok := bindMapWithPathID(c)
 	if !ok {
 		return
 	}
@@ -166,7 +178,7 @@ func (h *Handler) ListEndUsers(c *gin.Context) {
 }
 
 func (h *Handler) SaveEndUser(c *gin.Context) {
-	m, ok := bindMap(c)
+	m, ok := bindMapWithPathID(c)
 	if !ok {
 		return
 	}
@@ -197,7 +209,7 @@ func (h *Handler) ListExchangeRates(c *gin.Context) {
 }
 
 func (h *Handler) SaveExchangeRate(c *gin.Context) {
-	m, ok := bindMap(c)
+	m, ok := bindMapWithPathID(c)
 	if !ok {
 		return
 	}
@@ -237,7 +249,7 @@ func (h *Handler) ListFeeRules(c *gin.Context) {
 }
 
 func (h *Handler) SaveFeeRule(c *gin.Context) {
-	m, ok := bindMap(c)
+	m, ok := bindMapWithPathID(c)
 	if !ok {
 		return
 	}
@@ -268,7 +280,7 @@ func (h *Handler) ListRiskRules(c *gin.Context) {
 }
 
 func (h *Handler) SaveRiskRule(c *gin.Context) {
-	m, ok := bindMap(c)
+	m, ok := bindMapWithPathID(c)
 	if !ok {
 		return
 	}
@@ -361,7 +373,7 @@ func (h *Handler) ListAlertRules(c *gin.Context) {
 }
 
 func (h *Handler) SaveAlertRule(c *gin.Context) {
-	m, ok := bindMap(c)
+	m, ok := bindMapWithPathID(c)
 	if !ok {
 		return
 	}

@@ -3,11 +3,22 @@ package cache
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/novaspay/admin-api/internal/conf"
 	"github.com/redis/go-redis/v9"
 )
+
+// Atomic GET+DEL for Redis < 6.2 (GETDEL unavailable).
+var getDelScript = redis.NewScript(`
+local v = redis.call('GET', KEYS[1])
+if v == false then
+  return false
+end
+redis.call('DEL', KEYS[1])
+return v
+`)
 
 type Redis struct {
 	Client *redis.Client
@@ -33,6 +44,26 @@ func (r *Redis) Set(ctx context.Context, key, val string, ttl time.Duration) err
 
 func (r *Redis) Get(ctx context.Context, key string) (string, error) {
 	return r.Client.Get(ctx, key).Result()
+}
+
+// GetDel atomically reads and deletes a key (single-use tokens).
+// Prefers Redis GETDEL; falls back to a Lua get+del script on older servers.
+func (r *Redis) GetDel(ctx context.Context, key string) (string, error) {
+	val, err := r.Client.GetDel(ctx, key).Result()
+	if err == nil || err == redis.Nil {
+		return val, err
+	}
+	if !isUnknownCommand(err) {
+		return "", err
+	}
+	return getDelScript.Run(ctx, r.Client, []string{key}).Text()
+}
+
+func isUnknownCommand(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "unknown command")
 }
 
 func (r *Redis) Del(ctx context.Context, keys ...string) error {

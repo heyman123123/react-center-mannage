@@ -24,6 +24,7 @@
     "listening": "全事件监听中",
     "signatureVerify": "签名验证: {{auth}}",
     "toastRedeliver": "Webhook {{eventId}} 已成功重新投递至下游，收到 200 OK 确认响应！",
+    "toastRedeliverFailed": "Webhook {{eventId}} 重新投递失败，请稍后重试",
     "filterLabel": "事件筛选:",
     "filters": {
       "all": "全部事件",

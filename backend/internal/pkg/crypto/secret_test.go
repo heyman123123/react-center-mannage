@@ -32,3 +32,12 @@ func TestDecryptPlaintextPassthrough(t *testing.T) {
 		t.Fatalf("unexpected: %s", out)
 	}
 }
+
+func TestIsEncrypted(t *testing.T) {
+	if !IsEncrypted("enc:v1:abc") {
+		t.Fatal("expected enc:v1 to be encrypted")
+	}
+	if IsEncrypted("re_plaintext") {
+		t.Fatal("plaintext should not be encrypted")
+	}
+}

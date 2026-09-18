@@ -7,6 +7,7 @@ import (
 
 	"github.com/novaspay/admin-api/internal/infra/persistence"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
+	"gorm.io/gorm"
 )
 
 type ReconciliationSummaryDTO struct {
@@ -40,30 +41,35 @@ type ResolveDiscrepancyInput struct {
 }
 
 func (s *Service) GetReconciliationSummary(ctx context.Context, tenantID string) (*ReconciliationSummaryDTO, error) {
-	q := s.db.WithContext(ctx).Model(&persistence.PaymentTransaction{})
-	if tenantID != "" && tenantID != "ALL" && tenantID != "group_hq" {
-		q = q.Where("tenant_id = ?", tenantID)
+	txQ := func() *gorm.DB {
+		q := s.db.WithContext(ctx).Model(&persistence.PaymentTransaction{})
+		if tenantID != "" && tenantID != "ALL" && tenantID != "group_hq" {
+			q = q.Where("tenant_id = ?", tenantID)
+		}
+		return q
 	}
 	var total int64
 	var done int64
 	var discrepancy int64
 	var pending int64
-	var amountSum int64
-	base := q
-	_ = base.Count(&total).Error
-	_ = base.Where("status = ?", "done").Count(&done).Error
-	_ = base.Where("status = ?", "discrepancy").Count(&discrepancy).Error
-	_ = base.Where("status IN ?", []string{"in_process", "pending_check"}).Count(&pending).Error
-	_ = base.Select("COALESCE(SUM(order_amount_cents),0)").Scan(&amountSum).Error
+	var orderAmountSum int64
+	var netAmountSum int64
+	_ = txQ().Count(&total).Error
+	_ = txQ().Where("status = ?", "done").Count(&done).Error
+	_ = txQ().Where("status = ?", "discrepancy").Count(&discrepancy).Error
+	_ = txQ().Where("status IN ?", []string{"in_process", "pending_check"}).Count(&pending).Error
+	_ = txQ().Select("COALESCE(SUM(order_amount_cents),0)").Scan(&orderAmountSum).Error
+	_ = txQ().Select("COALESCE(SUM(net_amount_cents),0)").Scan(&netAmountSum).Error
 	rate := 0.0
 	if total > 0 {
 		rate = float64(done) / float64(total) * 100
 	}
-	amount := float64(amountSum) / 100
+	orderAmount := float64(orderAmountSum) / 100
+	netAmount := float64(netAmountSum) / 100
 	return &ReconciliationSummaryDTO{
-		OrderTotalAmount:   amount,
-		GatewayTotalAmount: amount,
-		BankTotalAmount:    amount * 0.997,
+		OrderTotalAmount:   orderAmount,
+		GatewayTotalAmount: orderAmount,
+		BankTotalAmount:    netAmount,
 		OrderCount:         total,
 		MatchedRate:        rate,
 		DiscrepancyCount:   discrepancy,
@@ -135,8 +141,23 @@ func (s *Service) RunReconciliation(ctx context.Context, tenantID string) (int64
 	if tenantID != "" && tenantID != "ALL" && tenantID != "group_hq" {
 		q = q.Where("tenant_id = ?", tenantID)
 	}
-	res := q.Update("status", "done")
-	return res.RowsAffected, res.Error
+	var rows []persistence.PaymentTransaction
+	if err := q.Find(&rows).Error; err != nil {
+		return 0, err
+	}
+	var updated int64
+	for i := range rows {
+		row := &rows[i]
+		status := "discrepancy"
+		if row.OrderAmountCents > 0 && strings.TrimSpace(row.ChannelTradeNo) != "" {
+			status = "done"
+		}
+		if err := s.db.WithContext(ctx).Model(&persistence.PaymentTransaction{}).Where("id = ?", row.ID).Update("status", status).Error; err != nil {
+			return updated, err
+		}
+		updated++
+	}
+	return updated, nil
 }
 
 func (s *Service) ResolveDiscrepancy(ctx context.Context, txID string, in ResolveDiscrepancyInput) (*TransactionDTO, error) {

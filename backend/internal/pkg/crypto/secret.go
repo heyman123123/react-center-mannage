@@ -14,6 +14,11 @@ import (
 
 const encPrefix = "enc:v1:"
 
+// IsEncrypted reports whether stored looks like an encrypted secret (enc:…).
+func IsEncrypted(stored string) bool {
+	return strings.HasPrefix(strings.TrimSpace(stored), "enc:")
+}
+
 func NormalizeDataKey(raw string) ([]byte, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {

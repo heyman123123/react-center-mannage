@@ -66,24 +66,19 @@ export const PaymentWebhooksView: React.FC = () => {
     return matchesFilter && matchesSearch;
   });
 
-  const handleRedeliver = (log: PaymentWebhookLog) => {
+  const handleRedeliver = async (log: PaymentWebhookLog) => {
     setRedeliveringId(log.id);
     setRedeliverToast(null);
-
-    setTimeout(() => {
-      setRedeliveringId(null);
-      const updated = {
-        ...log,
-        attempts: log.attempts + 1,
-        httpStatus: 200,
-        status: "DELIVERED" as const,
-        latencyMs: 135,
-        responseBody: '{"received": true, "replayed_at": "' + new Date().toISOString() + '"}',
-      };
-      setWebhookLogs((prev) => prev.map((item) => (item.id === log.id ? updated : item)));
+    try {
+      await paymentWebhooksApi.redeliverPaymentWebhook(log.id);
+      await loadLogs();
       setRedeliverToast(t("payments:webhooks.toastRedeliver", { eventId: log.eventId }));
+    } catch {
+      setRedeliverToast(t("payments:webhooks.toastRedeliverFailed", { eventId: log.eventId }));
+    } finally {
+      setRedeliveringId(null);
       setTimeout(() => setRedeliverToast(null), 4000);
-    }, 1000);
+    }
   };
 
   const copyToClipboard = (text: string, id: string) => {

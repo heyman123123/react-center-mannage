@@ -17,10 +17,12 @@ import (
 )
 
 func TestProcessRefund_CreemAPI(t *testing.T) {
+	calls := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost || r.URL.Path != "/v1/refunds" {
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
+		calls++
 		var body map[string]interface{}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Fatal(err)
@@ -85,7 +87,7 @@ func TestProcessRefund_CreemAPI(t *testing.T) {
 		OriginalAmountCents: 1999,
 		Currency:            "USD",
 		Reason:              "客户要求",
-		Status:              "PROCESSING",
+		Status:              "PENDING",
 		RefundType:          "FULL",
 	}).Error; err != nil {
 		t.Fatal(err)
@@ -103,5 +105,72 @@ func TestProcessRefund_CreemAPI(t *testing.T) {
 	}
 	if dto.Status != "SUCCESS" {
 		t.Fatalf("expected SUCCESS, got %s", dto.Status)
+	}
+
+	// Idempotent: second process must not call Creem again.
+	dto2, err := svc.ProcessRefund(context.Background(), "ref_test_001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dto2.Status != "SUCCESS" {
+		t.Fatalf("expected SUCCESS no-op, got %s", dto2.Status)
+	}
+	if calls != 1 {
+		t.Fatalf("expected exactly 1 Creem call, got %d", calls)
+	}
+}
+
+func TestCreateRefund_RejectsInvalidAmount(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&persistence.PaymentTransaction{}, &persistence.PaymentRefund{}); err != nil {
+		t.Fatal(err)
+	}
+	txID := uuid.NewString()
+	if err := db.Create(&persistence.PaymentTransaction{
+		ID:               txID,
+		DisplayID:        "TX-AMT-001",
+		TenantID:         "group_hq",
+		Channel:          "creem",
+		OrderAmountCents: 1000,
+		Currency:         "USD",
+		Status:           "done",
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	svc := NewService(db, &conf.Config{})
+	ctx := context.Background()
+
+	if _, err := svc.CreateRefund(ctx, RefundInput{TransactionNo: "TX-AMT-001", RefundAmount: 0}); err == nil {
+		t.Fatal("expected reject amount=0")
+	}
+	if _, err := svc.CreateRefund(ctx, RefundInput{TransactionNo: "TX-AMT-001", RefundAmount: -1}); err == nil {
+		t.Fatal("expected reject negative amount")
+	}
+	if _, err := svc.CreateRefund(ctx, RefundInput{TransactionNo: "TX-AMT-001", RefundAmount: 20.01}); err == nil {
+		t.Fatal("expected reject amount > original")
+	}
+
+	dto, err := svc.CreateRefund(ctx, RefundInput{TransactionNo: "TX-AMT-001", RefundAmount: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dto.Status != "PENDING" {
+		t.Fatalf("expected PENDING, got %s", dto.Status)
+	}
+	// Cumulative would exceed
+	if _, err := svc.CreateRefund(ctx, RefundInput{TransactionNo: "TX-AMT-001", RefundAmount: 6}); err == nil {
+		t.Fatal("expected reject cumulative overflow")
+	}
+}
+
+func TestMaskKey_NoCiphertextLeak(t *testing.T) {
+	if got := maskKey("enc:v1:abcXYZ1234567890"); got != "********" {
+		t.Fatalf("expected fixed mask for enc, got %q", got)
+	}
+	if got := maskKey("sk_live_abcdefgh"); got != "****efgh" {
+		t.Fatalf("expected ****last4 for plaintext, got %q", got)
 	}
 }

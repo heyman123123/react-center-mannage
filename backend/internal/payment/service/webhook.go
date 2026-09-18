@@ -60,12 +60,22 @@ func (s *Service) ListWebhooks(ctx context.Context, page, pageSize int, channelI
 	return out, total, nil
 }
 
+func webhookProcessingSucceeded(status string) bool {
+	switch strings.ToUpper(strings.TrimSpace(status)) {
+	case "DELIVERED", "SUCCESS":
+		return true
+	default:
+		return false
+	}
+}
+
 func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, signature string, rawBody []byte) error {
 	ch, err := s.GetRawChannel(ctx, channelID)
 	if err != nil {
 		return err
 	}
-	if ch.WebhookSecret != "" && !creem.VerifySignature(ch.WebhookSecret, rawBody, signature) {
+	// Empty webhook secret must reject — never accept unsigned callbacks.
+	if strings.TrimSpace(ch.WebhookSecret) == "" || !creem.VerifySignature(ch.WebhookSecret, rawBody, signature) {
 		return apperr.New(40102, 401, "Webhook 签名校验失败")
 	}
 	var payload map[string]interface{}
@@ -82,20 +92,21 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 	eventID, _ := payload["id"].(string)
 	if eventID == "" {
 		eventID = uuid.NewString()
-	} else {
-		var existing persistence.PaymentWebhookLog
-		err := s.db.WithContext(ctx).Where("event_id = ?", eventID).First(&existing).Error
-		if err == nil {
+	}
+
+	var existing persistence.PaymentWebhookLog
+	err = s.db.WithContext(ctx).Where("event_id = ?", eventID).First(&existing).Error
+	if err == nil {
+		// Only short-circuit successful processing; FAILED/PENDING may be redelivered.
+		if webhookProcessingSucceeded(existing.Status) {
 			return nil
 		}
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
-		}
+		return s.finalizeWebhookProcess(ctx, &existing, channelID, rawBody, payload, eventType, true)
 	}
-	status := "DELIVERED"
-	if eventType == "subscription.past_due" || eventType == "dispute.created" || eventType == "payment.failed" || eventType == "checkout.expired" {
-		status = "FAILED"
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
 	}
+
 	row := persistence.PaymentWebhookLog{
 		ID:          uuid.NewString(),
 		ChannelID:   channelID,
@@ -105,16 +116,61 @@ func (s *Service) HandleCreemWebhook(ctx context.Context, channelID string, sign
 		AppName:     ch.Name,
 		TargetURL:   "/hooks/creem/" + channelID,
 		HTTPStatus:  200,
-		Status:      status,
+		Attempts:    1,
+		Status:      "PENDING",
 		PayloadJSON: string(rawBody),
 	}
 	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
 		if isDuplicateKeyError(err) {
+			var again persistence.PaymentWebhookLog
+			if e := s.db.WithContext(ctx).Where("event_id = ?", eventID).First(&again).Error; e == nil {
+				if webhookProcessingSucceeded(again.Status) {
+					return nil
+				}
+				return s.finalizeWebhookProcess(ctx, &again, channelID, rawBody, payload, eventType, true)
+			}
 			return nil
 		}
 		return err
 	}
-	return s.processCreemWebhookPayload(ctx, channelID, rawBody, payload, eventType)
+	// First attempt already counted on insert; only bump on redelivery.
+	return s.finalizeWebhookProcess(ctx, &row, channelID, rawBody, payload, eventType, false)
+}
+
+func (s *Service) finalizeWebhookProcess(
+	ctx context.Context,
+	row *persistence.PaymentWebhookLog,
+	channelID string,
+	rawBody []byte,
+	payload map[string]interface{},
+	eventType string,
+	bumpAttempt bool,
+) error {
+	start := time.Now()
+	err := s.processCreemWebhookPayload(ctx, channelID, rawBody, payload, eventType)
+	latency := int(time.Since(start).Milliseconds())
+	status := "DELIVERED"
+	if err != nil {
+		status = "FAILED"
+	}
+	updates := map[string]interface{}{
+		"status":      status,
+		"latency_ms":  latency,
+		"http_status": 200,
+	}
+	if bumpAttempt {
+		updates["attempts"] = row.Attempts + 1
+	}
+	if eventType != "" {
+		updates["event_type"] = eventType
+	}
+	if len(rawBody) > 0 {
+		updates["payload_json"] = string(rawBody)
+	}
+	if dbErr := s.db.WithContext(ctx).Model(row).Updates(updates).Error; dbErr != nil && err == nil {
+		return dbErr
+	}
+	return err
 }
 
 func (s *Service) processCreemWebhookPayload(ctx context.Context, channelID string, rawBody []byte, payload map[string]interface{}, eventType string) error {
@@ -150,23 +206,7 @@ func (s *Service) RedeliverWebhook(ctx context.Context, id string) error {
 	if eventType == "" {
 		eventType, _ = payload["type"].(string)
 	}
-	start := time.Now()
-	err := s.processCreemWebhookPayload(ctx, row.ChannelID, []byte(row.PayloadJSON), payload, eventType)
-	latency := int(time.Since(start).Milliseconds())
-	status := "DELIVERED"
-	if err != nil {
-		status = "FAILED"
-	}
-	updates := map[string]interface{}{
-		"attempts":    row.Attempts + 1,
-		"status":      status,
-		"latency_ms":  latency,
-		"http_status": 200,
-	}
-	if err := s.db.WithContext(ctx).Model(&row).Updates(updates).Error; err != nil {
-		return err
-	}
-	return err
+	return s.finalizeWebhookProcess(ctx, &row, row.ChannelID, []byte(row.PayloadJSON), payload, eventType, true)
 }
 
 func toWebhookDTO(r persistence.PaymentWebhookLog) WebhookDTO {

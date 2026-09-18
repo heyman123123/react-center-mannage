@@ -122,7 +122,8 @@ func (s *AuthService) VerifyAccess(token string) (userID, userName string, err e
 }
 
 func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (access, refresh string, err error) {
-	val, err := s.rdb.Get(ctx, "novas:sess:refresh:"+refreshToken)
+	// Atomic GET+DEL: only one concurrent refresh with the same cookie can succeed.
+	val, err := s.rdb.GetDel(ctx, "novas:sess:refresh:"+refreshToken)
 	if err != nil {
 		return "", "", apperr.Unauthorized
 	}
@@ -132,13 +133,15 @@ func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (access,
 	if len(parts) == 2 {
 		oldAccess = parts[1]
 	}
+	if oldAccess != "" {
+		_ = s.rdb.Del(ctx, "novas:sess:access:"+oldAccess)
+	}
 	var u persistence.User
 	if err := s.db.WithContext(ctx).First(&u, "id = ?", userID).Error; err != nil {
 		return "", "", apperr.Unauthorized
 	}
-	_ = s.rdb.Del(ctx, "novas:sess:refresh:"+refreshToken)
-	if oldAccess != "" {
-		_ = s.rdb.Del(ctx, "novas:sess:access:"+oldAccess)
+	if u.Status != "ACTIVE" {
+		return "", "", apperr.Forbidden
 	}
 	return s.issueSession(ctx, u.ID, u.Name)
 }

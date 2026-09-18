@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -115,6 +116,63 @@ func (b *Bundle) CORS() gin.HandlerFunc {
 			c.AbortWithStatus(204)
 			return
 		}
+		c.Next()
+	}
+}
+
+var csrfFail = apperr.New(40301, 403, "CSRF 校验失败")
+
+// CSRF rejects cross-site unsafe requests via Sec-Fetch-Site / Origin / Referer.
+// Safe methods, webhook hooks, and health probes are skipped. No CSRF token header.
+func (b *Bundle) CSRF() gin.HandlerFunc {
+	allowed := map[string]struct{}{}
+	for _, o := range b.cfg.CORSOrigins {
+		allowed[strings.TrimSpace(o)] = struct{}{}
+	}
+	return func(c *gin.Context) {
+		method := c.Request.Method
+		if method == "GET" || method == "HEAD" || method == "OPTIONS" {
+			c.Next()
+			return
+		}
+		path := c.Request.URL.Path
+		if strings.Contains(path, "/hooks/") || path == "/healthz" || path == "/readyz" {
+			c.Next()
+			return
+		}
+		if strings.EqualFold(c.GetHeader("Sec-Fetch-Site"), "cross-site") {
+			response.Fail(c, csrfFail)
+			c.Abort()
+			return
+		}
+		origin := strings.TrimSpace(c.GetHeader("Origin"))
+		if origin != "" {
+			if _, ok := allowed[origin]; !ok {
+				response.Fail(c, csrfFail)
+				c.Abort()
+				return
+			}
+			c.Next()
+			return
+		}
+		referer := strings.TrimSpace(c.GetHeader("Referer"))
+		if referer != "" {
+			u, err := url.Parse(referer)
+			if err != nil || u.Scheme == "" || u.Host == "" {
+				response.Fail(c, csrfFail)
+				c.Abort()
+				return
+			}
+			refOrigin := u.Scheme + "://" + u.Host
+			if _, ok := allowed[refOrigin]; !ok {
+				response.Fail(c, csrfFail)
+				c.Abort()
+				return
+			}
+			c.Next()
+			return
+		}
+		// No Origin/Referer (curl/scripts): allow.
 		c.Next()
 	}
 }

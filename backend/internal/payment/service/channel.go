@@ -104,6 +104,10 @@ func (s *Service) Create(ctx context.Context, in ChannelInput) (*ChannelDTO, err
 	if name == "" || secret == "" {
 		return nil, apperr.InvalidArgument
 	}
+	webhookPlain := strings.TrimSpace(in.WebhookSecret)
+	if strings.EqualFold(key, "creem") && webhookPlain == "" {
+		return nil, apperr.New(42200, 422, "Creem 渠道必须配置 Webhook Secret")
+	}
 	currenciesJSON, _ := json.Marshal(defaultCurrencies(in.SupportedCurrencies))
 	priority := 1
 	if in.RoutingPriority != nil {
@@ -113,7 +117,7 @@ func (s *Service) Create(ctx context.Context, in ChannelInput) (*ChannelDTO, err
 	if tenantID == "" {
 		tenantID = "ALL"
 	}
-	webhookSecret := s.sealSecret(strings.TrimSpace(in.WebhookSecret))
+	webhookSecret := s.sealSecret(webhookPlain)
 	sealedSecret := s.sealSecret(secret)
 	row := persistence.PaymentChannel{
 		ID:                      uuid.NewString(),
@@ -192,6 +196,22 @@ func (s *Service) Update(ctx context.Context, id string, in ChannelInput) (*Chan
 	if len(updates) == 0 {
 		return nil, apperr.InvalidArgument
 	}
+
+	// Refuse enabling Creem without a webhook secret (existing or newly provided).
+	willEnable := row.Enabled
+	if in.Enabled != nil {
+		willEnable = *in.Enabled
+	}
+	if willEnable && strings.EqualFold(row.ChannelKey, "creem") {
+		whPlain := s.openSecret(row.WebhookSecret)
+		if wh := strings.TrimSpace(in.WebhookSecret); wh != "" && !strings.Contains(wh, "****") {
+			whPlain = wh
+		}
+		if strings.TrimSpace(whPlain) == "" {
+			return nil, apperr.New(42200, 422, "启用 Creem 渠道前必须配置 Webhook Secret")
+		}
+	}
+
 	if err := s.db.WithContext(ctx).Model(&row).Updates(updates).Error; err != nil {
 		return nil, err
 	}
@@ -345,10 +365,18 @@ func defaultCurrencies(c []string) []string {
 }
 
 func maskKey(key string) string {
-	if len(key) <= 8 {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return ""
+	}
+	// Never leak encrypted ciphertext prefixes/suffixes in API responses.
+	if strings.HasPrefix(key, "enc:") {
+		return "********"
+	}
+	if len(key) <= 4 {
 		return "****"
 	}
-	return key[:4] + "****" + key[len(key)-4:]
+	return "****" + key[len(key)-4:]
 }
 
 func toChannelDTO(r persistence.PaymentChannel) ChannelDTO {
