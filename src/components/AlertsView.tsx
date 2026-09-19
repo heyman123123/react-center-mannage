@@ -112,14 +112,14 @@ export const AlertsView: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AlertRule | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [ruleFilter, ruleSearch, tab, reset]);
 
   // ---- 历史列表状态 ----
   const [historyStatusFilter, setHistoryStatusFilter] = useState<string>("ALL");
   const [historySearch, setHistorySearch] = useState("");
   const [detailHistory, setDetailHistory] = useState<AlertHistory | null>(null);
-  const { currentPage: hPage, setCurrentPage: setHPage, reset: hReset, pageSize: hSize } = usePagination(10);
+  const { currentPage: hPage, setCurrentPage: setHPage, reset: hReset, pageSize: hSize, setPageSize: setHPageSize } = usePagination(10);
   useEffect(() => { hReset(); }, [historyStatusFilter, historySearch, tab, hReset]);
 
   // ---- 规则过滤 ----
@@ -371,7 +371,7 @@ export const AlertsView: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <Pagination currentPage={currentPage} totalItems={filteredRules.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+            <Pagination currentPage={currentPage} totalItems={filteredRules.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
           </div>
         </>
       )}
@@ -443,7 +443,7 @@ export const AlertsView: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <Pagination currentPage={hPage} totalItems={filteredHistories.length} pageSize={hSize} onPageChange={setHPage} />
+            <Pagination currentPage={hPage} totalItems={filteredHistories.length} pageSize={hSize} onPageChange={setHPage} onPageSizeChange={setHPageSize} />
           </div>
         </>
       )}

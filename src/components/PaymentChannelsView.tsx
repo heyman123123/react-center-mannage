@@ -74,7 +74,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
   const [dictChannelOptions, setDictChannelOptions] = useState<PaymentChannelOption[]>([]);
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const { currentPage, setCurrentPage, reset: _pcr, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset: _pcr, pageSize, setPageSize } = usePagination(10);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -240,6 +240,24 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
     navigator.clipboard.writeText(text);
     setCopiedKey(id);
     setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const openEditChannel = async (channel: PaymentChannelConfig) => {
+    setEditingChannel(channel);
+    try {
+      const full = await channelsApi.getPaymentChannel(channel.id);
+      setEditingChannel(full);
+    } catch {
+      showToast(t("payment.toast.loadSecretsFailed"));
+    }
+  };
+
+  const resolveWebhookUrl = (channel: PaymentChannelConfig) => {
+    if (channel.webhookUrl) return channel.webhookUrl;
+    if (String(channel.channelKey).toLowerCase() === "creem") {
+      return `/api/v1/hooks/creem/${channel.id}`;
+    }
+    return "";
   };
 
   const handleTestConnection = async (channel: PaymentChannelConfig) => {
@@ -616,6 +634,35 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                       </span>
                     </div>
                   </div>
+
+                  {/* Webhook URL */}
+                  {resolveWebhookUrl(channel) ? (
+                    <div className="pt-2 border-t border-line/60">
+                      <span className="text-[10px] text-fg-tertiary block font-sans">
+                        {t("payment.card.webhookUrl")}
+                      </span>
+                      <div className="flex items-center justify-between text-fg-secondary mt-0.5 gap-2">
+                        <span className="truncate" title={resolveWebhookUrl(channel)}>
+                          {resolveWebhookUrl(channel)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => copyText(resolveWebhookUrl(channel), `${channel.id}_whurl`)}
+                          className="text-fg-tertiary hover:text-fg-secondary shrink-0"
+                          title={t("payment.card.webhookUrlHint")}
+                        >
+                          {copiedKey === `${channel.id}_whurl` ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-fg-tertiary font-sans mt-1 leading-snug">
+                        {t("payment.card.webhookUrlHint")}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Attributes badges */}
@@ -737,7 +784,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                     <span>{isTesting ? t("payment.card.testing") : t("payment.card.testConnection")}</span>
                   </button>
                   <button
-                    onClick={() => setEditingChannel(channel)}
+                    onClick={() => void openEditChannel(channel)}
                     className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg font-medium flex items-center gap-1 transition-colors text-xs"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -749,7 +796,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
           );
         })}
       </div>
-      <Pagination currentPage={currentPage} totalItems={channelList.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+      <Pagination currentPage={currentPage} totalItems={channelList.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
 
       {/* Edit Channel SideSheet (右侧滑入) */}
       <SideSheet
@@ -847,6 +894,35 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                   required
                 />
               </div>
+
+              {resolveWebhookUrl(editingChannel) ? (
+                <div>
+                  <label className="text-fg-secondary block mb-1 font-medium">{t("payment.editSheet.webhookUrl")}</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={resolveWebhookUrl(editingChannel)}
+                      className="flex-1 px-3 py-2 bg-canvas border border-line rounded-lg text-fg font-mono text-[11px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyText(resolveWebhookUrl(editingChannel), `${editingChannel.id}_edit_whurl`)
+                      }
+                      className="shrink-0 px-2.5 py-2 border border-line rounded-lg text-fg-secondary hover:bg-subtle flex items-center gap-1"
+                    >
+                      {copiedKey === `${editingChannel.id}_edit_whurl` ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      <span>{copiedKey === `${editingChannel.id}_edit_whurl` ? t("payment.copied") : t("common:actions.copy")}</span>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-fg-tertiary mt-1">{t("payment.editSheet.webhookUrlHint")}</p>
+                </div>
+              ) : null}
 
               <div className="grid grid-cols-2 gap-2">
                 <div>

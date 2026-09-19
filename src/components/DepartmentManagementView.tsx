@@ -462,7 +462,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
     );
   };
 
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [searchQuery, reset]);
 
   const loading = useViewLoading();
@@ -805,7 +805,7 @@ export const DepartmentManagementView: React.FC<DepartmentManagementViewProps> =
                 </tbody>
               </table>
             </div>
-            <Pagination currentPage={currentPage} totalItems={filteredDepts.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+            <Pagination currentPage={currentPage} totalItems={filteredDepts.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
           </div>
         ) : (
           /* ===== 部门成员视图 ===== */

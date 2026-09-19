@@ -46,7 +46,7 @@ export const RolesView: React.FC<RolesViewProps> = ({
     void appsApi.getApps().then(setApps).catch(() => setApps([]));
   }, []);
   const [searchQuery, setSearchQuery] = useState("");
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => {
     reset();
   }, [searchQuery, reset]);
@@ -466,6 +466,7 @@ export const RolesView: React.FC<RolesViewProps> = ({
             totalItems={filteredRoles.length}
             pageSize={pageSize}
             onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
           />
         </div>
       </div>

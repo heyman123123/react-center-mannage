@@ -66,7 +66,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
   }, [loadData]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [searchQuery, statusFilter, reset]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [previewCampaign, setPreviewCampaign] = useState<PromoCampaign | null>(null);
@@ -502,7 +502,7 @@ export const PromoCampaignsView: React.FC<PromoCampaignsViewProps> = ({
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filteredCampaigns.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filteredCampaigns.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       {/* Live Email Preview SideSheet */}

@@ -1,0 +1,15 @@
+# Local ngrok config for NovasPay Admin API (Creem webhook tunnel).
+# Auth: set NGROK_AUTHTOKEN or run once:
+#   ngrok config add-authtoken <your-token>
+# Token: https://dashboard.ngrok.com/get-started/your-authtoken
+version: "3"
+agent:
+  # Prefer user authtoken from ~/.config/ngrok/ngrok.yml when present.
+  # This file only defines the tunnel to the local API.
+tunnels:
+  novas-api:
+    proto: http
+    addr: 8080
+    # Inspect UI: http://127.0.0.1:4040
+    schemes:
+      - https

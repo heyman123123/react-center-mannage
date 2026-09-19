@@ -77,7 +77,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentT
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [countryFilter, setCountryFilter] = useState<string>("ALL");
   const [actionCategoryFilter, setActionCategoryFilter] = useState<string>("ALL");
-  const { currentPage, setCurrentPage, reset: resetPage, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset: resetPage, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { resetPage(); }, [searchQuery, statusFilter, countryFilter, resetPage]);
   const [actionToast, setActionToast] = useState<string | null>(null);
 
@@ -635,7 +635,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentT
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filteredUsers.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filteredUsers.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       {/* User Actions Full Detail SideSheet (右侧滑入) */}

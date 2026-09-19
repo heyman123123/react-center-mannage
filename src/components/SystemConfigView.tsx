@@ -104,14 +104,14 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
   const [paramFormOpen, setParamFormOpen] = useState(false);
   const [editingParam, setEditingParam] = useState<SystemConfigParam | null>(null);
   const [paramForm, setParamForm] = useState(emptyForm);
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [paramCategoryFilter, paramSearch, tab, reset]);
 
   const [taskRows, setTaskRows] = useState<ScheduledTask[]>(tasks ?? []);
   const [taskSearch, setTaskSearch] = useState("");
   const [runningTaskId, setRunningTaskId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const { currentPage: tPage, setCurrentPage: setTPage, reset: tReset, pageSize: tSize } = usePagination(10);
+  const { currentPage: tPage, setCurrentPage: setTPage, reset: tReset, pageSize: tSize, setPageSize: setTPageSize } = usePagination(10);
   useEffect(() => { tReset(); }, [taskSearch, tab, tReset]);
 
   useEffect(() => {
@@ -333,7 +333,7 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
             {filteredParams.length === 0 ? (
               <div className="p-8 text-center text-xs text-fg-tertiary">{t("systemConfig.params.empty")}</div>
             ) : null}
-            <Pagination currentPage={currentPage} totalItems={filteredParams.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+            <Pagination currentPage={currentPage} totalItems={filteredParams.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
           </div>
         </>
       )}
@@ -408,7 +408,7 @@ export const SystemConfigView: React.FC<SystemConfigViewProps> = ({ configs, tas
             {filteredTasks.length === 0 ? (
               <div className="p-8 text-center text-xs text-fg-tertiary">{t("systemConfig.tasks.empty")}</div>
             ) : null}
-            <Pagination currentPage={tPage} totalItems={filteredTasks.length} pageSize={tSize} onPageChange={setTPage} />
+            <Pagination currentPage={tPage} totalItems={filteredTasks.length} pageSize={tSize} onPageChange={setTPage} onPageSizeChange={setTPageSize} />
           </div>
         </>
       )}

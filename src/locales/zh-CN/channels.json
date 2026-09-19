@@ -60,11 +60,12 @@
     "editSheet": {
       "title": "配置发信通道",
       "titleWithChannel": "配置发信通道 - {{name}}",
-      "description": "维护发件人信息、SMTP 服务器与每日投递配额。",
+      "description": "维护发件人信息、API Key、SMTP 服务器与每日投递配额。",
       "save": "保存通道配置",
       "channelName": "发信渠道名称",
       "mode": "运行环境",
-      "dailyQuotaMax": "每日最大投递配额 (Quota)"
+      "dailyQuotaMax": "每日最大投递配额 (Quota)",
+      "loadingSecrets": "正在加载密钥…"
     },
     "providers": {
       "sendgrid": "Twilio SendGrid",
@@ -77,6 +78,7 @@
       "fillRequired": "请填写渠道名称与发件人邮箱",
       "added": "发件渠道【{{name}}】已成功添加",
       "loadFailed": "加载邮件渠道失败",
+      "loadSecretsFailed": "加载渠道密钥失败",
       "saveFailed": "保存失败",
       "testFailed": "测试邮件发送失败",
       "testSent": "测试邮件已发送（Message ID: {{id}}）",
@@ -94,18 +96,21 @@
     "modeAll": "全部环境",
     "modeLive": "Live 生产环境",
     "modeSandbox": "Sandbox 测试环境",
-    "webhookUrlHint": "Creem Webhook 回调地址：/api/v1/hooks/creem/{channelId}",
+    "webhookUrlHint": "Creem Webhook 回调地址：将公网域名（如 ngrok）拼在路径前即可",
     "addChannel": "接入新渠道",
     "selectChannelFirst": "请先选择要接入的渠道",
     "defaults": { "notTested": "未测试" },
     "copyForbidden": "禁止复制",
     "copyForbiddenTitle": "API Key 凭据禁止复制",
+    "copied": "已复制",
     "card": {
       "enableTitle": "点击启用渠道",
       "disableTitle": "点击停用渠道",
       "publicKey": "Publishable Client Key (公钥)",
       "secretKey": "Secret API Key (私钥)",
       "webhookSecret": "Webhook Signing Secret (验签密钥)",
+      "webhookUrl": "Webhook 回调 URL",
+      "webhookUrlHint": "填到 Creem 控制台；本地需用 ngrok 等公网 HTTPS 前缀",
       "hide": "隐藏",
       "show": "显示",
       "supportedCurrencies": "支持币种:",
@@ -124,12 +129,14 @@
       "testTx": "测试交易",
       "testing": "测试中...",
       "testConnection": "测试连通性",
-      "edit": "编辑"
+      "edit": "编辑",
+      "loadingSecrets": "正在加载密钥…"
     },
     "toast": {
       "testSuccess": "API 握手成功！公私钥校验通过，海外网关握手耗时 {{latency}}ms (TLS 1.3)",
       "testFailed": "渠道连通性测试失败",
       "loadFailed": "加载支付渠道失败",
+      "loadSecretsFailed": "加载渠道密钥失败",
       "saveFailed": "保存渠道配置失败",
       "added": "支付渠道【{{name}}】已成功接入",
       "fillRequired": "请填写当前渠道的必填凭证字段"
@@ -137,7 +144,7 @@
     "editSheet": {
       "title": "编辑支付渠道配置",
       "titleWithName": "编辑支付渠道配置 - {{name}}",
-      "description": "维护渠道密钥、费率与路由优先级；密钥仅保存在本机 Mock 环境。",
+      "description": "维护渠道密钥、Webhook 回调地址、费率与路由优先级。",
       "displayName": "渠道显示名称",
       "mode": "运行模式",
       "modeLive": "Live 生产环境",
@@ -146,6 +153,8 @@
       "publishableKey": "公钥 (Publishable Key)",
       "secretKey": "私钥 (Secret Key)",
       "webhookSigningSecret": "Webhook 签名密钥 (Signing Secret)",
+      "webhookUrl": "Webhook 回调 URL",
+      "webhookUrlHint": "复制后填到 Creem Dashboard → Webhooks；本地开发请加 ngrok 公网域名",
       "feeRate": "费率说明",
       "routingPriority": "路由优先级 (越小越优先)"
     },

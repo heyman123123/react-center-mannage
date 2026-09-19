@@ -204,7 +204,7 @@ export const EmailTemplatesView: React.FC = () => {
   const [langFilter, setLangFilter] = useState<string>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [searchQuery, langFilter, categoryFilter, statusFilter, reset]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -797,7 +797,7 @@ The {{app_name}} Team`,
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filteredEmails.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filteredEmails.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       {/* 1. SideSheet: Edit Standalone Email (独立单一邮件编辑) */}

@@ -42,7 +42,7 @@ export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
   const [form, setForm] = useState(emptyForm);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -248,6 +248,7 @@ export const TenantManagementView: React.FC<TenantManagementViewProps> = ({
           currentPage={currentPage}
           pageSize={pageSize}
           onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
         />
       </div>
 

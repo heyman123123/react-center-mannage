@@ -53,7 +53,7 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
   const [actionOptions, setActionOptions] = useState<{ value: string; label: string }[]>([]);
   const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
   const [toast, setToast] = useState<string | null>(null);
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [selectedUserIds, selectedActions, timeRange, searchQuery, reset]);
 
   const actionLabelMap = useMemo(() => {
@@ -386,7 +386,7 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({ logs }) => {
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       <SideSheet

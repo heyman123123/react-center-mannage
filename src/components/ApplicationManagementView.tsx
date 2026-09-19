@@ -178,7 +178,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const { currentPage, setCurrentPage, reset: _ar, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset: _ar, pageSize, setPageSize } = usePagination(10);
 
   // Modal / Wizard State
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
@@ -751,7 +751,7 @@ export const ApplicationManagementView: React.FC<ApplicationManagementViewProps>
           );
         })}
       </div>
-      <Pagination currentPage={currentPage} totalItems={appList.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+      <Pagination currentPage={currentPage} totalItems={appList.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
 
       {/* Comprehensive Application Wizard SideSheet */}
       {isConfigModalOpen && (

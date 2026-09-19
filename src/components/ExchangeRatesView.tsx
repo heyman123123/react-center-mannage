@@ -44,7 +44,7 @@ export const ExchangeRatesView: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ExchangeRate | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
 
   const loadRates = useCallback(async () => {
     try {
@@ -275,7 +275,7 @@ export const ExchangeRatesView: React.FC = () => {
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       <SideSheet

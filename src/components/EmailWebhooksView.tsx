@@ -41,7 +41,7 @@ export const EmailWebhooksView: React.FC = () => {
   const [filterType, setFilterType] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedLog, setSelectedLog] = useState<EmailWebhookLog | null>(null);
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [filterType, searchQuery, reset]);
 
   const filtered = emailLogs.filter((log) => {
@@ -233,7 +233,7 @@ export const EmailWebhooksView: React.FC = () => {
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       {/* Details SideSheet (右侧滑入) */}

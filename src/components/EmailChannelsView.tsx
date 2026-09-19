@@ -15,8 +15,6 @@ import {
   ShieldCheck,
   Zap,
   Clock,
-  Eye,
-  EyeOff,
   Copy,
   Check,
   Plus,
@@ -29,7 +27,7 @@ export const EmailChannelsView: React.FC = () => {
   const { t } = useTranslation(["channels", "common"]);
   const [channelList, setChannelList] = useState<EmailChannelConfig[]>([]);
   const [modeFilter, setModeFilter] = useState<string>("all");
-  const { currentPage, setCurrentPage, reset: _ecr, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset: _ecr, pageSize, setPageSize } = usePagination(10);
   const [testModalChannel, setTestModalChannel] = useState<EmailChannelConfig | null>(null);
   const [testRecipient, setTestRecipient] = useState("admin@corp-finance.global");
   const [isSendingTest, setIsSendingTest] = useState(false);
@@ -166,6 +164,16 @@ export const EmailChannelsView: React.FC = () => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const openEditChannel = async (channel: EmailChannelConfig) => {
+    setEditingChannel(channel);
+    try {
+      const full = await messagingApi.getEmailChannel(channel.id);
+      setEditingChannel(full);
+    } catch {
+      showToast(t("email.toast.loadSecretsFailed"));
+    }
   };
 
   const loading = useViewLoading();
@@ -344,7 +352,7 @@ export const EmailChannelsView: React.FC = () => {
                     <span>{t("email.sendTest")}</span>
                   </button>
                   <button
-                    onClick={() => setEditingChannel(channel)}
+                    onClick={() => void openEditChannel(channel)}
                     className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg font-medium flex items-center gap-1 transition-colors"
                   >
                     <Edit2 className="w-3 h-3" />
@@ -356,7 +364,7 @@ export const EmailChannelsView: React.FC = () => {
           );
         })}
       </div>
-      <Pagination currentPage={currentPage} totalItems={channelList.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+      <Pagination currentPage={currentPage} totalItems={channelList.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
 
       {/* Send Test Email SideSheet (右侧滑入) */}
       <SideSheet
@@ -740,15 +748,29 @@ export const EmailChannelsView: React.FC = () => {
 
               <div>
                 <label className="text-fg-secondary block mb-1 font-medium">{t("email.createSheet.apiKey")}</label>
-                <input
-                  type="text"
-                  value={editingChannel.apiKey}
-                  onChange={(e) =>
-                    setEditingChannel({ ...editingChannel, apiKey: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
-                  required
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editingChannel.apiKey}
+                    onChange={(e) =>
+                      setEditingChannel({ ...editingChannel, apiKey: e.target.value })
+                    }
+                    className="flex-1 px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => copyText(editingChannel.apiKey, `${editingChannel.id}_edit_apikey`)}
+                    className="shrink-0 px-2.5 py-2 border border-line rounded-lg text-fg-secondary hover:bg-subtle"
+                    title={t("common:actions.copy")}
+                  >
+                    {copiedId === `${editingChannel.id}_edit_apikey` ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">

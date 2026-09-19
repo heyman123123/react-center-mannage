@@ -77,7 +77,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
     void appsApi.getApps().then(setApps).catch(() => setApps([]));
   }, []);
   const [searchQuery, setSearchQuery] = useState("");
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [searchQuery, reset]);
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [appFilter, setAppFilter] = useState("ALL");
@@ -687,7 +687,7 @@ export const SystemUserManagementView: React.FC<SystemUserManagementViewProps> =
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filteredUsers.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filteredUsers.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       {/* SideSheet for Add/Edit User */}

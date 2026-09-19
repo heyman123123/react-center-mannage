@@ -109,6 +109,8 @@ export interface PaymentChannelConfig {
   apiPublicKey: string;
   apiSecretKey: string;
   webhookSecret: string;
+  /** Creem 等渠道回调路径，如 /api/v1/hooks/creem/{id} */
+  webhookUrl?: string;
   supportedCurrencies: string[];
   feeRateText: string; // 如 "2.9% + $0.30"
   routingPriority: number; // 优先级 1, 2, 3

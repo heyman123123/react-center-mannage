@@ -126,7 +126,7 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
   const [activeCb, setActiveCb] = useState<ChargebackRecord | null>(null);
   const [dataLoading, setDataLoading] = useState<boolean>(!refunds || !chargebacks);
 
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [tab, refundSearch, cbSearch, reset]);
 
   // P2: 未传入 props 时通过 API 层取数（按当前环境分桶，带模拟延迟）
@@ -369,7 +369,7 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
                 </tbody>
               </table>
             </div>
-            <Pagination currentPage={currentPage} totalItems={filteredRefunds.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+            <Pagination currentPage={currentPage} totalItems={filteredRefunds.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
           </div>
 
           {/* Create Refund SideSheet */}
@@ -589,7 +589,7 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
                 </tbody>
               </table>
             </div>
-            <Pagination currentPage={currentPage} totalItems={filteredCb.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+            <Pagination currentPage={currentPage} totalItems={filteredCb.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
           </div>
 
           {/* Chargeback Detail SideSheet */}

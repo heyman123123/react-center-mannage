@@ -186,7 +186,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [searchQuery, typeFilter, statusFilter, reset]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -694,7 +694,7 @@ export const DiscountsView: React.FC<DiscountsViewProps> = ({
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filteredDiscounts.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filteredDiscounts.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       {/* Add / Edit Discount SideSheet */}

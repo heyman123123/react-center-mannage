@@ -76,7 +76,7 @@ func (s *Service) ListChannels(ctx context.Context, mode string) ([]ChannelDTO, 
 	}
 	out := make([]ChannelDTO, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, s.toChannelDTO(r))
+		out = append(out, s.toChannelDTO(r, false))
 	}
 	return out, nil
 }
@@ -86,7 +86,8 @@ func (s *Service) GetChannel(ctx context.Context, id string) (*ChannelDTO, error
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
 		return nil, apperr.NotFound
 	}
-	dto := s.toChannelDTO(row)
+	// Detail/edit: return plaintext API key so operators can view & update credentials.
+	dto := s.toChannelDTO(row, true)
 	return &dto, nil
 }
 
@@ -136,7 +137,7 @@ func (s *Service) CreateChannel(ctx context.Context, in ChannelInput) (*ChannelD
 	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
 		return nil, err
 	}
-	dto := s.toChannelDTO(row)
+	dto := s.toChannelDTO(row, false)
 	return &dto, nil
 }
 
@@ -189,7 +190,7 @@ func (s *Service) UpdateChannel(ctx context.Context, id string, in ChannelInput)
 		return nil, err
 	}
 	_ = s.db.WithContext(ctx).First(&row, "id = ?", id)
-	dto := s.toChannelDTO(row)
+	dto := s.toChannelDTO(row, false)
 	return &dto, nil
 }
 
@@ -210,7 +211,7 @@ func (s *Service) SetPrimary(ctx context.Context, id string) (*ChannelDTO, error
 		return nil, err
 	}
 	_ = s.db.WithContext(ctx).First(&row, "id = ?", id)
-	dto := s.toChannelDTO(row)
+	dto := s.toChannelDTO(row, false)
 	return &dto, nil
 }
 
@@ -328,10 +329,14 @@ func (s *Service) maskApiKey(stored string) string {
 	return "****"
 }
 
-func (s *Service) toChannelDTO(r persistence.EmailChannel) ChannelDTO {
+func (s *Service) toChannelDTO(r persistence.EmailChannel, reveal bool) ChannelDTO {
 	lastTested := ""
 	if r.LastTestedAt != nil {
 		lastTested = timex.FormatUTC(*r.LastTestedAt)
+	}
+	apiKey := s.maskApiKey(r.ApiKey)
+	if reveal {
+		apiKey = s.openSecret(r.ApiKey)
 	}
 	return ChannelDTO{
 		ID:             r.ID,
@@ -343,7 +348,7 @@ func (s *Service) toChannelDTO(r persistence.EmailChannel) ChannelDTO {
 		IsPrimary:      r.IsPrimary,
 		SenderEmail:    r.SenderEmail,
 		SenderName:     r.SenderName,
-		ApiKey:         s.maskApiKey(r.ApiKey),
+		ApiKey:         apiKey,
 		SmtpHost:       r.SmtpHost,
 		SmtpPort:       r.SmtpPort,
 		DailyQuota:     r.DailyQuota,

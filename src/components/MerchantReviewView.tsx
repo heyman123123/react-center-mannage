@@ -53,7 +53,7 @@ export const MerchantReviewView: React.FC = () => {
   const [reviewApp, setReviewApp] = useState<MerchantApplication | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [previewDoc, setPreviewDoc] = useState<MerchantDocument | null>(null);
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [statusFilter, searchQuery, reset]);
 
   const STATUS_META = useMemo(
@@ -168,7 +168,7 @@ export const MerchantReviewView: React.FC = () => {
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       <SideSheet

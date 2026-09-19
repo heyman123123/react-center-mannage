@@ -29,26 +29,27 @@ func NewService(db *gorm.DB, cfg *conf.Config, shards *sharding.Shards) *Service
 }
 
 type ChannelDTO struct {
-	ID                string   `json:"id"`
-	ChannelKey        string   `json:"channelKey"`
-	Name              string   `json:"name"`
-	AccountName       string   `json:"accountName"`
-	Description       string   `json:"description"`
-	Mode              string   `json:"mode"`
-	Enabled           bool     `json:"enabled"`
-	ApiPublicKey      string   `json:"apiPublicKey"`
-	ApiSecretKey      string   `json:"apiSecretKey"`
-	WebhookSecret     string   `json:"webhookSecret"`
+	ID                  string   `json:"id"`
+	ChannelKey          string   `json:"channelKey"`
+	Name                string   `json:"name"`
+	AccountName         string   `json:"accountName"`
+	Description         string   `json:"description"`
+	Mode                string   `json:"mode"`
+	Enabled             bool     `json:"enabled"`
+	ApiPublicKey        string   `json:"apiPublicKey"`
+	ApiSecretKey        string   `json:"apiSecretKey"`
+	WebhookSecret       string   `json:"webhookSecret"`
+	WebhookURL          string   `json:"webhookUrl"`
 	SupportedCurrencies []string `json:"supportedCurrencies"`
-	FeeRateText       string   `json:"feeRateText"`
-	RoutingPriority   int      `json:"routingPriority"`
-	FallbackChannelID *string  `json:"fallbackChannelId"`
-	TenantID          string   `json:"tenantId"`
-	TestStatus        string   `json:"testStatus"`
-	HealthStatus      string   `json:"healthStatus"`
-	LatencyMs         int      `json:"latencyMs"`
-	LastTestedAt      string   `json:"lastTestedAt"`
-	LastHealthAt      string   `json:"lastHealthAt"`
+	FeeRateText         string   `json:"feeRateText"`
+	RoutingPriority     int      `json:"routingPriority"`
+	FallbackChannelID   *string  `json:"fallbackChannelId"`
+	TenantID            string   `json:"tenantId"`
+	TestStatus          string   `json:"testStatus"`
+	HealthStatus        string   `json:"healthStatus"`
+	LatencyMs           int      `json:"latencyMs"`
+	LastTestedAt        string   `json:"lastTestedAt"`
+	LastHealthAt        string   `json:"lastHealthAt"`
 }
 
 type ChannelInput struct {
@@ -82,7 +83,7 @@ func (s *Service) List(ctx context.Context, mode, channelKey string) ([]ChannelD
 	}
 	out := make([]ChannelDTO, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, toChannelDTO(r))
+		out = append(out, s.toChannelDTO(r, false))
 	}
 	return out, nil
 }
@@ -92,7 +93,8 @@ func (s *Service) Get(ctx context.Context, id string) (*ChannelDTO, error) {
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
 		return nil, apperr.NotFound
 	}
-	dto := toChannelDTO(row)
+	// Detail/edit: return plaintext secrets so operators can view & update credentials.
+	dto := s.toChannelDTO(row, true)
 	return &dto, nil
 }
 
@@ -143,7 +145,7 @@ func (s *Service) Create(ctx context.Context, in ChannelInput) (*ChannelDTO, err
 	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
 		return nil, err
 	}
-	dto := toChannelDTO(row)
+	dto := s.toChannelDTO(row, false)
 	return &dto, nil
 }
 
@@ -218,7 +220,7 @@ func (s *Service) Update(ctx context.Context, id string, in ChannelInput) (*Chan
 		return nil, err
 	}
 	_ = s.db.WithContext(ctx).First(&row, "id = ?", id)
-	dto := toChannelDTO(row)
+	dto := s.toChannelDTO(row, false)
 	return &dto, nil
 }
 
@@ -258,7 +260,7 @@ func (s *Service) Test(ctx context.Context, id string) (*ChannelDTO, error) {
 	if err != nil {
 		return nil, apperr.Wrap(50210, 502, "渠道连通性测试失败: "+err.Error(), err)
 	}
-	dto := toChannelDTO(row)
+	dto := s.toChannelDTO(row, false)
 	return &dto, nil
 }
 
@@ -381,7 +383,19 @@ func maskKey(key string) string {
 	return "****" + key[len(key)-4:]
 }
 
-func toChannelDTO(r persistence.PaymentChannel) ChannelDTO {
+func webhookURLFor(channelKey, id string) string {
+	if strings.TrimSpace(id) == "" {
+		return ""
+	}
+	switch strings.ToLower(strings.TrimSpace(channelKey)) {
+	case "creem":
+		return "/api/v1/hooks/creem/" + id
+	default:
+		return ""
+	}
+}
+
+func (s *Service) toChannelDTO(r persistence.PaymentChannel, reveal bool) ChannelDTO {
 	currencies := []string{}
 	_ = json.Unmarshal([]byte(r.SupportedCurrenciesJSON), &currencies)
 	lastTested := ""
@@ -396,6 +410,18 @@ func toChannelDTO(r persistence.PaymentChannel) ChannelDTO {
 	if healthStatus == "" {
 		healthStatus = "UNKNOWN"
 	}
+
+	apiSecret := r.ApiSecretKey
+	webhookSecret := r.WebhookSecret
+	if reveal {
+		apiSecret = s.openSecret(r.ApiSecretKey)
+		webhookSecret = s.openSecret(r.WebhookSecret)
+	} else {
+		// Decrypt before masking so list never exposes enc: ciphertext, and last4 is meaningful.
+		apiSecret = maskKey(s.openSecret(r.ApiSecretKey))
+		webhookSecret = maskKey(s.openSecret(r.WebhookSecret))
+	}
+
 	return ChannelDTO{
 		ID:                  r.ID,
 		ChannelKey:          r.ChannelKey,
@@ -405,8 +431,9 @@ func toChannelDTO(r persistence.PaymentChannel) ChannelDTO {
 		Mode:                r.Environment,
 		Enabled:             r.Enabled,
 		ApiPublicKey:        r.ApiPublicKey,
-		ApiSecretKey:        maskKey(r.ApiSecretKey),
-		WebhookSecret:       maskKey(r.WebhookSecret),
+		ApiSecretKey:        apiSecret,
+		WebhookSecret:       webhookSecret,
+		WebhookURL:          webhookURLFor(r.ChannelKey, r.ID),
 		SupportedCurrencies: currencies,
 		FeeRateText:         r.FeeRateText,
 		RoutingPriority:     r.RoutingPriority,

@@ -57,7 +57,7 @@ export const FeeRulesView: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<FeeRule | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [statusFilter, searchQuery, reset]);
 
   const TIER_LABEL = useMemo(
@@ -280,7 +280,7 @@ export const FeeRulesView: React.FC = () => {
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       <SideSheet

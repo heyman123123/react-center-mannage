@@ -1,4 +1,4 @@
-.PHONY: help up down tidy build run restart stop status logs frontend
+.PHONY: help up down tidy build run restart stop status logs frontend ngrok
 
 help:
 	@echo "NovasPay Admin API"
@@ -12,6 +12,7 @@ help:
 	@echo "  make stop      结束占用 :8080 的进程"
 	@echo "  make status    健康检查"
 	@echo "  make logs      docker compose 日志"
+	@echo "  make ngrok     用 ngrok 把 :8080 暴露到公网（Creem Webhook）"
 
 up:
 	docker compose up -d
@@ -47,3 +48,7 @@ status:
 
 logs:
 	docker compose logs -f --tail=100
+
+ngrok:
+	@chmod +x scripts/ngrok-api.sh
+	./scripts/ngrok-api.sh

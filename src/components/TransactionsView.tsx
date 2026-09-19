@@ -61,7 +61,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeTxDetail, setActiveTxDetail] = useState<TransactionRecord | null>(null);
   const [channelDict, setChannelDict] = useState<PaymentChannelOption[]>([]);
-  const { currentPage, setCurrentPage, reset: resetPage, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset: resetPage, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { resetPage(); }, [selectedChannel, selectedStatus, searchQuery, resetPage]);
   useEffect(() => {
     void loadPaymentChannelOptions().then(setChannelDict);
@@ -316,7 +316,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={scopedList.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={scopedList.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       {activeTxDetail && (

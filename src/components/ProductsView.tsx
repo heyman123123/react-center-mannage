@@ -151,7 +151,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [currencyFilter, setCurrencyFilter] = useState<string>("ALL");
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [searchQuery, typeFilter, statusFilter, currencyFilter, reset]);
 
   // Modal State
@@ -746,7 +746,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filteredProducts.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filteredProducts.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       {/* Add / Edit Product SideSheet */}

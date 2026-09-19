@@ -272,7 +272,7 @@ export const RiskRulesView: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <Pagination currentPage={rulePg.currentPage} totalItems={filteredRules.length} pageSize={rulePg.pageSize} onPageChange={rulePg.setCurrentPage} />
+            <Pagination currentPage={rulePg.currentPage} totalItems={filteredRules.length} pageSize={rulePg.pageSize} onPageChange={rulePg.setCurrentPage} onPageSizeChange={rulePg.setPageSize} />
           </div>
         </>
       )}
@@ -333,7 +333,7 @@ export const RiskRulesView: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <Pagination currentPage={blPg.currentPage} totalItems={filteredBL.length} pageSize={blPg.pageSize} onPageChange={blPg.setCurrentPage} />
+            <Pagination currentPage={blPg.currentPage} totalItems={filteredBL.length} pageSize={blPg.pageSize} onPageChange={blPg.setCurrentPage} onPageSizeChange={blPg.setPageSize} />
           </div>
         </>
       )}

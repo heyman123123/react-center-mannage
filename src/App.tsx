@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { LayoutDashboard, Receipt, Wallet, RotateCcw, User } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
@@ -222,6 +222,13 @@ export default function App() {
     setDictionary(data.dictionary);
     if (data.me) setCurrentUser(data.me);
   };
+
+  const handleTenantsChange = useCallback((list: Tenant[]) => {
+    setTenants(list);
+    setCurrentTenant((prev) =>
+      list.find((x) => x.id === prev.id) ? prev : list[0] || prev,
+    );
+  }, []);
 
   const handleLoginSuccess = () => {
     setAuthenticated();
@@ -767,14 +774,7 @@ export default function App() {
           )}
 
           {currentTab === "tenants" && (
-            <TenantManagementView
-              onTenantsChange={(list) => {
-                setTenants(list);
-                if (!list.find((x) => x.id === currentTenant.id)) {
-                  setCurrentTenant(list[0] || currentTenant);
-                }
-              }}
-            />
+            <TenantManagementView onTenantsChange={handleTenantsChange} />
           )}
 
           {currentTab === "alerts" && (

@@ -25,6 +25,10 @@ export async function listPaymentChannels(query?: {
   return http.get<PaymentChannelConfig[]>("/payment-channels", query);
 }
 
+export async function getPaymentChannel(id: string): Promise<PaymentChannelConfig> {
+  return http.get<PaymentChannelConfig>(`/payment-channels/${id}`);
+}
+
 /** @deprecated 使用 listPaymentChannels */
 export async function getChannels(): Promise<PaymentChannelConfig[]> {
   return listPaymentChannels();

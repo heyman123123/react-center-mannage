@@ -44,6 +44,25 @@ https://<任意可达公网主机>/api/v1/hooks/creem/{channelId}
 
 **注意：** Creem 必须能 HTTPS 访问该 URL；本机 `localhost` 无法直接收 Webhook，需公网入口或隧道。
 
+### 1.4 本机用 ngrok 穿透 API（:8080）
+
+```bash
+# 一次性：安装 + 登录（Token 见 https://dashboard.ngrok.com/get-started/your-authtoken）
+brew install ngrok/ngrok/ngrok
+ngrok config add-authtoken <YOUR_TOKEN>
+
+# 终端 A：启动 API
+cd backend && make run
+
+# 终端 B：隧道到本机 8080
+cd backend && make ngrok
+# 或: NGROK_AUTHTOKEN=<token> make ngrok
+```
+
+- 隧道详情：`http://127.0.0.1:4040`
+- Creem Webhook 填：`https://<ngrok 分配的域名>/api/v1/hooks/creem/<channelId>`
+- 配置文件：`backend/scripts/ngrok.yml`（`addr: 8080`）
+
 ---
 
 ## 2. 创建商品并同步

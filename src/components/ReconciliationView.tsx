@@ -146,7 +146,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
     );
   };
 
-  const { currentPage, setCurrentPage, reset: _reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset: _reset, pageSize, setPageSize } = usePagination(10);
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={8} />;
 
@@ -442,7 +442,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={reconBatches.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={reconBatches.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
     </div>
   );

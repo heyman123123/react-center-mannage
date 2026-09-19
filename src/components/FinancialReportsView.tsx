@@ -48,7 +48,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
     }));
   }, [report]);
 
-  const { currentPage, setCurrentPage, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, pageSize, setPageSize } = usePagination(10);
 
   const loading = useViewLoading();
   if (loading) return <TableSkeleton rows={8} />;
@@ -137,7 +137,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={channelBreakdown.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={channelBreakdown.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
     </div>
   );

@@ -22,6 +22,10 @@ export async function listEmailChannels(mode?: string): Promise<EmailChannelConf
   return http.get<EmailChannelConfig[]>("/email-channels", mode ? { mode } : undefined);
 }
 
+export async function getEmailChannel(id: string): Promise<EmailChannelConfig> {
+  return http.get<EmailChannelConfig>(`/email-channels/${id}`);
+}
+
 export async function createEmailChannel(body: EmailChannelInput): Promise<EmailChannelConfig> {
   return http.post<EmailChannelConfig>("/email-channels", body);
 }

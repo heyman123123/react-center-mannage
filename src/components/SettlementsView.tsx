@@ -56,7 +56,7 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
   const [payoutNote, setPayoutNote] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const { currentPage, setCurrentPage, reset, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [statusFilter, searchQuery, reset]);
 
   const TENANT_LABEL = useMemo(
@@ -245,7 +245,7 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
             </tbody>
           </table>
         </div>
-        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </div>
 
       <SideSheet

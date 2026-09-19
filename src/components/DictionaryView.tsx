@@ -451,7 +451,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
   const [categoryFormName, setCategoryFormName] = useState("");
   const [categorySaving, setCategorySaving] = useState(false);
   const [treeRefreshing, setTreeRefreshing] = useState(false);
-  const { currentPage, setCurrentPage, reset: resetPage, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, reset: resetPage, pageSize, setPageSize } = usePagination(10);
 
   const flatCategories = useMemo(() => flattenCategories(categoryTree), [categoryTree]);
 
@@ -1403,7 +1403,7 @@ export const DictionaryView: React.FC<DictionaryViewProps> = ({
               </tbody>
             </table>
           </div>
-          <Pagination currentPage={currentPage} totalItems={filteredEntries.length} pageSize={pageSize} onPageChange={setCurrentPage} />
+          <Pagination currentPage={currentPage} totalItems={filteredEntries.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
         </div>
       </div>
       </div>

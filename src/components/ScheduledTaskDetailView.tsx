@@ -35,7 +35,7 @@ export const ScheduledTaskDetailView: React.FC<ScheduledTaskDetailViewProps> = (
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const { currentPage, setCurrentPage, pageSize } = usePagination(10);
+  const { currentPage, setCurrentPage, pageSize, setPageSize } = usePagination(10);
   const viewLoading = useViewLoading();
 
   const RUN_STATUS_META = useMemo(
@@ -208,7 +208,7 @@ export const ScheduledTaskDetailView: React.FC<ScheduledTaskDetailViewProps> = (
                 </tbody>
               </table>
             </div>
-            <Pagination currentPage={currentPage} totalItems={total} pageSize={pageSize} onPageChange={setCurrentPage} />
+            <Pagination currentPage={currentPage} totalItems={total} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
           </>
         )}
       </div>
