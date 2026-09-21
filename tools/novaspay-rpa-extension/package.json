@@ -1,0 +1,11 @@
+{
+  "name": "novaspay-rpa-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome (MV3) Side Panel RPA runner for NovasPay Admin workflows.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs && node scripts/gen-icons.mjs",
+    "clean": "rm -rf dist/*"
+  }
+}

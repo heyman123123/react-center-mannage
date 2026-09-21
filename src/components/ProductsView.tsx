@@ -522,6 +522,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-fg-tertiary" />
           <input
             type="text"
+            data-rpa="products-search"
             placeholder={t("products.filters.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

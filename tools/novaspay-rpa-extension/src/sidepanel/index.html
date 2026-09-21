@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NovasPay RPA · Test Runner</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="hd">
+      <h1>NovasPay Tests</h1>
+      <span class="sub">DOM-driven UI test runner</span>
+    </header>
+
+    <section id="humanGate" class="card human-gate" hidden>
+      <h2>等待人工操作</h2>
+      <div id="humanTitle" class="human-title"></div>
+      <p id="humanHint" class="human-hint"></p>
+      <label>备注
+        <textarea id="humanNote" rows="3" placeholder="不通过时写上看到的现象"></textarea>
+      </label>
+      <div class="row">
+        <button id="humanDone" class="primary" type="button">已完成，继续</button>
+        <button id="humanFail" class="danger" type="button">不通过</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Page context</h2>
+      <label>Base URL
+        <input id="baseUrl" placeholder="http://127.0.0.1:8080" />
+      </label>
+      <div class="row">
+        <label class="grow">Email
+          <input id="email" placeholder="admin@novaspay.global" />
+        </label>
+        <label class="grow">Password
+          <input id="password" type="password" placeholder="••••••••" />
+        </label>
+      </div>
+      <label>Logged-in marker (CSS selector)
+        <input id="loggedInMarker" placeholder='a[href="/logout"]' />
+      </label>
+      <div class="row">
+        <button id="btnNgrok" class="ghost">Copy ngrok URL</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="row between">
+        <h2>Test suite</h2>
+        <div class="row">
+          <button id="btnSelectAll" class="ghost">All</button>
+          <button id="btnSelectNone" class="ghost">None</button>
+          <button id="btnRunSelected" class="primary">Run selected</button>
+        </div>
+      </div>
+      <ul id="testList" class="tests"></ul>
+    </section>
+
+    <section class="card grow">
+      <div class="row between">
+        <h2>Report</h2>
+        <button id="btnDownload" class="ghost" disabled>Download JSON</button>
+      </div>
+      <div id="reportSummary" class="summary muted">no runs yet</div>
+      <ol id="report" class="report"></ol>
+      <ol id="logs" class="logs"></ol>
+    </section>
+
+    <script type="module" src="./panel.js"></script>
+  </body>
+</html>

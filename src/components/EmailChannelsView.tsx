@@ -231,6 +231,7 @@ export const EmailChannelsView: React.FC = () => {
           return (
             <div
               key={channel.id}
+              data-rpa="email-channel-card"
               className={`bg-surface border rounded-2xl p-4 shadow-card flex flex-col justify-between transition-all ${
                 channel.enabled
                   ? "border-line/80 hover:border-line"
@@ -346,7 +347,7 @@ export const EmailChannelsView: React.FC = () => {
                       setTestModalChannel(channel);
                       setTestFeedback(null);
                     }}
-                    className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg font-medium flex items-center gap-1 transition-colors"
+                    data-rpa="open-test-email"
                   >
                     <Send className="w-3 h-3" />
                     <span>{t("email.sendTest")}</span>
@@ -421,7 +422,7 @@ export const EmailChannelsView: React.FC = () => {
               {testFeedback}
             </div>
           ) : (
-            <form id="form-test-email" onSubmit={handleSendTestEmail} className="space-y-4 text-xs">
+            <form id="form-test-email" data-rpa="email-test-sheet" onSubmit={handleSendTestEmail} className="space-y-4 text-xs">
               <div>
                 <label className="text-fg-secondary block mb-1 font-medium">
                   {t("email.testSheet.recipientLabel")}

@@ -395,7 +395,7 @@ export default function App() {
 
   if (!authReady) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-page text-fg-secondary text-sm">
+      <div data-rpa="auth-loading" className="flex h-screen w-screen items-center justify-center bg-page text-fg-secondary text-sm">
         {t("common:status.loading")}
       </div>
     );
@@ -454,7 +454,7 @@ export default function App() {
           onToggleSidebar={() => setMobileMenuOpen((v) => !v)}
         />
 
-        <main key={`${currentTab}-${refreshTick}`} className="flex-1 overflow-y-auto overflow-x-hidden p-2 md:p-4 pb-20 md:pb-4 max-w-7xl w-full mx-auto">
+        <main key={`${currentTab}-${refreshTick}`} data-rpa="view" data-rpa-tab={currentTab} className="flex-1 overflow-y-auto overflow-x-hidden p-2 md:p-4 pb-20 md:pb-4 max-w-7xl w-full mx-auto">
           {currentTab === "dashboard" && (
             <DashboardView
               currentTenant={currentTenant}

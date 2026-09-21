@@ -140,6 +140,13 @@ func (b *Bundle) CSRF() gin.HandlerFunc {
 			c.Next()
 			return
 		}
+		// Chrome extension Service Worker requests don't carry Origin/Referer
+		// but the browser still sends Sec-Fetch-Site=cross-site. The SW opts
+		// in explicitly via X-RPA-Source header. Keep this token narrow.
+		if strings.EqualFold(c.GetHeader("X-RPA-Source"), "novaspay-extension") {
+			c.Next()
+			return
+		}
 		if strings.EqualFold(c.GetHeader("Sec-Fetch-Site"), "cross-site") {
 			response.Fail(c, csrfFail)
 			c.Abort()

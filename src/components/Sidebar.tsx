@@ -204,6 +204,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <button
         key={node.id}
         type="button"
+        data-rpa="nav"
+        data-rpa-tab={targetTab}
         onClick={() => targetTab && setCurrentTab(targetTab)}
         data-path={node.path}
         title={`${node.title} (${node.path})`}
@@ -243,6 +245,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <DropdownMenuTrigger asChild>
             <button
               id="user-profile-settings-btn"
+              data-rpa="user-menu"
               type="button"
               className="w-full flex items-center gap-2 p-2 rounded-xl hover:bg-hover transition-colors text-left group bg-surface border border-line/60 shadow-2xs cursor-pointer data-[state=open]:bg-hover"
               title={t("userMenu.openMenu")}
@@ -312,6 +315,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  data-rpa="logout"
                   variant="destructive"
                   onSelect={() => onLogout()}
                   className="gap-2"

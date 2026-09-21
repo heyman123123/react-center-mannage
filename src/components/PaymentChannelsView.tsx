@@ -521,6 +521,8 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
           return (
             <div
               key={channel.id}
+              data-rpa="channel-card"
+              data-rpa-channel={channel.channelKey}
               className={`bg-surface border rounded-2xl p-4 shadow-card transition-all flex flex-col justify-between ${
                 channel.enabled
                   ? "border-line/80 hover:border-line"
@@ -769,7 +771,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                       void loadProductsForChannel(channel.id);
                     }}
                     className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg font-medium flex items-center gap-1 transition-colors cursor-pointer text-xs"
-                    title={t("payment.card.testTxTitle")}
+                    data-rpa="open-test-tx"
                   >
                     <Zap className="w-3.5 h-3.5 text-indigo-600" />
                     <span>{t("payment.card.testTx")}</span>
@@ -777,6 +779,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
 
                   <button
                     onClick={() => handleTestConnection(channel)}
+                    data-rpa="test-connection"
                     disabled={isTesting}
                     className="px-2.5 py-1.5 bg-hover hover:bg-hover text-fg-secondary rounded-lg font-medium flex items-center gap-1 transition-colors text-xs"
                   >
@@ -785,6 +788,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                   </button>
                   <button
                     onClick={() => void openEditChannel(channel)}
+                    data-rpa="edit"
                     className="px-2.5 py-1.5 border border-line hover:bg-subtle text-fg-secondary rounded-lg font-medium flex items-center gap-1 transition-colors text-xs"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -811,6 +815,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
           <>
             <button
               type="button"
+              data-rpa="sheet-cancel"
               onClick={() => setEditingChannel(null)}
               className="px-3 py-2 border border-line text-fg-secondary rounded-lg font-medium hover:bg-subtle cursor-pointer"
             >
@@ -827,7 +832,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
         }
       >
         {editingChannel && (
-          <form id="form-edit-channel" onSubmit={handleSaveEdit} className="space-y-3 text-xs">
+          <form id="form-edit-channel" data-rpa="edit-sheet" onSubmit={handleSaveEdit} className="space-y-3 text-xs">
               <div>
                 <label className="text-fg-secondary block mb-1 font-medium">{t("payment.editSheet.displayName")}</label>
                 <input
@@ -873,6 +878,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                 <label className="text-fg-secondary block mb-1 font-medium">{t("payment.editSheet.secretKey")}</label>
                 <input
                   type="text"
+                  data-rpa="secret-key"
                   value={editingChannel.apiSecretKey}
                   onChange={(e) =>
                     setEditingChannel({ ...editingChannel, apiSecretKey: e.target.value })
@@ -902,6 +908,7 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                     <input
                       type="text"
                       readOnly
+                      data-rpa="webhook-url"
                       value={resolveWebhookUrl(editingChannel)}
                       className="flex-1 px-3 py-2 bg-canvas border border-line rounded-lg text-fg font-mono text-[11px]"
                     />
@@ -1024,6 +1031,8 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                   type="button"
                   disabled={isExecutingTxTest}
                   onClick={handleExecuteTestTransaction}
+                  data-rpa="send-test-webhook"
+                  data-rpa-channel={(selectedTestChannel?.channelKey || channelList[0]?.channelKey) || ""}
                   className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs shadow-card transition-colors cursor-pointer"
                 >
                   {isExecutingTxTest ? (

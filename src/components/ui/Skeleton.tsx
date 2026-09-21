@@ -8,6 +8,7 @@ import { cn } from "../../lib/utils";
 function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
+      data-rpa="skeleton"
       className={cn("skeleton-pulse rounded-md", className)}
       {...props}
     />
