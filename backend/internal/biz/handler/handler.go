@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	auditsvc "github.com/novaspay/admin-api/internal/platform/audit/service"
 	bizsvc "github.com/novaspay/admin-api/internal/biz/service"
+	"github.com/novaspay/admin-api/internal/middleware"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
 	"github.com/novaspay/admin-api/internal/pkg/response"
 )
@@ -139,7 +140,7 @@ func (h *Handler) CreatePayout(c *gin.Context) {
 }
 
 func (h *Handler) ApproveSettlement(c *gin.Context) {
-	item, err := h.svc.ApproveSettlement(c.Request.Context(), c.Param("id"), "")
+	item, err := h.svc.ApproveSettlement(c.Request.Context(), c.Param("id"), c.GetString(middleware.CtxUserID))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -153,7 +154,7 @@ func (h *Handler) RejectSettlement(c *gin.Context) {
 		Reason string `json:"reason"`
 	}
 	_ = c.ShouldBindJSON(&req)
-	item, err := h.svc.RejectSettlement(c.Request.Context(), c.Param("id"), req.Reason, "")
+	item, err := h.svc.RejectSettlement(c.Request.Context(), c.Param("id"), req.Reason, c.GetString(middleware.CtxUserID))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -322,7 +323,7 @@ func (h *Handler) DeleteFeeRule(c *gin.Context) {
 
 // Risk
 func (h *Handler) ListRiskRules(c *gin.Context) {
-	list, err := h.svc.ListRiskRules(c.Request.Context())
+	list, err := h.svc.ListRiskRules(c.Request.Context(), c.Query("tenantId"))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -361,7 +362,7 @@ func (h *Handler) ToggleRiskRule(c *gin.Context) {
 }
 
 func (h *Handler) ListBlacklist(c *gin.Context) {
-	list, err := h.svc.ListBlacklist(c.Request.Context(), c.Query("type"))
+	list, err := h.svc.ListBlacklist(c.Request.Context(), c.Query("type"), c.Query("tenantId"))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -441,7 +442,7 @@ func (h *Handler) ListRiskReviews(c *gin.Context) {
 }
 
 func (h *Handler) ApproveRiskReview(c *gin.Context) {
-	item, err := h.svc.ApproveRiskReview(c.Request.Context(), c.Param("id"), "")
+	item, err := h.svc.ApproveRiskReview(c.Request.Context(), c.Param("id"), c.GetString(middleware.CtxUserID))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -455,7 +456,7 @@ func (h *Handler) RejectRiskReview(c *gin.Context) {
 		Reason string `json:"reason"`
 	}
 	_ = c.ShouldBindJSON(&req)
-	item, err := h.svc.RejectRiskReview(c.Request.Context(), c.Param("id"), req.Reason, "")
+	item, err := h.svc.RejectRiskReview(c.Request.Context(), c.Param("id"), req.Reason, c.GetString(middleware.CtxUserID))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -466,7 +467,7 @@ func (h *Handler) RejectRiskReview(c *gin.Context) {
 
 // Merchant
 func (h *Handler) ListMerchants(c *gin.Context) {
-	list, err := h.svc.ListMerchantApplications(c.Request.Context(), c.Query("status"))
+	list, err := h.svc.ListMerchantApplications(c.Request.Context(), c.Query("status"), c.Query("tenantId"))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -493,7 +494,7 @@ func (h *Handler) GetMerchantStats(c *gin.Context) {
 }
 
 func (h *Handler) ApproveMerchant(c *gin.Context) {
-	item, err := h.svc.ApproveMerchant(c.Request.Context(), c.Param("id"))
+	item, err := h.svc.ApproveMerchant(c.Request.Context(), c.Param("id"), c.GetString(middleware.CtxUserID))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -507,7 +508,7 @@ func (h *Handler) RejectMerchant(c *gin.Context) {
 		Reason string `json:"reason"`
 	}
 	_ = c.ShouldBindJSON(&req)
-	item, err := h.svc.RejectMerchant(c.Request.Context(), c.Param("id"), req.Reason)
+	item, err := h.svc.RejectMerchant(c.Request.Context(), c.Param("id"), req.Reason, c.GetString(middleware.CtxUserID))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -518,7 +519,7 @@ func (h *Handler) RejectMerchant(c *gin.Context) {
 
 // Alerts
 func (h *Handler) ListAlertRules(c *gin.Context) {
-	list, err := h.svc.ListAlertRules(c.Request.Context())
+	list, err := h.svc.ListAlertRules(c.Request.Context(), c.Query("tenantId"))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -567,7 +568,7 @@ func (h *Handler) TriggerAlertRule(c *gin.Context) {
 }
 
 func (h *Handler) ListAlertHistory(c *gin.Context) {
-	list, err := h.svc.ListAlertHistory(c.Request.Context(), c.Query("status"), c.Query("severity"))
+	list, err := h.svc.ListAlertHistory(c.Request.Context(), c.Query("status"), c.Query("severity"), c.Query("tenantId"))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -576,7 +577,7 @@ func (h *Handler) ListAlertHistory(c *gin.Context) {
 }
 
 func (h *Handler) AckAlertHistory(c *gin.Context) {
-	item, err := h.svc.AckAlertHistory(c.Request.Context(), c.Param("id"), "")
+	item, err := h.svc.AckAlertHistory(c.Request.Context(), c.Param("id"), c.GetString(middleware.CtxUserID))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -590,7 +591,7 @@ func (h *Handler) ResolveAlertHistory(c *gin.Context) {
 		ResolutionNote string `json:"resolutionNote"`
 	}
 	_ = c.ShouldBindJSON(&req)
-	item, err := h.svc.ResolveAlertHistory(c.Request.Context(), c.Param("id"), req.ResolutionNote, "")
+	item, err := h.svc.ResolveAlertHistory(c.Request.Context(), c.Param("id"), req.ResolutionNote, c.GetString(middleware.CtxUserID))
 	if err != nil {
 		response.Fail(c, err)
 		return

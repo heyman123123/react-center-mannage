@@ -100,14 +100,14 @@ func (s *Service) GetTransaction(ctx context.Context, id string) (*TransactionDT
 	return &dto, nil
 }
 
-func (s *Service) UpsertTransactionFromWebhook(ctx context.Context, channelID string, rawBody []byte, payload map[string]interface{}, eventType string) error {
+func (s *Service) UpsertTransactionFromWebhook(ctx context.Context, channelID string, rawBody []byte, payload map[string]interface{}, eventType string) (*persistence.PaymentTransaction, error) {
 	ch, err := s.GetRawChannel(ctx, channelID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	parsed, ok := creem.ParseWebhookTransaction(eventType, payload)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	tenantID := ch.TenantID
 	if tenantID == "" || tenantID == "ALL" {
@@ -116,10 +116,10 @@ func (s *Service) UpsertTransactionFromWebhook(ctx context.Context, channelID st
 
 	existing, err := s.shards.FindPaymentTransactionByChannelEvent(ctx, channelID, parsed.ExternalEventID)
 	if err == nil && existing != nil {
-		return nil
+		return existing, nil
 	}
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return err
+		return nil, err
 	}
 
 	timeline := buildTimeline(parsed, ch.Name)
@@ -158,7 +158,10 @@ func (s *Service) UpsertTransactionFromWebhook(ctx context.Context, channelID st
 	if parsed.CreatedAt > 0 {
 		row.CreatedAt = parsed.CreatedAt
 	}
-	return s.shards.CreatePaymentTransaction(ctx, &row)
+	if err := s.shards.CreatePaymentTransaction(ctx, &row); err != nil {
+		return nil, err
+	}
+	return &row, nil
 }
 
 func (s *Service) loadChannelNames(ctx context.Context, rows []persistence.PaymentTransaction) map[string]string {

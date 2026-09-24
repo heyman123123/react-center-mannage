@@ -21,6 +21,8 @@ type Service struct {
 	db      *gorm.DB
 	shards  *sharding.Shards
 	dataKey []byte
+	// RiskEvaluate 可选回调：交易入库后异步触发风控评估。由上层 fx 注入，避免循环依赖。
+	RiskEvaluate func(ctx context.Context, payload map[string]interface{}) error
 }
 
 func NewService(db *gorm.DB, cfg *conf.Config, shards *sharding.Shards) *Service {

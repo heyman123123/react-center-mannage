@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -179,8 +180,34 @@ func (s *Service) processCreemWebhookPayload(ctx context.Context, channelID stri
 		}
 		return nil
 	}
-	if err := s.UpsertTransactionFromWebhook(ctx, channelID, rawBody, payload, eventType); err != nil {
+	tx, err := s.UpsertTransactionFromWebhook(ctx, channelID, rawBody, payload, eventType)
+	if err != nil {
 		return err
+	}
+	if tx == nil {
+		return nil
+	}
+	// P1-8: 交易入库成功后异步触发风控评估，失败不阻塞主流程。
+	if s.RiskEvaluate != nil {
+		riskPayload := map[string]interface{}{
+			"tenantId":          tx.TenantID,
+			"transactionId":     tx.ID,
+			"amount":            float64(tx.OrderAmountCents) / 100,
+			"customerEmail":     tx.CustomerEmail,
+			"customerCountry":   tx.CustomerCountry,
+			"customerIp":        "",
+			"deviceFingerprint": "",
+		}
+		go func(p map[string]interface{}) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("risk evaluate panic: %v", r)
+				}
+			}()
+			if e := s.RiskEvaluate(context.Background(), p); e != nil {
+				log.Printf("risk evaluate error: %v", e)
+			}
+		}(riskPayload)
 	}
 	parsed, ok := creem.ParseWebhookTransaction(eventType, payload)
 	if !ok {

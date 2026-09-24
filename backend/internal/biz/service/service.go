@@ -1,13 +1,17 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/novaspay/admin-api/internal/infra/cache"
 	"github.com/novaspay/admin-api/internal/infra/persistence"
 	"github.com/novaspay/admin-api/internal/infra/sharding"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
@@ -19,10 +23,11 @@ import (
 type Service struct {
 	db     *gorm.DB
 	shards *sharding.Shards
+	redis  *cache.Redis
 }
 
-func NewService(db *gorm.DB, shards *sharding.Shards) *Service {
-	return &Service{db: db, shards: shards}
+func NewService(db *gorm.DB, shards *sharding.Shards, r *cache.Redis) *Service {
+	return &Service{db: db, shards: shards, redis: r}
 }
 
 func (s *Service) listDoneTransactions(ctx context.Context, tenantID string) ([]persistence.PaymentTransaction, error) {
@@ -522,8 +527,21 @@ func (s *Service) DeleteFeeRule(ctx context.Context, id string) error {
 	return deleteByID(ctx, s.db, &persistence.FeeRule{}, id)
 }
 
-func (s *Service) ListRiskRules(ctx context.Context) ([]map[string]interface{}, error) {
-	return s.listDomain(ctx, &persistence.RiskRule{})
+func (s *Service) ListRiskRules(ctx context.Context, tenantID string) ([]map[string]interface{}, error) {
+	q := tenant.Apply(s.db.WithContext(ctx), tenantID)
+	rows, err := fetchDataJSONRows(ctx, q, &persistence.RiskRule{}, "created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	out := make([]map[string]interface{}, 0, len(rows))
+	for _, raw := range rows {
+		m, err := unmarshalMap(raw)
+		if err != nil {
+			continue
+		}
+		out = append(out, m)
+	}
+	return out, nil
 }
 func (s *Service) SaveRiskRule(ctx context.Context, p map[string]interface{}) (map[string]interface{}, error) {
 	return s.saveDomain(ctx, &persistence.RiskRule{}, p, "risk_rules")
@@ -556,8 +574,8 @@ func (s *Service) ToggleRiskRule(ctx context.Context, id string) (map[string]int
 	return m, nil
 }
 
-func (s *Service) ListBlacklist(ctx context.Context, filterType string) ([]map[string]interface{}, error) {
-	q := s.db.WithContext(ctx).Model(&persistence.BlacklistEntry{})
+func (s *Service) ListBlacklist(ctx context.Context, filterType, tenantID string) ([]map[string]interface{}, error) {
+	q := tenant.Apply(s.db.WithContext(ctx), tenantID)
 	var rows []persistence.BlacklistEntry
 	if err := q.Order("created_at DESC").Find(&rows).Error; err != nil {
 		return nil, err
@@ -675,7 +693,8 @@ func (s *Service) EvaluateRisk(ctx context.Context, payload map[string]interface
 
 	// a. 黑名单匹配：每命中一条加 20 分。
 	blacklistHits := []riskBlacklistHit{}
-	rawBL, err := fetchDataJSONRows(ctx, s.db, &persistence.BlacklistEntry{}, "created_at DESC")
+	blDB := tenant.Apply(s.db.WithContext(ctx), tenantID)
+	rawBL, err := fetchDataJSONRows(ctx, blDB, &persistence.BlacklistEntry{}, "created_at DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -711,7 +730,8 @@ func (s *Service) EvaluateRisk(ctx context.Context, payload map[string]interface
 
 	// b/c. 遍历 ENABLED + OBSERVE 规则。ENABLED 命中计入风险分；OBSERVE 只记录不影响决策。
 	matchedRules := []riskMatchedRule{}
-	rawRules, err := fetchDataJSONRows(ctx, s.db, &persistence.RiskRule{}, "created_at DESC")
+	ruleDB := tenant.Apply(s.db.WithContext(ctx), tenantID)
+	rawRules, err := fetchDataJSONRows(ctx, ruleDB, &persistence.RiskRule{}, "created_at DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -740,12 +760,44 @@ func (s *Service) EvaluateRisk(ctx context.Context, payload map[string]interface
 				}
 			}
 		case "FREQUENCY":
-			// TODO: 真实窗口计数需 Redis，MVP 暂不命中。
-			// windowMinutes, _ := cond["windowMinutes"].(float64)
-			// maxCount, _ := cond["maxCount"].(float64)
-			_ = cond
+			// Redis 窗口计数：按 dimension (IP/EMAIL/DEVICE_FINGERPRINT) 在窗口内统计次数。
+			windowMinutes, _ := cond["windowMinutes"].(float64)
+			maxCount, _ := cond["maxCount"].(float64)
+			dimension, _ := cond["dimension"].(string)
+			if dimension == "" {
+				dimension = "IP"
+			}
+			var dimValue string
+			switch dimension {
+			case "IP":
+				dimValue = customerIP
+			case "EMAIL":
+				dimValue = customerEmail
+			case "DEVICE_FINGERPRINT":
+				dimValue = deviceFP
+			}
+			if dimValue != "" && windowMinutes > 0 && maxCount > 0 && s.redis != nil {
+				key := fmt.Sprintf("risk:freq:%s:%s", dimension, dimValue)
+				count, incrErr := s.redis.Incr(ctx, key)
+				if incrErr != nil {
+					log.Printf("risk: frequency redis incr error: %v", incrErr)
+				} else {
+					if count == 1 {
+						_ = s.redis.Expire(ctx, key, time.Duration(int(windowMinutes))*time.Minute)
+					}
+					if count > int64(maxCount) {
+						hit = true
+					}
+				}
+			}
 		case "BEHAVIOR":
-			// TODO: 行为序列评估 MVP 暂跳过。
+			// MVP: 新用户首单大额 — customerIsNew == true && amount > threshold
+			threshold, _ := cond["threshold"].(float64)
+			customerIsNew, _ := payload["customerIsNew"].(bool)
+			if customerIsNew && threshold > 0 && amount > threshold {
+				hit = true
+			}
+			// TODO: 复杂行为序列评估留待后续迭代。
 		}
 		if !hit {
 			continue
@@ -924,34 +976,39 @@ func (s *Service) RejectRiskReview(ctx context.Context, id, reason, reviewer str
 	return m, nil
 }
 
-func (s *Service) ListMerchantApplications(ctx context.Context, status string) ([]map[string]interface{}, error) {
-	all, err := s.listDomain(ctx, &persistence.MerchantApplication{})
-	if err != nil {
+func (s *Service) ListMerchantApplications(ctx context.Context, status, tenantID string) ([]map[string]interface{}, error) {
+	q := tenant.Apply(s.db.WithContext(ctx), tenantID)
+	var rows []persistence.MerchantApplication
+	if err := q.Order("created_at DESC").Find(&rows).Error; err != nil {
 		return nil, err
 	}
-	if status == "" {
-		return all, nil
-	}
-	out := make([]map[string]interface{}, 0, len(all))
-	for _, m := range all {
-		st, _ := m["status"].(string)
-		if st == status {
-			out = append(out, m)
+	out := make([]map[string]interface{}, 0, len(rows))
+	for _, r := range rows {
+		m, err := unmarshalMap(r.DataJSON)
+		if err != nil {
+			continue
 		}
+		if status != "" {
+			st, _ := m["status"].(string)
+			if st != status {
+				continue
+			}
+		}
+		out = append(out, m)
 	}
 	return out, nil
 }
 func (s *Service) SaveMerchantApplication(ctx context.Context, p map[string]interface{}) (map[string]interface{}, error) {
 	return s.saveDomain(ctx, &persistence.MerchantApplication{}, p, "merchant_applications")
 }
-func (s *Service) ApproveMerchant(ctx context.Context, id string) (map[string]interface{}, error) {
-	return s.updateMerchantStatus(ctx, id, "APPROVED", "")
+func (s *Service) ApproveMerchant(ctx context.Context, id, operator string) (map[string]interface{}, error) {
+	return s.updateMerchantStatus(ctx, id, "APPROVED", "", operator)
 }
-func (s *Service) RejectMerchant(ctx context.Context, id string, reason string) (map[string]interface{}, error) {
-	return s.updateMerchantStatus(ctx, id, "REJECTED", reason)
+func (s *Service) RejectMerchant(ctx context.Context, id, reason, operator string) (map[string]interface{}, error) {
+	return s.updateMerchantStatus(ctx, id, "REJECTED", reason, operator)
 }
 
-func (s *Service) updateMerchantStatus(ctx context.Context, id, status, reason string) (map[string]interface{}, error) {
+func (s *Service) updateMerchantStatus(ctx context.Context, id, status, reason, operator string) (map[string]interface{}, error) {
 	var row persistence.MerchantApplication
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
 		return nil, apperr.NotFound
@@ -965,10 +1022,10 @@ func (s *Service) updateMerchantStatus(ctx context.Context, id, status, reason s
 	switch status {
 	case "APPROVED":
 		m["approvedAt"] = now
-		m["approvedBy"] = ""
+		m["approvedBy"] = operator
 	case "REJECTED":
 		m["rejectedAt"] = now
-		m["rejectedBy"] = ""
+		m["rejectedBy"] = operator
 		if reason != "" {
 			m["rejectReason"] = reason
 		}
@@ -981,8 +1038,21 @@ func (s *Service) updateMerchantStatus(ctx context.Context, id, status, reason s
 	return m, nil
 }
 
-func (s *Service) ListAlertRules(ctx context.Context) ([]map[string]interface{}, error) {
-	return s.listDomain(ctx, &persistence.AlertRule{})
+func (s *Service) ListAlertRules(ctx context.Context, tenantID string) ([]map[string]interface{}, error) {
+	q := tenant.Apply(s.db.WithContext(ctx), tenantID)
+	rows, err := fetchDataJSONRows(ctx, q, &persistence.AlertRule{}, "created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	out := make([]map[string]interface{}, 0, len(rows))
+	for _, raw := range rows {
+		m, err := unmarshalMap(raw)
+		if err != nil {
+			continue
+		}
+		out = append(out, m)
+	}
+	return out, nil
 }
 func (s *Service) SaveAlertRule(ctx context.Context, p map[string]interface{}) (map[string]interface{}, error) {
 	return s.saveDomain(ctx, &persistence.AlertRule{}, p, "alert_rules")
@@ -1013,9 +1083,10 @@ func (s *Service) ToggleAlertRule(ctx context.Context, id string) (map[string]in
 	return m, nil
 }
 
-func (s *Service) ListAlertHistory(ctx context.Context, status, severity string) ([]map[string]interface{}, error) {
+func (s *Service) ListAlertHistory(ctx context.Context, status, severity, tenantID string) ([]map[string]interface{}, error) {
+	q := tenant.Apply(s.db.WithContext(ctx), tenantID)
 	var rows []persistence.AlertHistory
-	if err := s.db.WithContext(ctx).Order("created_at DESC").Find(&rows).Error; err != nil {
+	if err := q.Order("created_at DESC").Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	out := make([]map[string]interface{}, 0, len(rows))
@@ -1048,7 +1119,8 @@ func (s *Service) SaveAlertHistory(ctx context.Context, p map[string]interface{}
 	}
 	data, _ := json.Marshal(p)
 	ruleID, _ := p["ruleId"].(string)
-	row := persistence.AlertHistory{ID: id, RuleID: ruleID, DataJSON: string(data)}
+	tenantID, _ := p["tenantId"].(string)
+	row := persistence.AlertHistory{ID: id, RuleID: ruleID, TenantID: tenantID, DataJSON: string(data)}
 	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
 		return nil, err
 	}
@@ -1108,7 +1180,7 @@ func (s *Service) queryTxMetricsInWindow(ctx context.Context, tenantID string, s
 	return total, doneCount, totalAmountCents, nil
 }
 
-// TriggerAlertRule 手动触发告警规则检查，基于最近24小时交易指标。
+// TriggerAlertRule 手动触发告警规则检查，基于规则配置的时间窗口内交易指标。
 func (s *Service) TriggerAlertRule(ctx context.Context, id string) (map[string]interface{}, error) {
 	var row persistence.AlertRule
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
@@ -1124,7 +1196,12 @@ func (s *Service) TriggerAlertRule(ctx context.Context, id string) (map[string]i
 	comparisonOperator, _ := rule["comparisonOperator"].(string)
 	tenantID, _ := rule["tenantId"].(string)
 
-	since := time.Now().UTC().Add(-24 * time.Hour).Unix()
+	// P2-9: 时间窗口从规则配置读取，默认 24 小时
+	timeWindowMinutes, _ := rule["timeWindowMinutes"].(float64)
+	if timeWindowMinutes <= 0 {
+		timeWindowMinutes = 1440
+	}
+	since := time.Now().UTC().Add(-time.Duration(int(timeWindowMinutes)) * time.Minute).Unix()
 	total, doneCount, _, err := s.queryTxMetricsInWindow(ctx, tenantID, since)
 	if err != nil {
 		return nil, err
@@ -1143,7 +1220,19 @@ func (s *Service) TriggerAlertRule(ctx context.Context, id string) (map[string]i
 			currentValue = float64(total-doneCount) / float64(total) * 100
 		}
 	case "REFUND_RATE":
-		currentValue = 0 // TODO: 需关联退款表
+		// P1-5: 查询窗口内退款笔数 / 交易总笔数
+		var refundCount int64
+		refundQ := s.db.WithContext(ctx).Model(&persistence.PaymentRefund{}).
+			Where("created_at >= ?", since)
+		if tenant.ShouldFilter(tenantID) {
+			refundQ = refundQ.Where("tenant_id = ?", tenantID)
+		}
+		if e := refundQ.Count(&refundCount).Error; e != nil {
+			log.Printf("alert: refund_rate query error: %v", e)
+		}
+		if total > 0 {
+			currentValue = float64(refundCount) / float64(total) * 100
+		}
 	default:
 		currentValue = 0
 	}
@@ -1172,10 +1261,25 @@ func (s *Service) TriggerAlertRule(ctx context.Context, id string) (map[string]i
 	}
 
 	if triggered {
+		// P1-7: 静默期检查
+		silentMinutes, _ := rule["silentMinutes"].(float64)
+		if silentMinutes > 0 {
+			silentSince := time.Now().UTC().Add(-time.Duration(int(silentMinutes)) * time.Minute).Unix()
+			var recentCount int64
+			s.db.WithContext(ctx).Model(&persistence.AlertHistory{}).
+				Where("rule_id = ? AND created_at >= ? AND data_json->>'status' != ?", id, silentSince, "RESOLVED").
+				Count(&recentCount)
+			if recentCount > 0 {
+				result["silenced"] = true
+				return result, nil
+			}
+		}
+
 		now := time.Now().UTC().Unix()
 		historyPayload := map[string]interface{}{
 			"id":          "alert_" + strings.ToLower(uuid.NewString()[:8]),
 			"ruleId":      id,
+			"tenantId":    tenantID,
 			"title":       name,
 			"severity":    severity,
 			"status":      "UNHANDLED",
@@ -1184,10 +1288,105 @@ func (s *Service) TriggerAlertRule(ctx context.Context, id string) (map[string]i
 			"message":     message,
 			"triggeredAt": timex.FormatDateTime(now),
 		}
-		_, _ = s.SaveAlertHistory(ctx, historyPayload)
+		saved, saveErr := s.SaveAlertHistory(ctx, historyPayload)
+		if saveErr != nil {
+			log.Printf("alert: save history error: %v", saveErr)
+		}
+		// P1-6: 发送通知（失败不阻塞）
+		if saved != nil {
+			s.sendAlertNotifications(ctx, rule, saved)
+		}
 	}
 
 	return result, nil
+}
+
+// sendAlertNotifications 告警触发后按规则配置的渠道发送通知，失败只记日志。
+func (s *Service) sendAlertNotifications(ctx context.Context, rule map[string]interface{}, alertHistory map[string]interface{}) {
+	channels, _ := rule["notifyChannels"].([]interface{})
+	if len(channels) == 0 {
+		return
+	}
+	title, _ := alertHistory["title"].(string)
+	message, _ := alertHistory["message"].(string)
+	severity, _ := alertHistory["severity"].(string)
+	metricValue, _ := alertHistory["metricValue"].(float64)
+	threshold, _ := alertHistory["threshold"].(float64)
+	triggeredAt, _ := alertHistory["triggeredAt"].(string)
+
+	for _, ch := range channels {
+		chType, _ := ch.(string)
+		switch chType {
+		case "EMAIL":
+			s.sendAlertEmail(ctx, title, message, severity, metricValue, threshold, triggeredAt)
+		case "WEBHOOK":
+			s.sendAlertWebhook(ctx, title, message, severity, metricValue, threshold, triggeredAt)
+		case "IN_APP":
+			log.Printf("alert IN_APP notification: title=%s severity=%s", title, severity)
+		}
+	}
+}
+
+func (s *Service) sendAlertEmail(ctx context.Context, title, message, severity string, metricValue, threshold float64, triggeredAt string) {
+	var channels []persistence.AlertChannel
+	if err := s.db.WithContext(ctx).Where("channel_type = ? AND enabled = ?", "EMAIL", true).Find(&channels).Error; err != nil {
+		log.Printf("alert email: query channels error: %v", err)
+		return
+	}
+	for _, ch := range channels {
+		cfg, _ := unmarshalMap(ch.DataJSON)
+		recipient, _ := cfg["recipient"].(string)
+		if recipient == "" {
+			log.Printf("alert email: channel %s has no recipient, skip", ch.Name)
+			continue
+		}
+		subject := fmt.Sprintf("[%s] 告警: %s", severity, title)
+		body := fmt.Sprintf("告警标题: %s\n严重级别: %s\n当前值: %.2f\n阈值: %.2f\n详情: %s\n触发时间: %s\n",
+			title, severity, metricValue, threshold, message, triggeredAt)
+		log.Printf("alert email: would send to %s, subject=%s", recipient, subject)
+		// MVP: 记录日志，实际 SMTP 发送待接入 resend provider
+		_ = subject
+		_ = body
+	}
+}
+
+func (s *Service) sendAlertWebhook(ctx context.Context, title, message, severity string, metricValue, threshold float64, triggeredAt string) {
+	var channels []persistence.AlertChannel
+	if err := s.db.WithContext(ctx).Where("channel_type = ? AND enabled = ?", "WEBHOOK", true).Find(&channels).Error; err != nil {
+		log.Printf("alert webhook: query channels error: %v", err)
+		return
+	}
+	payload := map[string]interface{}{
+		"title":       title,
+		"message":     message,
+		"severity":    severity,
+		"metricValue": metricValue,
+		"threshold":   threshold,
+		"triggeredAt": triggeredAt,
+	}
+	body, _ := json.Marshal(payload)
+	for _, ch := range channels {
+		cfg, _ := unmarshalMap(ch.DataJSON)
+		webhookURL, _ := cfg["url"].(string)
+		if webhookURL == "" {
+			log.Printf("alert webhook: channel %s has no url, skip", ch.Name)
+			continue
+		}
+		go func(url string) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("alert webhook panic: %v", r)
+				}
+			}()
+			client := &http.Client{Timeout: 5 * time.Second}
+			resp, err := client.Post(url, "application/json", bytes.NewReader(body))
+			if err != nil {
+				log.Printf("alert webhook post error to %s: %v", url, err)
+				return
+			}
+			_ = resp.Body.Close()
+		}(webhookURL)
+	}
 }
 
 // AckAlertHistory 确认告警：UNHANDLED → PROCESSING。
@@ -1319,6 +1518,8 @@ func (s *Service) GetMerchantApplication(ctx context.Context, id string) (map[st
 }
 
 // GetMerchantStats 商户数据看板：最近30天交易汇总 + 按天趋势。
+// TODO: 交易表缺少 merchant_id 列，当前 MVP 以 tenantId 做统计粒度（tenant_level）。
+// 后续需在 transactions 表增加 merchant_id 列以实现精确商户维度统计。
 func (s *Service) GetMerchantStats(ctx context.Context, id string) (map[string]interface{}, error) {
 	var row persistence.MerchantApplication
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
@@ -1328,8 +1529,11 @@ func (s *Service) GetMerchantStats(ctx context.Context, id string) (map[string]i
 	if err != nil {
 		return nil, apperr.Internal
 	}
-	// TODO: 精确商户-交易关联；MVP 从 data_json 取 tenantId，否则统计全部
 	tenantID, _ := m["tenantId"].(string)
+	merchantID, _ := m["merchantId"].(string)
+	if merchantID == "" {
+		merchantID, _ = m["merchantCode"].(string)
+	}
 
 	txs, err := s.listDoneTransactions(ctx, tenantID)
 	if err != nil {
@@ -1377,7 +1581,7 @@ func (s *Service) GetMerchantStats(ctx context.Context, id string) (map[string]i
 		})
 	}
 
-	var totalVolume, successRate, avgAmount float64
+	var totalVolume, successRate, avgAmount, refundRate float64
 	if txCount > 0 {
 		totalVolume = float64(totalAmountCents) / 100
 		avgAmount = totalVolume / float64(txCount)
@@ -1385,13 +1589,29 @@ func (s *Service) GetMerchantStats(ctx context.Context, id string) (map[string]i
 		successRate = 1.0
 	}
 
+	// P2-11: 用 PaymentRefund 表统计最近30天退款率
+	var refundCount int64
+	refundQ := s.db.WithContext(ctx).Model(&persistence.PaymentRefund{}).
+		Where("created_at >= ?", since)
+	if tenant.ShouldFilter(tenantID) {
+		refundQ = refundQ.Where("tenant_id = ?", tenantID)
+	}
+	if e := refundQ.Count(&refundCount).Error; e != nil {
+		log.Printf("merchant stats: refund count error: %v", e)
+	}
+	if txCount > 0 {
+		refundRate = float64(refundCount) / float64(txCount) * 100
+	}
+
 	return map[string]interface{}{
 		"totalVolume":          totalVolume,
 		"transactionCount":     txCount,
 		"successRate":          successRate,
-		"refundRate":           0, // TODO: 需关联退款表
+		"refundRate":           refundRate,
 		"avgTransactionAmount": avgAmount,
 		"trend":                trend,
+		"merchantId":           merchantID,
+		"statsScope":           "tenant_level",
 	}, nil
 }
 

@@ -1,7 +1,10 @@
 package payment
 
 import (
+	"context"
+
 	"github.com/gin-gonic/gin"
+	bizsvc "github.com/novaspay/admin-api/internal/biz/service"
 	"github.com/novaspay/admin-api/internal/middleware"
 	"github.com/novaspay/admin-api/internal/payment/handler"
 	"github.com/novaspay/admin-api/internal/payment/jobs"
@@ -69,6 +72,14 @@ func NewPaymentRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFun
 	}
 }
 
+// wireRiskEvaluate 将 biz.Service 的风控评估方法注入 payment.Service，避免循环依赖。
+func wireRiskEvaluate(paySvc *paymentsvc.Service, bizSvc *bizsvc.Service) {
+	paySvc.RiskEvaluate = func(ctx context.Context, payload map[string]interface{}) error {
+		_, err := bizSvc.EvaluateRisk(ctx, payload)
+		return err
+	}
+}
+
 var Module = fx.Options(
 	fx.Provide(
 		paymentsvc.NewService,
@@ -79,4 +90,5 @@ var Module = fx.Options(
 		),
 	),
 	fx.Invoke(jobs.RegisterChannelHealthJob),
+	fx.Invoke(wireRiskEvaluate),
 )

@@ -620,6 +620,7 @@ type FeeRule struct {
 // RiskRule 风控规则
 type RiskRule struct {
 	ID        string         `gorm:"size:64;primaryKey" json:"id"`
+	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
@@ -629,6 +630,7 @@ type RiskRule struct {
 // BlacklistEntry 黑名单
 type BlacklistEntry struct {
 	ID        string         `gorm:"size:64;primaryKey" json:"id"`
+	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
@@ -668,6 +670,7 @@ type RiskReview struct {
 // MerchantApplication 商户 KYB 申请
 type MerchantApplication struct {
 	ID        string         `gorm:"size:64;primaryKey" json:"id"`
+	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
@@ -677,6 +680,7 @@ type MerchantApplication struct {
 // AlertRule 告警规则
 type AlertRule struct {
 	ID        string         `gorm:"size:64;primaryKey" json:"id"`
+	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt int64          `gorm:"autoUpdateTime" json:"updatedAt"`
@@ -687,6 +691,7 @@ type AlertRule struct {
 type AlertHistory struct {
 	ID        string         `gorm:"type:uuid;primaryKey" json:"id"`
 	RuleID    string         `gorm:"size:64;index" json:"ruleId"`
+	TenantID  string         `gorm:"size:64;index" json:"tenantId"`
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime;index" json:"createdAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
