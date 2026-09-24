@@ -1,0 +1,171 @@
+{
+  "title": "风控引擎",
+  "subtitle": "配置风控规则、管理黑名单、处理人工审核并查看决策记录。",
+  "addRule": "新增规则",
+  "addBlacklist": "加入黑名单",
+  "batchImport": "批量导入",
+  "tabs": {
+    "rules": "规则列表",
+    "blacklist": "黑名单",
+    "reviews": "人工审核",
+    "decisions": "决策记录"
+  },
+  "ruleTypes": {
+    "FREQUENCY": "频次规则",
+    "AMOUNT": "金额规则",
+    "REGION": "区域规则",
+    "BEHAVIOR": "行为规则"
+  },
+  "actions": {
+    "BLOCK": "拦截",
+    "ALERT": "告警",
+    "MANUAL_REVIEW": "人工审核"
+  },
+  "ruleStatus": {
+    "DRAFT": "草稿",
+    "OBSERVE": "观察",
+    "ENABLED": "启用",
+    "DISABLED": "停用"
+  },
+  "blacklistTypes": {
+    "EMAIL": "邮箱",
+    "IP": "IP 地址",
+    "COUNTRY": "国家",
+    "CARD_BIN": "卡 BIN",
+    "DEVICE_FINGERPRINT": "设备指纹"
+  },
+  "blacklistStatus": {
+    "ACTIVE": "生效",
+    "EXPIRED": "已过期"
+  },
+  "decisions": {
+    "PASS": "放行",
+    "REVIEW": "人工审核",
+    "BLOCK": "拦截"
+  },
+  "reviewStatus": {
+    "PENDING": "待审核",
+    "APPROVED": "已通过",
+    "REJECTED": "已拒绝"
+  },
+  "rulesTab": {
+    "statusLabel": "状态:",
+    "all": "全部",
+    "searchPlaceholder": "搜索规则名称...",
+    "table": {
+      "name": "规则名称",
+      "ruleType": "类型",
+      "action": "动作",
+      "scoreWeight": "权重",
+      "status": "状态",
+      "updatedAt": "更新时间"
+    },
+    "menu": {
+      "edit": "编辑",
+      "enable": "启用",
+      "disable": "停用",
+      "delete": "删除",
+      "refresh": "刷新"
+    }
+  },
+  "blacklistTab": {
+    "typeLabel": "类型:",
+    "all": "全部",
+    "searchPlaceholder": "搜索黑名单值 / 原因...",
+    "table": {
+      "type": "类型",
+      "value": "值",
+      "reason": "原因",
+      "source": "来源",
+      "expiresAt": "过期时间",
+      "status": "状态"
+    },
+    "menu": {
+      "remove": "移除",
+      "refresh": "刷新"
+    }
+  },
+  "reviewTab": {
+    "title": "待人工审核交易",
+    "empty": "暂无待审核交易",
+    "table": {
+      "transactionId": "交易 ID",
+      "riskScore": "风险分",
+      "matchedRules": "命中规则",
+      "createdAt": "提交时间",
+      "actions": "操作"
+    },
+    "approve": "通过",
+    "reject": "拒绝",
+    "rejectReason": "拒绝原因（必填）",
+    "rejectReasonPlaceholder": "请输入拒绝原因..."
+  },
+  "decisionTab": {
+    "title": "风控决策历史",
+    "empty": "暂无决策记录",
+    "table": {
+      "transactionId": "交易 ID",
+      "riskScore": "风险分",
+      "decision": "决策",
+      "matchedRules": "命中规则",
+      "blacklistHits": "黑名单命中",
+      "evaluatedAt": "评估时间"
+    }
+  },
+  "ruleSheet": {
+    "editTitle": "编辑风控规则",
+    "createTitle": "新增风控规则",
+    "description": "根据规则类型动态配置条件参数",
+    "deleteTitle": "确认删除该风控规则？",
+    "deleteDescription": "规则「{{name}}」删除后不再生效。",
+    "deleteConfirm": "确认删除",
+    "deleteButton": "删除规则",
+    "name": "规则名称",
+    "namePlaceholder": "如：高频交易拦截",
+    "ruleType": "规则类型",
+    "action": "动作",
+    "scoreWeight": "风险权重 (0-100)",
+    "status": "状态",
+    "description": "规则描述",
+    "descriptionPlaceholder": "规则用途说明...",
+    "condition": {
+      "amountThreshold": "金额阈值 (USD)",
+      "countries": "国家/地区（多选，逗号分隔）",
+      "timeWindow": "时间窗口（分钟）",
+      "maxCount": "最大次数",
+      "behaviorDesc": "行为描述"
+    }
+  },
+  "blacklistSheet": {
+    "title": "加入黑名单",
+    "description": "添加黑名单条目，命中后交易将被拦截",
+    "type": "类型",
+    "value": "黑名单值",
+    "valuePlaceholder": "输入黑名单值...",
+    "reason": "原因",
+    "reasonPlaceholder": "拉黑原因说明",
+    "expiresAt": "过期时间",
+    "expiresHint": "留空表示永久",
+    "submit": "添加"
+  },
+  "batchSheet": {
+    "title": "批量导入黑名单",
+    "description": "每行一个值，选择类型后提交",
+    "type": "黑名单类型",
+    "values": "值列表（每行一个）",
+    "valuesPlaceholder": "example1@test.com\nexample2@test.com\n192.168.1.1",
+    "reason": "统一原因（可选）",
+    "submit": "导入",
+    "success": "导入完成：成功 {{imported}} 条，跳过 {{skipped}} 条"
+  },
+  "toast": {
+    "ruleSaved": "规则已保存",
+    "ruleDeleted": "规则已删除",
+    "ruleToggled": "规则状态已更新",
+    "blacklistAdded": "已加入黑名单",
+    "blacklistRemoved": "已从黑名单移除",
+    "reviewApproved": "已通过审核",
+    "reviewRejected": "已拒绝审核",
+    "batchImported": "批量导入完成"
+  }
+}

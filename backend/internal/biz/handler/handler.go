@@ -351,8 +351,17 @@ func (h *Handler) DeleteRiskRule(c *gin.Context) {
 	response.OK(c, gin.H{})
 }
 
+func (h *Handler) ToggleRiskRule(c *gin.Context) {
+	item, err := h.svc.ToggleRiskRule(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
+}
+
 func (h *Handler) ListBlacklist(c *gin.Context) {
-	list, err := h.svc.ListBlacklist(c.Request.Context())
+	list, err := h.svc.ListBlacklist(c.Request.Context(), c.Query("type"))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -381,14 +390,106 @@ func (h *Handler) DeleteBlacklist(c *gin.Context) {
 	response.OK(c, gin.H{})
 }
 
-// Merchant
-func (h *Handler) ListMerchants(c *gin.Context) {
-	list, err := h.svc.ListMerchantApplications(c.Request.Context())
+func (h *Handler) BatchImportBlacklist(c *gin.Context) {
+	var req struct {
+		Entries []map[string]interface{} `json:"entries"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	result, err := h.svc.BatchImportBlacklist(c.Request.Context(), req.Entries, c.Query("tenantId"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, result)
+}
+
+// Risk decisions
+func (h *Handler) ListRiskDecisions(c *gin.Context) {
+	list, err := h.svc.ListRiskDecisions(c.Request.Context(), c.Query("tenantId"))
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
 	response.OK(c, list)
+}
+
+// Risk evaluate
+func (h *Handler) EvaluateRisk(c *gin.Context) {
+	m, ok := bindMap(c)
+	if !ok {
+		return
+	}
+	result, err := h.svc.EvaluateRisk(c.Request.Context(), m)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, result)
+}
+
+// Risk reviews
+func (h *Handler) ListRiskReviews(c *gin.Context) {
+	list, err := h.svc.ListRiskReviews(c.Request.Context(), c.Query("status"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, list)
+}
+
+func (h *Handler) ApproveRiskReview(c *gin.Context) {
+	item, err := h.svc.ApproveRiskReview(c.Request.Context(), c.Param("id"), "")
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "RISK_REVIEW_APPROVE", "RISK_REVIEW", c.Param("id"), "通过风控复核")
+	response.OK(c, item)
+}
+
+func (h *Handler) RejectRiskReview(c *gin.Context) {
+	var req struct {
+		Reason string `json:"reason"`
+	}
+	_ = c.ShouldBindJSON(&req)
+	item, err := h.svc.RejectRiskReview(c.Request.Context(), c.Param("id"), req.Reason, "")
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "RISK_REVIEW_REJECT", "RISK_REVIEW", c.Param("id"), "拒绝风控复核: "+req.Reason)
+	response.OK(c, item)
+}
+
+// Merchant
+func (h *Handler) ListMerchants(c *gin.Context) {
+	list, err := h.svc.ListMerchantApplications(c.Request.Context(), c.Query("status"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, list)
+}
+
+func (h *Handler) GetMerchant(c *gin.Context) {
+	item, err := h.svc.GetMerchantApplication(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
+}
+
+func (h *Handler) GetMerchantStats(c *gin.Context) {
+	item, err := h.svc.GetMerchantStats(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
 }
 
 func (h *Handler) ApproveMerchant(c *gin.Context) {
@@ -397,6 +498,7 @@ func (h *Handler) ApproveMerchant(c *gin.Context) {
 		response.Fail(c, err)
 		return
 	}
+	h.audit.WriteFromContext(c, "MERCHANT_APPROVE", "MERCHANT", c.Param("id"), "审核通过商户申请")
 	response.OK(c, item)
 }
 
@@ -410,6 +512,7 @@ func (h *Handler) RejectMerchant(c *gin.Context) {
 		response.Fail(c, err)
 		return
 	}
+	h.audit.WriteFromContext(c, "MERCHANT_REJECT", "MERCHANT", c.Param("id"), "驳回商户申请: "+req.Reason)
 	response.OK(c, item)
 }
 
@@ -453,13 +556,78 @@ func (h *Handler) ToggleAlertRule(c *gin.Context) {
 	response.OK(c, item)
 }
 
+func (h *Handler) TriggerAlertRule(c *gin.Context) {
+	item, err := h.svc.TriggerAlertRule(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "ALERT_RULE_TRIGGER", "ALERT_RULE", c.Param("id"), "手动触发告警规则检查")
+	response.OK(c, item)
+}
+
 func (h *Handler) ListAlertHistory(c *gin.Context) {
-	list, err := h.svc.ListAlertHistory(c.Request.Context())
+	list, err := h.svc.ListAlertHistory(c.Request.Context(), c.Query("status"), c.Query("severity"))
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
 	response.OK(c, list)
+}
+
+func (h *Handler) AckAlertHistory(c *gin.Context) {
+	item, err := h.svc.AckAlertHistory(c.Request.Context(), c.Param("id"), "")
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "ALERT_ACK", "ALERT_HISTORY", c.Param("id"), "确认告警")
+	response.OK(c, item)
+}
+
+func (h *Handler) ResolveAlertHistory(c *gin.Context) {
+	var req struct {
+		ResolutionNote string `json:"resolutionNote"`
+	}
+	_ = c.ShouldBindJSON(&req)
+	item, err := h.svc.ResolveAlertHistory(c.Request.Context(), c.Param("id"), req.ResolutionNote, "")
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "ALERT_RESOLVE", "ALERT_HISTORY", c.Param("id"), "解决告警: "+req.ResolutionNote)
+	response.OK(c, item)
+}
+
+// Alert channels
+func (h *Handler) ListAlertChannels(c *gin.Context) {
+	list, err := h.svc.ListAlertChannels(c.Request.Context())
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, list)
+}
+
+func (h *Handler) SaveAlertChannel(c *gin.Context) {
+	m, ok := bindMapWithPathID(c)
+	if !ok {
+		return
+	}
+	item, err := h.svc.SaveAlertChannel(c.Request.Context(), m)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, item)
+}
+
+func (h *Handler) DeleteAlertChannel(c *gin.Context) {
+	if err := h.svc.DeleteAlertChannel(c.Request.Context(), c.Param("id")); err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, gin.H{})
 }
 
 // Reports

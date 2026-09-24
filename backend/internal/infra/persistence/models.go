@@ -65,9 +65,12 @@ func AutoMigrate(db *gorm.DB) error {
 		&FeeRule{},
 		&RiskRule{},
 		&BlacklistEntry{},
+		&RiskDecision{},
+		&RiskReview{},
 		&MerchantApplication{},
 		&AlertRule{},
 		&AlertHistory{},
+		&AlertChannel{},
 		&ReconciliationStatement{},
 	)
 }
@@ -632,6 +635,36 @@ type BlacklistEntry struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
+// RiskDecision 风控决策记录（由 /risk/evaluate 产生）。
+// 关键字段列化便于按时间/租户/决策类型查询，完整命中明细存 DataJSON。
+type RiskDecision struct {
+	ID            string         `gorm:"type:uuid;primaryKey" json:"id"`
+	TenantID      string         `gorm:"size:64;index" json:"tenantId"`
+	TransactionID string         `gorm:"size:64;index" json:"transactionId"`
+	RiskScore     int            `gorm:"not null;default:0;index" json:"riskScore"`
+	Decision      string         `gorm:"size:16;not null;index" json:"decision"` // PASS / REVIEW / BLOCK
+	DataJSON      string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt     int64          `gorm:"autoCreateTime;index" json:"createdAt"`
+	UpdatedAt     int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// RiskReview 人工复核队列。decision=REVIEW 时由风控引擎自动创建 PENDING 记录。
+type RiskReview struct {
+	ID            string         `gorm:"type:uuid;primaryKey" json:"id"`
+	DecisionID    string         `gorm:"size:64;index" json:"decisionId"`
+	TransactionID string         `gorm:"size:64;index" json:"transactionId"`
+	TenantID      string         `gorm:"size:64;index" json:"tenantId"`
+	Status        string         `gorm:"size:16;not null;index;default:PENDING" json:"status"` // PENDING / APPROVED / REJECTED
+	Reviewer      string         `gorm:"size:128" json:"reviewer"`
+	ReviewNote    string         `gorm:"type:text" json:"reviewNote"`
+	ReviewedAt    *int64         `json:"reviewedAt"`
+	DataJSON      string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt     int64          `gorm:"autoCreateTime;index" json:"createdAt"`
+	UpdatedAt     int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
 // MerchantApplication 商户 KYB 申请
 type MerchantApplication struct {
 	ID        string         `gorm:"size:64;primaryKey" json:"id"`
@@ -657,6 +690,18 @@ type AlertHistory struct {
 	DataJSON  string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt int64          `gorm:"autoCreateTime;index" json:"createdAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// AlertChannel 通知渠道（EMAIL / WEBHOOK / IN_APP）
+type AlertChannel struct {
+	ID          string         `gorm:"type:uuid;primaryKey" json:"id"`
+	Name        string         `gorm:"size:128;not null" json:"name"`
+	ChannelType string         `gorm:"size:16;not null;index" json:"channelType"`
+	Enabled     bool           `gorm:"not null;default:true" json:"enabled"`
+	DataJSON    string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
+	CreatedAt   int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt   int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // PaymentWebhookLog 支付 Webhook 入站记录

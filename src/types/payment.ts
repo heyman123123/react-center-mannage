@@ -769,58 +769,110 @@ export interface FeeRule {
 }
 
 // ============================================================
-// P1: 风控规则配置 & 黑名单管理
+// M3: 风控引擎 & 黑名单管理
 // ============================================================
-export type RiskRuleType = "THREE_DS" | "FAILURE_RATE" | "ABNORMAL_AMOUNT" | "ABNORMAL_FREQ";
+export type RiskRuleType = "FREQUENCY" | "AMOUNT" | "REGION" | "BEHAVIOR";
 export type RiskAction = "BLOCK" | "ALERT" | "MANUAL_REVIEW";
+export type RiskRuleStatus = "DRAFT" | "OBSERVE" | "ENABLED" | "DISABLED";
 
 export interface RiskRule {
   id: string;
   name: string; // 规则名称
-  type: RiskRuleType; // 规则类型
-  condition: string; // 触发条件描述
+  ruleType: RiskRuleType; // 规则类型
   action: RiskAction; // 动作
-  params: Record<string, string | number>; // 阈值参数
-  status: "ENABLED" | "DISABLED";
+  scoreWeight: number; // 风险分权重
+  status: RiskRuleStatus;
+  description?: string; // 规则描述
+  condition: Record<string, unknown>; // 条件配置
   updatedAt: string;
 }
 
-export type BlacklistType = "CARD_BIN" | "IP" | "EMAIL";
+export type BlacklistType = "EMAIL" | "IP" | "COUNTRY" | "CARD_BIN" | "DEVICE_FINGERPRINT";
 
 export interface BlacklistEntry {
   id: string;
-  type: BlacklistType; // 类型：卡BIN / IP / 邮箱
-  value: string; // 黑名单值
-  reason: string; // 原因
-  expiresAt: string; // 添加/过期时间
+  type: BlacklistType;
+  value: string;
+  reason: string;
+  source?: string; // 来源
+  expiresAt: string;
   status: "ACTIVE" | "EXPIRED";
   createdAt: string;
 }
 
+// 风控决策记录
+export type RiskDecisionResult = "PASS" | "REVIEW" | "BLOCK";
+
+export interface RiskDecision {
+  id: string;
+  transactionId: string;
+  riskScore: number; // 0-100
+  decision: RiskDecisionResult;
+  matchedRules: string[];
+  blacklistHits: string[];
+  evaluatedAt: string;
+}
+
+// 人工审核
+export type RiskReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface RiskReview {
+  id: string;
+  decisionId: string;
+  transactionId: string;
+  riskScore: number;
+  status: RiskReviewStatus;
+  reviewer?: string;
+  reviewNote?: string;
+  createdAt: string;
+  reviewedAt?: string;
+}
+
 // ============================================================
-// P1: 商户 / KYB 审核
+// M3: 商户 / KYB 审核
 // ============================================================
 export type MerchantApplyType = "NEW" | "CHANGE";
 export type MerchantReviewStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED";
 
 export interface MerchantDocument {
-  name: string; // 文件名
-  type: string; // 文件类型（营业执照 / 法人身份证 / 银行流水等）
-  size: string; // 文件大小
-  uploadedAt: string; // 上传时间
+  name: string;
+  type: string;
+  size: string;
+  uploadedAt: string;
 }
 
 export interface MerchantApplication {
   id: string;
-  companyName: string; // 公司名称
-  country: string; // 国家代码 US/UK/JP/DE/SG/HK/CA/AU
-  applyType: MerchantApplyType; // 申请类型
-  contactPerson: string; // 联系人
-  contactEmail: string; // 联系邮箱
-  documents: MerchantDocument[]; // 资质文件
+  companyName: string;
+  country: string;
+  applyType: MerchantApplyType;
+  contactPerson: string;
+  contactEmail: string;
+  documents: MerchantDocument[];
   status: MerchantReviewStatus;
-  submittedAt: string; // 申请时间
-  rejectReason?: string; // 驳回原因
+  submittedAt: string;
+  rejectReason?: string;
+  // M3 extended fields
+  businessType?: string; // 经营类型
+  registrationNumber?: string; // 注册号
+  legalName?: string; // 法人姓名
+  legalIdType?: string; // 法人证件类型
+  legalIdNumber?: string; // 法人证件号
+  address?: string; // 地址
+  phone?: string; // 电话
+  settlementCurrency?: string; // 结算币种
+  bankName?: string; // 银行名称
+  bankAccount?: string; // 银行账号
+  bankCode?: string; // 银行代码
+}
+
+export interface MerchantStats {
+  totalVolume: number;
+  transactionCount: number;
+  successRate: number;
+  refundRate: number;
+  avgTransactionAmount: number;
+  trend: Array<{ date: string; volume: number; count: number }>;
 }
 
 // ============================================================
@@ -833,15 +885,21 @@ export type AlertRuleStatus = "ENABLED" | "DISABLED";
 
 export interface AlertRule {
   id: string;
-  name: string; // 规则名称
-  monitorObject: AlertMonitorObject; // 监控对象
-  triggerCondition: string; // 触发条件描述
-  severity: AlertSeverity; // 严重级别
-  notifyChannels: NotifyChannel[]; // 通知渠道
+  name: string;
+  monitorObject: AlertMonitorObject;
+  triggerCondition: string;
+  severity: AlertSeverity;
+  notifyChannels: NotifyChannel[];
   status: AlertRuleStatus;
-  thresholdParams: Record<string, string | number>; // 阈值参数
+  thresholdParams: Record<string, string | number>;
   updatedAt: string;
   updatedBy: string;
+  // M3 extended fields
+  metricType?: string; // 监控指标类型
+  threshold?: number; // 阈值
+  comparisonOperator?: "GT" | "LT" | "GTE" | "LTE" | "EQ"; // 比较操作符
+  silenceMinutes?: number; // 静默时长
+  dimension?: string; // 监控维度
 }
 
 export type AlertHistoryStatus = "UNHANDLED" | "PROCESSING" | "RESOLVED" | "IGNORED";
@@ -861,15 +919,34 @@ export interface AlertHandlingRecord {
 
 export interface AlertHistory {
   id: string;
-  title: string; // 告警标题
-  ruleName: string; // 规则名称
+  title: string;
+  ruleName: string;
   severity: AlertSeverity;
   status: AlertHistoryStatus;
   triggerTime: string;
-  assignee?: string; // 处理人
+  assignee?: string;
   message?: string;
   timeline: AlertTimelineStep[];
   handlingRecords: AlertHandlingRecord[];
+  // M3 extended fields
+  metricValue?: number;
+  threshold?: number;
+  ackBy?: string;
+  ackAt?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  resolutionNote?: string;
+}
+
+// 通知渠道
+export type AlertChannelType = "EMAIL" | "WEBHOOK" | "IN_APP";
+
+export interface AlertChannel {
+  id: string;
+  name: string;
+  channelType: AlertChannelType;
+  config: Record<string, unknown>;
+  enabled: boolean;
 }
 
 // ============================================================

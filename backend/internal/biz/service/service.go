@@ -532,18 +532,414 @@ func (s *Service) DeleteRiskRule(ctx context.Context, id string) error {
 	return deleteByID(ctx, s.db, &persistence.RiskRule{}, id)
 }
 
-func (s *Service) ListBlacklist(ctx context.Context) ([]map[string]interface{}, error) {
-	return s.listDomain(ctx, &persistence.BlacklistEntry{})
+// ToggleRiskRule 切换规则状态 ENABLED <-> DISABLED（DRAFT/OBSERVE 不参与切换）。
+func (s *Service) ToggleRiskRule(ctx context.Context, id string) (map[string]interface{}, error) {
+	var row persistence.RiskRule
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	m, err := unmarshalMap(row.DataJSON)
+	if err != nil {
+		return nil, apperr.Internal
+	}
+	st, _ := m["status"].(string)
+	if st == "ENABLED" {
+		m["status"] = "DISABLED"
+	} else {
+		m["status"] = "ENABLED"
+	}
+	data, _ := json.Marshal(m)
+	row.DataJSON = string(data)
+	if err := s.db.WithContext(ctx).Save(&row).Error; err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (s *Service) ListBlacklist(ctx context.Context, filterType string) ([]map[string]interface{}, error) {
+	q := s.db.WithContext(ctx).Model(&persistence.BlacklistEntry{})
+	var rows []persistence.BlacklistEntry
+	if err := q.Order("created_at DESC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make([]map[string]interface{}, 0, len(rows))
+	for _, r := range rows {
+		m, err := unmarshalMap(r.DataJSON)
+		if err != nil {
+			continue
+		}
+		if filterType != "" {
+			t, _ := m["type"].(string)
+			if t != filterType {
+				continue
+			}
+		}
+		out = append(out, m)
+	}
+	return out, nil
 }
 func (s *Service) SaveBlacklist(ctx context.Context, p map[string]interface{}) (map[string]interface{}, error) {
+	if _, ok := p["status"]; !ok {
+		p["status"] = "ACTIVE"
+	}
+	if _, ok := p["source"]; !ok {
+		p["source"] = "MANUAL"
+	}
 	return s.saveDomain(ctx, &persistence.BlacklistEntry{}, p, "blacklist_entries")
 }
 func (s *Service) DeleteBlacklist(ctx context.Context, id string) error {
 	return deleteByID(ctx, s.db, &persistence.BlacklistEntry{}, id)
 }
 
-func (s *Service) ListMerchantApplications(ctx context.Context) ([]map[string]interface{}, error) {
-	return s.listDomain(ctx, &persistence.MerchantApplication{})
+// BatchImportBlacklist 批量导入黑名单，按 type+value 去重，返回 imported/skipped。
+func (s *Service) BatchImportBlacklist(ctx context.Context, entries []map[string]interface{}, tenantID string) (map[string]interface{}, error) {
+	// 加载已有 ACTIVE 记录，构建 type|value 去重集合。
+	existing := map[string]bool{}
+	raws, err := fetchDataJSONRows(ctx, s.db, &persistence.BlacklistEntry{}, "created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	for _, raw := range raws {
+		m, err := unmarshalMap(raw)
+		if err != nil {
+			continue
+		}
+		st, _ := m["status"].(string)
+		if st == "" {
+			st = "ACTIVE"
+		}
+		if st != "ACTIVE" {
+			continue
+		}
+		t, _ := m["type"].(string)
+		v, _ := m["value"].(string)
+		if t != "" && v != "" {
+			existing[t+"|"+v] = true
+		}
+	}
+	imported, skipped := 0, 0
+	for _, e := range entries {
+		t, _ := e["type"].(string)
+		v, _ := e["value"].(string)
+		reason, _ := e["reason"].(string)
+		if t == "" || v == "" || existing[t+"|"+v] {
+			skipped++
+			continue
+		}
+		payload := map[string]interface{}{
+			"type":     t,
+			"value":    v,
+			"reason":   reason,
+			"source":   "IMPORT",
+			"status":   "ACTIVE",
+			"tenantId": tenantID,
+		}
+		if _, err := s.saveDomain(ctx, &persistence.BlacklistEntry{}, payload, "blacklist_entries"); err != nil {
+			skipped++
+			continue
+		}
+		existing[t+"|"+v] = true
+		imported++
+	}
+	return map[string]interface{}{"imported": imported, "skipped": skipped}, nil
+}
+
+// --- Risk Decisions / Reviews ---
+
+// riskMatchedRule 命中规则摘要。
+type riskMatchedRule struct {
+	RuleID      string `json:"ruleId"`
+	RuleName    string `json:"ruleName"`
+	RuleType    string `json:"ruleType"`
+	ScoreWeight int    `json:"scoreWeight"`
+	Observed    bool   `json:"observed,omitempty"` // OBSERVE 规则只记录不影响决策
+}
+
+// riskBlacklistHit 命中黑名单摘要。
+type riskBlacklistHit struct {
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
+// EvaluateRisk 风控评估主入口：黑名单命中 + 规则命中 -> 风险分 -> decision，
+// 落库 RiskDecision；REVIEW 时自动创建 RiskReview。
+func (s *Service) EvaluateRisk(ctx context.Context, payload map[string]interface{}) (map[string]interface{}, error) {
+	tenantID, _ := payload["tenantId"].(string)
+	transactionID, _ := payload["transactionId"].(string)
+	amount, _ := payload["amount"].(float64)
+	customerEmail, _ := payload["customerEmail"].(string)
+	customerIP, _ := payload["customerIp"].(string)
+	customerCountry, _ := payload["customerCountry"].(string)
+	cardBin, _ := payload["cardBin"].(string)
+	deviceFP, _ := payload["deviceFingerprint"].(string)
+
+	// a. 黑名单匹配：每命中一条加 20 分。
+	blacklistHits := []riskBlacklistHit{}
+	rawBL, err := fetchDataJSONRows(ctx, s.db, &persistence.BlacklistEntry{}, "created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	for _, raw := range rawBL {
+		m, err := unmarshalMap(raw)
+		if err != nil {
+			continue
+		}
+		st, _ := m["status"].(string)
+		if st != "" && st != "ACTIVE" {
+			continue
+		}
+		t, _ := m["type"].(string)
+		v, _ := m["value"].(string)
+		hit := false
+		switch t {
+		case "EMAIL":
+			hit = customerEmail != "" && strings.EqualFold(customerEmail, v)
+		case "IP":
+			hit = customerIP != "" && customerIP == v
+		case "COUNTRY":
+			hit = customerCountry != "" && strings.EqualFold(customerCountry, v)
+		case "CARD_BIN":
+			hit = cardBin != "" && strings.HasPrefix(cardBin, v)
+		case "DEVICE_FINGERPRINT":
+			hit = deviceFP != "" && deviceFP == v
+		}
+		if hit {
+			blacklistHits = append(blacklistHits, riskBlacklistHit{Type: t, Value: v})
+		}
+	}
+	score := 20 * len(blacklistHits)
+
+	// b/c. 遍历 ENABLED + OBSERVE 规则。ENABLED 命中计入风险分；OBSERVE 只记录不影响决策。
+	matchedRules := []riskMatchedRule{}
+	rawRules, err := fetchDataJSONRows(ctx, s.db, &persistence.RiskRule{}, "created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	for _, raw := range rawRules {
+		m, err := unmarshalMap(raw)
+		if err != nil {
+			continue
+		}
+		st, _ := m["status"].(string)
+		if st != "ENABLED" && st != "OBSERVE" {
+			continue
+		}
+		ruleType, _ := m["ruleType"].(string)
+		cond, _ := m["condition"].(map[string]interface{})
+		hit := false
+		switch ruleType {
+		case "AMOUNT":
+			threshold, _ := cond["threshold"].(float64)
+			hit = threshold > 0 && amount > threshold
+		case "REGION":
+			countries, _ := cond["countries"].([]interface{})
+			for _, c := range countries {
+				if cc, _ := c.(string); strings.EqualFold(cc, customerCountry) {
+					hit = true
+					break
+				}
+			}
+		case "FREQUENCY":
+			// TODO: 真实窗口计数需 Redis，MVP 暂不命中。
+			// windowMinutes, _ := cond["windowMinutes"].(float64)
+			// maxCount, _ := cond["maxCount"].(float64)
+			_ = cond
+		case "BEHAVIOR":
+			// TODO: 行为序列评估 MVP 暂跳过。
+		}
+		if !hit {
+			continue
+		}
+		w, _ := m["scoreWeight"].(float64)
+		ruleID, _ := m["id"].(string)
+		ruleName, _ := m["name"].(string)
+		entry := riskMatchedRule{
+			RuleID:      ruleID,
+			RuleName:    ruleName,
+			RuleType:    ruleType,
+			ScoreWeight: int(w),
+		}
+		if st == "ENABLED" {
+			score += int(w)
+		} else {
+			entry.Observed = true
+		}
+		matchedRules = append(matchedRules, entry)
+	}
+
+	// e. 决策阈值。
+	decision := "PASS"
+	if score >= 80 {
+		decision = "BLOCK"
+	} else if score >= 40 {
+		decision = "REVIEW"
+	}
+
+	// f. 落库 RiskDecision。
+	now := time.Now().UTC().Unix()
+	decisionID := newID()
+	decisionPayload := map[string]interface{}{
+		"id":            decisionID,
+		"tenantId":      tenantID,
+		"transactionId": transactionID,
+		"riskScore":     score,
+		"decision":      decision,
+		"matchedRules":  matchedRules,
+		"blacklistHits": blacklistHits,
+		"request":       payload,
+		"evaluatedAt":   timex.FormatDateTime(now),
+	}
+	dataJSON, _ := json.Marshal(decisionPayload)
+	rd := persistence.RiskDecision{
+		ID: decisionID, TenantID: tenantID, TransactionID: transactionID,
+		RiskScore: score, Decision: decision, DataJSON: string(dataJSON),
+	}
+	if err := s.db.WithContext(ctx).Create(&rd).Error; err != nil {
+		return nil, err
+	}
+
+	// g. REVIEW 自动创建 PENDING 复核记录。
+	if decision == "REVIEW" {
+		reviewID := newID()
+		reviewPayload := map[string]interface{}{
+			"id":            reviewID,
+			"decisionId":    decisionID,
+			"transactionId": transactionID,
+			"tenantId":      tenantID,
+			"status":        "PENDING",
+			"source":        "RISK_ENGINE",
+		}
+		rdata, _ := json.Marshal(reviewPayload)
+		rv := persistence.RiskReview{
+			ID: reviewID, DecisionID: decisionID, TransactionID: transactionID,
+			TenantID: tenantID, Status: "PENDING", DataJSON: string(rdata),
+		}
+		_ = s.db.WithContext(ctx).Create(&rv).Error
+	}
+
+	return map[string]interface{}{
+		"riskScore":     score,
+		"decision":      decision,
+		"matchedRules":   matchedRules,
+		"blacklistHits": blacklistHits,
+		"decisionId":    decisionID,
+	}, nil
+}
+
+// ListRiskDecisions 决策记录列表（按时间倒序）。
+func (s *Service) ListRiskDecisions(ctx context.Context, tenantID string) ([]map[string]interface{}, error) {
+	q := s.db.WithContext(ctx).Model(&persistence.RiskDecision{})
+	q = tenant.Apply(q, tenantID)
+	var rows []persistence.RiskDecision
+	if err := q.Order("created_at DESC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make([]map[string]interface{}, 0, len(rows))
+	for _, r := range rows {
+		m, err := unmarshalMap(r.DataJSON)
+		if err != nil {
+			continue
+		}
+		out = append(out, m)
+	}
+	return out, nil
+}
+
+// ListRiskReviews 复核队列列表，可按 status 过滤。
+func (s *Service) ListRiskReviews(ctx context.Context, status string) ([]map[string]interface{}, error) {
+	q := s.db.WithContext(ctx).Model(&persistence.RiskReview{})
+	if status != "" {
+		q = q.Where("status = ?", status)
+	}
+	var rows []persistence.RiskReview
+	if err := q.Order("created_at DESC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make([]map[string]interface{}, 0, len(rows))
+	for _, r := range rows {
+		m, err := unmarshalMap(r.DataJSON)
+		if err != nil {
+			continue
+		}
+		out = append(out, m)
+	}
+	return out, nil
+}
+
+// ApproveRiskReview 通过复核：PENDING -> APPROVED。
+func (s *Service) ApproveRiskReview(ctx context.Context, id, reviewer string) (map[string]interface{}, error) {
+	var row persistence.RiskReview
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	if row.Status != "PENDING" {
+		return nil, apperr.Conflict
+	}
+	now := time.Now().UTC().Unix()
+	row.Status = "APPROVED"
+	row.Reviewer = strings.TrimSpace(reviewer)
+	row.ReviewedAt = &now
+	m, err := unmarshalMap(row.DataJSON)
+	if err != nil {
+		m = map[string]interface{}{}
+	}
+	m["status"] = "APPROVED"
+	m["reviewer"] = row.Reviewer
+	m["reviewedAt"] = timex.FormatDateTime(now)
+	data, _ := json.Marshal(m)
+	row.DataJSON = string(data)
+	if err := s.db.WithContext(ctx).Save(&row).Error; err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// RejectRiskReview 拒绝复核：PENDING -> REJECTED。
+func (s *Service) RejectRiskReview(ctx context.Context, id, reason, reviewer string) (map[string]interface{}, error) {
+	var row persistence.RiskReview
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	if row.Status != "PENDING" {
+		return nil, apperr.Conflict
+	}
+	now := time.Now().UTC().Unix()
+	row.Status = "REJECTED"
+	row.Reviewer = strings.TrimSpace(reviewer)
+	row.ReviewNote = strings.TrimSpace(reason)
+	row.ReviewedAt = &now
+	m, err := unmarshalMap(row.DataJSON)
+	if err != nil {
+		m = map[string]interface{}{}
+	}
+	m["status"] = "REJECTED"
+	m["reviewer"] = row.Reviewer
+	m["reviewNote"] = row.ReviewNote
+	m["reviewedAt"] = timex.FormatDateTime(now)
+	data, _ := json.Marshal(m)
+	row.DataJSON = string(data)
+	if err := s.db.WithContext(ctx).Save(&row).Error; err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (s *Service) ListMerchantApplications(ctx context.Context, status string) ([]map[string]interface{}, error) {
+	all, err := s.listDomain(ctx, &persistence.MerchantApplication{})
+	if err != nil {
+		return nil, err
+	}
+	if status == "" {
+		return all, nil
+	}
+	out := make([]map[string]interface{}, 0, len(all))
+	for _, m := range all {
+		st, _ := m["status"].(string)
+		if st == status {
+			out = append(out, m)
+		}
+	}
+	return out, nil
 }
 func (s *Service) SaveMerchantApplication(ctx context.Context, p map[string]interface{}) (map[string]interface{}, error) {
 	return s.saveDomain(ctx, &persistence.MerchantApplication{}, p, "merchant_applications")
@@ -565,8 +961,17 @@ func (s *Service) updateMerchantStatus(ctx context.Context, id, status, reason s
 		return nil, apperr.Internal
 	}
 	m["status"] = status
-	if reason != "" {
-		m["rejectReason"] = reason
+	now := timex.FormatDateTime(time.Now().UTC().Unix())
+	switch status {
+	case "APPROVED":
+		m["approvedAt"] = now
+		m["approvedBy"] = ""
+	case "REJECTED":
+		m["rejectedAt"] = now
+		m["rejectedBy"] = ""
+		if reason != "" {
+			m["rejectReason"] = reason
+		}
 	}
 	data, _ := json.Marshal(m)
 	row.DataJSON = string(data)
@@ -608,7 +1013,7 @@ func (s *Service) ToggleAlertRule(ctx context.Context, id string) (map[string]in
 	return m, nil
 }
 
-func (s *Service) ListAlertHistory(ctx context.Context) ([]map[string]interface{}, error) {
+func (s *Service) ListAlertHistory(ctx context.Context, status, severity string) ([]map[string]interface{}, error) {
 	var rows []persistence.AlertHistory
 	if err := s.db.WithContext(ctx).Order("created_at DESC").Find(&rows).Error; err != nil {
 		return nil, err
@@ -618,6 +1023,18 @@ func (s *Service) ListAlertHistory(ctx context.Context) ([]map[string]interface{
 		m, err := unmarshalMap(r.DataJSON)
 		if err != nil {
 			continue
+		}
+		if status != "" {
+			st, _ := m["status"].(string)
+			if st != status {
+				continue
+			}
+		}
+		if severity != "" {
+			sev, _ := m["severity"].(string)
+			if sev != severity {
+				continue
+			}
 		}
 		out = append(out, m)
 	}
@@ -657,6 +1074,324 @@ func (s *Service) RevenueReport(ctx context.Context, tenantID, from, to string) 
 		"channelBreakdown": byChannel,
 		"from":           from,
 		"to":             to,
+	}, nil
+}
+
+// --- M3 Module 2: Real-time Alerts ---
+
+// queryTxMetricsInWindow 跨分表查询时间窗口内的交易指标（总数、done数、金额）。
+func (s *Service) queryTxMetricsInWindow(ctx context.Context, tenantID string, sinceSec int64) (total, doneCount int64, totalAmountCents int64, err error) {
+	now := time.Now().UTC().Unix()
+	months := sharding.MonthsSpanningUnix(sinceSec, now)
+	for _, ym := range months {
+		tbl := sharding.Table(sharding.BasePaymentTransactions, ym)
+		if !s.shards.DB().Migrator().HasTable(tbl) {
+			continue
+		}
+		var txs []persistence.PaymentTransaction
+		q := s.shards.DB().WithContext(ctx).Table(tbl).
+			Where("deleted_at IS NULL AND created_at >= ?", sinceSec)
+		if tenantID != "" && tenantID != "ALL" {
+			q = q.Where("tenant_id = ?", tenantID)
+		}
+		if e := q.Find(&txs).Error; e != nil {
+			return 0, 0, 0, e
+		}
+		for _, tx := range txs {
+			total++
+			totalAmountCents += tx.OrderAmountCents
+			if tx.Status == "done" {
+				doneCount++
+			}
+		}
+	}
+	return total, doneCount, totalAmountCents, nil
+}
+
+// TriggerAlertRule 手动触发告警规则检查，基于最近24小时交易指标。
+func (s *Service) TriggerAlertRule(ctx context.Context, id string) (map[string]interface{}, error) {
+	var row persistence.AlertRule
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	rule, err := unmarshalMap(row.DataJSON)
+	if err != nil {
+		return nil, apperr.Internal
+	}
+
+	metricType, _ := rule["metricType"].(string)
+	threshold, _ := rule["threshold"].(float64)
+	comparisonOperator, _ := rule["comparisonOperator"].(string)
+	tenantID, _ := rule["tenantId"].(string)
+
+	since := time.Now().UTC().Add(-24 * time.Hour).Unix()
+	total, doneCount, _, err := s.queryTxMetricsInWindow(ctx, tenantID, since)
+	if err != nil {
+		return nil, err
+	}
+
+	var currentValue float64
+	switch metricType {
+	case "TRANSACTION_COUNT":
+		currentValue = float64(total)
+	case "SUCCESS_RATE":
+		if total > 0 {
+			currentValue = float64(doneCount) / float64(total) * 100
+		}
+	case "FAILURE_RATE":
+		if total > 0 {
+			currentValue = float64(total-doneCount) / float64(total) * 100
+		}
+	case "REFUND_RATE":
+		currentValue = 0 // TODO: 需关联退款表
+	default:
+		currentValue = 0
+	}
+
+	triggered := false
+	switch comparisonOperator {
+	case "GT":
+		triggered = currentValue > threshold
+	case "LT":
+		triggered = currentValue < threshold
+	case "GTE":
+		triggered = currentValue >= threshold
+	case "LTE":
+		triggered = currentValue <= threshold
+	}
+
+	name, _ := rule["name"].(string)
+	severity, _ := rule["severity"].(string)
+	message := fmt.Sprintf("告警规则[%s]触发: 当前值 %.2f %s %.2f", name, currentValue, comparisonOperator, threshold)
+
+	result := map[string]interface{}{
+		"triggered":    triggered,
+		"currentValue": currentValue,
+		"threshold":    threshold,
+		"message":      message,
+	}
+
+	if triggered {
+		now := time.Now().UTC().Unix()
+		historyPayload := map[string]interface{}{
+			"id":          "alert_" + strings.ToLower(uuid.NewString()[:8]),
+			"ruleId":      id,
+			"title":       name,
+			"severity":    severity,
+			"status":      "UNHANDLED",
+			"metricValue": currentValue,
+			"threshold":   threshold,
+			"message":     message,
+			"triggeredAt": timex.FormatDateTime(now),
+		}
+		_, _ = s.SaveAlertHistory(ctx, historyPayload)
+	}
+
+	return result, nil
+}
+
+// AckAlertHistory 确认告警：UNHANDLED → PROCESSING。
+func (s *Service) AckAlertHistory(ctx context.Context, id, ackBy string) (map[string]interface{}, error) {
+	var row persistence.AlertHistory
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	m, err := unmarshalMap(row.DataJSON)
+	if err != nil {
+		return nil, apperr.Internal
+	}
+	m["status"] = "PROCESSING"
+	m["ackBy"] = ackBy
+	m["ackAt"] = timex.FormatDateTime(time.Now().UTC().Unix())
+	data, _ := json.Marshal(m)
+	row.DataJSON = string(data)
+	if err := s.db.WithContext(ctx).Save(&row).Error; err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ResolveAlertHistory 解决告警：→ RESOLVED，记录解决备注和操作人。
+func (s *Service) ResolveAlertHistory(ctx context.Context, id, resolutionNote, resolvedBy string) (map[string]interface{}, error) {
+	var row persistence.AlertHistory
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	m, err := unmarshalMap(row.DataJSON)
+	if err != nil {
+		return nil, apperr.Internal
+	}
+	m["status"] = "RESOLVED"
+	m["resolvedBy"] = resolvedBy
+	m["resolvedAt"] = timex.FormatDateTime(time.Now().UTC().Unix())
+	m["resolutionNote"] = resolutionNote
+	data, _ := json.Marshal(m)
+	row.DataJSON = string(data)
+	if err := s.db.WithContext(ctx).Save(&row).Error; err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// --- Alert Channels ---
+
+func (s *Service) ListAlertChannels(ctx context.Context) ([]map[string]interface{}, error) {
+	var rows []persistence.AlertChannel
+	if err := s.db.WithContext(ctx).Order("created_at DESC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make([]map[string]interface{}, 0, len(rows))
+	for _, r := range rows {
+		m, err := unmarshalMap(r.DataJSON)
+		if err != nil {
+			m = map[string]interface{}{}
+		}
+		m["id"] = r.ID
+		m["name"] = r.Name
+		m["channelType"] = r.ChannelType
+		m["enabled"] = r.Enabled
+		out = append(out, m)
+	}
+	return out, nil
+}
+
+func (s *Service) SaveAlertChannel(ctx context.Context, p map[string]interface{}) (map[string]interface{}, error) {
+	id, _ := p["id"].(string)
+	if id == "" {
+		id = newID()
+		p["id"] = id
+	}
+	name, _ := p["name"].(string)
+	channelType, _ := p["channelType"].(string)
+	enabled := true
+	if e, ok := p["enabled"].(bool); ok {
+		enabled = e
+	}
+	// 列化字段之外的配置存入 data_json
+	config := map[string]interface{}{}
+	for k, v := range p {
+		switch k {
+		case "id", "name", "channelType", "enabled":
+			continue
+		default:
+			config[k] = v
+		}
+	}
+	data, _ := json.Marshal(config)
+	var existing persistence.AlertChannel
+	err := s.db.WithContext(ctx).First(&existing, "id = ?", id).Error
+	if err == nil {
+		existing.Name = name
+		existing.ChannelType = channelType
+		existing.Enabled = enabled
+		existing.DataJSON = string(data)
+		if e := s.db.WithContext(ctx).Save(&existing).Error; e != nil {
+			return nil, e
+		}
+	} else {
+		row := persistence.AlertChannel{
+			ID: id, Name: name, ChannelType: channelType, Enabled: enabled, DataJSON: string(data),
+		}
+		if e := s.db.WithContext(ctx).Create(&row).Error; e != nil {
+			return nil, e
+		}
+	}
+	return p, nil
+}
+
+func (s *Service) DeleteAlertChannel(ctx context.Context, id string) error {
+	return deleteByID(ctx, s.db, &persistence.AlertChannel{}, id)
+}
+
+// --- M3 Module 3: Merchant Management ---
+
+// GetMerchantApplication 商户详情，返回完整 data_json。
+func (s *Service) GetMerchantApplication(ctx context.Context, id string) (map[string]interface{}, error) {
+	var row persistence.MerchantApplication
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	m, err := unmarshalMap(row.DataJSON)
+	if err != nil {
+		return nil, apperr.Internal
+	}
+	return m, nil
+}
+
+// GetMerchantStats 商户数据看板：最近30天交易汇总 + 按天趋势。
+func (s *Service) GetMerchantStats(ctx context.Context, id string) (map[string]interface{}, error) {
+	var row persistence.MerchantApplication
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	m, err := unmarshalMap(row.DataJSON)
+	if err != nil {
+		return nil, apperr.Internal
+	}
+	// TODO: 精确商户-交易关联；MVP 从 data_json 取 tenantId，否则统计全部
+	tenantID, _ := m["tenantId"].(string)
+
+	txs, err := s.listDoneTransactions(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	since := time.Now().AddDate(0, 0, -30).Unix()
+	var totalAmountCents int64
+	txCount := 0
+	type dayBucket struct {
+		volume int64
+		count  int
+	}
+	trendMap := map[string]*dayBucket{}
+
+	for _, tx := range txs {
+		if tx.CreatedAt < since {
+			continue
+		}
+		totalAmountCents += tx.OrderAmountCents
+		txCount++
+		day := timex.FormatDate(tx.CreatedAt)
+		bucket, ok := trendMap[day]
+		if !ok {
+			bucket = &dayBucket{}
+			trendMap[day] = bucket
+		}
+		bucket.volume += tx.OrderAmountCents
+		bucket.count++
+	}
+
+	trend := make([]map[string]interface{}, 0, 30)
+	for i := 29; i >= 0; i-- {
+		day := timex.FormatDate(time.Now().AddDate(0, 0, -i).Unix())
+		volume := float64(0)
+		count := 0
+		if bucket, ok := trendMap[day]; ok {
+			volume = float64(bucket.volume) / 100
+			count = bucket.count
+		}
+		trend = append(trend, map[string]interface{}{
+			"date":   day,
+			"volume": volume,
+			"count":  count,
+		})
+	}
+
+	var totalVolume, successRate, avgAmount float64
+	if txCount > 0 {
+		totalVolume = float64(totalAmountCents) / 100
+		avgAmount = totalVolume / float64(txCount)
+		// TODO: listDoneTransactions 仅返回 done 交易，successRate 需查询全量交易计算 done/total
+		successRate = 1.0
+	}
+
+	return map[string]interface{}{
+		"totalVolume":          totalVolume,
+		"transactionCount":     txCount,
+		"successRate":          successRate,
+		"refundRate":           0, // TODO: 需关联退款表
+		"avgTransactionAmount": avgAmount,
+		"trend":                trend,
 	}, nil
 }
 

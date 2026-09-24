@@ -1,0 +1,94 @@
+{
+  "title": "商户管理",
+  "subtitle": "管理商户入驻申请、KYB 审核与商户数据看板。",
+  "pendingCount": "待审核 {{count}}",
+  "searchPlaceholder": "搜索公司名 / 国家 / 联系人...",
+  "status": {
+    "PENDING": "待审核",
+    "IN_REVIEW": "审核中",
+    "APPROVED": "已通过",
+    "REJECTED": "已驳回"
+  },
+  "applyType": {
+    "NEW": "新入驻",
+    "CHANGE": "资料变更"
+  },
+  "table": {
+    "company": "公司名称",
+    "country": "国家",
+    "applyType": "申请类型",
+    "contactPerson": "联系人",
+    "contactEmail": "联系邮箱",
+    "kybStatus": "KYB 状态",
+    "submittedAt": "提交时间",
+    "actions": "操作"
+  },
+  "menu": {
+    "review": "审核",
+    "viewDetail": "查看详情",
+    "refresh": "刷新"
+  },
+  "stats": {
+    "title": "商户数据看板",
+    "totalVolume": "累计交易额",
+    "transactionCount": "交易笔数",
+    "successRate": "成功率",
+    "refundRate": "退款率",
+    "avgAmount": "平均交易金额",
+    "trend": "近 7 日交易额趋势"
+  },
+  "detail": {
+    "title": "商户详情 - {{company}}",
+    "titleFallback": "商户详情",
+    "companyInfo": "企业信息",
+    "legalInfo": "法人信息",
+    "settlementInfo": "结算信息",
+    "documents": "资质文件（{{count}}）",
+    "reviewRecords": "KYB 审核记录",
+    "companyName": "公司名称",
+    "country": "国家/地区",
+    "businessType": "经营类型",
+    "registrationNumber": "注册号",
+    "address": "注册地址",
+    "phone": "联系电话",
+    "contactPerson": "联系人",
+    "contactEmail": "联系邮箱",
+    "legalName": "法人姓名",
+    "legalIdType": "法人证件类型",
+    "legalIdNumber": "法人证件号",
+    "settlementCurrency": "结算币种",
+    "bankName": "银行名称",
+    "bankAccount": "银行账号",
+    "bankCode": "银行代码",
+    "submittedAt": "提交时间",
+    "status": "当前状态"
+  },
+  "review": {
+    "approveTitle": "确认通过该商户申请？",
+    "approveDesc": "通过后「{{company}}」将正式开通收款账户。",
+    "approve": "确认通过",
+    "approveBtn": "通过",
+    "rejectTitle": "确认驳回该商户申请？",
+    "rejectDesc": "驳回原因：{{reason}}",
+    "rejectEmpty": "（未填写）",
+    "rejectConfirm": "确认驳回",
+    "rejectBtn": "驳回",
+    "rejectReasonLabel": "驳回原因（驳回时必填）",
+    "rejectReasonPlaceholder": "请填写驳回原因，将通知商户...",
+    "rejectReasonPrefix": "驳回原因："
+  },
+  "preview": {
+    "title": "资质文件预览",
+    "mockPreview": "文件预览（Mock）",
+    "fileName": "文件名",
+    "fileType": "文件类型",
+    "fileSize": "文件大小",
+    "uploadedAt": "上传时间",
+    "download": "下载原件（Mock）"
+  },
+  "toast": {
+    "approved": "商户【{{company}}】已通过审核",
+    "rejected": "商户【{{company}}】已被驳回",
+    "detailLoaded": "商户详情已加载"
+  }
+}

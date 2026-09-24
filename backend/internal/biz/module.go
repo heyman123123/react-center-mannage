@@ -71,18 +71,39 @@ func NewBizRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFunc {
 			rk.POST("", mw.RequireMenu("risk_rules"), h.SaveRiskRule)
 			rk.PUT("/:id", mw.RequireMenu("risk_rules"), h.SaveRiskRule)
 			rk.DELETE("/:id", mw.RequireMenu("risk_rules"), h.DeleteRiskRule)
+			rk.POST("/:id/toggle", mw.RequireMenu("risk_rules"), h.ToggleRiskRule)
 		}
 
 		bl := r.Group("/blacklist", mw.Auth)
 		{
 			bl.GET("", mw.RequireMenu("risk_rules"), h.ListBlacklist)
 			bl.POST("", mw.RequireMenu("risk_rules"), h.SaveBlacklist)
+			bl.POST("/batch", mw.RequireMenu("risk_rules"), h.BatchImportBlacklist)
 			bl.DELETE("/:id", mw.RequireMenu("risk_rules"), h.DeleteBlacklist)
+		}
+
+		rd := r.Group("/risk-decisions", mw.Auth)
+		{
+			rd.GET("", mw.RequireMenu("risk_rules"), h.ListRiskDecisions)
+		}
+
+		re := r.Group("/risk", mw.Auth)
+		{
+			re.POST("/evaluate", mw.RequireMenu("risk_rules"), h.EvaluateRisk)
+		}
+
+		rv := r.Group("/risk-reviews", mw.Auth)
+		{
+			rv.GET("", mw.RequireMenu("risk_rules"), h.ListRiskReviews)
+			rv.POST("/:id/approve", mw.RequireMenu("risk_rules"), h.ApproveRiskReview)
+			rv.POST("/:id/reject", mw.RequireMenu("risk_rules"), h.RejectRiskReview)
 		}
 
 		ma := r.Group("/merchant-applications", mw.Auth)
 		{
 			ma.GET("", mw.RequireMenu("merchant_review"), h.ListMerchants)
+			ma.GET("/:id", mw.RequireMenu("merchant_review"), h.GetMerchant)
+			ma.GET("/:id/stats", mw.RequireMenu("merchant_review"), h.GetMerchantStats)
 			ma.POST("/:id/approve", mw.RequireMenu("merchant_review"), h.ApproveMerchant)
 			ma.POST("/:id/reject", mw.RequireMenu("merchant_review"), h.RejectMerchant)
 		}
@@ -94,11 +115,22 @@ func NewBizRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFunc {
 			al.PUT("/:id", mw.RequireMenu("alerts"), h.SaveAlertRule)
 			al.DELETE("/:id", mw.RequireMenu("alerts"), h.DeleteAlertRule)
 			al.POST("/:id/toggle", mw.RequireMenu("alerts"), h.ToggleAlertRule)
+			al.POST("/:id/trigger", mw.RequireMenu("alerts"), h.TriggerAlertRule)
 		}
 
 		ah := r.Group("/alert-history", mw.Auth)
 		{
 			ah.GET("", mw.RequireMenu("alerts"), h.ListAlertHistory)
+			ah.POST("/:id/ack", mw.RequireMenu("alerts"), h.AckAlertHistory)
+			ah.POST("/:id/resolve", mw.RequireMenu("alerts"), h.ResolveAlertHistory)
+		}
+
+		ac := r.Group("/alert-channels", mw.Auth)
+		{
+			ac.GET("", mw.RequireMenu("alerts"), h.ListAlertChannels)
+			ac.POST("", mw.RequireMenu("alerts"), h.SaveAlertChannel)
+			ac.PUT("/:id", mw.RequireMenu("alerts"), h.SaveAlertChannel)
+			ac.DELETE("/:id", mw.RequireMenu("alerts"), h.DeleteAlertChannel)
 		}
 
 		rp := r.Group("/reports", mw.Auth)

@@ -17,6 +17,8 @@ import commerce from "./commerce.json";
 import apps from "./apps.json";
 import dictionary from "./dictionary.json";
 import tenants from "./tenants.json";
+import risk from "./risk.json";
+import merchant from "./merchant.json";
 
 const zhCN = {
   common,
@@ -38,6 +40,8 @@ const zhCN = {
   apps,
   dictionary,
   tenants,
+  risk,
+  merchant,
 };
 
 export default zhCN;
