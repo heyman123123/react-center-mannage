@@ -53,6 +53,17 @@ export async function testPaymentChannel(id: string): Promise<PaymentChannelConf
   return http.post<PaymentChannelConfig>(`/payment-channels/${id}/test`);
 }
 
+/** M2: 查看完整密钥（需二次确认，后端记录审计日志） */
+export async function revealChannelSecret(
+  id: string,
+  confirm: boolean
+): Promise<{ apiSecretKey: string; webhookSecret: string; apiKey: string }> {
+  return http.post<{ apiSecretKey: string; webhookSecret: string; apiKey: string }>(
+    `/payment-channels/${id}/reveal-secret`,
+    { confirm }
+  );
+}
+
 export type CheckoutTestInput = {
   productId: string;
   customerEmail?: string;

@@ -89,3 +89,54 @@ export const http = {
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
+
+/**
+ * 上传 multipart/form-data 文件。底层复用 fetch（credentials: include），
+ * 但不设置 Content-Type（由浏览器自动带 boundary），也不 JSON.stringify body。
+ * 响应解析与统一 {code,message,data} 包装逻辑保持一致。
+ */
+export async function upload<T = unknown>(
+  path: string,
+  formData: FormData,
+  query?: RequestOptions["query"]
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const resp = await fetch(buildUrl(path, query), {
+      method: "POST",
+      signal: controller.signal,
+      credentials: "include",
+      headers: { Accept: "application/json" },
+      body: formData,
+    });
+    clearTimeout(timer);
+
+    const contentType = resp.headers.get("content-type") || "";
+    const isJSON = contentType.includes("application/json");
+    const json = isJSON ? await resp.json() : null;
+
+    if (!resp.ok) {
+      if (json && typeof json === "object" && "message" in json) {
+        throw new ApiError(String(json.message || `HTTP ${resp.status}`), Number(json.code ?? resp.status), resp.status);
+      }
+      throw new ApiError(`HTTP ${resp.status} ${resp.statusText}`, resp.status, resp.status);
+    }
+
+    if (!isJSON) return (await resp.text()) as unknown as T;
+
+    if (json && typeof json === "object" && "code" in json && "data" in json) {
+      if (json.code !== 0) throw new ApiError(json.message || "业务错误", json.code, resp.status);
+      return json.data as T;
+    }
+    return json as T;
+  } catch (err) {
+    clearTimeout(timer);
+    if (err instanceof ApiError) throw err;
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError("上传超时（>30000ms）", -2);
+    }
+    throw new ApiError(err instanceof Error ? err.message : "网络请求失败", -3);
+  }
+}

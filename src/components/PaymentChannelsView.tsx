@@ -27,6 +27,7 @@ import {
   ExternalLink,
   ShieldAlert,
   Layers,
+  Loader2,
 } from "lucide-react";
 import { MultiSelect } from "./ui/MultiSelect";
 import { SearchableSelect } from "./ui/SearchableSelect";
@@ -35,6 +36,7 @@ import * as productsApi from "../api/modules/products";
 import { PaymentChannelConfig, PaymentChannel, TransactionRecord, PaymentApp, ProductConfig, Tenant, SystemUser } from "../types/payment";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
+import { Popconfirm } from "./ui/Popconfirm";
 import { loadPaymentChannelOptions, type PaymentChannelOption } from "../lib/paymentChannels";
 import { getChannelFormSchema, type ChannelFormFieldId } from "../lib/channelFormSchemas";
 
@@ -119,6 +121,9 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [editingChannel, setEditingChannel] = useState<PaymentChannelConfig | null>(null);
+  // M2: 审计后查看完整密钥（临时明文，仅内存）
+  const [revealedSecrets, setRevealedSecrets] = useState<Record<string, { apiSecretKey: string; webhookSecret: string; apiKey: string }>>({});
+  const [revealingId, setRevealingId] = useState<string | null>(null);
 
   // 接入新渠道（需求9：从字典选渠道 + 填写账号信息）
   const [isAddChannelOpen, setIsAddChannelOpen] = useState(false);
@@ -234,6 +239,30 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
 
   const toggleShowSecret = (id: string) => {
     setShowSecretMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // M2: 审计确认后查看完整密钥
+  const handleRevealSecret = async (channelId: string) => {
+    setRevealingId(channelId);
+    try {
+      const secrets = await channelsApi.revealChannelSecret(channelId, true);
+      setRevealedSecrets((prev) => ({ ...prev, [channelId]: secrets }));
+      setShowSecretMap((prev) => ({ ...prev, [channelId]: true }));
+      showToast(t("payment.toast.revealed"));
+    } catch {
+      showToast(t("payment.toast.revealFailed"));
+    } finally {
+      setRevealingId(null);
+    }
+  };
+
+  const handleHideSecret = (channelId: string) => {
+    setShowSecretMap((prev) => ({ ...prev, [channelId]: false }));
+    setRevealedSecrets((prev) => {
+      const next = { ...prev };
+      delete next[channelId];
+      return next;
+    });
   };
 
   const copyText = (text: string, id: string) => {
@@ -593,24 +622,41 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                       <span className="text-[10px] text-fg-tertiary font-sans">
                         {t("payment.card.secretKey")}
                       </span>
-                      <button
-                        onClick={() => toggleShowSecret(channel.id)}
-                        className="text-fg-tertiary hover:text-fg-secondary text-[10px] flex items-center gap-1 font-sans"
-                      >
-                        {isSecretVisible ? (
-                          <>
-                            <EyeOff className="w-3 h-3" /> {t("payment.card.hide")}
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-3 h-3" /> {t("payment.card.show")}
-                          </>
-                        )}
-                      </button>
+                      {revealedSecrets[channel.id] ? (
+                        <button
+                          onClick={() => handleHideSecret(channel.id)}
+                          className="text-fg-tertiary hover:text-fg-secondary text-[10px] flex items-center gap-1 font-sans"
+                        >
+                          <EyeOff className="w-3 h-3" /> {t("payment.card.hide")}
+                        </button>
+                      ) : (
+                        <Popconfirm
+                          title={t("payment.card.revealTitle")}
+                          description={t("payment.card.revealDesc")}
+                          confirmText={t("payment.card.revealConfirm")}
+                          onConfirm={() => handleRevealSecret(channel.id)}
+                        >
+                          <button
+                            disabled={revealingId === channel.id}
+                            className="text-fg-tertiary hover:text-fg-secondary text-[10px] flex items-center gap-1 font-sans disabled:opacity-40"
+                          >
+                            {revealingId === channel.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
+                            {t("payment.card.reveal")}
+                          </button>
+                        </Popconfirm>
+                      )}
                     </div>
                     <div className="flex items-center justify-between text-fg-secondary mt-0.5">
                       <span className="truncate max-w-[280px]">
-                        {isSecretVisible
+                        {revealedSecrets[channel.id]
+                          ? revealedSecrets[channel.id].apiSecretKey
+                          : isSecretVisible
+                          ? channel.apiSecretKey
+                          : channel.apiSecretKey && channel.apiSecretKey.includes("•")
                           ? channel.apiSecretKey
                           : "sk_live_••••••••••••••••••••••••••••••••"}
                       </span>
@@ -627,7 +673,11 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
                     </span>
                     <div className="flex items-center justify-between text-fg-secondary mt-0.5">
                       <span className="truncate max-w-[280px]">
-                        {isSecretVisible
+                        {revealedSecrets[channel.id]
+                          ? revealedSecrets[channel.id].webhookSecret
+                          : isSecretVisible
+                          ? channel.webhookSecret
+                          : channel.webhookSecret && channel.webhookSecret.includes("•")
                           ? channel.webhookSecret
                           : "whsec_••••••••••••••••••••••••"}
                       </span>
@@ -876,16 +926,45 @@ export const PaymentChannelsView: React.FC<PaymentChannelsViewProps> = () => {
 
               <div>
                 <label className="text-fg-secondary block mb-1 font-medium">{t("payment.editSheet.secretKey")}</label>
-                <input
-                  type="text"
-                  data-rpa="secret-key"
-                  value={editingChannel.apiSecretKey}
-                  onChange={(e) =>
-                    setEditingChannel({ ...editingChannel, apiSecretKey: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
-                  required
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    data-rpa="secret-key"
+                    value={editingChannel.apiSecretKey}
+                    onChange={(e) =>
+                      setEditingChannel({ ...editingChannel, apiSecretKey: e.target.value })
+                    }
+                    className="flex-1 px-3 py-2 bg-subtle border border-line rounded-lg text-fg font-mono"
+                    required
+                  />
+                  <Popconfirm
+                    title={t("payment.card.revealTitle")}
+                    description={t("payment.card.revealDesc")}
+                    confirmText={t("payment.card.revealConfirm")}
+                    onConfirm={async () => {
+                      try {
+                        const secrets = await channelsApi.revealChannelSecret(editingChannel.id, true);
+                        setEditingChannel({
+                          ...editingChannel,
+                          apiSecretKey: secrets.apiSecretKey,
+                          webhookSecret: secrets.webhookSecret || editingChannel.webhookSecret,
+                          apiPublicKey: secrets.apiKey || editingChannel.apiPublicKey,
+                        });
+                        showToast(t("payment.toast.revealed"));
+                      } catch {
+                        showToast(t("payment.toast.revealFailed"));
+                      }
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="shrink-0 px-2.5 py-2 border border-line rounded-lg text-fg-secondary hover:bg-subtle flex items-center gap-1 text-[11px]"
+                      title={t("payment.card.reveal")}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                  </Popconfirm>
+                </div>
               </div>
 
               <div>

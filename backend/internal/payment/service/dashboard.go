@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/novaspay/admin-api/internal/infra/sharding"
+	"github.com/novaspay/admin-api/internal/pkg/tenant"
 	"gorm.io/gorm"
 )
 
@@ -28,16 +28,9 @@ func (s *Service) GetDashboardKPI(ctx context.Context, tenantID string) (*KPIDTO
 	currentStart := now.AddDate(0, 0, -30).Unix()
 	priorStart := now.AddDate(0, 0, -60).Unix()
 
-	tenantFilter := strings.TrimSpace(tenantID)
-	if tenantFilter == "" || tenantFilter == "ALL" || tenantFilter == "group_hq" {
-		tenantFilter = ""
-	}
-
 	baseFilter := func(q *gorm.DB) *gorm.DB {
 		q = q.Where("deleted_at IS NULL").Where("status = ?", "done")
-		if tenantFilter != "" {
-			q = q.Where("tenant_id = ?", tenantFilter)
-		}
+		q = tenant.Apply(q, tenantID)
 		return q
 	}
 
@@ -49,9 +42,7 @@ func (s *Service) GetDashboardKPI(ctx context.Context, tenantID string) (*KPIDTO
 	priorFilter := func(q *gorm.DB) *gorm.DB {
 		q = q.Where("deleted_at IS NULL").Where("status = ?", "done").
 			Where("created_at >= ? AND created_at < ?", priorStart, currentStart)
-		if tenantFilter != "" {
-			q = q.Where("tenant_id = ?", tenantFilter)
-		}
+		q = tenant.Apply(q, tenantID)
 		return q
 	}
 	monthsPrior := sharding.MonthsSpanningUnix(priorStart, currentStart)
@@ -72,9 +63,7 @@ func (s *Service) GetDashboardKPI(ctx context.Context, tenantID string) (*KPIDTO
 
 	refundFilter := func(q *gorm.DB) *gorm.DB {
 		q = q.Where("deleted_at IS NULL").Where("status = ?", "SUCCESS").Where("created_at >= ?", currentStart)
-		if tenantFilter != "" {
-			q = q.Where("tenant_id = ?", tenantFilter)
-		}
+		q = tenant.Apply(q, tenantID)
 		return q
 	}
 	refundCents, err := s.shards.SumRefundAmountCents(ctx, currentStart, refundFilter)

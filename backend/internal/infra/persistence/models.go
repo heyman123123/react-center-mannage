@@ -68,6 +68,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&MerchantApplication{},
 		&AlertRule{},
 		&AlertHistory{},
+		&ReconciliationStatement{},
 	)
 }
 
@@ -541,6 +542,12 @@ type SettlementBatch struct {
 	NetAmountCents      int64          `gorm:"not null;default:0" json:"-"`
 	Cycle               string         `gorm:"size:16" json:"cycle"`
 	Remark              string         `gorm:"size:512" json:"remark"`
+	ReviewedAt          *int64         `json:"reviewedAt"`
+	ApprovedAt          *int64         `json:"approvedAt"`
+	PaidAt              *int64         `json:"paidAt"`
+	Reviewer            string         `gorm:"size:128" json:"reviewer"`
+	RejectReason        string         `gorm:"size:512" json:"rejectReason"`
+	PayoutProofJSON      string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
 	FeesJSON            string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	DataJSON            string         `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	CreatedAt           int64          `gorm:"autoCreateTime" json:"createdAt"`
@@ -669,4 +676,23 @@ type PaymentWebhookLog struct {
 	PayloadJSON  string `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	ResponseBody string `gorm:"type:text" json:"responseBody"`
 	CreatedAt    int64  `gorm:"autoCreateTime;index" json:"createdAt"`
+}
+
+// ReconciliationStatement 渠道对账单导入记录（普通表，非分表）。
+type ReconciliationStatement struct {
+	ID                string         `gorm:"type:uuid;primaryKey" json:"id"`
+	ChannelID         string         `gorm:"type:uuid;index" json:"channelId"`
+	Channel           string         `gorm:"size:32;index" json:"channel"`
+	TenantID          string         `gorm:"size:64;index" json:"tenantId"`
+	StatementDate     string         `gorm:"size:16;index" json:"statementDate"`
+	FileName          string         `gorm:"size:256" json:"fileName"`
+	TotalCount        int            `gorm:"not null;default:0" json:"totalCount"`
+	TotalAmountCents  int64          `gorm:"not null;default:0" json:"-"`
+	MatchedCount      int            `gorm:"not null;default:0" json:"matchedCount"`
+	DiscrepancyCount  int            `gorm:"not null;default:0" json:"discrepancyCount"`
+	Status            string         `gorm:"size:32;index;default:IMPORTED" json:"status"`
+	RawCSVJSON        string         `gorm:"type:jsonb;not null;default:'[]'" json:"-"`
+	CreatedAt         int64          `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt         int64          `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
 }

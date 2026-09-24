@@ -202,17 +202,38 @@ func (h *Handler) ListChargebacks(c *gin.Context) {
 	response.OK(c, list)
 }
 
-func (h *Handler) AddChargebackEvidence(c *gin.Context) {
-	var req paymentsvc.ChargebackEvidenceInput
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, apperr.InvalidArgument)
-		return
-	}
-	item, err := h.svc.AddChargebackEvidence(c.Request.Context(), c.Param("id"), req)
+func (h *Handler) GetChargeback(c *gin.Context) {
+	item, err := h.svc.GetChargeback(c.Request.Context(), c.Param("id"))
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
+	response.OK(c, item)
+}
+
+func (h *Handler) UploadChargebackEvidence(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	f, err := file.Open()
+	if err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	defer f.Close()
+	buf, err := io.ReadAll(f)
+	if err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	item, err := h.svc.AddChargebackEvidence(c.Request.Context(), c.Param("id"), file.Filename, buf)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "CHARGEBACK_EVIDENCE_UPLOAD", "CHARGEBACK", item.ID, "上传拒付抗辩证据: "+file.Filename)
 	response.OK(c, item)
 }
 
@@ -222,6 +243,17 @@ func (h *Handler) SubmitChargeback(c *gin.Context) {
 		response.Fail(c, err)
 		return
 	}
+	h.audit.WriteFromContext(c, "CHARGEBACK_SUBMIT", "CHARGEBACK", item.ID, "提交拒付抗辩至渠道")
+	response.OK(c, item)
+}
+
+func (h *Handler) AcceptChargeback(c *gin.Context) {
+	item, err := h.svc.AcceptChargeback(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "CHARGEBACK_ACCEPT", "CHARGEBACK", item.ID, "商户接受拒付（放弃抗辩）")
 	response.OK(c, item)
 }
 
@@ -282,4 +314,74 @@ func (h *Handler) CreemWebhook(c *gin.Context) {
 		return
 	}
 	response.OK(c, gin.H{"received": true})
+}
+
+// RevealChannelSecret 解密并返回渠道明文密钥（需 confirm=true，操作写审计）。
+func (h *Handler) RevealChannelSecret(c *gin.Context) {
+	var req struct {
+		Confirm bool `json:"confirm"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	item, err := h.svc.RevealSecret(c.Request.Context(), c.Param("id"), req.Confirm)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "PAYMENT_CHANNEL_SECRET_REVEAL", "PAYMENT_CHANNEL", item.ID, "查看渠道明文密钥: "+item.Name)
+	response.OK(c, item)
+}
+
+// ImportStatement 导入渠道对账单（multipart: file, channelId, statementDate）。
+func (h *Handler) ImportStatement(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	f, err := file.Open()
+	if err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	defer f.Close()
+	buf, err := io.ReadAll(f)
+	if err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	res, err := h.svc.ImportChannelStatement(c.Request.Context(), c.PostForm("channelId"), c.PostForm("statementDate"), file.Filename, buf)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "RECONCILIATION_IMPORT", "RECONCILIATION", "", "导入渠道对账单: "+file.Filename)
+	response.OK(c, res)
+}
+
+// ListDiscrepancies 查询差错流水。
+func (h *Handler) ListDiscrepancies(c *gin.Context) {
+	list, err := h.svc.ListDiscrepancies(c.Request.Context(), c.Query("tenantId"), c.Query("type"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, list)
+}
+
+// HandleDiscrepancy 处理单笔差错（accept/investigate/escalate）。
+func (h *Handler) HandleDiscrepancy(c *gin.Context) {
+	var req paymentsvc.HandleDiscrepancyInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	if err := h.svc.HandleDiscrepancy(c.Request.Context(), c.Param("id"), req.Action, req.Note); err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "RECONCILIATION_DISCREPANCY_HANDLE", "TRANSACTION", c.Param("id"), "处理差错流水: "+req.Action)
+	response.OK(c, gin.H{"ok": true})
 }

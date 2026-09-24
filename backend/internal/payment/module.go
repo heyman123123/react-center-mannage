@@ -23,6 +23,7 @@ func NewPaymentRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFun
 			ch.DELETE("/:id", mw.RequireMenu("payment_channels"), h.DeleteChannel)
 			ch.POST("/:id/test", mw.RequireMenu("payment_channels"), h.TestChannel)
 			ch.POST("/:id/checkout-test", mw.RequireMenu("payment_channels"), h.CheckoutTestChannel)
+			ch.POST("/:id/reveal-secret", mw.RequireMenu("payment_channels"), h.RevealChannelSecret)
 		}
 
 		wh := r.Group("/payment-webhooks", mw.Auth)
@@ -49,16 +50,21 @@ func NewPaymentRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFun
 		cb := r.Group("/chargebacks", mw.Auth)
 		{
 			cb.GET("", mw.RequireMenu("refunds"), h.ListChargebacks)
-			cb.POST("/:id/evidence", mw.RequireMenu("refunds"), h.AddChargebackEvidence)
+			cb.GET("/:id", mw.RequireMenu("refunds"), h.GetChargeback)
+			cb.POST("/:id/evidence", mw.RequireMenu("refunds"), h.UploadChargebackEvidence)
 			cb.POST("/:id/submit", mw.RequireMenu("refunds"), h.SubmitChargeback)
+			cb.POST("/:id/accept", mw.RequireMenu("refunds"), h.AcceptChargeback)
 		}
 
 		rc := r.Group("/reconciliation", mw.Auth)
 		{
 			rc.GET("/summary", mw.RequireMenu("reconciliation"), h.GetReconciliationSummary)
 			rc.GET("/batches", mw.RequireMenu("reconciliation"), h.ListReconciliationBatches)
+			rc.GET("/discrepancies", mw.RequireMenu("reconciliation"), h.ListDiscrepancies)
 			rc.POST("/run", mw.RequireMenu("reconciliation"), h.RunReconciliation)
+			rc.POST("/import", mw.RequireMenu("reconciliation"), h.ImportStatement)
 			rc.POST("/discrepancies/:id/resolve", mw.RequireMenu("reconciliation"), h.ResolveDiscrepancy)
+			rc.POST("/discrepancies/:id/handle", mw.RequireMenu("reconciliation"), h.HandleDiscrepancy)
 		}
 	}
 }

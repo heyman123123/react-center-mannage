@@ -39,7 +39,7 @@ func ParseWebhookTransaction(eventType string, payload map[string]interface{}) (
 	case "checkout.completed", "checkout.expired",
 		"subscription.paid", "subscription.past_due", "subscription.canceled",
 		"payment.failed",
-		"dispute.created", "refund.created":
+		"dispute.created", "dispute.resolved", "dispute.updated", "refund.created":
 	default:
 		return nil, false
 	}
@@ -73,7 +73,7 @@ func ParseWebhookTransaction(eventType string, payload map[string]interface{}) (
 		parseCheckoutObject(obj, parsed)
 	case "subscription.paid", "subscription.past_due", "subscription.canceled":
 		parseSubscriptionObject(obj, parsed)
-	case "payment.failed", "dispute.created", "refund.created":
+	case "payment.failed", "dispute.created", "dispute.resolved", "dispute.updated", "refund.created":
 		parseGenericPaymentObject(obj, parsed)
 	}
 
@@ -95,6 +95,8 @@ func mapEventStatus(eventType string) string {
 		return "done"
 	case "subscription.past_due", "subscription.canceled", "dispute.created", "payment.failed":
 		return "discrepancy"
+	case "dispute.resolved", "dispute.updated":
+		return "dispute_lifecycle"
 	case "checkout.expired":
 		return "pending_check"
 	case "refund.created":

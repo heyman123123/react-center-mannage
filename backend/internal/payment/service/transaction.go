@@ -12,6 +12,7 @@ import (
 	"github.com/novaspay/admin-api/internal/infra/persistence"
 	"github.com/novaspay/admin-api/internal/payment/provider/creem"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
+	"github.com/novaspay/admin-api/internal/pkg/tenant"
 	"github.com/novaspay/admin-api/internal/pkg/timex"
 	"gorm.io/gorm"
 )
@@ -61,9 +62,7 @@ func (s *Service) ListTransactions(ctx context.Context, page, pageSize int, tena
 	}
 	filter := func(q *gorm.DB) *gorm.DB {
 		q = q.Where("deleted_at IS NULL")
-		if tenantID != "" && tenantID != "ALL" && tenantID != "group_hq" {
-			q = q.Where("tenant_id = ?", tenantID)
-		}
+		q = tenant.Apply(q, tenantID)
 		if ch := strings.TrimSpace(channel); ch != "" && ch != "all" {
 			q = q.Where("channel = ?", ch)
 		}

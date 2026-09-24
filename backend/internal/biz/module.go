@@ -23,9 +23,13 @@ func NewBizRoute(h *handler.Handler, mw *middleware.Bundle) routing.RouteFunc {
 		st := r.Group("/settlements", mw.Auth)
 		{
 			st.GET("", mw.RequireMenu("settlements"), h.ListSettlements)
-			st.GET("/:id", mw.RequireMenu("settlements"), h.GetSettlement)
 			st.POST("/generate", mw.RequireMenu("settlements"), h.GenerateSettlements)
 			st.POST("/payout", mw.RequireMenu("settlements"), h.CreatePayout)
+			st.GET("/:id", mw.RequireMenu("settlements"), h.GetSettlement)
+			st.POST("/:id/approve", mw.RequireMenu("settlements"), h.ApproveSettlement)
+			st.POST("/:id/reject", mw.RequireMenu("settlements"), h.RejectSettlement)
+			st.POST("/:id/payout-proof", mw.RequireMenu("settlements"), h.UploadPayoutProof)
+			st.POST("/:id/supplement", mw.RequireMenu("settlements"), h.SupplementBatch)
 		}
 
 		pr := r.Group("/promo-campaigns", mw.Auth)

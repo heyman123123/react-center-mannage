@@ -93,9 +93,36 @@ func (s *Service) Get(ctx context.Context, id string) (*ChannelDTO, error) {
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", id).Error; err != nil {
 		return nil, apperr.NotFound
 	}
-	// Detail/edit: return plaintext secrets so operators can view & update credentials.
-	dto := s.toChannelDTO(row, true)
+	// 详情接口默认脱敏；明文密钥需走 RevealSecret 接口（二次确认 + 审计）。
+	dto := s.toChannelDTO(row, false)
 	return &dto, nil
+}
+
+// SecretRevealDTO 仅在二次确认后返回的明文密钥。
+type SecretRevealDTO struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	ApiKey       string `json:"apiKey"`
+	ApiSecretKey string `json:"apiSecretKey"`
+	WebhookSecret string `json:"webhookSecret"`
+}
+
+// RevealSecret 解密并返回渠道明文密钥。必须 confirm==true，否则返回 InvalidArgument。
+func (s *Service) RevealSecret(ctx context.Context, channelID string, confirm bool) (*SecretRevealDTO, error) {
+	if !confirm {
+		return nil, apperr.InvalidArgument
+	}
+	row, err := s.GetRawChannel(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+	return &SecretRevealDTO{
+		ID:            row.ID,
+		Name:          row.Name,
+		ApiKey:        row.ApiKey,
+		ApiSecretKey:  row.ApiSecretKey,
+		WebhookSecret: row.WebhookSecret,
+	}, nil
 }
 
 func (s *Service) Create(ctx context.Context, in ChannelInput) (*ChannelDTO, error) {

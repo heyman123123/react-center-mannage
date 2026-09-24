@@ -113,6 +113,10 @@
       "webhookUrlHint": "填到 Creem 控制台；本地需用 ngrok 等公网 HTTPS 前缀",
       "hide": "隐藏",
       "show": "显示",
+      "reveal": "查看完整密钥",
+      "revealTitle": "查看完整密钥？",
+      "revealDesc": "查看完整密钥将记录审计日志，确认继续？",
+      "revealConfirm": "确认查看",
       "supportedCurrencies": "支持币种:",
       "feeRate": "综合扣率:",
       "relatedApps": "已启用该渠道的应用 ({{count}})",
@@ -139,7 +143,9 @@
       "loadSecretsFailed": "加载渠道密钥失败",
       "saveFailed": "保存渠道配置失败",
       "added": "支付渠道【{{name}}】已成功接入",
-      "fillRequired": "请填写当前渠道的必填凭证字段"
+      "fillRequired": "请填写当前渠道的必填凭证字段",
+      "revealed": "完整密钥已显示（仅当前会话有效，已记录审计日志）",
+      "revealFailed": "查看完整密钥失败，请稍后重试"
     },
     "editSheet": {
       "title": "编辑支付渠道配置",

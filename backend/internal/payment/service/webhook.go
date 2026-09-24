@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -168,6 +169,16 @@ func (s *Service) finalizeWebhookProcess(
 }
 
 func (s *Service) processCreemWebhookPayload(ctx context.Context, channelID string, rawBody []byte, payload map[string]interface{}, eventType string) error {
+	// dispute 生命周期事件（resolved/updated）只驱动拒付状态机，不产生新交易流水。
+	if eventType == "dispute.resolved" || eventType == "dispute.updated" {
+		disputeID, resolution := parseDisputeResolution(payload)
+		if eventType == "dispute.resolved" {
+			if err := s.UpdateChargebackFromWebhook(ctx, channelID, disputeID, resolution); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	if err := s.UpsertTransactionFromWebhook(ctx, channelID, rawBody, payload, eventType); err != nil {
 		return err
 	}
@@ -179,6 +190,49 @@ func (s *Service) processCreemWebhookPayload(ctx context.Context, channelID stri
 		return err
 	}
 	return s.UpsertChargebackFromWebhook(ctx, channelID, parsed)
+}
+
+// parseDisputeResolution 从 dispute.resolved 事件 payload 中提取 dispute id 与裁决结果（won/lost）。
+func parseDisputeResolution(payload map[string]interface{}) (disputeID, resolution string) {
+	obj, _ := payload["object"].(map[string]interface{})
+	if obj == nil {
+		return "", ""
+	}
+	disputeID = creemStringField(obj, "id")
+	// 兼容多种裁决字段命名。
+	resolution = creemStringField(obj, "resolution")
+	if resolution == "" {
+		resolution = creemStringField(obj, "outcome")
+	}
+	if resolution == "" {
+		resolution = creemStringField(obj, "status")
+	}
+	resolution = strings.ToLower(strings.TrimSpace(resolution))
+	switch resolution {
+	case "won", "merchant_won", "accepted":
+		return disputeID, "won"
+	case "lost", "merchant_lost", "rejected":
+		return disputeID, "lost"
+	default:
+		// 兜底：status 为 closed/resolved 且无明确字段时按 lost 处理（拒付默认对商户不利）。
+		return disputeID, "lost"
+	}
+}
+
+func creemStringField(m map[string]interface{}, key string) string {
+	if m == nil {
+		return ""
+	}
+	v, ok := m[key]
+	if !ok || v == nil {
+		return ""
+	}
+	switch t := v.(type) {
+	case string:
+		return t
+	default:
+		return fmt.Sprint(t)
+	}
 }
 
 func (s *Service) RedeliverWebhook(ctx context.Context, id string) error {

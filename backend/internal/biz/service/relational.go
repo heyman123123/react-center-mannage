@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/novaspay/admin-api/internal/infra/persistence"
+	"github.com/novaspay/admin-api/internal/pkg/timex"
 )
 
 func applyPaymentAppPayload(row *persistence.PaymentApp, payload map[string]interface{}) {
@@ -101,6 +102,28 @@ func settlementToMap(row persistence.SettlementBatch, items []persistence.Settle
 		var fees map[string]interface{}
 		if json.Unmarshal([]byte(row.FeesJSON), &fees) == nil {
 			base["fees"] = fees
+		}
+	}
+	// 审核 / 打款流程字段
+	if row.ReviewedAt != nil {
+		base["reviewedAt"] = timex.FormatUTC(*row.ReviewedAt)
+	}
+	if row.ApprovedAt != nil {
+		base["approvedAt"] = timex.FormatUTC(*row.ApprovedAt)
+	}
+	if row.PaidAt != nil {
+		base["paidAt"] = timex.FormatUTC(*row.PaidAt)
+	}
+	if row.Reviewer != "" {
+		base["reviewer"] = row.Reviewer
+	}
+	if row.RejectReason != "" {
+		base["rejectReason"] = row.RejectReason
+	}
+	if row.PayoutProofJSON != "" && row.PayoutProofJSON != "[]" {
+		var proofs []interface{}
+		if json.Unmarshal([]byte(row.PayoutProofJSON), &proofs) == nil && len(proofs) > 0 {
+			base["payoutProof"] = proofs
 		}
 	}
 	if len(items) > 0 {

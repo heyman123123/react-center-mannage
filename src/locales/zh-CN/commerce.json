@@ -25,6 +25,7 @@
     "searchPlaceholder": "搜索批次号 / 商户...",
     "pendingBadge": "待审核 {{count}}",
     "toastPayoutSuccess": "批次 {{id}} 出金已成功到账",
+    "toastSupplementSuccess": "已补入 {{count}} 笔新增交易",
     "tenants": {
       "group_hq": "全球总部",
       "bu_na_ecom": "北美电商",
@@ -34,8 +35,12 @@
     },
     "status": {
       "PENDING": "待结算",
-      "SETTLING": "结算中",
+      "UNDER_REVIEW": "审核中",
+      "APPROVED": "已通过",
+      "PAYING": "出金中",
       "PAID": "已出金",
+      "REJECTED": "已驳回",
+      "SETTLING": "结算中",
       "FAILED": "失败"
     },
     "table": {
@@ -63,6 +68,7 @@
     "menu": {
       "viewDetail": "查看详情",
       "initiatePayout": "发起出金",
+      "approve": "审核通过",
       "refresh": "刷新"
     },
     "detail": {
@@ -85,7 +91,26 @@
         "channel": "渠道费",
         "fx": "汇兑损溢",
         "platform": "平台服务费"
-      }
+      },
+      "approveBtn": "审核通过",
+      "rejectBtn": "驳回",
+      "rejectTitle": "确认驳回该结算批次？",
+      "rejectDesc": "驳回原因：{{reason}}",
+      "rejectConfirm": "确认驳回",
+      "rejectReasonPlaceholder": "请填写驳回原因...",
+      "rejectReasonPrefix": "驳回原因：",
+      "rejectEmpty": "（未填写）",
+      "reviewInfo": "审核信息",
+      "reviewer": "审核人",
+      "reviewedAt": "审核时间",
+      "approvedAt": "通过时间",
+      "paidAt": "到账时间",
+      "payoutProofTitle": "出金凭证",
+      "uploadProof": "上传凭证",
+      "uploading": "上传中...",
+      "emptyProof": "尚未上传出金凭证",
+      "supplement": "补单",
+      "supplementHint": "当天后续新增交易可补入此批次"
     },
     "payout": {
       "title": "发起出金申请",

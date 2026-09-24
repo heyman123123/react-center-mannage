@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Wallet,
@@ -15,6 +15,10 @@ import {
   Hourglass,
   PlusCircle,
   Download,
+  Upload,
+  FileText,
+  ShieldCheck,
+  Ban,
 } from "lucide-react";
 import { useViewLoading } from "./ui/useViewLoading";
 import { TableSkeleton } from "./ui/Skeletons";
@@ -22,6 +26,7 @@ import { Pagination, paginate, usePagination } from "./ui/Pagination";
 import { SideSheet } from "./ui/SideSheet";
 import { ShadcnSelect } from "./ui/select";
 import { ContextMenu } from "./ui/ContextMenu";
+import { Popconfirm } from "./ui/Popconfirm";
 import { SettlementBatch, SettlementStatus, TenantId } from "../types/payment";
 import { exportToCSV } from "../lib/utils";
 import { settlementsApi } from "../api";
@@ -56,6 +61,13 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
   const [payoutNote, setPayoutNote] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  // M2: 审核 / 出金凭证 / 补单
+  const [reviewing, setReviewing] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [supplementingId, setSupplementingId] = useState<string | null>(null);
+  const payoutProofInputRef = useRef<HTMLInputElement>(null);
   const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [statusFilter, searchQuery, reset]);
 
@@ -73,8 +85,12 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
   const STATUS_META = useMemo(
     (): Record<SettlementStatus, { label: string; badge: string; icon: React.ReactNode }> => ({
       PENDING: { label: t("settlements.status.PENDING"), badge: "bg-amber-50 text-amber-700 border-amber-200", icon: <Hourglass className="w-3 h-3" /> },
-      SETTLING: { label: t("settlements.status.SETTLING"), badge: "bg-blue-50 text-blue-700 border-blue-200", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+      UNDER_REVIEW: { label: t("settlements.status.UNDER_REVIEW"), badge: "bg-blue-50 text-blue-700 border-blue-200", icon: <ShieldCheck className="w-3 h-3" /> },
+      APPROVED: { label: t("settlements.status.APPROVED"), badge: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
+      PAYING: { label: t("settlements.status.PAYING"), badge: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
       PAID: { label: t("settlements.status.PAID"), badge: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
+      REJECTED: { label: t("settlements.status.REJECTED"), badge: "bg-rose-50 text-rose-700 border-rose-200", icon: <XCircle className="w-3 h-3" /> },
+      SETTLING: { label: t("settlements.status.SETTLING"), badge: "bg-blue-50 text-blue-700 border-blue-200", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
       FAILED: { label: t("settlements.status.FAILED"), badge: "bg-rose-50 text-rose-700 border-rose-200", icon: <XCircle className="w-3 h-3" /> },
     }),
     [t]
@@ -99,7 +115,7 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
     });
   }, [rows, statusFilter, searchQuery, TENANT_LABEL]);
 
-  const pendingBatches = rows.filter((b) => b.status === "PENDING");
+  const pendingBatches = rows.filter((b) => b.status === "APPROVED");
   const selectedBatch = rows.find((b) => b.id === payoutBatchId) || null;
 
   const handleExport = () => {
@@ -133,17 +149,100 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
     setPayoutNote("");
   };
 
-  const handleSubmitPayout = () => {
+  const handleSubmitPayout = async () => {
     if (!payoutBatchId) return;
     setSubmitting(true);
-    setRows((prev) => prev.map((r) => (r.id === payoutBatchId ? { ...r, status: "SETTLING" } : r)));
-    setTimeout(() => {
-      setRows((prev) => prev.map((r) => (r.id === payoutBatchId ? { ...r, status: "PAID" } : r)));
-      setSubmitting(false);
+    setRows((prev) => prev.map((r) => (r.id === payoutBatchId ? { ...r, status: "PAYING" } : r)));
+    try {
+      const amount = payoutAmount ? Number(payoutAmount) : selectedBatch?.netAmount ?? 0;
+      await settlementsApi.createPayout({ batchId: payoutBatchId, amount });
+      // 重新拉取该批次状态
+      try {
+        const updated = await settlementsApi.getSettlementById(payoutBatchId);
+        if (updated) {
+          setRows((prev) => prev.map((r) => (r.id === payoutBatchId ? updated : r)));
+          setDetailBatch((prev) => (prev && prev.id === payoutBatchId ? updated : prev));
+        } else {
+          setRows((prev) => prev.map((r) => (r.id === payoutBatchId ? { ...r, status: "PAID" } : r)));
+        }
+      } catch {
+        setRows((prev) => prev.map((r) => (r.id === payoutBatchId ? { ...r, status: "PAID" } : r)));
+      }
       setPayoutOpen(false);
       setToast(t("settlements.toastPayoutSuccess", { id: payoutBatchId }));
       setTimeout(() => setToast(null), 4000);
-    }, 1500);
+    } catch {
+      setRows((prev) => prev.map((r) => (r.id === payoutBatchId ? { ...r, status: "FAILED" } : r)));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // M2: 审核通过
+  const handleApprove = async (batch: SettlementBatch) => {
+    setReviewing(true);
+    try {
+      const updated = await settlementsApi.approveSettlement(batch.id);
+      setRows((prev) => prev.map((r) => (r.id === batch.id ? updated : r)));
+      setDetailBatch(updated);
+    } catch {
+      /* keep sheet open */
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  // M2: 驳回
+  const handleReject = async (batch: SettlementBatch) => {
+    if (!rejectReason.trim()) return;
+    setReviewing(true);
+    try {
+      const updated = await settlementsApi.rejectSettlement(batch.id, rejectReason.trim());
+      setRows((prev) => prev.map((r) => (r.id === batch.id ? updated : r)));
+      setDetailBatch(updated);
+      setRejectOpen(false);
+      setRejectReason("");
+    } catch {
+      /* keep sheet open */
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  // M2: 上传出金凭证
+  const handlePayoutProofFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !detailBatch) return;
+    setUploadingProof(true);
+    try {
+      const updated = await settlementsApi.uploadPayoutProof(detailBatch.id, file);
+      setRows((prev) => prev.map((r) => (r.id === detailBatch.id ? updated : r)));
+      setDetailBatch(updated);
+    } catch {
+      /* ignore */
+    } finally {
+      setUploadingProof(false);
+      if (payoutProofInputRef.current) payoutProofInputRef.current.value = "";
+    }
+  };
+
+  // M2: 批次补单
+  const handleSupplement = async (batch: SettlementBatch) => {
+    setSupplementingId(batch.id);
+    try {
+      const result = await settlementsApi.supplementBatch(batch.id);
+      const updated = await settlementsApi.getSettlementById(batch.id);
+      if (updated) {
+        setRows((prev) => prev.map((r) => (r.id === batch.id ? updated : r)));
+        setDetailBatch(updated);
+      }
+      setToast(t("settlements.toastSupplementSuccess", { count: result.addedCount }));
+      setTimeout(() => setToast(null), 4000);
+    } catch {
+      /* ignore */
+    } finally {
+      setSupplementingId(null);
+    }
   };
 
   const viewLoading = useViewLoading();
@@ -187,7 +286,7 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
       <div className="bg-surface p-3 rounded-xl border border-line/80 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
           <span className="text-fg-tertiary text-xs">{t("commerce:common.statusLabel")}</span>
-          {(["ALL", "PENDING", "SETTLING", "PAID", "FAILED"] as const).map((s) => (
+          {(["ALL", "PENDING", "UNDER_REVIEW", "APPROVED", "PAYING", "PAID", "REJECTED", "FAILED"] as const).map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)} className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-hover text-fg-secondary hover:bg-hover"}`}>
               {s === "ALL" ? t("commerce:common.all") : STATUS_META[s].label}
             </button>
@@ -223,7 +322,8 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
                     key={b.id}
                     items={[
                       { key: "view", label: t("settlements.menu.viewDetail"), icon: <Eye className="w-3.5 h-3.5" />, onClick: () => setDetailBatch(b) },
-                      { key: "payout", label: t("settlements.menu.initiatePayout"), icon: <ArrowRightLeft className="w-3.5 h-3.5" />, disabled: b.status !== "PENDING", onClick: () => openPayout(b.id) },
+                      { key: "approve", label: t("settlements.menu.approve"), icon: <CheckCircle2 className="w-3.5 h-3.5" />, disabled: b.status !== "PENDING" && b.status !== "UNDER_REVIEW", onClick: () => handleApprove(b) },
+                      { key: "payout", label: t("settlements.menu.initiatePayout"), icon: <ArrowRightLeft className="w-3.5 h-3.5" />, disabled: b.status !== "APPROVED", onClick: () => openPayout(b.id) },
                       { key: "refresh", label: t("settlements.menu.refresh"), icon: <RefreshCw className="w-3.5 h-3.5" />, onClick: () => setRows((prev) => [...prev]) },
                     ]}
                     trigger={
@@ -256,7 +356,61 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
         description={detailBatch ? `${CHANNEL_LABEL[detailBatch.channel] || detailBatch.channel} · ${detailBatch.cycle} · ${STATUS_META[detailBatch.status].label}` : ""}
         icon={<FileSpreadsheet className="w-5 h-5 text-fg" />}
         widthClass="max-w-2xl max-md:max-w-none"
-        footer={<button onClick={() => setDetailBatch(null)} className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer">{t("common:actions.close")}</button>}
+        footer={
+          detailBatch && (detailBatch.status === "PENDING" || detailBatch.status === "UNDER_REVIEW") ? (
+            <div className="flex items-center gap-2">
+              {rejectOpen ? (
+                <div className="flex-1 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder={t("settlements.detail.rejectReasonPlaceholder")}
+                    className="flex-1 px-3 py-2 bg-subtle border border-line rounded-lg text-xs"
+                    autoFocus
+                  />
+                  <Popconfirm
+                    title={t("settlements.detail.rejectTitle")}
+                    description={t("settlements.detail.rejectDesc", { reason: rejectReason || t("settlements.detail.rejectEmpty") })}
+                    confirmText={t("settlements.detail.rejectConfirm")}
+                    onConfirm={() => handleReject(detailBatch)}
+                  >
+                    <button
+                      disabled={reviewing || !rejectReason.trim()}
+                      className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold disabled:opacity-40 inline-flex items-center gap-1"
+                    >
+                      {reviewing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      {t("settlements.detail.rejectBtn")}
+                    </button>
+                  </Popconfirm>
+                  <button onClick={() => { setRejectOpen(false); setRejectReason(""); }} className="px-3 py-2 rounded-lg text-xs font-medium text-fg-secondary hover:bg-hover cursor-pointer">
+                    {t("commerce:common.cancel")}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setRejectOpen(true)}
+                    disabled={reviewing}
+                    className="px-3 py-2 rounded-lg text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 disabled:opacity-40 inline-flex items-center gap-1"
+                  >
+                    <Ban className="w-3.5 h-3.5" /> {t("settlements.detail.rejectBtn")}
+                  </button>
+                  <button
+                    onClick={() => handleApprove(detailBatch)}
+                    disabled={reviewing}
+                    className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card disabled:opacity-40 inline-flex items-center gap-1.5"
+                  >
+                    {reviewing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                    {t("settlements.detail.approveBtn")}
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+            <button onClick={() => setDetailBatch(null)} className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer">{t("common:actions.close")}</button>
+          )
+        }
       >
         {detailBatch && (
           <div className="space-y-4 text-xs">
@@ -330,6 +484,97 @@ export const SettlementsView: React.FC<SettlementsViewProps> = ({ batches }) => 
                 </div>
               </div>
             )}
+            {detailBatch.rejectReason && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-[11px]">
+                <span className="font-semibold">{t("settlements.detail.rejectReasonPrefix")}</span> {detailBatch.rejectReason}
+              </div>
+            )}
+
+            {/* M2: 审核信息 */}
+            {(detailBatch.reviewer || detailBatch.reviewedAt || detailBatch.approvedAt) && (
+              <div>
+                <div className="font-semibold text-fg mb-2 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-fg-tertiary" /> {t("settlements.detail.reviewInfo")}
+                </div>
+                <div className="bg-subtle p-3 rounded-xl border border-line space-y-1.5 text-[11px]">
+                  {detailBatch.reviewer && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-fg-secondary">{t("settlements.detail.reviewer")}</span>
+                      <span className="text-fg font-medium">{detailBatch.reviewer}</span>
+                    </div>
+                  )}
+                  {detailBatch.reviewedAt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-fg-secondary">{t("settlements.detail.reviewedAt")}</span>
+                      <span className="text-fg font-mono">{detailBatch.reviewedAt}</span>
+                    </div>
+                  )}
+                  {detailBatch.approvedAt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-fg-secondary">{t("settlements.detail.approvedAt")}</span>
+                      <span className="text-fg font-mono">{detailBatch.approvedAt}</span>
+                    </div>
+                  )}
+                  {detailBatch.paidAt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-fg-secondary">{t("settlements.detail.paidAt")}</span>
+                      <span className="text-fg font-mono">{detailBatch.paidAt}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* M2: 出金凭证上传 (APPROVED / PAYING 状态) */}
+            {(detailBatch.status === "APPROVED" || detailBatch.status === "PAYING") && (
+              <div>
+                <input ref={payoutProofInputRef} type="file" accept=".pdf,.png,.jpg" className="hidden" onChange={handlePayoutProofFile} />
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-fg flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-fg-tertiary" /> {t("settlements.detail.payoutProofTitle")}
+                  </span>
+                  <button
+                    onClick={() => payoutProofInputRef.current?.click()}
+                    disabled={uploadingProof}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-line text-fg-secondary hover:bg-hover text-[11px] font-medium disabled:opacity-40"
+                  >
+                    {uploadingProof ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    {uploadingProof ? t("settlements.detail.uploading") : t("settlements.detail.uploadProof")}
+                  </button>
+                </div>
+                {detailBatch.payoutProof && detailBatch.payoutProof.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {detailBatch.payoutProof.map((p, i) => (
+                      <div key={i} className="flex items-center justify-between bg-subtle px-3 py-2 rounded-lg border border-line">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="w-3.5 h-3.5 text-fg-tertiary shrink-0" />
+                          <span className="truncate text-fg text-[11px]">{p.name}</span>
+                        </div>
+                        <span className="text-[10px] text-fg-tertiary font-mono shrink-0 ml-2">{p.uploadedAt}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border border-dashed border-line rounded-xl p-3 text-center text-fg-tertiary text-[11px]">
+                    {t("settlements.detail.emptyProof")}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* M2: 批次补单 */}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-fg-tertiary">{t("settlements.detail.supplementHint")}</span>
+              <button
+                onClick={() => handleSupplement(detailBatch)}
+                disabled={supplementingId === detailBatch.id}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-line text-fg-secondary hover:bg-hover text-[11px] font-medium disabled:opacity-40"
+              >
+                {supplementingId === detailBatch.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlusCircle className="w-3.5 h-3.5" />}
+                {t("settlements.detail.supplement")}
+              </button>
+            </div>
+
             {detailBatch.remark && (
               <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl text-[11px]">{detailBatch.remark}</div>
             )}

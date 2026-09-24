@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	auditsvc "github.com/novaspay/admin-api/internal/platform/audit/service"
 	bizsvc "github.com/novaspay/admin-api/internal/biz/service"
@@ -134,6 +136,55 @@ func (h *Handler) CreatePayout(c *gin.Context) {
 		return
 	}
 	response.OK(c, gin.H{"ok": true})
+}
+
+func (h *Handler) ApproveSettlement(c *gin.Context) {
+	item, err := h.svc.ApproveSettlement(c.Request.Context(), c.Param("id"), "")
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "SETTLEMENT_APPROVE", "SETTLEMENT", c.Param("id"), "审核通过结算批次")
+	response.OK(c, item)
+}
+
+func (h *Handler) RejectSettlement(c *gin.Context) {
+	var req struct {
+		Reason string `json:"reason"`
+	}
+	_ = c.ShouldBindJSON(&req)
+	item, err := h.svc.RejectSettlement(c.Request.Context(), c.Param("id"), req.Reason, "")
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "SETTLEMENT_REJECT", "SETTLEMENT", c.Param("id"), "驳回结算批次: "+req.Reason)
+	response.OK(c, item)
+}
+
+func (h *Handler) UploadPayoutProof(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		response.Fail(c, apperr.InvalidArgument)
+		return
+	}
+	item, err := h.svc.UploadPayoutProof(c.Request.Context(), c.Param("id"), file.Filename, fmt.Sprintf("%d", file.Size))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "SETTLEMENT_PAYOUT_PROOF", "SETTLEMENT", c.Param("id"), "上传打款凭证: "+file.Filename)
+	response.OK(c, item)
+}
+
+func (h *Handler) SupplementBatch(c *gin.Context) {
+	n, err := h.svc.SupplementBatch(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	h.audit.WriteFromContext(c, "SETTLEMENT_SUPPLEMENT", "SETTLEMENT", c.Param("id"), "批次补单")
+	response.OK(c, gin.H{"added": n})
 }
 
 // Promo

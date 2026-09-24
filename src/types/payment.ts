@@ -580,6 +580,28 @@ export interface ReconciliationBatch {
   status: "COMPLETED" | "RUNNING" | "DISCREPANCY_FOUND";
 }
 
+/** M2: 真实对账差异记录（来自 /reconciliation/discrepancies） */
+export type DiscrepancyTypeNew =
+  | "overpayment"
+  | "underpayment"
+  | "amount_mismatch"
+  | "channel_missing";
+
+export interface DiscrepancyRecord {
+  id: string;
+  transactionNo?: string;
+  channel: PaymentChannel;
+  channelTradeNo: string;
+  orderAmount: number; // 系统订单金额
+  channelAmount?: number; // 渠道账单金额
+  currency: string;
+  discrepancyType: DiscrepancyTypeNew;
+  discrepancyNote: string;
+  status: string;
+  tenantId: TenantId;
+  createdAt: string;
+}
+
 export interface AuditLog {
   id: string;
   timestamp: string;
@@ -600,7 +622,15 @@ export interface AuditLog {
 // ============================================================
 // P0: 结算单 / 出金管理
 // ============================================================
-export type SettlementStatus = "PENDING" | "SETTLING" | "PAID" | "FAILED";
+export type SettlementStatus =
+  | "PENDING"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "PAYING"
+  | "PAID"
+  | "REJECTED"
+  | "SETTLING"
+  | "FAILED";
 
 /** 结算批次内的单笔交易明细 */
 export interface SettlementTxItem {
@@ -639,6 +669,13 @@ export interface SettlementBatch {
   fees: SettlementFeeBreakdown; // 费用明细
   payoutAccount?: PayoutAccount; // 出金账户
   remark?: string;
+  // M2: 审核与出金凭证扩展字段
+  reviewedAt?: string; // 审核时间
+  approvedAt?: string; // 通过时间
+  paidAt?: string; // 出金到账时间
+  reviewer?: string; // 审核人
+  payoutProof?: Array<{ name: string; size: string; uploadedAt: string }>; // 出金凭证
+  rejectReason?: string; // 驳回原因
 }
 
 // ============================================================
@@ -663,13 +700,14 @@ export interface RefundRecord {
 }
 
 export type ChargebackReason = "欺诈" | "未收到商品" | "商品不符" | "其他";
-export type ChargebackStatus = "待响应" | "已提交证据" | "胜诉" | "败诉";
+export type ChargebackStatus = "待响应" | "已提交证据" | "渠道审核中" | "胜诉" | "败诉";
 
 export interface ChargebackEvidence {
   id: string;
   name: string;
   size: string;
   uploadedAt: string;
+  fileUrl?: string; // M2: 真实文件地址
 }
 
 export interface ChargebackTimelineStep {

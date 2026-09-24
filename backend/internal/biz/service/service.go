@@ -11,6 +11,7 @@ import (
 	"github.com/novaspay/admin-api/internal/infra/persistence"
 	"github.com/novaspay/admin-api/internal/infra/sharding"
 	"github.com/novaspay/admin-api/internal/pkg/apperr"
+	"github.com/novaspay/admin-api/internal/pkg/tenant"
 	"github.com/novaspay/admin-api/internal/pkg/timex"
 	"gorm.io/gorm"
 )
@@ -27,9 +28,7 @@ func NewService(db *gorm.DB, shards *sharding.Shards) *Service {
 func (s *Service) listDoneTransactions(ctx context.Context, tenantID string) ([]persistence.PaymentTransaction, error) {
 	filter := func(q *gorm.DB) *gorm.DB {
 		q = q.Where("deleted_at IS NULL").Where("status = ?", "done")
-		if tenantID != "" && tenantID != "group_hq" {
-			q = q.Where("tenant_id = ?", tenantID)
-		}
+		q = tenant.Apply(q, tenantID)
 		return q
 	}
 	months := sharding.RecentMonthsNewestFirst(sharding.DefaultListMonths)
@@ -54,9 +53,7 @@ type AppDTO map[string]interface{}
 
 func (s *Service) ListApps(ctx context.Context, tenantID string) ([]map[string]interface{}, error) {
 	q := s.db.WithContext(ctx).Model(&persistence.PaymentApp{})
-	if tenantID != "" && tenantID != "group_hq" && tenantID != "ALL" {
-		q = q.Where("tenant_id = ?", tenantID)
-	}
+	q = tenant.Apply(q, tenantID)
 	var rows []persistence.PaymentApp
 	if err := q.Order("created_at DESC").Find(&rows).Error; err != nil {
 		return nil, err
@@ -131,9 +128,7 @@ func unmarshalMap(raw string) (map[string]interface{}, error) {
 
 func (s *Service) ListSettlements(ctx context.Context, tenantID string) ([]map[string]interface{}, error) {
 	q := s.db.WithContext(ctx).Model(&persistence.SettlementBatch{})
-	if tenantID != "" && tenantID != "group_hq" {
-		q = q.Where("tenant_id = ?", tenantID)
-	}
+	q = tenant.Apply(q, tenantID)
 	var rows []persistence.SettlementBatch
 	if err := q.Order("created_at DESC").Find(&rows).Error; err != nil {
 		return nil, err
@@ -236,16 +231,144 @@ func (s *Service) CreatePayout(ctx context.Context, batchID string, amount float
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", batchID).Error; err != nil {
 		return apperr.NotFound
 	}
-	m, err := s.settlementDTO(ctx, row)
-	if err != nil {
-		return apperr.Internal
-	}
-	m["status"] = "PAID"
-	m["remark"] = fmt.Sprintf("出金 %.2f", amount)
-	row.Status = "PAID"
+	now := time.Now().UTC().Unix()
+	// 状态机：APPROVED → PAYING → PAID（同步简化，经过 PAYING 状态记录）。
+	row.Status = "PAYING"
+	row.PaidAt = &now
 	row.Remark = fmt.Sprintf("出金 %.2f", amount)
-	applySettlementFromPayload(&row, m)
+	if err := s.db.WithContext(ctx).Save(&row).Error; err != nil {
+		return err
+	}
+	row.Status = "PAID"
 	return s.db.WithContext(ctx).Save(&row).Error
+}
+
+// ApproveSettlement 审核通过结算批次：PENDING/UNDER_REVIEW → APPROVED。
+func (s *Service) ApproveSettlement(ctx context.Context, batchID, reviewer string) (map[string]interface{}, error) {
+	var row persistence.SettlementBatch
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", batchID).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	switch row.Status {
+	case "APPROVED", "PAID", "PAYING":
+		return nil, apperr.Conflict
+	case "REJECTED":
+		return nil, apperr.New(42240, 422, "已驳回的批次不能直接通过，请重新生成")
+	}
+	now := time.Now().UTC().Unix()
+	row.Status = "APPROVED"
+	row.ReviewedAt = &now
+	row.ApprovedAt = &now
+	row.Reviewer = strings.TrimSpace(reviewer)
+	row.RejectReason = ""
+	if err := s.db.WithContext(ctx).Save(&row).Error; err != nil {
+		return nil, err
+	}
+	return s.settlementDTO(ctx, row)
+}
+
+// RejectSettlement 驳回结算批次：任意待处理状态 → REJECTED。
+func (s *Service) RejectSettlement(ctx context.Context, batchID, reason, reviewer string) (map[string]interface{}, error) {
+	var row persistence.SettlementBatch
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", batchID).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	switch row.Status {
+	case "PAID", "PAYING":
+		return nil, apperr.New(42241, 422, "已打款的批次不能驳回")
+	}
+	now := time.Now().UTC().Unix()
+	row.Status = "REJECTED"
+	row.ReviewedAt = &now
+	row.Reviewer = strings.TrimSpace(reviewer)
+	row.RejectReason = strings.TrimSpace(reason)
+	if err := s.db.WithContext(ctx).Save(&row).Error; err != nil {
+		return nil, err
+	}
+	return s.settlementDTO(ctx, row)
+}
+
+// UploadPayoutProof 追加打款凭证到 PayoutProofJSON。
+func (s *Service) UploadPayoutProof(ctx context.Context, batchID, fileName, fileSize string) (map[string]interface{}, error) {
+	var row persistence.SettlementBatch
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", batchID).Error; err != nil {
+		return nil, apperr.NotFound
+	}
+	proofs := []map[string]interface{}{}
+	if row.PayoutProofJSON != "" && row.PayoutProofJSON != "[]" {
+		_ = json.Unmarshal([]byte(row.PayoutProofJSON), &proofs)
+	}
+	proofs = append(proofs, map[string]interface{}{
+		"fileName":  fileName,
+		"fileSize":  fileSize,
+		"uploadedAt": timex.FormatUTC(time.Now().UTC().Unix()),
+	})
+	raw, _ := json.Marshal(proofs)
+	row.PayoutProofJSON = string(raw)
+	if err := s.db.WithContext(ctx).Save(&row).Error; err != nil {
+		return nil, err
+	}
+	return s.settlementDTO(ctx, row)
+}
+
+// SupplementBatch 批次补单：将同 tenant+channel+batchDate 当天新增、已对账(done)且未入批次的交易补入。
+func (s *Service) SupplementBatch(ctx context.Context, batchID string) (int, error) {
+	var row persistence.SettlementBatch
+	if err := s.db.WithContext(ctx).First(&row, "id = ?", batchID).Error; err != nil {
+		return 0, apperr.NotFound
+	}
+	// 已在批次中的交易 id。
+	existing := map[string]bool{}
+	var items []persistence.SettlementBatchItem
+	_ = s.db.WithContext(ctx).Where("batch_id = ?", batchID).Find(&items).Error
+	for _, it := range items {
+		existing[it.TransactionID] = true
+	}
+	months := sharding.RecentMonthsNewestFirst(sharding.DefaultListMonths)
+	added := 0
+	var extraGross, extraFee int64
+	for _, ym := range months {
+		tbl := sharding.Table(sharding.BasePaymentTransactions, ym)
+		if !s.shards.DB().Migrator().HasTable(tbl) {
+			continue
+		}
+		var txs []persistence.PaymentTransaction
+		q := s.shards.DB().WithContext(ctx).Table(tbl).
+			Where("tenant_id = ? AND channel = ? AND status = ? AND deleted_at IS NULL", row.TenantID, row.Channel, "done")
+		if err := q.Find(&txs).Error; err != nil {
+			return added, err
+		}
+		for _, tx := range txs {
+			if timex.FormatDate(tx.CreatedAt) != row.BatchDate {
+				continue
+			}
+			if existing[tx.ID] {
+				continue
+			}
+			item := persistence.SettlementBatchItem{
+				ID:                   newID(),
+				BatchID:              batchID,
+				TransactionID:        tx.ID,
+				TransactionDisplayID: tx.DisplayID,
+				OrderAmountCents:     tx.OrderAmountCents,
+				ChannelFeeCents:      tx.ChannelFeeCents,
+				Currency:             tx.Currency,
+			}
+			if err := s.db.WithContext(ctx).Create(&item).Error; err == nil {
+				added++
+				extraGross += tx.OrderAmountCents
+				extraFee += tx.ChannelFeeCents
+				existing[tx.ID] = true
+			}
+		}
+	}
+	if added > 0 {
+		row.ReceivableAmountCents += extraGross
+		row.FeeCents += extraFee
+		row.NetAmountCents += (extraGross - extraFee)
+		_ = s.db.WithContext(ctx).Save(&row).Error
+	}
+	return added, nil
 }
 
 // --- Generic JSON CRUD helpers for remaining domains ---
@@ -314,9 +437,7 @@ func (s *Service) DeletePromoCampaign(ctx context.Context, id string) error {
 
 func (s *Service) ListEndUsers(ctx context.Context, tenantID string) ([]map[string]interface{}, error) {
 	q := s.db.WithContext(ctx).Model(&persistence.EndUser{})
-	if tenantID != "" && tenantID != "group_hq" {
-		q = q.Where("tenant_id = ?", tenantID)
-	}
+	q = tenant.Apply(q, tenantID)
 	var rows []persistence.EndUser
 	if err := q.Order("created_at DESC").Find(&rows).Error; err != nil {
 		return nil, err

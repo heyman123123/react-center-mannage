@@ -5,6 +5,22 @@
   "running": "正在执行三方对账 ({{progress}}%)...",
   "exportCsv": "导出 CSV",
   "rbacDenied": "RBAC权限受限：需要对账专员或财务总监角色",
+  "import": {
+    "button": "导入渠道账单",
+    "title": "导入渠道账单",
+    "description": "上传渠道 T+1 清算账单 CSV，系统自动与订单流水三方对账",
+    "cancel": "取消",
+    "submit": "开始对账",
+    "uploading": "上传中...",
+    "resultTitle": "账单导入完成",
+    "imported": "导入笔数",
+    "matched": "自动平账",
+    "discrepancy": "发现差异",
+    "channelLabel": "支付渠道",
+    "dateLabel": "账单日期",
+    "fileLabel": "账单文件 (.csv)",
+    "filePlaceholder": "点击选择或拖拽 CSV 账单文件"
+  },
   "nodes": {
     "orders": "1. 业务订单侧",
     "gateway": "2. 聚合支付网关",
@@ -29,9 +45,28 @@
     "merchant": "商户:",
     "channelNo": "渠道单号:",
     "occurredAt": "发生时间:",
+    "channelAmount": "渠道金额",
     "resolve": "处理调账",
     "amountMismatch": "金额不符",
-    "statusMismatch": "状态不一致"
+    "statusMismatch": "状态不一致",
+    "types": {
+      "overpayment": "长款",
+      "underpayment": "短款",
+      "amountMismatch": "金额不符",
+      "channelMissing": "渠道号缺失"
+    },
+    "actions": {
+      "accept": "接受差异",
+      "investigate": "调查中",
+      "escalate": "升级",
+      "confirm": "确认",
+      "acceptTitle": "确认接受该笔差异？",
+      "acceptDesc": "接受后将按渠道账单金额调账。",
+      "investigateTitle": "标记为调查中？",
+      "investigateDesc": "该笔差异将进入人工调查流程。",
+      "escalateTitle": "确认升级该笔差异？",
+      "escalateDesc": "升级后将通知财务总监介入处理。"
+    }
   },
   "batches": {
     "title": "近期对账批次记录",
@@ -52,7 +87,8 @@
     "verifyAlert": "批次 [{{batchNo}}] 对账凭证核验通过，轧差吻合！"
   },
   "toast": {
-    "engineComplete": "自动化三方对账引擎运行完毕，已匹配平账全部合格流水！"
+    "engineComplete": "自动化三方对账引擎运行完毕，已匹配平账全部合格流水！",
+    "discrepancyHandled": "差异处理已提交，列表已刷新"
   },
   "errors": {
     "permissionDenied": "权限不足：当前登录角色无权发起跨租户或自动化对账任务！",

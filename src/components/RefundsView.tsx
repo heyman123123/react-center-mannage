@@ -87,6 +87,7 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
     (): Record<ChargebackStatus, { label: string; badge: string }> => ({
       待响应: { label: t("refunds.cbStatus.待响应"), badge: "bg-rose-50 text-rose-700 border-rose-200" },
       已提交证据: { label: t("refunds.cbStatus.已提交证据"), badge: "bg-blue-50 text-blue-700 border-blue-200" },
+      渠道审核中: { label: t("refunds.cbStatus.渠道审核中"), badge: "bg-indigo-50 text-indigo-700 border-indigo-200" },
       胜诉: { label: t("refunds.cbStatus.胜诉"), badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
       败诉: { label: t("refunds.cbStatus.败诉"), badge: "bg-zinc-100 text-zinc-600 border-zinc-200" },
     }),
@@ -125,6 +126,9 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
   const [cbSearch, setCbSearch] = useState("");
   const [activeCb, setActiveCb] = useState<ChargebackRecord | null>(null);
   const [dataLoading, setDataLoading] = useState<boolean>(!refunds || !chargebacks);
+  const [uploadingEvidence, setUploadingEvidence] = useState(false);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const evidenceFileInputRef = React.useRef<HTMLInputElement>(null);
 
   const { currentPage, setCurrentPage, reset, pageSize, setPageSize } = usePagination(10);
   useEffect(() => { reset(); }, [tab, refundSearch, cbSearch, reset]);
@@ -204,16 +208,19 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
     }
   };
 
-  const handleUploadEvidence = async () => {
-    if (!activeCb) return;
-    const fileName = `${t("refunds.evidenceFilePrefix")}_${Date.now().toString().slice(-4)}.pdf`;
-    const fileSize = `${(Math.random() * 2 + 0.3).toFixed(1)} MB`;
+  const handleEvidenceFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeCb) return;
+    setUploadingEvidence(true);
     try {
-      const updated = await refundsApi.addChargebackEvidence(activeCb.id, { name: fileName, size: fileSize });
+      const updated = await refundsApi.uploadChargebackEvidence(activeCb.id, file);
       setCbRows((prev) => prev.map((c) => (c.id === activeCb.id ? updated : c)));
       setActiveCb(updated);
     } catch {
-      /* ignore */
+      /* keep sheet open; toast handled by global interceptor */
+    } finally {
+      setUploadingEvidence(false);
+      if (evidenceFileInputRef.current) evidenceFileInputRef.current.value = "";
     }
   };
 
@@ -228,9 +235,17 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
     }
   };
 
-  const handleAcceptCb = (id: string) => {
-    setCbRows((prev) => prev.map((c) => (c.id === id ? { ...c, status: "败诉" } : c)));
-    setActiveCb(null);
+  const handleAcceptCb = async (id: string) => {
+    setAcceptingId(id);
+    try {
+      const updated = await refundsApi.acceptChargeback(id);
+      setCbRows((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      setActiveCb((prev) => (prev && prev.id === id ? updated : prev));
+    } catch {
+      /* keep sheet open */
+    } finally {
+      setAcceptingId(null);
+    }
   };
 
   const viewLoading = useViewLoading();
@@ -610,18 +625,29 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
                     confirmText={t("refunds.chargeback.acceptConfirm")}
                     onConfirm={() => handleAcceptCb(activeCb.id)}
                   >
-                    <button className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white">
-                      <Ban className="w-3.5 h-3.5" /> {t("refunds.chargeback.accept")}
+                    <button
+                      disabled={acceptingId === activeCb.id}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40"
+                    >
+                      {acceptingId === activeCb.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                      {t("refunds.chargeback.accept")}
                     </button>
                   </Popconfirm>
                   <button
                     onClick={handleSubmitEvidence}
-                    disabled={activeCb.evidence.length === 0}
+                    disabled={activeCb.evidence.length === 0 || uploadingEvidence}
                     className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card disabled:opacity-40"
                   >
                     <Send className="w-3.5 h-3.5" /> {t("refunds.chargeback.submitEvidence")}
                   </button>
                 </div>
+              ) : activeCb && activeCb.status === "已提交证据" ? (
+                <button
+                  onClick={handleSubmitEvidence}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-card"
+                >
+                  <Send className="w-3.5 h-3.5" /> {t("refunds.chargeback.submitEvidence")}
+                </button>
               ) : (
                 <button onClick={() => setActiveCb(null)} className="px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold cursor-pointer">
                   {t("refunds.detail.close")}
@@ -647,16 +673,24 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
 
                 {/* Evidence upload */}
                 <div>
+                  <input
+                    ref={evidenceFileInputRef}
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.csv"
+                    className="hidden"
+                    onChange={handleEvidenceFileSelected}
+                  />
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-fg flex items-center gap-1.5">
                       <Paperclip className="w-3.5 h-3.5 text-fg-tertiary" /> {t("refunds.chargeback.evidenceTitle", { count: activeCb.evidence.length })}
                     </span>
                     <button
-                      onClick={handleUploadEvidence}
-                      disabled={activeCb.status !== "待响应"}
+                      onClick={() => evidenceFileInputRef.current?.click()}
+                      disabled={activeCb.status !== "待响应" || uploadingEvidence}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-line text-fg-secondary hover:bg-hover text-[11px] font-medium disabled:opacity-40"
                     >
-                      <Upload className="w-3.5 h-3.5" /> {t("refunds.chargeback.upload")}
+                      {uploadingEvidence ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      {uploadingEvidence ? t("refunds.chargeback.uploading") : t("refunds.chargeback.upload")}
                     </button>
                   </div>
                   <div className="space-y-1.5">
@@ -699,6 +733,11 @@ export const RefundsView: React.FC<RefundsViewProps> = ({ refunds, chargebacks }
                   </div>
                 </div>
 
+                {activeCb.status === "渠道审核中" && (
+                  <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-800 text-[11px] flex items-center gap-2">
+                    <Hourglass className="w-4 h-4 animate-pulse" /> {t("refunds.chargeback.reviewingHint")}
+                  </div>
+                )}
                 {activeCb.status === "胜诉" && (
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4" /> {t("refunds.chargeback.won")}
