@@ -4,10 +4,16 @@ dist/
 coverage/
 .DS_Store
 *.log
+__pycache__/
+*.pyc
 .env*
 !.env.example
 !.env.docker.example
 
-# E2E 测试脚本本地配置（含真实渠道密钥），仅保留 .example 模板
+# E2E / 冒烟脚本本地配置（含真实渠道密钥），仅保留 .example 模板
 backend/scripts/*.env
 !backend/scripts/*.env.example
+
+# 冒烟报告产物（每次运行生成），保留目录占位
+backend/scripts/reports/*
+!backend/scripts/reports/.gitkeep
